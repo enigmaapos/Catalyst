@@ -2,24 +2,15 @@
 pragma solidity ^0.8.17;
 
 /*
-  Catalyst NFT Staking Protocol — Multi-Parameter Governance Edition
-
-  Key features included:
-  - ERC20 CATA token (mint/burn integrated for rewards and fees).
-  - NFT staking (term and permanent), welcome bonus, harvest, unstake burn fee.
-  - Safe harvest: mint then burn user's burn portion.
-  - Collection registration (admin-only) with 90% burn / 10% treasury+deployer split.
-  - Top-10 collections tracked by burned CATA (updated on burns).
-  - Hybrid governance:
-      * Top-10 stakers = full vote weight (1e18)
-      * Small collections can become eligible by burning >= minBurnContributionForVote and provide fractional weight (configurable)
-      * Proposal types allow changing many protocol parameters:
-          - BASE_REWARD, HARVEST_FEE, UNSTAKE_FEE, REGISTRATION_FEE, TREASURY_SPLIT,
-            VOTING_PARAM (sub-targets encoded by paramTarget)
-      * Proposals have voting window and require weighted votes >= minVotesRequiredScaled to pass
-      * Execution only allowed after voting window ends (explicit executeProposal)
-  - Admin controls: pausable, rescue, add/remove admins, set caps
-  - Events for transparency
+  Catalyst NFT Staking Protocol — Full rewrite with:
+  - Multi-parameter governance (typed proposals)
+  - Hybrid voting (top-10 full votes, small collections burn-in fractional votes)
+  - Top-10 tracking by burned CATA
+  - Safe harvest (mint -> burn user portion)
+  - Pausable, admin roles, rescue utilities
+  - Batch harvest
+  - Stake cap per collection: 20,000 NFTs
+  - Tiered & dynamic registration fee based on declaredMaxSupply
 */
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -35,17 +26,18 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     bytes32 public constant CONTRACT_ADMIN_ROLE = keccak256("CONTRACT_ADMIN_ROLE");
 
     // ---------- Constants ----------
-    uint256 public constant WEIGHT_SCALE = 1e18; // scaled fixed-point 1.0
+    uint256 public constant WEIGHT_SCALE = 1e18; // fixed-point scale for vote weights (1.0)
     uint256 public constant MAX_HARVEST_BATCH = 50;
+    uint256 public constant MAX_STAKE_PER_COLLECTION = 20000; // stake cap
 
     // ---------- Proposal / Governance Types ----------
     enum ProposalType {
-        BASE_REWARD,       // set baseRewardRate
-        HARVEST_FEE,       // set initialHarvestBurnFeeRate (%)
-        UNSTAKE_FEE,       // set unstakeBurnFee (CATA)
-        REGISTRATION_FEE,  // set collectionRegistrationFee (CATA)
-        TREASURY_SPLIT,    // set deployerFeeShareRate (0..100)
-        VOTING_PARAM       // sub-target encoded in paramTarget (see below)
+        BASE_REWARD,
+        HARVEST_FEE,
+        UNSTAKE_FEE,
+        REGISTRATION_FEE,
+        TREASURY_SPLIT,
+        VOTING_PARAM
     }
 
     // paramTarget codes for ProposalType.VOTING_PARAM
@@ -55,17 +47,16 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     // 3 => minBurnContributionForVote
     // 4 => maxBaseRewardRate
     // 5 => numberOfBlocksPerRewardUnit
-    // (extendable)
-    
+
     struct Proposal {
         ProposalType pType;
-        uint8 paramTarget;      // used when pType == VOTING_PARAM
-        uint256 newValue;       // numeric new value (units depend on pType)
-        address collectionAddress; // optional context; used for small-collection proposals
+        uint8 paramTarget;
+        uint256 newValue;
+        address collectionAddress; // optional context
         address proposer;
         uint256 startBlock;
         uint256 endBlock;
-        uint256 votesScaled;    // accumulated weight scaled (WEIGHT_SCALE)
+        uint256 votesScaled; // accumulated weight scaled by WEIGHT_SCALE
         bool executed;
     }
 
@@ -74,6 +65,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         uint256 totalStaked;
         uint256 totalStakers;
         bool registered;
+        uint256 declaredSupply; // stored for reference
     }
 
     struct StakeInfo {
@@ -89,17 +81,15 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     mapping(address => mapping(address => mapping(uint256 => StakeInfo))) public stakeLog;
     mapping(address => mapping(address => uint256[])) public stakePortfolioByUser;
     mapping(address => mapping(uint256 => uint256)) public indexOfTokenIdInStakePortfolio;
-
-    // burned CATA per collection (used for top-10)
     mapping(address => uint256) public burnedCatalystByCollection;
 
-    // proposals
+    // proposals & votes
     mapping(bytes32 => Proposal) public proposals;
     mapping(bytes32 => mapping(address => bool)) public hasVoted; // proposalId => voter => bool
 
     // ---------- Tokenomics & params ----------
     uint256 public numberOfBlocksPerRewardUnit;
-    uint256 public collectionRegistrationFee;
+    uint256 public collectionRegistrationFee; // fallback/default if needed
     uint256 public unstakeBurnFee;
     address public treasuryAddress;
     uint256 public totalStakedNFTsCount;
@@ -117,20 +107,20 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     uint256 public welcomeBonusIncrementPerNFT;
 
     address public immutable deployerAddress;
-    uint256 public deployerFeeShareRate; // 0..100 (percent) — stored mutable via governance
+    uint256 public deployerFeeShareRate; // percent 0..100, mutable via governance
 
     // governance controls
-    address[] public topCollections; // <=10, sorted descending by burnedCatalystByCollection
+    address[] public topCollections; // <= 10, sorted descending by burnedCatalystByCollection
     uint256 public minVotesRequiredScaled; // scaled by WEIGHT_SCALE
     uint256 public votingDurationBlocks;
-    uint256 public smallCollectionVoteWeightScaled; // fractional weight for burned small collections
+    uint256 public smallCollectionVoteWeightScaled; // fractional weight for small collection voters
     uint256 public maxBaseRewardRate; // optional cap
 
     // ---------- Events ----------
     event RewardsHarvested(address indexed owner, address indexed collection, uint256 payoutAmount, uint256 burnedAmount);
     event NFTStaked(address indexed owner, address indexed collection, uint256 indexed tokenId);
     event NFTUnstaked(address indexed owner, address indexed collection, uint256 indexed tokenId);
-    event CollectionAdded(address indexed collectionAddress);
+    event CollectionAdded(address indexed collectionAddress, uint256 declaredSupply, uint256 feeCharged);
     event CollectionRemoved(address indexed collectionAddress);
     event PermanentStakeFeePaid(address indexed staker, uint256 feeAmount);
 
@@ -163,18 +153,18 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         uint256 _welcomeBonusIncrementPerNFT,
         uint256 _initialHarvestBurnFeeRate,
         uint256 _termDurationBlocks,
-        uint256 _collectionRegistrationFee,
+        uint256 _collectionRegistrationFeeFallback,
         uint256 _unstakeBurnFee,
         uint256 _stakingCooldownBlocks,
         uint256 _harvestRateAdjustmentFactor,
         uint256 _minBurnContributionForVote,
-        uint256 _initialDeployerSharePercent // 0..100
+        uint256 _initialDeployerSharePercent
     ) ERC20("Catalyst", "CATA") {
         require(_treasury != address(0), "CATA: invalid treasury");
         require(_owner != address(0), "CATA: invalid owner");
         require(_initialDeployerSharePercent <= 100, "CATA: deployer share >100");
 
-        // initial supply allocation to owner (example)
+        // initial supply to owner (example)
         _mint(_owner, 25_185_000 * 10 ** 18);
 
         _setupRole(DEFAULT_ADMIN_ROLE, _owner);
@@ -192,7 +182,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         termDurationBlocks = _termDurationBlocks;
         stakingCooldownBlocks = _stakingCooldownBlocks;
 
-        collectionRegistrationFee = _collectionRegistrationFee;
+        collectionRegistrationFee = _collectionRegistrationFeeFallback;
         unstakeBurnFee = _unstakeBurnFee;
         initialHarvestBurnFeeRate = _initialHarvestBurnFeeRate;
         harvestRateAdjustmentFactor = _harvestRateAdjustmentFactor;
@@ -202,9 +192,9 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         deployerFeeShareRate = _initialDeployerSharePercent; // e.g., 50
 
         // governance defaults
-        minVotesRequiredScaled = 3 * WEIGHT_SCALE; // default require 3 full votes
-        votingDurationBlocks = 46000; // ~7 days (adjust per chain)
-        smallCollectionVoteWeightScaled = (WEIGHT_SCALE * 50) / 100; // default 0.5
+        minVotesRequiredScaled = 3 * WEIGHT_SCALE; // 3 full votes default
+        votingDurationBlocks = 46000; // ~7 days (choose per chain)
+        smallCollectionVoteWeightScaled = (WEIGHT_SCALE * 50) / 100; // 0.5 default
         maxBaseRewardRate = type(uint256).max;
     }
 
@@ -214,9 +204,11 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         _;
     }
 
-    // ---------- --- Core functions: staking / harvest / unstake --- ----------
+    // ---------- Stake cap enforcement: ensure collection totalStaked < MAX_STAKE_PER_COLLECTION ----------
+    // ---------- Core functions: staking / harvest / unstake ----------
     function termStake(address collectionAddress, uint256 tokenId) public nonReentrant notInCooldown whenNotPaused {
         require(collectionConfigs[collectionAddress].registered, "CATA: collection not registered");
+        require(collectionConfigs[collectionAddress].totalStaked < MAX_STAKE_PER_COLLECTION, "CATA: stake cap reached for collection");
 
         IERC721(collectionAddress).safeTransferFrom(_msgSender(), address(this), tokenId);
 
@@ -252,6 +244,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
     function permanentStake(address collectionAddress, uint256 tokenId) public nonReentrant notInCooldown whenNotPaused {
         require(collectionConfigs[collectionAddress].registered, "CATA: collection not registered");
+        require(collectionConfigs[collectionAddress].totalStaked < MAX_STAKE_PER_COLLECTION, "CATA: stake cap reached for collection");
 
         uint256 currentFee = _getDynamicPermanentStakeFee();
         require(balanceOf(_msgSender()) >= currentFee, "CATA: insufficient CATA for fee");
@@ -356,7 +349,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             uint256 burnAmount = (rewardAmount * dynamicHarvestBurnFeeRate) / 100;
             uint256 payoutAmount = rewardAmount - burnAmount;
 
-            // mint full reward then burn from user
+            // mint full reward then burn user's burn portion
             _mint(user, rewardAmount);
 
             if (burnAmount > 0) {
@@ -393,19 +386,61 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         return rewardAmount;
     }
 
+    // ---------- Registration fee calculation (tiered & dynamic) ----------
+    // declaredSupply must be > 0. Fee returned in CATA with 18 decimals.
+    // Brackets:
+    // - Small: 1 .. 5000  => fee scales from SMALL_MIN_FEE .. SMALL_MAX_FEE
+    // - Medium: 5001 .. 10000 => fee scales from MED_MIN_FEE .. MED_MAX_FEE
+    // - Large: 10001 .. infinite => fee starts at LARGE_MIN_FEE and grows (optionally capped)
+    uint256 public SMALL_MIN_FEE = 1000 * 10**18;
+    uint256 public SMALL_MAX_FEE = 5000 * 10**18;
+    uint256 public MED_MIN_FEE = 5000 * 10**18;
+    uint256 public MED_MAX_FEE = 10000 * 10**18;
+    uint256 public LARGE_MIN_FEE = 10000 * 10**18;
+    uint256 public LARGE_MAX_FEE_CAP = 20000 * 10**18; // optional cap for very large declaredSupply
+
+    function _calculateRegistrationFee(uint256 declaredSupply) internal view returns (uint256) {
+        require(declaredSupply >= 1, "CATA: declaredSupply must be >= 1");
+
+        if (declaredSupply <= 5000) {
+            // linear interpolation between SMALL_MIN_FEE and SMALL_MAX_FEE
+            // fee = SMALL_MIN_FEE + (declaredSupply / 5000) * (SMALL_MAX_FEE - SMALL_MIN_FEE)
+            uint256 numerator = declaredSupply * (SMALL_MAX_FEE - SMALL_MIN_FEE);
+            return SMALL_MIN_FEE + (numerator / 5000);
+        } else if (declaredSupply <= 10000) {
+            // linear interpolation between MED_MIN_FEE and MED_MAX_FEE
+            uint256 numerator = (declaredSupply - 5000) * (MED_MAX_FEE - MED_MIN_FEE);
+            return MED_MIN_FEE + (numerator / 5000);
+        } else {
+            // large: start at LARGE_MIN_FEE and increase proportionally; cap at LARGE_MAX_FEE_CAP
+            // We'll scale by extra supply beyond 10k up to a cap of e.g. +10k extra maps to cap
+            uint256 extra = declaredSupply - 10000;
+            uint256 range = 10000; // map next +10k supply to move from LARGE_MIN_FEE to LARGE_MAX_FEE_CAP
+            if (extra >= range) {
+                return LARGE_MAX_FEE_CAP;
+            } else {
+                uint256 numerator = extra * (LARGE_MAX_FEE_CAP - LARGE_MIN_FEE);
+                return LARGE_MIN_FEE + (numerator / range);
+            }
+        }
+    }
+
     // ---------- Collection registration (admin-only) ----------
-    function setCollectionConfig(address collectionAddress) external onlyRole(CONTRACT_ADMIN_ROLE) nonReentrant whenNotPaused {
+    // now requires declaredMaxSupply parameter
+    function setCollectionConfig(address collectionAddress, uint256 declaredMaxSupply) external onlyRole(CONTRACT_ADMIN_ROLE) nonReentrant whenNotPaused {
         require(collectionAddress != address(0), "CATA: invalid address");
         require(!collectionConfigs[collectionAddress].registered, "CATA: already registered");
+        require(declaredMaxSupply >= 1, "CATA: declared supply >=1");
 
-        uint256 fee = collectionRegistrationFee;
-        require(balanceOf(_msgSender()) >= fee, "CATA: insufficient balance");
+        uint256 fee = _calculateRegistrationFee(declaredMaxSupply);
+
+        require(balanceOf(_msgSender()) >= fee, "CATA: insufficient balance to pay registration fee");
 
         uint256 burnAmount = (fee * 90) / 100;
         _burn(_msgSender(), burnAmount);
         burnedCatalystByCollection[collectionAddress] += burnAmount;
 
-        // update top-10
+        // update top-10 after burn
         _updateTopCollections(collectionAddress);
 
         uint256 treasuryAmount = fee - burnAmount;
@@ -415,9 +450,14 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         _transfer(_msgSender(), deployerAddress, deployerShare);
         _transfer(_msgSender(), treasuryAddress, communityTreasuryShare);
 
-        collectionConfigs[collectionAddress] = CollectionConfig({ totalStaked: 0, totalStakers: 0, registered: true });
+        collectionConfigs[collectionAddress] = CollectionConfig({
+            totalStaked: 0,
+            totalStakers: 0,
+            registered: true,
+            declaredSupply: declaredMaxSupply
+        });
 
-        emit CollectionAdded(collectionAddress);
+        emit CollectionAdded(collectionAddress, declaredMaxSupply, fee);
     }
 
     function removeCollection(address collectionAddress) external onlyRole(CONTRACT_ADMIN_ROLE) whenNotPaused {
@@ -427,7 +467,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     }
 
     // ---------- Governance: propose / vote / execute ----------
-    // Propose a change: specify type, paramTarget (if needed), newValue, and optional collection context.
     function propose(
         ProposalType pType,
         uint8 paramTarget,
@@ -459,7 +498,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
         require(eligible, "CATA: proposer not eligible");
 
-        // create proposal id deterministic-ish
         bytes32 proposalId = keccak256(abi.encodePacked(uint256(pType), paramTarget, newValue, collectionContext, block.number, _msgSender()));
         Proposal storage p = proposals[proposalId];
         require(p.startBlock == 0, "CATA: proposal exists");
@@ -478,9 +516,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         return proposalId;
     }
 
-    // Vote on a proposal. Weighted by:
-    // - full weight (WEIGHT_SCALE) if voter stakes in any top-10 collection
-    // - smallCollectionVoteWeightScaled if voter stakes in the proposal's collection and that collection burned >= threshold
+    // Voting: weighted rules
     function vote(bytes32 proposalId) external whenNotPaused {
         Proposal storage p = proposals[proposalId];
         require(p.startBlock != 0, "CATA: proposal not found");
@@ -517,7 +553,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         emit VoteCast(proposalId, _msgSender(), weight);
     }
 
-    // Execute a proposal after voting window ended and votesScaled >= minVotesRequiredScaled
     function executeProposal(bytes32 proposalId) external whenNotPaused nonReentrant {
         Proposal storage p = proposals[proposalId];
         require(p.startBlock != 0, "CATA: proposal not found");
@@ -559,7 +594,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             emit TreasurySplitUpdated(old, p.newValue);
             emit ProposalExecuted(proposalId, p.newValue);
         } else if (p.pType == ProposalType.VOTING_PARAM) {
-            // use paramTarget to decide which voting parameter to update
             uint8 target = p.paramTarget;
             if (target == 0) {
                 uint256 old = minVotesRequiredScaled;
@@ -627,7 +661,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         return topCollections;
     }
 
-    // Maintains topCollections as descending by burnedCatalystByCollection and length <= 10
     function _updateTopCollections(address collection) internal {
         uint256 burned = burnedCatalystByCollection[collection];
         if (burned == 0) {
@@ -644,7 +677,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             return;
         }
 
-        // remove existing mention
+        // remove existing occurrence
         for (uint i = 0; i < topCollections.length; i++) {
             if (topCollections[i] == collection) {
                 for (uint j = i; j + 1 < topCollections.length; j++) {
@@ -655,7 +688,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             }
         }
 
-        // insert sorted
+        // insert sorted descending
         bool inserted = false;
         for (uint i = 0; i < topCollections.length; i++) {
             if (burned > burnedCatalystByCollection[topCollections[i]]) {
@@ -671,7 +704,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         if (!inserted) {
             topCollections.push(collection);
         }
-
         if (topCollections.length > 10) {
             topCollections.pop();
         }
@@ -696,6 +728,23 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     }
     function setStakingCooldownBlocks(uint256 _blocks) external onlyRole(CONTRACT_ADMIN_ROLE) {
         stakingCooldownBlocks = _blocks;
+    }
+
+    // adjustable brackets/caps for registration fee if admin wants to tune
+    function setRegistrationFeeBrackets(
+        uint256 _smallMin,
+        uint256 _smallMax,
+        uint256 _medMin,
+        uint256 _medMax,
+        uint256 _largeMin,
+        uint256 _largeCap
+    ) external onlyRole(CONTRACT_ADMIN_ROLE) {
+        SMALL_MIN_FEE = _smallMin;
+        SMALL_MAX_FEE = _smallMax;
+        MED_MIN_FEE = _medMin;
+        MED_MAX_FEE = _medMax;
+        LARGE_MIN_FEE = _largeMin;
+        LARGE_MAX_FEE_CAP = _largeCap;
     }
 
     // ---------- Pausable & admin management ----------
