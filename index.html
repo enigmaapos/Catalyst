@@ -274,7 +274,8 @@
     }
 
     function showToast(msg, isError=false){
-      console.log((isError?"ERROR: ":"") + msg);
+  alert((isError ? "❌ " : "✅ ") + msg);
+}
       // For now we log. You can wire up a UI toast here.
     }
 
