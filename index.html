@@ -1,161 +1,632 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Catalyst NFT Staking Protocol</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/web3@1.6.1/dist/web3.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catalyst NFT Staking — Dashboard</title>
+
+  <!-- Ethers.js (used for blockchain interactions) -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
+  <!-- Tailwind CDN for quick modern styling (optional; keeps markup short) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { color: #3f51b5; }
-    button { margin: 5px; padding: 10px; }
-    input { margin: 5px; padding: 8px; }
-    .section { margin-bottom: 20px; }
-    .card { border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+    :root{
+      --bg:#0b0f14;
+      --card:#0f1720;
+      --muted:#9aa4b2;
+      --accent:#ff6b35; /* catalyst accent (orange) */
+      --glass: rgba(255,255,255,0.03);
+    }
+    html,body{height:100%}
+    body{
+      background:linear-gradient(180deg,#06101a 0%,var(--bg) 100%);
+      color:#e6eef6;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:28px;
+    }
+    .container{max-width:1200px;margin:0 auto;}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,0.03);border-radius:14px;padding:18px;box-shadow:0 6px 18px rgba(2,6,23,0.6);}
+    .muted{color:var(--muted)}
+    .accent{color:var(--accent)}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
+    .btn-primary{background:linear-gradient(90deg,var(--accent),#ff8b57);color:#071014}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:#dbe8f5}
+    .small{font-size:13px;padding:6px 10px}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    @media(max-width:900px){
+      .grid-4{grid-template-columns:repeat(2,1fr)}
+      .grid-3{grid-template-columns:repeat(1,1fr)}
+    }
+    .badge{background:var(--glass);padding:6px 8px;border-radius:8px;font-size:12px;color:var(--muted)}
+    pre { white-space: pre-wrap; word-break: break-word; }
   </style>
 </head>
 <body>
-  <h1>🔥 Catalyst NFT Staking Protocol</h1>
-  <p>Stake your NFTs, earn $CATA rewards, and contribute to the Catalyst ecosystem!</p>
+  <main class="container space-y-6">
+    <!-- Header -->
+    <header class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold">Catalyst NFT Staking Protocol</h1>
+        <p class="muted small mt-1">Stake NFTs • Earn <span class="accent">CATA</span> • Power NFT ecosystems</p>
+      </div>
 
-  <div class="section card">
-    <h2>Wallet</h2>
-    <button onclick="connectWallet()">Connect Wallet</button>
-    <p id="walletAddress">Not connected</p>
-    <p>Your $CATA Balance: <span id="cataBalance">0</span></p>
-  </div>
+      <div class="flex items-center gap-4">
+        <div class="text-right">
+          <div class="muted small">Connected wallet</div>
+          <div id="wallet-address" class="font-medium">Not connected</div>
+        </div>
 
-  <div class="section card">
-    <h2>Collections</h2>
-    <input type="text" id="collectionAddress" placeholder="NFT Collection Address" size="50">
-    <button onclick="registerCollection()">Register Collection</button>
-    <p id="registerStatus"></p>
-  </div>
+        <button id="connect-btn" class="btn btn-primary">Connect Wallet</button>
+      </div>
+    </header>
 
-  <div class="section card">
-    <h2>Staking</h2>
-    <input type="text" id="stakeCollection" placeholder="Collection Address" size="50">
-    <input type="number" id="tokenId" placeholder="Token ID">
-    <button onclick="termStake()">Term Stake NFT</button>
-    <button onclick="permanentStake()">Permanent Stake NFT</button>
-    <p id="stakeStatus"></p>
-  </div>
+    <!-- Top stats -->
+    <section class="card">
+      <div class="grid-4">
+        <div class="text-center">
+          <div class="muted small">Total Staked NFTs</div>
+          <div id="total-staked" class="text-xl font-semibold">0</div>
+        </div>
 
-  <div class="section card">
-    <h2>Unstaking</h2>
-    <input type="text" id="unstakeCollection" placeholder="Collection Address" size="50">
-    <input type="number" id="unstakeTokenId" placeholder="Token ID">
-    <button onclick="unstake()">Unstake NFT</button>
-    <p id="unstakeStatus"></p>
-  </div>
+        <div class="text-center">
+          <div class="muted small">Total Stakers</div>
+          <div id="total-stakers" class="text-xl font-semibold">0</div>
+        </div>
 
-  <div class="section card">
-    <h2>Harvest Rewards</h2>
-    <input type="text" id="harvestCollection" placeholder="Collection Address" size="50">
-    <button onclick="harvestAll()">Harvest All Rewards</button>
-    <p id="harvestStatus"></p>
-  </div>
+        <div class="text-center">
+          <div class="muted small">Base Reward Rate</div>
+          <div id="base-reward-rate" class="text-xl font-semibold">0</div>
+        </div>
 
-  <div class="section card">
-    <h2>Governance</h2>
-    <input type="text" id="govCollection" placeholder="Collection Address" size="50">
-    <input type="number" id="newRate" placeholder="New Base Reward Rate">
-    <button onclick="proposeAndVote()">Propose & Vote</button>
-    <p id="govStatus"></p>
-  </div>
+        <div class="text-center">
+          <div class="muted small">Unstake Burn Fee</div>
+          <div id="unstake-burn-fee" class="text-xl font-semibold">0</div>
+        </div>
+      </div>
+    </section>
 
+    <div class="grid-3">
+      <!-- My rewards card -->
+      <section class="card">
+        <div class="flex justify-between items-start">
+          <div>
+            <h2 class="font-bold">My Rewards</h2>
+            <p class="muted small">Pending harvest, burn fee, estimated payout</p>
+          </div>
+          <div class="badge">Harvest Burn: <span id="harvest-burn-fee" class="accent">0%</span></div>
+        </div>
+
+        <div class="mt-4">
+          <div class="text-lg">Pending CATA</div>
+          <div id="pending-rewards" class="text-3xl font-extrabold accent">0.00</div>
+          <div class="mt-4 flex gap-3">
+            <button id="harvest-btn" class="btn btn-primary small" disabled>Harvest All</button>
+            <button id="refresh-btn" class="btn btn-ghost small">Refresh</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Earnings and contributors -->
+      <section class="card">
+        <h2 class="font-bold">Earnings & Contributions</h2>
+        <p class="muted small mt-1">Deployer share, community treasury, protocol burn</p>
+
+        <div class="grid-4 mt-4 text-center">
+          <div>
+            <div class="muted small">Deployer (CATA)</div>
+            <div id="deployer-earnings" class="font-semibold">0</div>
+          </div>
+          <div>
+            <div class="muted small">Community Treasury</div>
+            <div id="treasury-earnings" class="font-semibold">0</div>
+          </div>
+          <div>
+            <div class="muted small">Total Burn</div>
+            <div id="total-burn" class="font-semibold">0</div>
+          </div>
+          <div>
+            <div class="muted small">Registered Collections</div>
+            <div id="registered-count" class="font-semibold">0</div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <h3 class="font-semibold small muted">Top Contributing Collections</h3>
+          <div id="collections-council-list" class="space-y-2 mt-3"></div>
+        </div>
+      </section>
+
+      <!-- Manage collections -->
+      <section class="card">
+        <h2 class="font-bold">Manage NFT Collections</h2>
+        <p class="muted small mt-1">Register a collection to enable staking for it.</p>
+
+        <div class="mt-4 space-y-3">
+          <div class="flex gap-2">
+            <input id="new-collection-address" class="flex-1 rounded-md bg-transparent border px-3 py-2" placeholder="0x... collection address" />
+            <button id="add-collection-btn" class="btn btn-primary small" disabled>Register Collection</button>
+          </div>
+          <div class="muted small">Fee: <span id="registration-fee">0</span> <span class="accent">CATA</span> (90% burned)</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- NFT Manager: select collection, show unstaked/staked -->
+    <section class="card">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-bold">NFT Collections</h2>
+          <p class="muted small mt-1">Choose a registered collection to view & manage your NFTs</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="collection-select" class="rounded-md bg-transparent border px-3 py-2"></select>
+          <button id="load-nfts-btn" class="btn btn-ghost small">Load NFTs</button>
+        </div>
+      </div>
+
+      <div class="mt-4 grid gap-4 md:grid-cols-2">
+        <div>
+          <h3 class="font-semibold">My Unstaked NFTs</h3>
+          <div id="unstaked-nfts" class="mt-3 space-y-3"></div>
+        </div>
+
+        <div>
+          <h3 class="font-semibold">My Staked NFTs</h3>
+          <div id="staked-nfts" class="mt-3 space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer / small controls -->
+    <footer class="flex items-center justify-between muted small">
+      <div>Built for Catalyst — <span class="accent">CATA</span></div>
+      <div>
+        <button id="debug-open-console" class="btn btn-ghost small">Open Console</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ---------- SCRIPT: DApp logic (ethers.js) ---------- -->
   <script>
-    let web3;
-    let accounts;
+    /*************************************************************************
+     * NOTE:
+     * - Replace the placeholder CATALYST_CONTRACT_ADDRESS and CATALYST_ABI with
+     *   your deployed contract address and ABI (the CatalystNFTStaking contract).
+     * - The UI calls these contract functions:
+     *   setCollectionConfig, termStake, permanentStake, unstake, harvestAll,
+     *   collectionConfigs, stakePortfolioByUser, pendingRewards,
+     *   collectionRegistrationFee, unstakeBurnFee, totalStakedNFTsCount,
+     *   baseRewardRate, getDynamicHarvestBurnFeeRate, getBurnedCatalystByCollection,
+     *   treasuryAddress, deployerAddress, balanceOf
+     *************************************************************************/
 
-    // Replace with deployed contract addresses
-    const CATA_CONTRACT_ADDRESS = "YOUR_CATA_CONTRACT_ADDRESS";
-    const CATA_ABI = []; // paste ABI here
+    // --------------------- Config (replace these) ---------------------
+    const CATALYST_CONTRACT_ADDRESS = "0xYOUR_CATALYST_CONTRACT_ADDRESS_HERE";
+    const CATALYST_ABI = [
+      // Minimal ABI subset used by this UI. Replace with the full ABI for full features.
+      "function collectionRegistrationFee() view returns (uint256)",
+      "function unstakeBurnFee() view returns (uint256)",
+      "function totalStakedNFTsCount() view returns (uint256)",
+      "function baseRewardRate() view returns (uint256)",
+      "function getDynamicHarvestBurnFeeRate() view returns (uint256)",
+      "function getDynamicPermanentStakeFee() view returns (uint256)",
+      "function setCollectionConfig(address)",
+      "function collectionConfigs(address) view returns (uint256,uint256,bool)",
+      "function stakePortfolioByUser(address,address) view returns (uint256[])",
+      "function stakeLog(address,address,uint256) view returns (uint256,bool,bool,uint256)",
+      "function pendingRewards(address,address,uint256) view returns (uint256)",
+      "function termStake(address,uint256)",
+      "function permanentStake(address,uint256)",
+      "function unstake(address,uint256)",
+      "function harvestAll(address)",
+      "function getBurnedCatalystByCollection(address) view returns (uint256)",
+      "function treasuryAddress() view returns (address)",
+      "function deployerAddress() view returns (address)",
+      "function balanceOf(address) view returns (uint256)",
+      "function proposeAndVote(uint256,address)"
+    ];
 
-    let cataContract;
+    // --------------------- State ---------------------
+    let provider, signer, userAddress;
+    let catalystContract;
+    let registeredCollections = {}; // { nameOrAddr: address }
 
+    // DOM refs
+    const $
+      = (id) => document.getElementById(id);
+
+    const connectBtn = $('connect-btn');
+    const walletAddressEl = $('wallet-address');
+    const addCollectionBtn = $('add-collection-btn');
+    const newCollectionInput = $('new-collection-address');
+    const collectionSelect = $('collection-select');
+    const loadNftsBtn = $('load-nfts-btn');
+    const unstakedContainer = $('unstaked-nfts');
+    const stakedContainer = $('staked-nfts');
+    const totalStakedEl = $('total-staked');
+    const totalStakersEl = $('total-stakers');
+    const baseRewardRateEl = $('base-reward-rate');
+    const registrationFeeEl = $('registration-fee');
+    const unstakeBurnFeeEl = $('unstake-burn-fee');
+    const pendingRewardsEl = $('pending-rewards');
+    const harvestBtn = $('harvest-btn');
+    const harvestBurnFeeEl = $('harvest-burn-fee');
+    const deployerEarningsEl = $('deployer-earnings');
+    const treasuryEarningsEl = $('treasury-earnings');
+    const totalBurnEl = $('total-burn');
+    const registeredCountEl = $('registered-count');
+    const collectionsCouncilList = $('collections-council-list');
+    const refreshBtn = $('refresh-btn');
+
+    // --------------------- Helpers ---------------------
+    function formatEther(bn) {
+      try { return ethers.utils.formatEther(bn); } catch(e){ return "0"; }
+    }
+
+    function shortAddr(addr){
+      if(!addr) return "";
+      return addr.slice(0,6) + "..." + addr.slice(-4);
+    }
+
+    function showToast(msg, isError=false){
+      console.log((isError?"ERROR: ":"") + msg);
+      // For now we log. You can wire up a UI toast here.
+    }
+
+    // --------------------- Wallet & Contract Setup ---------------------
     async function connectWallet() {
-      if (window.ethereum) {
-        web3 = new Web3(window.ethereum);
-        accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-        document.getElementById("walletAddress").innerText = accounts[0];
-        cataContract = new web3.eth.Contract(CATA_ABI, CATA_CONTRACT_ADDRESS);
-        updateBalance();
+      if (window.ethereum === undefined) {
+        showToast("MetaMask (or other web3 provider) not found in browser.", true);
+        return;
+      }
+      try {
+        provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        userAddress = await signer.getAddress();
+        walletAddressEl.textContent = shortAddr(userAddress);
+        catalystContract = new ethers.Contract(CATALYST_CONTRACT_ADDRESS, CATALYST_ABI, signer);
+
+        // Enable UI
+        addCollectionBtn.disabled = false;
+        harvestBtn.disabled = false;
+
+        // initial load
+        await loadDashboard();
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || err, true);
+      }
+    }
+
+    // --------------------- Dashboard & Collections ---------------------
+    async function loadDashboard(){
+      if(!catalystContract) return;
+
+      try {
+        const [ totalStaked, baseRate, unstakeFee, regFee, harvestBurn ] = await Promise.all([
+          catalystContract.totalStakedNFTsCount(),
+          catalystContract.baseRewardRate(),
+          catalystContract.unstakeBurnFee(),
+          catalystContract.collectionRegistrationFee(),
+          catalystContract.getDynamicHarvestBurnFeeRate()
+        ]);
+
+        totalStakedEl.textContent = totalStaked.toString();
+        baseRewardRateEl.textContent = formatEther(baseRate) + " CATA";
+        unstakeBurnFeeEl.textContent = formatEther(unstakeFee) + " CATA";
+        registrationFeeEl.textContent = formatEther(regFee);
+        harvestBurnFeeEl.textContent = harvestBurn.toString() + "%";
+
+        // try to populate known registered collections by reading some of them
+        // NOTE: This UI cannot enumerate on-chain registered collections automatically
+        // unless the contract exposes an index. For now, we maintain a client-side dictionary.
+        registeredCountEl.textContent = Object.keys(registeredCollections).length;
+
+        // update earnings & contributors
+        await updateEarningsAndContributors();
+      } catch (err) {
+        console.error("loadDashboard:", err);
+        showToast(err.message || err, true);
+      }
+    }
+
+    async function updateEarningsAndContributors(){
+      if(!catalystContract) return;
+      try {
+        const [deployerAddr, treasuryAddr] = await Promise.all([
+          catalystContract.deployerAddress(),
+          catalystContract.treasuryAddress()
+        ]);
+
+        const [deployerBal, treasuryBal] = await Promise.all([
+          catalystContract.balanceOf(deployerAddr),
+          catalystContract.balanceOf(treasuryAddr)
+        ]);
+
+        deployerEarningsEl.textContent = formatEther(deployerBal);
+        treasuryEarningsEl.textContent = formatEther(treasuryBal);
+
+        // compute total burn across known collections
+        let totalBurn = ethers.BigNumber.from(0);
+        const contributors = [];
+        for(const name in registeredCollections){
+          const addr = registeredCollections[name];
+          try {
+            const burned = await catalystContract.getBurnedCatalystByCollection(addr);
+            totalBurn = totalBurn.add(burned);
+            contributors.push({ name, addr, burned });
+          } catch(e){
+            // ignore per-collection read errors
+            console.debug("collection burned read failed", addr, e);
+          }
+        }
+        totalBurnEl.textContent = formatEther(totalBurn);
+
+        // sort contributors desc
+        contributors.sort((a,b) => {
+          return b.burned.sub(a.burned);
+        });
+
+        collectionsCouncilList.innerHTML = '';
+        for(const c of contributors.slice(0,6)){
+          const el = document.createElement('div');
+          el.className = 'flex items-center justify-between p-2 rounded-md bg-[rgba(255,255,255,0.02)]';
+          el.innerHTML = `<div class="text-sm font-medium">${c.name}</div>
+                          <div class="muted small">${shortAddr(c.addr)}</div>
+                          <div class="font-semibold accent">${formatEther(c.burned)} CATA</div>`;
+          collectionsCouncilList.appendChild(el);
+        }
+      } catch (err) {
+        console.error("updateEarningsAndContributors:", err);
+      }
+    }
+
+    // --------------------- Collection registration (admin allowlist flow) ---------------------
+    // NOTE: setCollectionConfig is only callable by an admin role in contract; UI will simply call it.
+    addCollectionBtn.addEventListener('click', async () => {
+      const addr = newCollectionInput.value.trim();
+      if(!ethers.utils.isAddress(addr)){
+        showToast("Invalid collection address", true);
+        return;
+      }
+      try {
+        addCollectionBtn.disabled = true;
+        showToast("Registering collection...");
+
+        // call setCollectionConfig (requires caller to be CONTRACT_ADMIN_ROLE)
+        const tx = await catalystContract.setCollectionConfig(addr);
+        await tx.wait();
+
+        // add to local registry (UI convenience)
+        registeredCollections[`Collection ${shortAddr(addr)}`] = addr;
+        populateCollectionSelect();
+        await loadDashboard();
+        newCollectionInput.value = '';
+        showToast("Collection registered successfully");
+      } catch (err) {
+        console.error("register collection failed:", err);
+        showToast((err && err.message) || err, true);
+      } finally {
+        addCollectionBtn.disabled = false;
+      }
+    });
+
+    function populateCollectionSelect(){
+      collectionSelect.innerHTML = '';
+      Object.entries(registeredCollections).forEach(([name, addr]) => {
+        const opt = document.createElement('option');
+        opt.value = addr;
+        opt.text = name + ' — ' + shortAddr(addr);
+        collectionSelect.appendChild(opt);
+      });
+    }
+
+    // --------------------- NFT loading (client-side approach) ---------------------
+    // NOTE: This UI expects the user to use an external indexer (e.g. TheGraph, OpenSea API)
+    // or the user to paste tokenIds. For simplicity we will show an interface that:
+    // - If stakePortfolioByUser returns tokens, they appear under staked.
+    // - For unstaked, this UI will demonstrate with a small mock or allow user entry.
+
+    loadNftsBtn.addEventListener('click', async () => {
+      await loadUserNFTs();
+    });
+
+    async function loadUserNFTs(){
+      if(!catalystContract || !userAddress) return;
+      try {
+        const selectedCollection = collectionSelect.value;
+        if(!selectedCollection){
+          showToast("Select a registered collection first", true);
+          return;
+        }
+
+        // Fetch staked token IDs for this user & collection
+        const stakedIds = await catalystContract.stakePortfolioByUser(selectedCollection, userAddress);
+        stakedContainer.innerHTML = '';
+        if(stakedIds.length === 0){
+          stakedContainer.innerHTML = '<div class="muted small">No staked NFTs</div>';
+        } else {
+          for(const id of stakedIds){
+            const [lastHarvest, currentlyStaked, isPermanent, unstakeDeadline] = await catalystContract.stakeLog(selectedCollection, userAddress, id);
+            const wrapper = createStakedCard(selectedCollection, id.toString(), isPermanent, unstakeDeadline.toNumber());
+            stakedContainer.appendChild(wrapper);
+          }
+        }
+
+        // Unstaked: here we cannot reliably fetch off-chain ownership in pure on-chain contract
+        // For demo we show an input area for users to manually add their token ids or integrate an indexer.
+        // We'll display a placeholder instruction.
+        unstakedContainer.innerHTML = `<div class="muted small">To list your unstaked NFTs, integrate an indexer (OpenSea/Alchemy/third-party) or enter token IDs manually (future feature).</div>`;
+
+        // update pendingRewards aggregate
+        let totalPending = ethers.BigNumber.from(0);
+        for(const id of stakedIds){
+          const pending = await catalystContract.pendingRewards(selectedCollection, userAddress, id);
+          totalPending = totalPending.add(pending);
+        }
+        pendingRewardsEl.textContent = formatEther(totalPending);
+      } catch (err) {
+        console.error("loadUserNFTs:", err);
+        showToast(err.message || err, true);
+      }
+    }
+
+    // --------------------- UI card builders ---------------------
+    function createStakedCard(collectionAddr, tokenId, isPermanent, unstakeDeadlineBlock){
+      const card = document.createElement('div');
+      card.className = 'p-3 rounded-md bg-[rgba(255,255,255,0.02)] flex items-center justify-between';
+      const left = document.createElement('div');
+      left.innerHTML = `<div class="font-semibold">#${tokenId}</div><div class="muted small">Collection ${shortAddr(collectionAddr)}</div>`;
+
+      const right = document.createElement('div');
+      right.className = 'text-right';
+      if(isPermanent){
+        right.innerHTML = `<div class="accent font-semibold">Permanent Stake</div>
+                           <div class="muted small">Unstake fee applies</div>
+                           <div class="mt-2"><button class="btn btn-ghost small" data-action="unstake" data-token="${tokenId}" data-coll="${collectionAddr}">Unstake</button></div>`;
       } else {
-        alert("Please install MetaMask!");
+        // compute time left if we can check current block
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-ghost small';
+        btn.textContent = 'Unstake (if unlocked)';
+        btn.dataset.action = 'unstake';
+        btn.dataset.token = tokenId;
+        btn.dataset.coll = collectionAddr;
+        right.appendChild(btn);
       }
+
+      card.appendChild(left);
+      card.appendChild(right);
+
+      // wire click events
+      right.querySelectorAll('button[data-action="unstake"]').forEach(b => {
+        b.addEventListener('click', async (e) => {
+          const token = e.target.dataset.token;
+          const coll = e.target.dataset.coll;
+          await handleUnstake(coll, token);
+        });
+      });
+
+      return card;
     }
 
-    async function updateBalance() {
-      if (!cataContract || !accounts) return;
-      const balance = await cataContract.methods.balanceOf(accounts[0]).call();
-      document.getElementById("cataBalance").innerText = web3.utils.fromWei(balance, "ether");
-    }
-
-    async function registerCollection() {
-      const addr = document.getElementById("collectionAddress").value;
+    // --------------------- Staking / Unstaking / Harvesting ---------------------
+    async function handleTermStake(collectionAddr, tokenId){
       try {
-        await cataContract.methods.setCollectionConfig(addr).send({ from: accounts[0] });
-        document.getElementById("registerStatus").innerText = "✅ Collection registered!";
-      } catch (e) {
-        document.getElementById("registerStatus").innerText = "❌ " + e.message;
+        showToast(`Term staking #${tokenId}...`);
+        const tx = await catalystContract.termStake(collectionAddr, tokenId);
+        await tx.wait();
+        showToast(`Term stake success #${tokenId}`);
+        await loadUserNFTs();
+        await loadDashboard();
+      } catch (err) {
+        console.error("termStake error:", err);
+        showToast(err.message || err, true);
       }
     }
 
-    async function termStake() {
-      const addr = document.getElementById("stakeCollection").value;
-      const tokenId = document.getElementById("tokenId").value;
+    async function handlePermanentStake(collectionAddr, tokenId){
       try {
-        await cataContract.methods.termStake(addr, tokenId).send({ from: accounts[0] });
-        document.getElementById("stakeStatus").innerText = "✅ Term staked!";
-      } catch (e) {
-        document.getElementById("stakeStatus").innerText = "❌ " + e.message;
+        showToast(`Permanent staking #${tokenId}...`);
+        // If the token used for fee is CATA itself (same contract), ensure allowance flow if needed.
+        // Our contract burns CATA directly from user balances; the contract does not transfer allowance for fee.
+        const tx = await catalystContract.permanentStake(collectionAddr, tokenId);
+        await tx.wait();
+        showToast(`Permanent stake success #${tokenId}`);
+        await loadUserNFTs();
+        await loadDashboard();
+      } catch (err) {
+        console.error("permanentStake error:", err);
+        showToast(err.message || err, true);
       }
     }
 
-    async function permanentStake() {
-      const addr = document.getElementById("stakeCollection").value;
-      const tokenId = document.getElementById("tokenId").value;
+    async function handleUnstake(collectionAddr, tokenId){
       try {
-        await cataContract.methods.permanentStake(addr, tokenId).send({ from: accounts[0] });
-        document.getElementById("stakeStatus").innerText = "✅ Permanently staked!";
-      } catch (e) {
-        document.getElementById("stakeStatus").innerText = "❌ " + e.message;
+        showToast(`Unstaking #${tokenId}...`);
+        const tx = await catalystContract.unstake(collectionAddr, tokenId);
+        await tx.wait();
+        showToast(`Unstaked #${tokenId}`);
+        await loadUserNFTs();
+        await loadDashboard();
+      } catch (err) {
+        console.error("unstake error:", err);
+        showToast(err.message || err, true);
       }
     }
 
-    async function unstake() {
-      const addr = document.getElementById("unstakeCollection").value;
-      const tokenId = document.getElementById("unstakeTokenId").value;
+    harvestBtn.addEventListener('click', async () => {
       try {
-        await cataContract.methods.unstake(addr, tokenId).send({ from: accounts[0] });
-        document.getElementById("unstakeStatus").innerText = "✅ Unstaked!";
-      } catch (e) {
-        document.getElementById("unstakeStatus").innerText = "❌ " + e.message;
+        const selected = collectionSelect.value;
+        if(!selected) { showToast("Select collection first", true); return; }
+        showToast("Harvesting all rewards...");
+        const tx = await catalystContract.harvestAll(selected);
+        await tx.wait();
+        showToast("Harvest success");
+        await loadUserNFTs();
+        await loadDashboard();
+      } catch(err) {
+        console.error("harvestAll error:", err);
+        showToast(err.message || err, true);
+      }
+    });
+
+    // Quick refresh
+    refreshBtn.addEventListener('click', async () => {
+      await loadDashboard();
+      await loadUserNFTs();
+      showToast("Refreshed");
+    });
+
+    // --------------------- Governance (propose + vote simple flow) ---------------------
+    async function proposeAndVote(newRate, collectionAddress){
+      try {
+        const tx = await catalystContract.proposeAndVote(newRate, collectionAddress);
+        await tx.wait();
+        showToast("Propose & vote submitted");
+      } catch(err) {
+        console.error("proposeAndVote:", err);
+        showToast(err.message || err, true);
       }
     }
 
-    async function harvestAll() {
-      const addr = document.getElementById("harvestCollection").value;
-      try {
-        await cataContract.methods.harvestAll(addr).send({ from: accounts[0] });
-        document.getElementById("harvestStatus").innerText = "✅ Rewards harvested!";
-        updateBalance();
-      } catch (e) {
-        document.getElementById("harvestStatus").innerText = "❌ " + e.message;
-      }
-    }
+    // --------------------- Event wiring for header buttons ---------------------
+    connectBtn.addEventListener('click', connectWallet);
 
-    async function proposeAndVote() {
-      const addr = document.getElementById("govCollection").value;
-      const newRate = document.getElementById("newRate").value;
-      try {
-        await cataContract.methods.proposeAndVote(newRate, addr).send({ from: accounts[0] });
-        document.getElementById("govStatus").innerText = "✅ Voted!";
-      } catch (e) {
-        document.getElementById("govStatus").innerText = "❌ " + e.message;
-      }
-    }
+    // Example: allow keyboard "Enter" to register collection
+    newCollectionInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') addCollectionBtn.click();
+    });
+
+    // --------------------- Init: optionally pre-register demo collections ---------------------
+    // If you want some entries to appear in the dropdown at first, add them here:
+    (function seedLocalCollections(){
+      // local friendly names -> addresses (you can replace with actual)
+      // Example:
+      // registeredCollections["Bird Collection"] = "0x51Ea4659223D17d71003E99c01c0c1C98B26a911";
+      // registeredCollections["Cape Collection"] = "0xB50D0563b7eC5E32a0F8387a3240e9499806b744";
+      populateCollectionSelect();
+    })();
+
+    // --------------------- Debug / Console helper ---------------------
+    $('debug-open-console').addEventListener('click', () => {
+      showToast("Console open (use F12)");
+      // no-op for now
+    });
+
+    // --------------------- Notes for deployment ---------------------
+    // 1) Replace CATALYST_CONTRACT_ADDRESS with your deployed contract address.
+    // 2) Replace the minimal ABI with the full ABI generated by your compiler for full UX.
+    // 3) The UI does not enumerate registered collections on-chain automatically because the contract
+    //    did not expose an indexed list; you can add an event listener on CollectionAdded to
+    //    keep the client-side registry in sync with on-chain registrations in production.
+    // 4) For listing unstaked NFTs, integrate an indexer (Alchemy, Moralis, OpenSea, or TheGraph).
   </script>
 </body>
 </html>
