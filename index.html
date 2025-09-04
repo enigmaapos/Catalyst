@@ -1,323 +1,753 @@
 <!doctype html>
-
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Catalyst V7 — Production-ready Single-file DApp</title>
-  <style>
-    :root{--bg:#0b1220;--card:#0f1720;--muted:#9aa4b2;--accent:#58a6ff;--good:#2ea043}
-    body{font-family:Inter,system-ui,Arial; background:var(--bg); color:#e6edf3; margin:0}
-    header{padding:18px;text-align:center;background:linear-gradient(90deg,#071026, #0c1730)}
-    main{max-width:1000px;margin:24px auto;padding:18px}
-    .card{background:var(--card);border-radius:10px;padding:14px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.03)}
-    h1,h2{color:var(--accent);margin:0 0 8px}
-    label{display:block;color:var(--muted);font-size:13px;margin-top:10px}
-    input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:#071021;color:#e6edf3}
-    button{background:var(--good);border:0;padding:10px 12px;border-radius:8px;color:#021;cursor:pointer;margin-top:10px}
-    button.secondary{background:#2b6ee6;color:#fff}
-    .row{display:flex;gap:12px}
-    .col{flex:1}
-    pre{background:#07101a;padding:10px;border-radius:8px;overflow:auto}
-    .muted{color:var(--muted);font-size:13px}
-    .small{font-size:13px}
-  </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Catalyst NFT Staking Protocol — DApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        bg: '#0b1220',
+                        card: '#0f172a',
+                        muted: '#9aa4b2',
+                        accent: '#58a6ff',
+                        good: '#2ea043',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: theme('colors.bg');
+            color: #e6edf3;
+            margin: 0;
+        }
+
+        /* Custom message box */
+        #message-box-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #message-box {
+            background-color: theme('colors.card');
+            border-radius: 10px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #message-box-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: theme('colors.accent');
+            margin-bottom: 12px;
+        }
+
+        #message-box-text {
+            color: #e6edf3;
+            margin-bottom: 24px;
+        }
+
+        #message-box-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        #message-box-actions button {
+            width: 100px;
+            cursor: pointer;
+        }
+
+        /* Loading spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid theme('colors.accent');
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-<body>
-  <header>
-    <h1>🚀 Catalyst Protocol — V7 (Immutable 90/9/1)</h1>
-    <div class="muted">Production-ready single-file DApp for staking, registration, governance & burner bonus</div>
-  </header>  <main>
-    <div class="card">
-      <h2>Network & Contract</h2>
-      <div class="muted small">This build hardcodes the contract address & ABI (placeholders). Do NOT allow users to edit ABI in production.</div>
-      <label>Deployed Contract (placeholder)</label>
-      <input id="contractAddress" value="0xYourContractHere" readonly />
-      <label>Network</label>
-      <input id="networkName" value="Ethereum / EVM-compatible (set in wallet)" readonly />
-      <div class="row">
-        <button onclick="connect()">Connect Wallet</button>
-        <button class="secondary" onclick="loadContract()">Load Contract</button>
-      </div>
-      <div id="walletInfo" class="muted">Not connected</div>
-    </div><!-- Collection Registration (public) -->
-<div class="card">
-  <h2>Register Collection</h2>
-  <div class="muted small">Public registration (pay dynamic fee). If contract exposes both registerCollection and setCollectionConfig, UI will call registerCollection first.</div>
-  <label>Collection Address</label>
-  <input id="regCollection" placeholder="0x..." />
-  <label>Declared Supply (max 20000)</label>
-  <input id="declaredSupply" type="number" placeholder="e.g. 10000" />
-  <label>Tier</label>
-  <select id="regTier"><option value="0">UNVERIFIED</option><option value="1">VERIFIED</option></select>
-  <div class="row">
-    <button onclick="registerCollection()">Register Collection (pay fee)</button>
-    <button class="secondary" onclick="estimateRegistrationFee()">Estimate Base Fee</button>
-  </div>
-  <div id="regResult" class="muted"></div>
-</div>
+<body class="bg-bg text-gray-100 font-sans">
 
-<!-- Staking -->
-<div class="card">
-  <h2>Stake NFTs</h2>
-  <label>Collection Address</label>
-  <input id="stakeCollection" placeholder="0x..." />
-  <div class="row">
-    <div class="col">
-      <label>Single Token ID</label>
-      <input id="stakeTokenId" type="number" />
-      <div class="row">
-        <button onclick="termStakeSingle()">Term Stake</button>
-        <button onclick="permanentStakeSingle()">Permanent Stake</button>
-      </div>
+    <!-- Custom Message Box/Modal -->
+    <div id="message-box-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center hidden z-50">
+        <div id="message-box" class="bg-card rounded-xl p-6 w-11/12 max-w-sm border border-gray-700 shadow-xl">
+            <div id="message-box-title" class="text-lg font-bold text-accent mb-2"></div>
+            <div id="message-box-text" class="text-sm mb-6 text-gray-300"></div>
+            <div id="message-box-actions" class="flex justify-center gap-3">
+                <button id="msg-btn-ok" class="bg-good hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg w-24">OK</button>
+                <button id="msg-btn-cancel" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg w-24 hidden">Cancel</button>
+            </div>
+        </div>
     </div>
-    <div class="col">
-      <label>Batch Token IDs (comma separated)</label>
-      <input id="batchStakeIds" placeholder="e.g. 1,2,3" />
-      <div class="row">
-        <button onclick="batchTermStake()">Batch Term Stake</button>
-        <button onclick="batchPermanentStake()">Batch Permanent Stake</button>
-      </div>
-    </div>
-  </div>
-  <div id="stakeLog" class="muted"></div>
-</div>
 
-<!-- Unstake & Harvest -->
-<div class="card">
-  <h2>Unstake / Harvest</h2>
-  <label>Collection Address</label>
-  <input id="unstakeCollection" placeholder="0x..." />
-  <div class="row">
-    <div class="col">
-      <label>Single Token ID</label>
-      <input id="unstakeTokenId" type="number" />
-      <div class="row">
-        <button onclick="unstakeSingle()">Unstake</button>
-        <button onclick="harvestSingle()">Harvest</button>
-      </div>
-    </div>
-    <div class="col">
-      <label>Batch Token IDs</label>
-      <input id="batchUnstakeIds" placeholder="e.g. 5,6,7" />
-      <div class="row">
-        <button onclick="batchUnstake()">Batch Unstake</button>
-        <button onclick="batchHarvest()">Batch Harvest</button>
-      </div>
-    </div>
-  </div>
-  <div id="unstakeLog" class="muted"></div>
-</div>
+    <header class="bg-gradient-to-r from-blue-950 to-indigo-950 p-6 text-center shadow-lg">
+        <h1 class="text-3xl font-extrabold text-accent mb-1">Catalyst NFT Staking Protocol</h1>
+        <div class="text-sm text-muted">A single-file DApp for staking, registration, governance & rewards.</div>
+    </header>
 
-<!-- Governance -->
-<div class="card">
-  <h2>Governance</h2>
-  <label>Proposal Type</label>
-  <select id="proposalType"><option value="0">BASE_REWARD</option><option value="1">HARVEST_FEE</option><option value="2">UNSTAKE_FEE</option><option value="3">REGISTRATION_FEE_FALLBACK</option><option value="4">VOTING_PARAM</option><option value="5">TIER_UPGRADE</option></select>
-  <label>Param Target (for VOTING_PARAM)</label>
-  <input id="paramTarget" type="number" placeholder="e.g. 0" />
-  <label>New Value</label>
-  <input id="newValue" type="number" />
-  <label>Collection Context (optional)</label>
-  <input id="proposalCollection" placeholder="0x..." />
-  <div class="row">
-    <button onclick="createProposal()">Create Proposal</button>
-    <button class="secondary" onclick="voteProposal()">Vote</button>
-    <button class="secondary" onclick="executeProposal()">Execute</button>
-  </div>
-  <label>Proposal ID (bytes32)</label>
-  <input id="proposalId" placeholder="0x..." />
-  <div id="govLog" class="muted"></div>
-</div>
+    <main class="max-w-4xl mx-auto p-4 md:p-6">
+        <!-- Wallet & Contract Section -->
+        <div class="card bg-card p-6 rounded-2xl mb-6 shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-bold text-accent mb-4">Network & Contract</h2>
+            <div class="text-sm text-muted mb-4">This DApp is pre-configured with the contract address and ABI for ease of use.</div>
+            <label for="contractAddress" class="block text-muted text-xs mb-1">Deployed Contract</label>
+            <input id="contractAddress" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" readonly />
+            <label for="networkName" class="block text-muted text-xs mb-1">Network</label>
+            <input id="networkName" value="Ethereum / EVM-compatible" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" readonly />
+            <div class="flex flex-col sm:flex-row gap-3 mt-2">
+                <button onclick="connect()" class="flex-1 bg-accent hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Connect Wallet</button>
+                <button onclick="loadContract()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Load Contract</button>
+            </div>
+            <div id="walletInfo" class="text-sm text-muted mt-4 text-center">Not connected</div>
+        </div>
 
-<!-- Treasury & Leaderboards -->
-<div class="card">
-  <h2>Treasury & Leaderboards</h2>
-  <div class="row">
-    <button onclick="getTreasuryAddress()">Show Treasury Address</button>
-    <button onclick="distributeBonus()">Distribute Top 1% Burner Bonus</button>
-  </div>
-  <div class="row" style="margin-top:10px">
-    <button onclick="getTopBurners()">Top Burners</button>
-    <button onclick="getTopCollections()">Top Collections</button>
-  </div>
-  <div id="treasuryLog" class="muted"></div>
-</div>
+        <!-- Collection Registration Section -->
+        <div class="card bg-card p-6 rounded-2xl mb-6 shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-bold text-accent mb-4">Register Collection</h2>
+            <div class="text-sm text-muted mb-4">Public registration requires a dynamic fee. This UI will call the public `registerCollection` function.</div>
+            <label for="regCollection" class="block text-muted text-xs mb-1">Collection Address</label>
+            <input id="regCollection" placeholder="0x..." class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+            <label for="declaredSupply" class="block text-muted text-xs mb-1">Declared Supply (max 20000)</label>
+            <input id="declaredSupply" type="number" placeholder="e.g. 10000" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+            <label for="regTier" class="block text-muted text-xs mb-1">Tier</label>
+            <select id="regTier" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition">
+                <option value="0">UNVERIFIED</option>
+                <option value="1">VERIFIED</option>
+            </select>
+            <div class="flex flex-col sm:flex-row gap-3 mt-2">
+                <button onclick="registerCollection()" class="flex-1 bg-accent hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Register Collection (pay fee)</button>
+                <button onclick="estimateRegistrationFee()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Estimate Base Fee</button>
+            </div>
+            <div id="regResult" class="text-sm text-muted mt-4 text-center"></div>
+        </div>
 
-<!-- Burn -->
-<div class="card">
-  <h2>Burn CATA (voluntary)</h2>
-  <label>Amount (CATA)</label>
-  <input id="burnAmount" type="number" />
-  <button onclick="burn()">Burn</button>
-  <div id="burnLog" class="muted"></div>
-</div>
+        <!-- Staking Section -->
+        <div class="card bg-card p-6 rounded-2xl mb-6 shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-bold text-accent mb-4">Stake NFTs</h2>
+            <label for="stakeCollection" class="block text-muted text-xs mb-1">Collection Address</label>
+            <input id="stakeCollection" placeholder="0x..." class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="stakeTokenId" class="block text-muted text-xs mb-1">Single Token ID</label>
+                    <input id="stakeTokenId" type="number" placeholder="e.g. 123" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+                    <div class="flex gap-2">
+                        <button onclick="termStakeSingle()" class="flex-1 bg-good hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Term Stake</button>
+                        <button onclick="permanentStakeSingle()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Permanent Stake</button>
+                    </div>
+                </div>
+                <div>
+                    <label for="batchStakeIds" class="block text-muted text-xs mb-1">Batch Token IDs (comma separated)</label>
+                    <input id="batchStakeIds" placeholder="e.g. 1,2,3" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+                    <div class="flex gap-2">
+                        <button onclick="batchTermStake()" class="flex-1 bg-good hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Batch Term Stake</button>
+                        <button onclick="batchPermanentStake()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Batch Perm Stake</button>
+                    </div>
+                </div>
+            </div>
+            <div id="stakeLog" class="text-sm text-muted mt-4 text-center"></div>
+        </div>
 
-<div class="card">
-  <h2>Logs</h2>
-  <pre id="logs" style="height:260px"></pre>
-</div>
+        <!-- Unstake & Harvest Section -->
+        <div class="card bg-card p-6 rounded-2xl mb-6 shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-bold text-accent mb-4">Unstake / Harvest</h2>
+            <label for="unstakeCollection" class="block text-muted text-xs mb-1">Collection Address</label>
+            <input id="unstakeCollection" placeholder="0x..." class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="unstakeTokenId" class="block text-muted text-xs mb-1">Single Token ID</label>
+                    <input id="unstakeTokenId" type="number" placeholder="e.g. 123" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+                    <div class="flex gap-2">
+                        <button onclick="unstakeSingle()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Unstake</button>
+                        <button onclick="harvestSingle()" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Harvest</button>
+                    </div>
+                </div>
+                <div>
+                    <label for="batchUnstakeIds" class="block text-muted text-xs mb-1">Batch Token IDs (comma separated)</label>
+                    <input id="batchUnstakeIds" placeholder="e.g. 5,6,7" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+                    <div class="flex gap-2">
+                        <button onclick="batchUnstake()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Batch Unstake</button>
+                        <button onclick="batchHarvest()" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Batch Harvest</button>
+                    </div>
+                </div>
+            </div>
+            <div id="unstakeLog" class="text-sm text-muted mt-4 text-center"></div>
+        </div>
 
-  </main>  <script>
-    // Production-style single-file DApp (ethers.js required)
-    // Hardcoded placeholders — replace CONTRACT_ADDRESS with your deployed contract address and CONTRACT_ABI with verified ABI.
+        <!-- Governance Section -->
+        <div class="card bg-card p-6 rounded-2xl mb-6 shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-bold text-accent mb-4">Governance</h2>
+            <label for="proposalType" class="block text-muted text-xs mb-1">Proposal Type</label>
+            <select id="proposalType" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition">
+                <option value="0">BASE_REWARD</option>
+                <option value="1">HARVEST_FEE</option>
+                <option value="2">UNSTAKE_FEE</option>
+                <option value="3">REGISTRATION_FEE_FALLBACK</option>
+                <option value="4">VOTING_PARAM</option>
+                <option value="5">TIER_UPGRADE</option>
+            </select>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="paramTarget" class="block text-muted text-xs mb-1">Param Target (for VOTING_PARAM)</label>
+                    <input id="paramTarget" type="number" placeholder="e.g. 0" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+                </div>
+                <div>
+                    <label for="newValue" class="block text-muted text-xs mb-1">New Value</label>
+                    <input id="newValue" type="number" placeholder="e.g. 100" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+                </div>
+            </div>
+            <label for="proposalCollection" class="block text-muted text-xs mb-1">Collection Context (optional)</label>
+            <input id="proposalCollection" placeholder="0x..." class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+            <div class="flex flex-col sm:flex-row gap-3 mt-2">
+                <button onclick="createProposal()" class="flex-1 bg-accent hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Create Proposal</button>
+                <button onclick="voteProposal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Vote</button>
+                <button onclick="executeProposal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Execute</button>
+            </div>
+            <label for="proposalId" class="block text-muted text-xs mt-4 mb-1">Proposal ID (bytes32)</label>
+            <input id="proposalId" placeholder="0x..." class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+            <div id="govLog" class="text-sm text-muted mt-4 text-center"></div>
+        </div>
 
-    const CONTRACT_ADDRESS = '0xYourContractHere'; // <-- REPLACE before deploy
+        <!-- Treasury & Leaderboards Section -->
+        <div class="card bg-card p-6 rounded-2xl mb-6 shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-bold text-accent mb-4">Treasury & Leaderboards</h2>
+            <div class="flex flex-wrap gap-3">
+                <button onclick="getTreasuryAddress()" class="flex-1 min-w-[150px] bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Show Treasury Address</button>
+                <button onclick="distributeBonus()" class="flex-1 min-w-[150px] bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Distribute Top 1% Bonus</button>
+                <button onclick="getTopBurners()" class="flex-1 min-w-[150px] bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Top Burners</button>
+                <button onclick="getTopCollections()" class="flex-1 min-w-[150px] bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Top Collections</button>
+            </div>
+            <div id="treasuryLog" class="text-sm text-muted mt-4 text-center"></div>
+        </div>
 
-    // Minimal ABI fragments used by UI. For production, replace with the full verified ABI JSON.
-    const CONTRACT_ABI = [
-      // registration
-      'function registerCollection(address,uint256,uint8) payable',
-      'function setCollectionConfig(address,uint256,uint8) external', // admin fallback
-      'function _calculateRegistrationBaseFee(uint256) view returns (uint256)',
-      // staking
-      'function termStake(address,uint256) external',
-      'function permanentStake(address,uint256) external',
-      'function batchStake(address,uint256[]) external', // if implemented
-      'function unstake(address,uint256) external',
-      'function harvestBatch(address,uint256[]) external',
-      // governance
-      'function propose(uint8,uint8,uint256,address) returns (bytes32)',
-      'function vote(bytes32) external',
-      'function executeProposal(bytes32) external',
-      // treasury & leaderboard
-      'function distributeTopBurnersBonus() external',
-      'function getTopBurners() view returns (address[])',
-      'function getTopCollections() view returns (address[])',
-      'function treasuryAddress() view returns (address)',
-      // burn
-      'function burn(uint256) external'
-    ];
+        <!-- Burn Section -->
+        <div class="card bg-card p-6 rounded-2xl mb-6 shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-bold text-accent mb-4">Burn CATA (voluntary)</h2>
+            <label for="burnAmount" class="block text-muted text-xs mb-1">Amount (CATA)</label>
+            <input id="burnAmount" type="number" placeholder="e.g. 100" class="w-full bg-slate-900 border border-gray-600 rounded-lg p-2 text-sm text-gray-300 mb-4 focus:ring-2 focus:ring-accent focus:border-accent transition" />
+            <button onclick="burn()" class="w-full bg-good hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">Burn CATA</button>
+            <div id="burnLog" class="text-sm text-muted mt-4 text-center"></div>
+        </div>
 
-    let provider, signer, contract;
+        <!-- Logs Section -->
+        <div class="card bg-card p-6 rounded-2xl mb-6 shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-bold text-accent mb-4">Logs</h2>
+            <pre id="logs" class="bg-slate-900 text-gray-300 p-4 rounded-lg text-sm overflow-auto h-64 border border-gray-600"></pre>
+        </div>
+    </main>
 
-    function log(...args){ const el=document.getElementById('logs'); el.textContent += args.map(a=>typeof a==='object'?JSON.stringify(a,null,2):String(a)).join(' ') + '
-'; el.scrollTop = el.scrollHeight; }
-    function clearLogs(){ document.getElementById('logs').textContent = ''; }
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+    <script>
+        // Production-style single-file DApp
+        // Hardcoded placeholders — replace with your deployed contract address and verified ABI.
+        const CONTRACT_ADDRESS = '0xYourContractHere'; // <-- REPLACE before deploy
 
-    async function connect(){
-      if(window.ethereum){
-        provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-        await provider.send('eth_requestAccounts',[]);
-        signer = provider.getSigner();
-        const addr = await signer.getAddress();
-        document.getElementById('walletInfo').textContent = `Connected: ${addr}`;
-        log('Wallet connected', addr);
-      } else {
-        alert('No injected wallet found. Use MetaMask or a compatible wallet.');
-      }
-    }
+        // Minimal ABI fragments for UI interaction
+        const CONTRACT_ABI = [
+            'function registerCollection(address,uint256,uint8) payable',
+            'function setCollectionConfig(address,uint256,uint8) external',
+            'function _calculateRegistrationBaseFee(uint256) view returns (uint256)',
+            'function termStake(address,uint256) external',
+            'function permanentStake(address,uint256) external',
+            'function unstake(address,uint256) external',
+            'function harvestBatch(address,uint256[]) external',
+            'function propose(uint8,uint8,uint256,address) returns (bytes32)',
+            'function vote(bytes32) external',
+            'function executeProposal(bytes32) external',
+            'function distributeTopBurnersBonus() external',
+            'function getTopBurners() view returns (address[])',
+            'function getTopCollections() view returns (address[])',
+            'function treasuryAddress() view returns (address)',
+            'function burn(uint256) external'
+        ];
 
-    function loadContract(){
-      try{
-        if(!signer && !provider) log('No provider yet — please connect wallet');
-        const p = signer || provider;
-        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, p);
+        let provider, signer, contract;
+
+        // Custom message box functions
+        function showMessageBox(title, message, isConfirm = false) {
+            return new Promise(resolve => {
+                const overlay = document.getElementById('message-box-overlay');
+                const titleEl = document.getElementById('message-box-title');
+                const textEl = document.getElementById('message-box-text');
+                const okBtn = document.getElementById('msg-btn-ok');
+                const cancelBtn = document.getElementById('msg-btn-cancel');
+
+                titleEl.textContent = title;
+                textEl.textContent = message;
+                overlay.classList.remove('hidden');
+
+                if (isConfirm) {
+                    cancelBtn.classList.remove('hidden');
+                } else {
+                    cancelBtn.classList.add('hidden');
+                }
+
+                const handleOk = () => {
+                    overlay.classList.add('hidden');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(true);
+                };
+
+                const handleCancel = () => {
+                    overlay.classList.add('hidden');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(false);
+                };
+
+                okBtn.addEventListener('click', handleOk);
+                cancelBtn.addEventListener('click', handleCancel);
+            });
+        }
+
+        // --- Logging and UI Feedback ---
+        function log(...args) {
+            const el = document.getElementById('logs');
+            const formattedMessage = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+            el.textContent += `> ${formattedMessage}\n`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function setStatus(elementId, message, isError = false) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.classList.toggle('text-red-500', isError);
+            el.classList.toggle('text-green-500', !isError && message);
+            el.classList.toggle('text-muted', !message);
+        }
+
+        // --- Core Wallet & Contract Functions ---
+        async function connect() {
+            try {
+                if (!window.ethereum) {
+                    return showMessageBox('Wallet Not Found', 'Please install MetaMask or a compatible browser wallet to continue.');
+                }
+                setStatus('walletInfo', 'Connecting...');
+                provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+                await provider.send('eth_requestAccounts', []);
+                signer = provider.getSigner();
+                const address = await signer.getAddress();
+                setStatus('walletInfo', `Connected: ${address}`);
+                log('Wallet connected', address);
+            } catch (e) {
+                setStatus('walletInfo', 'Connection Failed', true);
+                log('Error connecting wallet:', e);
+                showMessageBox('Connection Failed', `An error occurred while connecting your wallet. Details: ${e.message}`);
+            }
+        }
+
+        function loadContract() {
+            try {
+                if (!signer && !provider) {
+                    return showMessageBox('Action Required', 'Please connect your wallet first.');
+                }
+                const p = signer || provider;
+                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, p);
+                document.getElementById('contractAddress').value = CONTRACT_ADDRESS;
+                log('Contract loaded', CONTRACT_ADDRESS);
+            } catch (e) {
+                log('loadContract error:', e);
+                showMessageBox('Contract Error', `Failed to load contract. Check the address and network. Details: ${e.message}`);
+            }
+        }
+
+        // --- Registration UI (public) ---
+        async function estimateRegistrationFee() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const supply = Number(document.getElementById('declaredSupply').value || 0);
+                if (!supply) return showMessageBox('Input Required', 'Please enter the declared supply.');
+
+                setStatus('regResult', 'Estimating...');
+                const fee = await contract._calculateRegistrationBaseFee(supply);
+                setStatus('regResult', `Base fee (CATA units): ${ethers.utils.formatEther(fee)}`);
+                log('Estimated base fee', fee.toString());
+            } catch (e) {
+                setStatus('regResult', 'Error estimating fee.', true);
+                log('estimateRegistrationFee error:', e);
+                showMessageBox('Estimation Failed', `Could not estimate fee. Details: ${e.message}`);
+            }
+        }
+
+        async function registerCollection() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const collectionAddress = document.getElementById('regCollection').value.trim();
+                const supply = Number(document.getElementById('declaredSupply').value || 0);
+                const tier = Number(document.getElementById('regTier').value || 0);
+                if (!collectionAddress || !supply) return showMessageBox('Input Required', 'Please fill in all required fields.');
+
+                let tx;
+                if (contract.registerCollection) {
+                    const fee = await contract._calculateRegistrationBaseFee(supply);
+                    const canProceed = await showMessageBox('Confirm Transaction', `You are about to register this collection for a fee of ${ethers.utils.formatEther(fee)} CATA. Proceed?`, true);
+                    if (!canProceed) return;
+                    tx = await contract.registerCollection(collectionAddress, supply, tier, { value: fee }); // Assuming payable
+                } else if (contract.setCollectionConfig) {
+                    const canProceed = await showMessageBox('Warning', '`registerCollection` not found. Attempting `setCollectionConfig` (likely admin-only). Proceed?', true);
+                    if (!canProceed) return;
+                    tx = await contract.setCollectionConfig(collectionAddress, supply, tier);
+                } else {
+                    return showMessageBox('Function Not Found', 'Contract lacks `registerCollection` and `setCollectionConfig` signatures.');
+                }
+
+                setStatus('regResult', 'Transaction sent...');
+                log('Registering collection...', tx.hash);
+                await tx.wait();
+                setStatus('regResult', 'Collection successfully registered!');
+                log('Collection registered', collectionAddress);
+            } catch (e) {
+                setStatus('regResult', 'Registration failed.', true);
+                log('registerCollection error:', e);
+                showMessageBox('Registration Failed', `An error occurred during registration. Details: ${e.message}`);
+            }
+        }
+
+        // --- Staking & Unstaking Logic ---
+        function parseIds(input) {
+            return input.split(',').map(s => s.trim()).filter(Boolean).map(x => Number(x));
+        }
+
+        async function termStakeSingle() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const coll = document.getElementById('stakeCollection').value.trim();
+                const id = Number(document.getElementById('stakeTokenId').value || 0);
+                if (!coll || !id) return showMessageBox('Input Required', 'Please provide a collection and token ID.');
+                const tx = await contract.termStake(coll, id);
+                setStatus('stakeLog', 'Transaction sent...');
+                log('Term staking transaction...', tx.hash);
+                await tx.wait();
+                setStatus('stakeLog', `Token ${id} successfully term staked.`);
+                log('Token term staked:', id);
+            } catch (e) {
+                setStatus('stakeLog', 'Staking failed.', true);
+                log('termStakeSingle error:', e);
+                showMessageBox('Staking Failed', `An error occurred during staking. Details: ${e.message}`);
+            }
+        }
+
+        async function permanentStakeSingle() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const coll = document.getElementById('stakeCollection').value.trim();
+                const id = Number(document.getElementById('stakeTokenId').value || 0);
+                if (!coll || !id) return showMessageBox('Input Required', 'Please provide a collection and token ID.');
+                const tx = await contract.permanentStake(coll, id);
+                setStatus('stakeLog', 'Transaction sent...');
+                log('Permanent staking transaction...', tx.hash);
+                await tx.wait();
+                setStatus('stakeLog', `Token ${id} successfully permanent staked.`);
+                log('Token permanent staked:', id);
+            } catch (e) {
+                setStatus('stakeLog', 'Staking failed.', true);
+                log('permanentStakeSingle error:', e);
+                showMessageBox('Staking Failed', `An error occurred during staking. Details: ${e.message}`);
+            }
+        }
+
+        async function batchTermStake() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const coll = document.getElementById('stakeCollection').value.trim();
+                const ids = parseIds(document.getElementById('batchStakeIds').value || '');
+                if (!coll || ids.length === 0) return showMessageBox('Input Required', 'Please provide a collection and a comma-separated list of IDs.');
+                setStatus('stakeLog', 'Batch staking...');
+
+                for (const id of ids) {
+                    try {
+                        const tx = await contract.termStake(coll, id);
+                        log('Transaction for token', id, 'sent:', tx.hash);
+                        await tx.wait();
+                        log('Token', id, 'staked successfully.');
+                    } catch (innerError) {
+                        log('Failed to stake token', id, ':', innerError);
+                    }
+                }
+                setStatus('stakeLog', 'Batch staking completed.');
+                showMessageBox('Batch Stake Complete', 'The batch staking process has finished. Check the logs for individual results.');
+            } catch (e) {
+                setStatus('stakeLog', 'Batch staking failed.', true);
+                log('batchTermStake error:', e);
+                showMessageBox('Batch Staking Failed', `An unexpected error occurred. Details: ${e.message}`);
+            }
+        }
+
+        async function batchPermanentStake() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const coll = document.getElementById('stakeCollection').value.trim();
+                const ids = parseIds(document.getElementById('batchStakeIds').value || '');
+                if (!coll || ids.length === 0) return showMessageBox('Input Required', 'Please provide a collection and a comma-separated list of IDs.');
+                setStatus('stakeLog', 'Batch permanent staking...');
+
+                for (const id of ids) {
+                    try {
+                        const tx = await contract.permanentStake(coll, id);
+                        log('Transaction for token', id, 'sent:', tx.hash);
+                        await tx.wait();
+                        log('Token', id, 'permanent staked successfully.');
+                    } catch (innerError) {
+                        log('Failed to permanent stake token', id, ':', innerError);
+                    }
+                }
+                setStatus('stakeLog', 'Batch permanent staking completed.');
+                showMessageBox('Batch Permanent Stake Complete', 'The batch permanent staking process has finished. Check the logs for individual results.');
+            } catch (e) {
+                setStatus('stakeLog', 'Batch staking failed.', true);
+                log('batchPermanentStake error:', e);
+                showMessageBox('Batch Staking Failed', `An unexpected error occurred. Details: ${e.message}`);
+            }
+        }
+
+        async function unstakeSingle() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const coll = document.getElementById('unstakeCollection').value.trim();
+                const id = Number(document.getElementById('unstakeTokenId').value || 0);
+                if (!coll || !id) return showMessageBox('Input Required', 'Please provide a collection and token ID.');
+                const tx = await contract.unstake(coll, id);
+                setStatus('unstakeLog', 'Transaction sent...');
+                log('Unstaking transaction...', tx.hash);
+                await tx.wait();
+                setStatus('unstakeLog', `Token ${id} successfully unstaked.`);
+                log('Token unstaked:', id);
+            } catch (e) {
+                setStatus('unstakeLog', 'Unstaking failed.', true);
+                log('unstakeSingle error:', e);
+                showMessageBox('Unstaking Failed', `An error occurred during unstaking. Details: ${e.message}`);
+            }
+        }
+
+        async function harvestSingle() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const coll = document.getElementById('unstakeCollection').value.trim();
+                const id = Number(document.getElementById('unstakeTokenId').value || 0);
+                if (!coll || !id) return showMessageBox('Input Required', 'Please provide a collection and token ID.');
+                const tx = await contract.harvestBatch(coll, [id]);
+                setStatus('unstakeLog', 'Transaction sent...');
+                log('Harvesting transaction...', tx.hash);
+                await tx.wait();
+                setStatus('unstakeLog', `Rewards for token ${id} successfully harvested.`);
+                log('Rewards harvested for token:', id);
+            } catch (e) {
+                setStatus('unstakeLog', 'Harvest failed.', true);
+                log('harvestSingle error:', e);
+                showMessageBox('Harvest Failed', `An error occurred during harvesting. Details: ${e.message}`);
+            }
+        }
+
+        async function batchUnstake() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const coll = document.getElementById('unstakeCollection').value.trim();
+                const ids = parseIds(document.getElementById('batchUnstakeIds').value || '');
+                if (!coll || ids.length === 0) return showMessageBox('Input Required', 'Please provide a collection and a comma-separated list of IDs.');
+                setStatus('unstakeLog', 'Batch unstaking...');
+
+                for (const id of ids) {
+                    try {
+                        const tx = await contract.unstake(coll, id);
+                        log('Transaction for token', id, 'sent:', tx.hash);
+                        await tx.wait();
+                        log('Token', id, 'unstaked successfully.');
+                    } catch (innerError) {
+                        log('Failed to unstake token', id, ':', innerError);
+                    }
+                }
+                setStatus('unstakeLog', 'Batch unstaking completed.');
+                showMessageBox('Batch Unstake Complete', 'The batch unstaking process has finished. Check the logs for individual results.');
+            } catch (e) {
+                setStatus('unstakeLog', 'Batch unstaking failed.', true);
+                log('batchUnstake error:', e);
+                showMessageBox('Batch Unstaking Failed', `An unexpected error occurred. Details: ${e.message}`);
+            }
+        }
+
+        async function batchHarvest() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const coll = document.getElementById('unstakeCollection').value.trim();
+                const ids = parseIds(document.getElementById('batchUnstakeIds').value || '');
+                if (!coll || ids.length === 0) return showMessageBox('Input Required', 'Please provide a collection and a comma-separated list of IDs.');
+                setStatus('unstakeLog', 'Transaction sent...');
+                const tx = await contract.harvestBatch(coll, ids);
+                log('Harvesting batch transaction...', tx.hash);
+                await tx.wait();
+                setStatus('unstakeLog', 'Batch harvest completed.');
+                log('Batch harvest completed.');
+            } catch (e) {
+                setStatus('unstakeLog', 'Batch harvest failed.', true);
+                log('batchHarvest error:', e);
+                showMessageBox('Batch Harvest Failed', `An error occurred during batch harvesting. Details: ${e.message}`);
+            }
+        }
+
+        // --- Governance Functions ---
+        async function createProposal() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const pType = Number(document.getElementById('proposalType').value);
+                const paramTarget = Number(document.getElementById('paramTarget').value || 0);
+                const newValue = Number(document.getElementById('newValue').value || 0);
+                const ctx = document.getElementById('proposalCollection').value || '0x0000000000000000000000000000000000000000';
+                const tx = await contract.propose(pType, paramTarget, newValue, ctx);
+                setStatus('govLog', 'Transaction sent...');
+                log('Proposal creation transaction...', tx.hash);
+                await tx.wait();
+                setStatus('govLog', 'Proposal created successfully.');
+                log('Proposal created.');
+            } catch (e) {
+                setStatus('govLog', 'Proposal creation failed.', true);
+                log('createProposal error:', e);
+                showMessageBox('Proposal Failed', `An error occurred while creating the proposal. Details: ${e.message}`);
+            }
+        }
+
+        async function voteProposal() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const id = document.getElementById('proposalId').value.trim();
+                if (!id) return showMessageBox('Input Required', 'Please enter a Proposal ID.');
+                const tx = await contract.vote(id);
+                setStatus('govLog', 'Transaction sent...');
+                log('Voting transaction...', tx.hash);
+                await tx.wait();
+                setStatus('govLog', 'Voted successfully.');
+                log('Vote cast.');
+            } catch (e) {
+                setStatus('govLog', 'Voting failed.', true);
+                log('voteProposal error:', e);
+                showMessageBox('Voting Failed', `An error occurred while voting. Details: ${e.message}`);
+            }
+        }
+
+        async function executeProposal() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const id = document.getElementById('proposalId').value.trim();
+                if (!id) return showMessageBox('Input Required', 'Please enter a Proposal ID.');
+                const tx = await contract.executeProposal(id);
+                setStatus('govLog', 'Transaction sent...');
+                log('Executing proposal transaction...', tx.hash);
+                await tx.wait();
+                setStatus('govLog', 'Proposal executed.');
+                log('Proposal executed.');
+            } catch (e) {
+                setStatus('govLog', 'Execution failed.', true);
+                log('executeProposal error:', e);
+                showMessageBox('Execution Failed', `An error occurred while executing the proposal. Details: ${e.message}`);
+            }
+        }
+
+        // --- Treasury & Leaderboards Functions ---
+        async function getTreasuryAddress() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const address = await contract.treasuryAddress();
+                setStatus('treasuryLog', `Treasury Address: ${address}`);
+                log('Treasury Address:', address);
+            } catch (e) {
+                setStatus('treasuryLog', 'Could not retrieve treasury address.', true);
+                log('getTreasuryAddress error:', e);
+                showMessageBox('Failed to Retrieve', `An error occurred. Details: ${e.message}`);
+            }
+        }
+
+        async function distributeBonus() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const tx = await contract.distributeTopBurnersBonus();
+                setStatus('treasuryLog', 'Transaction sent...');
+                log('Distribution transaction...', tx.hash);
+                await tx.wait();
+                setStatus('treasuryLog', 'Bonus distributed successfully.');
+                log('Bonus distributed.');
+            } catch (e) {
+                setStatus('treasuryLog', 'Distribution failed.', true);
+                log('distributeBonus error:', e);
+                showMessageBox('Distribution Failed', `An error occurred during bonus distribution. Details: ${e.message}`);
+            }
+        }
+
+        async function getTopBurners() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const burners = await contract.getTopBurners();
+                setStatus('treasuryLog', `Top Burners retrieved. Check logs.`);
+                log('Top Burners:', burners);
+            } catch (e) {
+                setStatus('treasuryLog', 'Could not retrieve top burners.', true);
+                log('getTopBurners error:', e);
+                showMessageBox('Failed to Retrieve', `An error occurred. Details: ${e.message}`);
+            }
+        }
+
+        async function getTopCollections() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const collections = await contract.getTopCollections();
+                setStatus('treasuryLog', `Top Collections retrieved. Check logs.`);
+                log('Top Collections:', collections);
+            } catch (e) {
+                setStatus('treasuryLog', 'Could not retrieve top collections.', true);
+                log('getTopCollections error:', e);
+                showMessageBox('Failed to Retrieve', `An error occurred. Details: ${e.message}`);
+            }
+        }
+
+        // --- Burn Function ---
+        async function burn() {
+            try {
+                if (!contract) return showMessageBox('Contract Not Loaded', 'Please load the contract first.');
+                const amount = Number(document.getElementById('burnAmount').value || 0);
+                if (!amount) return showMessageBox('Input Required', 'Please enter an amount to burn.');
+                const b = ethers.utils.parseUnits(String(amount), 18);
+                const tx = await contract.burn(b);
+                setStatus('burnLog', 'Transaction sent...');
+                log('Burn transaction...', tx.hash);
+                await tx.wait();
+                setStatus('burnLog', `${amount} CATA successfully burned.`);
+                log('CATA burned:', amount);
+            } catch (e) {
+                setStatus('burnLog', 'Burn failed.', true);
+                log('burn error:', e);
+                showMessageBox('Burn Failed', `An error occurred during the burn transaction. Details: ${e.message}`);
+            }
+        }
+
+        // Initialize UI with contract address placeholder
         document.getElementById('contractAddress').value = CONTRACT_ADDRESS;
-        log('Contract loaded', CONTRACT_ADDRESS);
-      }catch(e){ log('loadContract err', String(e)); }
-    }
-
-    // ---------- Registration UI (public) ----------
-    async function estimateRegistrationFee(){
-      try{
-        const supply = Number(document.getElementById('declaredSupply').value || 0);
-        if(!supply) return alert('Enter declared supply');
-        if(!contract) return alert('Load contract first');
-        if(contract._calculateRegistrationBaseFee){
-          const fee = await contract._calculateRegistrationBaseFee(supply);
-          document.getElementById('regResult').textContent = `Base fee (CATA units): ${fee.toString()}`;
-          log('Estimated base fee', fee.toString());
-        } else {
-          document.getElementById('regResult').textContent = 'Contract does not expose fee estimator.';
-        }
-      }catch(e){ log('estimate err', String(e)); }
-    }
-
-    async function registerCollection(){
-      try{
-        if(!contract) return alert('Load contract first');
-        const coll = document.getElementById('regCollection').value.trim();
-        const supply = Number(document.getElementById('declaredSupply').value || 0);
-        const tier = Number(document.getElementById('regTier').value || 0);
-        if(!coll || !supply) return alert('Missing fields');
-
-        // Prefer public registerCollection if available (user-facing). If not, fall back to setCollectionConfig (admin) with warning.
-        if(contract.registerCollection){
-          // If function is payable and expects CATA (ERC20) instead of native ETH, user must approve CATA first off-chain or via token UI.
-          // The code uses ERC-20 balance transfers, not payable native, so this likely requires CATA transfers — implement approve + transfer if needed.
-          const tx = await contract.registerCollection(coll, supply, tier);
-          log('register tx', tx.hash); await tx.wait(); log('registered', coll);
-        } else if(contract.setCollectionConfig){
-          // Not ideal: setCollectionConfig is admin-only in many forks — this will revert for non-admins.
-          if(!confirm('registerCollection not found; attempting setCollectionConfig (likely admin-only). Proceed?')) return;
-          const tx = await contract.setCollectionConfig(coll, supply, tier);
-          log('setCollectionConfig tx', tx.hash); await tx.wait(); log('registered (admin)', coll);
-        } else {
-          alert('Contract lacks registerCollection and setCollectionConfig signatures in ABI');
-        }
-      }catch(e){ log('register err', String(e)); alert('Registration failed — check wallet and token approvals'); }
-    }
-
-    // ---------- Staking ----------
-    function parseIds(input){ return input.split(',').map(s=>s.trim()).filter(Boolean).map(x=>Number(x)); }
-
-    async function termStakeSingle(){ try{ if(!contract) return alert('Load contract'); const coll=document.getElementById('stakeCollection').value.trim(); const id=Number(document.getElementById('stakeTokenId').value||0); if(!coll||!id) return alert('Missing'); const tx=await contract.termStake(coll,id); log('termStake tx',tx.hash); await tx.wait(); log('staked',id);}catch(e){ log('termStake err',String(e)); }}
-    async function permanentStakeSingle(){ try{ if(!contract) return alert('Load contract'); const coll=document.getElementById('stakeCollection').value.trim(); const id=Number(document.getElementById('stakeTokenId').value||0); if(!coll||!id) return alert('Missing'); const tx=await contract.permanentStake(coll,id); log('permanentStake tx',tx.hash); await tx.wait(); log('permanent staked',id);}catch(e){ log('perm stake err',String(e)); }}
-
-    async function batchTermStake(){
-      try{
-        if(!contract) return alert('Load contract');
-        const coll = document.getElementById('stakeCollection').value.trim();
-        const ids = parseIds(document.getElementById('batchStakeIds').value || '');
-        if(!coll || ids.length===0) return alert('Missing');
-        document.getElementById('stakeLog').textContent = 'Batch staking...';
-        // Sequential to reduce risk of revert/nonce issues; optimize later with multicall
-        for(const id of ids){
-          try{ const tx = await contract.termStake(coll, id); log('tx',tx.hash); await tx.wait(); log('staked',id); }catch(inner){ log('fail',id,String(inner)); }
-        }
-        document.getElementById('stakeLog').textContent = 'Done';
-      }catch(e){ log('batchTermStake err',String(e)); }
-    }
-
-    async function batchPermanentStake(){
-      try{
-        if(!contract) return alert('Load contract');
-        const coll = document.getElementById('stakeCollection').value.trim();
-        const ids = parseIds(document.getElementById('batchStakeIds').value || '');
-        if(!coll || ids.length===0) return alert('Missing');
-        document.getElementById('stakeLog').textContent = 'Batch permanent staking...';
-        for(const id of ids){
-          try{ const tx = await contract.permanentStake(coll, id); log('tx',tx.hash); await tx.wait(); log('permanent staked',id); }catch(inner){ log('fail perm',id,String(inner)); }
-        }
-        document.getElementById('stakeLog').textContent = 'Done';
-      }catch(e){ log('batchPermanentStake err',String(e)); }
-    }
-
-    // ---------- Unstake / Harvest ----------
-    async function unstakeSingle(){ try{ if(!contract) return alert('Load contract'); const coll=document.getElementById('unstakeCollection').value.trim(); const id=Number(document.getElementById('unstakeTokenId').value||0); if(!coll||!id) return alert('Missing'); const tx=await contract.unstake(coll,id); log('unstake tx',tx.hash); await tx.wait(); log('unstaked',id);}catch(e){ log('unstake err',String(e)); }}
-    async function harvestSingle(){ try{ if(!contract) return alert('Load contract'); const coll=document.getElementById('unstakeCollection').value.trim(); const id=Number(document.getElementById('unstakeTokenId').value||0); if(!coll||!id) return alert('Missing'); const tx=await contract.harvestBatch(coll,[id]); log('harvest tx',tx.hash); await tx.wait(); log('harvested',id);}catch(e){ log('harvest err',String(e)); }}
-
-    async function batchUnstake(){ try{ if(!contract) return alert('Load contract'); const coll=document.getElementById('unstakeCollection').value.trim(); const ids=parseIds(document.getElementById('batchUnstakeIds').value||''); if(!coll||ids.length===0) return alert('Missing'); document.getElementById('unstakeLog').textContent='Batch unstaking...'; for(const id of ids){ try{ const tx=await contract.unstake(coll,id); log('tx',tx.hash); await tx.wait(); log('unstaked',id);}catch(inner){ log('fail unstake',id,String(inner)); } } document.getElementById('unstakeLog').textContent='Done'; }catch(e){ log('batchUnstake err',String(e)); }}
-    async function batchHarvest(){ try{ if(!contract) return alert('Load contract'); const coll=document.getElementById('unstakeCollection').value.trim(); const ids=parseIds(document.getElementById('batchUnstakeIds').value||''); if(!coll||ids.length===0) return alert('Missing'); const tx=await contract.harvestBatch(coll,ids); log('harvest tx',tx.hash); await tx.wait(); log('harvested batch'); }catch(e){ log('batchHarvest err',String(e)); }}
-
-    // ---------- Governance ----------
-    async function createProposal(){ try{ if(!contract) return alert('Load contract'); const pType=Number(document.getElementById('proposalType').value); const paramTarget=Number(document.getElementById('paramTarget').value||0); const newValue=Number(document.getElementById('newValue').value||0); const ctx=document.getElementById('proposalCollection').value||'0x0000000000000000000000000000000000000000'; const tx=await contract.propose(pType,paramTarget,newValue,ctx); log('propose tx',tx.hash); await tx.wait(); log('proposal created'); }catch(e){ log('createProposal err',String(e)); }}
-    async function voteProposal(){ try{ if(!contract) return alert('Load contract'); const id=document.getElementById('proposalId').value.trim(); if(!id) return alert('Enter id'); const tx=await contract.vote(id); log('vote tx',tx.hash); await tx.wait(); log('voted'); }catch(e){ log('vote err',String(e)); }}
-    async function executeProposal(){ try{ if(!contract) return alert('Load contract'); const id=document.getElementById('proposalId').value.trim(); if(!id) return alert('Enter id'); const tx=await contract.executeProposal(id); log('exec tx',tx.hash); await tx.wait(); log('executed'); }catch(e){ log('exec err',String(e)); }}
-
-    // ---------- Treasury & leaderboards ----------
-    async function getTreasuryAddress(){ try{ if(!contract) return alert('Load contract'); const t = await contract.treasuryAddress(); document.getElementById('treasuryLog').textContent = `Treasury: ${t}`; log('treasury',t);}catch(e){ log('treasury err',String(e)); }}
-    async function distributeBonus(){ try{ if(!contract) return alert('Load contract'); const tx=await contract.distributeTopBurnersBonus(); log('distribute tx',tx.hash); await tx.wait(); log('distributed'); }catch(e){ log('distribute err',String(e)); }}
-    async function getTopBurners(){ try{ if(!contract) return alert('Load contract'); const arr = await contract.getTopBurners(); log('top burners',arr); }catch(e){ log('top burners err',String(e)); }}
-    async function getTopCollections(){ try{ if(!contract) return alert('Load contract'); const arr = await contract.getTopCollections(); log('top collections',arr); }catch(e){ log('top collections err',String(e)); }}
-
-    // ---------- Burn ----------
-    async function burn(){ try{ if(!contract) return alert('Load contract'); const amt=Number(document.getElementById('burnAmount').value||0); if(!amt) return alert('Enter amount'); const b = ethers.utils.parseUnits(String(amt),18); const tx=await contract.burn(b); log('burn tx',tx.hash); await tx.wait(); log('burned',amt); }catch(e){ log('burn err',String(e)); }}
-
-    // init UI values
-    document.getElementById('contractAddress').value = CONTRACT_ADDRESS;
-
-    // Note: This single-file DApp intentionally uses an injected provider (MetaMask). For production, consider adding WalletConnect, better error handling, gas estimations, token approvals (CATA ERC-20), and UI polish (modals / confirmations / toasts).
-  </script>  <!-- Dependencies: ethers.js CDN (production) -->  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js" integrity="" crossorigin="anonymous"></script></body>
+    </script>
+</body>
 </html>
