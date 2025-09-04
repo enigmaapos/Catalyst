@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Catalyst Protocol Transparency Dashboard</title>
+  <title>Catalyst dApp</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background:#111; color:#eee; margin:0; padding:20px; }
@@ -10,18 +10,19 @@
     .panel { background:#1c1c1c; padding:20px; margin-bottom:20px; border-radius:10px; }
     button { background:#f0b90b; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; font-weight:bold; }
     button:hover { opacity:0.85; }
+    input,select { padding:6px; margin:5px; border-radius:5px; border:1px solid #333; }
     table { width:100%; border-collapse:collapse; margin-top:10px; }
     th,td { border:1px solid #333; padding:8px; text-align:left; }
     .highlight { font-weight:bold; color:#0ff; }
   </style>
 </head>
 <body>
-  <h1>🔥 Catalyst Transparency Dashboard</h1>
-  <p>Immutable 90/9/1 Fee Model • Real-Time Protocol Health</p>
+  <h1>🔥 Catalyst Protocol</h1>
+  <p>Universal NFT Staking & Governance • Immutable 90/9/1 Fee Rule</p>
 
   <!-- Wallet -->
   <div class="panel">
-    <h2>My Wallet</h2>
+    <h2>Wallet</h2>
     <button onclick="connectWallet()">Connect Wallet</button>
     <p id="walletAddr">Not connected</p>
     <p>My Burned CATA: <span class="highlight" id="myBurned">0</span></p>
@@ -31,30 +32,46 @@
   <!-- Protocol Transparency -->
   <div class="panel">
     <h2>Protocol Transparency</h2>
-    <p>Immutable Fee Distribution: <br>
-      🔥 Burn <span class="highlight">90%</span> • 🏦 Treasury <span class="highlight">9%</span> • 👤 Owner <span class="highlight">1%</span>
-    </p>
+    <p>Fee Distribution: 🔥 Burn 90% • 🏦 Treasury 9% • (Immutable)</p>
     <p>Total Burned CATA: <span class="highlight" id="totalBurned">0</span></p>
     <p>Total Staked NFTs: <span class="highlight" id="totalStaked">0</span></p>
     <p>Treasury Balance: <span class="highlight" id="treasuryBal">0</span></p>
     <p>Treasury Bonus Cap: <span class="highlight" id="treasuryCap">0</span>%</p>
-    <p>Deployer (Owner) Address: <span class="highlight" id="ownerAddr">0x...</span></p>
   </div>
 
-  <!-- Collections -->
+  <!-- Collection Management -->
   <div class="panel">
-    <h2>Registered Collections</h2>
+    <h2>Collection Management</h2>
+    <input id="colAddr" placeholder="Collection contract address">
+    <button onclick="registerCollection()">Register Collection</button>
+    <h3>All Registered Collections</h3>
+    <input id="searchCol" placeholder="Search collection..." oninput="filterCollections()">
     <table id="collectionsTable">
-      <tr><th>Collection</th><th>Verified?</th><th>Staked</th><th>Burned</th></tr>
+      <tr><th>Collection</th><th>Verified</th><th>Staked</th><th>Burned</th></tr>
     </table>
+  </div>
+
+  <!-- NFT Staking -->
+  <div class="panel">
+    <h2>NFT Staking</h2>
+    <input id="stakeCol" placeholder="Collection address">
+    <input id="tokenId" placeholder="Token ID">
+    <button onclick="stakeTerm()">Stake Term</button>
+    <button onclick="stakePermanent()">Stake Permanent</button>
+    <button onclick="unstake()">Unstake</button>
+    <button onclick="harvestAll()">Harvest Rewards</button>
   </div>
 
   <!-- Governance -->
   <div class="panel">
-    <h2>Governance Proposals</h2>
+    <h2>Governance</h2>
+    <h3>Active Proposals</h3>
     <table id="proposalTable">
-      <tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th></tr>
+      <tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th><th>Action</th></tr>
     </table>
+    <h3>Create Proposal</h3>
+    <input id="propTitle" placeholder="Proposal title">
+    <button onclick="createProposal()">Submit Proposal</button>
   </div>
 
 <script>
@@ -70,7 +87,6 @@ async function connectWallet(){
     contract = new ethers.Contract(contractAddress, contractABI, signer);
     const addr = await signer.getAddress();
     document.getElementById("walletAddr").innerText = addr;
-    document.getElementById("ownerAddr").innerText = await contract.deployerAddress();
     refreshData();
   } else { alert("Please install MetaMask!"); }
 }
@@ -102,7 +118,7 @@ async function refreshData(){
   document.getElementById("myStaked").innerText = totalStaked;
 
   // Collections table
-  let html = "<tr><th>Collection</th><th>Verified?</th><th>Staked</th><th>Burned</th></tr>";
+  let html = "<tr><th>Collection</th><th>Verified</th><th>Staked</th><th>Burned</th></tr>";
   for(let addr of cols){
     let cfg = await contract.getCollectionConfig(addr);
     html += `<tr><td>${addr}</td><td>${cfg.verified?"✅":"❌"}</td><td>${cfg.stakedCount}</td><td>${cfg.totalBurned}</td></tr>`;
@@ -110,13 +126,70 @@ async function refreshData(){
   document.getElementById("collectionsTable").innerHTML = html;
 
   // Proposals
-  let rows = "<tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th></tr>";
+  let rows = "<tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th><th>Action</th></tr>";
   let count = await contract.proposalCount();
   for(let i=0;i<count;i++){
     let p = await contract.proposals(i);
-    rows += `<tr><td>${i}</td><td>${p.title}</td><td>${p.votesFor}</td><td>${p.votesAgainst}</td><td>${p.executed?"Executed":"Active"}</td></tr>`;
+    rows += `<tr>
+      <td>${i}</td><td>${p.title}</td>
+      <td>${p.votesFor}</td><td>${p.votesAgainst}</td>
+      <td>${p.executed?"Executed":"Active"}</td>
+      <td>
+        <button onclick="vote(${i},true)">For</button>
+        <button onclick="vote(${i},false)">Against</button>
+        <button onclick="executeProposal(${i})">Execute</button>
+      </td></tr>`;
   }
   document.getElementById("proposalTable").innerHTML = rows;
+}
+
+async function registerCollection(){
+  const addr = document.getElementById("colAddr").value;
+  await contract.registerCollection(addr);
+  refreshData();
+}
+
+async function stakeTerm(){
+  const col = document.getElementById("stakeCol").value;
+  const tokenId = document.getElementById("tokenId").value;
+  await contract.termStake(col, tokenId);
+  refreshData();
+}
+
+async function stakePermanent(){
+  const col = document.getElementById("stakeCol").value;
+  const tokenId = document.getElementById("tokenId").value;
+  await contract.permanentStake(col, tokenId);
+  refreshData();
+}
+
+async function unstake(){
+  const col = document.getElementById("stakeCol").value;
+  const tokenId = document.getElementById("tokenId").value;
+  await contract.unstake(col, tokenId);
+  refreshData();
+}
+
+async function harvestAll(){
+  const col = document.getElementById("stakeCol").value;
+  await contract.harvestAll(col);
+  refreshData();
+}
+
+async function vote(id, support){
+  await contract.vote(id, support);
+  refreshData();
+}
+
+async function executeProposal(id){
+  await contract.executeProposal(id);
+  refreshData();
+}
+
+async function createProposal(){
+  const title = document.getElementById("propTitle").value;
+  await contract.createProposal(title);
+  refreshData();
 }
 
 setInterval(refreshData, 30000);
