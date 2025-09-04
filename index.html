@@ -23,7 +23,7 @@
     <!-- Transparency -->
     <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
       <h2 class="text-xl font-semibold mb-4">Transparency</h2>
-      <div id="transparencyData" class="grid grid-cols-2 gap-4 text-sm">
+      <div class="grid grid-cols-2 gap-4 text-sm">
         <div>Total Staked NFTs: <span class="font-bold" id="totalStakedNFTs">0</span></div>
         <div>Base Reward Rate: <span class="font-bold" id="baseRewardRate">0</span></div>
         <div>Treasury Balance: <span class="font-bold" id="treasuryBalance">0</span></div>
@@ -55,7 +55,7 @@
       </div>
     </section>
 
-    <!-- Collections Section with Search -->
+    <!-- Collections Section -->
     <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
       <h2 class="text-xl font-semibold mb-4">Collections</h2>
       <div class="grid grid-cols-2 gap-8">
@@ -105,8 +105,15 @@
 
   <script>
     let provider, signer, cata, catalyst;
-    let verifiedList = [];
-    let unverifiedList = [];
+    let verifiedList = [], unverifiedList = [];
+
+    const erc721Abi = [
+      "function ownerOf(uint256 tokenId) view returns (address)",
+      "function getApproved(uint256 tokenId) view returns (address)",
+      "function isApprovedForAll(address owner, address operator) view returns (bool)",
+      "function approve(address to, uint256 tokenId)",
+      "function setApprovalForAll(address operator, bool approved)"
+    ];
 
     const chainMap = {
       1: "mainnet",
@@ -120,10 +127,7 @@
     document.getElementById("searchUnverified").addEventListener("input", renderCollections);
 
     async function init() {
-      if (!window.ethereum) {
-        alert("MetaMask not detected");
-        return;
-      }
+      if (!window.ethereum) return alert("MetaMask not detected");
       provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       signer = provider.getSigner();
@@ -146,6 +150,7 @@
 
       loadTransparency();
       loadCollections();
+      hookButtons();
     }
 
     async function loadTransparency() {
@@ -168,11 +173,8 @@
 
       for (let addr of addresses) {
         const config = await catalyst.getCollectionConfig(addr);
-        if (config.verified) {
-          verifiedList.push(addr);
-        } else {
-          unverifiedList.push(addr);
-        }
+        if (config.verified) verifiedList.push(addr);
+        else unverifiedList.push(addr);
       }
       renderCollections();
     }
@@ -186,23 +188,87 @@
       vContainer.innerHTML = "";
       uContainer.innerHTML = "";
 
-      verifiedList
-        .filter(addr => addr.toLowerCase().includes(searchV))
-        .forEach(addr => {
-          const li = document.createElement("li");
-          li.innerText = addr;
-          vContainer.appendChild(li);
-        });
+      verifiedList.filter(a => a.toLowerCase().includes(searchV))
+        .forEach(a => { const li = document.createElement("li"); li.innerText = a; vContainer.appendChild(li); });
+      unverifiedList.filter(a => a.toLowerCase().includes(searchU))
+        .forEach(a => { const li = document.createElement("li"); li.innerText = a; uContainer.appendChild(li); });
+    }
 
-      unverifiedList
-        .filter(addr => addr.toLowerCase().includes(searchU))
-        .forEach(addr => {
-          const li = document.createElement("li");
-          li.innerText = addr;
-          uContainer.appendChild(li);
-        });
+    async function validateAndStake(collection, tokenId, permanent = false) {
+      const config = await catalyst.getCollectionConfig(collection);
+      if (!config.registered) return alert("Collection not registered");
+
+      const nft = new ethers.Contract(collection, erc721Abi, signer);
+      const owner = await nft.ownerOf(tokenId);
+      if (owner.toLowerCase() !== (await signer.getAddress()).toLowerCase())
+        return alert(`You do not own token ID ${tokenId}`);
+
+      const approved = await nft.getApproved(tokenId);
+      if (approved.toLowerCase() !== catalyst.address.toLowerCase()) {
+        const txA = await nft.approve(catalyst.address, tokenId);
+        await txA.wait();
+      }
+
+      const tx = permanent
+        ? await catalyst.permanentStake(collection, tokenId)
+        : await catalyst.termStake(collection, tokenId);
+      await tx.wait();
+      alert(`Staked token ${tokenId}`);
+    }
+
+    async function validateAndBatchStake(collection, tokenIds, permanent = false) {
+      const config = await catalyst.getCollectionConfig(collection);
+      if (!config.registered) return alert("Collection not registered");
+
+      const nft = new ethers.Contract(collection, erc721Abi, signer);
+      const userAddr = (await signer.getAddress()).toLowerCase();
+
+      for (let id of tokenIds) {
+        const owner = await nft.ownerOf(id);
+        if (owner.toLowerCase() !== userAddr)
+          return alert(`You do not own token ID ${id}`);
+      }
+
+      const approvedAll = await nft.isApprovedForAll(userAddr, catalyst.address);
+      if (!approvedAll) {
+        const txA = await nft.setApprovalForAll(catalyst.address, true);
+        await txA.wait();
+      }
+
+      const tx = permanent
+        ? await catalyst.permanentStakeBatch(collection, tokenIds)
+        : await catalyst.termStakeBatch(collection, tokenIds);
+      await tx.wait();
+      alert(`Batch staked ${tokenIds.length} NFTs`);
+    }
+
+    function hookButtons() {
+      document.getElementById("stakeTerm").addEventListener("click", async () => {
+        const col = prompt("Collection Address:");
+        const id = prompt("Token ID:");
+        await validateAndStake(col, id, false);
+      });
+      document.getElementById("stakePermanent").addEventListener("click", async () => {
+        const col = prompt("Collection Address:");
+        const id = prompt("Token ID:");
+        await validateAndStake(col, id, true);
+      });
+      document.getElementById("batchStake").addEventListener("click", async () => {
+        const col = prompt("Collection Address:");
+        const ids = prompt("Token IDs (comma separated):").split(",").map(x => x.trim());
+        await validateAndBatchStake(col, ids, false);
+      });
+      document.getElementById("batchUnstake").addEventListener("click", async () => {
+        const col = prompt("Collection Address:");
+        const ids = prompt("Token IDs (comma separated):").split(",").map(x => x.trim());
+        const tx = await catalyst.unstakeBatch(col, ids);
+        await tx.wait();
+        alert(`Batch unstaked ${ids.length} NFTs`);
+      });
+      document.getElementById("harvestRewards").addEventListener("click", async () => {
+        alert("Harvest logic to be implemented based on contract function signature");
+      });
     }
   </script>
-
 </body>
 </html>
