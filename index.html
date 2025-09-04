@@ -1,22 +1,24 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catalyst NFT Staking DApp</title>
+  <title>Catalyst NFT Staking</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 </head>
-<body class="bg-gray-900 text-white">
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
   <!-- Header -->
   <header class="p-6 bg-gray-800 flex justify-between items-center shadow-lg">
     <h1 class="text-2xl font-bold">Catalyst NFT Staking</h1>
-    <button id="connectWallet" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded">Connect Wallet</button>
+    <div class="flex items-center space-x-4">
+      <span id="walletStatus" class="text-sm text-gray-300">Not connected</span>
+      <button id="connectWallet" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded">Connect Wallet</button>
+    </div>
   </header>
 
-  <main class="p-6 space-y-8">
+  <main class="p-6 space-y-8 flex-grow">
 
     <!-- Transparency -->
     <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -31,7 +33,7 @@
 
     <!-- Collection Registration -->
     <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h2 class="text-xl font-semibold mb-4">Collection Registration</h2>
+      <h2 class="text-xl font-semibold mb-4">Register Collection</h2>
       <input type="text" id="collectionAddress" placeholder="Collection Address" class="w-full p-2 text-black rounded mb-2">
       <input type="number" id="declaredSupply" placeholder="Declared Max Supply" class="w-full p-2 text-black rounded mb-2">
       <select id="collectionTier" class="w-full p-2 text-black rounded mb-2">
@@ -74,27 +76,19 @@
       <div class="space-y-4">
         <div>
           <h3 class="font-bold">Propose</h3>
-          <select id="proposalType" class="w-full p-2 text-black rounded mb-2">
-            <option value="0">Base Reward</option>
-            <option value="1">Harvest Fee</option>
-            <option value="2">Unstake Fee</option>
-            <option value="3">Registration Fee</option>
-            <option value="4">Treasury Split</option>
-            <option value="5">Voting Param</option>
-            <option value="6">Tier Upgrade</option>
-          </select>
-          <input type="number" id="newValue" placeholder="New Value" class="w-full p-2 text-black rounded mb-2">
-          <input type="text" id="collectionContext" placeholder="Collection Address (if applicable)" class="w-full p-2 text-black rounded mb-2">
+          <input type="text" id="proposalTitle" placeholder="Proposal Title" class="w-full p-2 text-black rounded mb-2">
+          <input type="text" id="proposalDescription" placeholder="Proposal Description" class="w-full p-2 text-black rounded mb-2">
+          <input type="text" id="proposalParam" placeholder="Parameter Change" class="w-full p-2 text-black rounded mb-2">
           <button id="createProposal" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded w-full">Create Proposal</button>
         </div>
         <div>
           <h3 class="font-bold">Vote</h3>
-          <input type="text" id="proposalIdVote" placeholder="Proposal ID" class="w-full p-2 text-black rounded mb-2">
+          <input type="number" id="proposalIdVote" placeholder="Proposal ID" class="w-full p-2 text-black rounded mb-2">
           <button id="voteProposal" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full">Vote</button>
         </div>
         <div>
           <h3 class="font-bold">Execute</h3>
-          <input type="text" id="proposalIdExecute" placeholder="Proposal ID" class="w-full p-2 text-black rounded mb-2">
+          <input type="number" id="proposalIdExecute" placeholder="Proposal ID" class="w-full p-2 text-black rounded mb-2">
           <button id="executeProposal" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full">Execute</button>
         </div>
       </div>
@@ -103,85 +97,75 @@
   </main>
 
   <script>
-    const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS";
-    const ABI = []; // Paste your CatalystNFTStaking ABI here
-    const CONTRACT_ADMIN_ROLE = ethers.utils.id("CONTRACT_ADMIN_ROLE");
+    let provider, signer, cata, catalyst;
 
-    let provider, signer, contract, userAddress;
+    const chainMap = {
+      1: "mainnet",
+      5: "goerli",
+      137: "polygon",
+      80001: "mumbai"
+    };
 
-    document.getElementById("connectWallet").addEventListener("click", async () => {
-      if (window.ethereum) {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
-        userAddress = await signer.getAddress();
-        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-        alert(`Wallet Connected: ${userAddress}`);
-        setupTierLocking();
-      } else {
-        alert("MetaMask not found");
+    document.getElementById("connectWallet").addEventListener("click", init);
+
+    async function init() {
+      if (!window.ethereum) {
+        alert("MetaMask not detected");
+        return;
       }
-    });
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
 
-    async function setupTierLocking() {
-      const tierSelect = document.getElementById("collectionTier");
-      const collectionAddressInput = document.getElementById("collectionAddress");
-
-      async function isAdmin() {
-        try {
-          return await contract.hasRole(CONTRACT_ADMIN_ROLE, userAddress);
-        } catch {
-          return false;
-        }
+      const chainId = (await provider.getNetwork()).chainId;
+      const folder = chainMap[chainId];
+      if (!folder) {
+        document.getElementById("walletStatus").innerText = `Network ${chainId} not supported`;
+        return;
       }
 
-      async function isCollectionOwner(collectionAddress) {
-        if (!ethers.utils.isAddress(collectionAddress)) return false;
-        const nft = new ethers.Contract(
-          collectionAddress,
-          [
-            "function ownerOf(uint256 tokenId) public view returns (address)",
-            "function owner() public view returns (address)"
-          ],
-          provider
-        );
-        try {
-          const owner0 = await nft.ownerOf(0);
-          if (owner0.toLowerCase() === userAddress.toLowerCase()) return true;
-        } catch {}
-        try {
-          const contractOwner = await nft.owner();
-          if (contractOwner.toLowerCase() === userAddress.toLowerCase()) return true;
-        } catch {}
-        return false;
-      }
+      document.getElementById("walletStatus").innerText =
+        `Connected: ${await signer.getAddress()} (Chain: ${folder})`;
 
-      collectionAddressInput.addEventListener("input", async () => {
-        const collectionAddr = collectionAddressInput.value.trim();
-        const admin = await isAdmin();
-        const owner = await isCollectionOwner(collectionAddr);
-        if (admin || owner) {
-          tierSelect.disabled = false;
-        } else {
-          tierSelect.value = "0"; // Force Unverified
-          tierSelect.disabled = true;
-        }
-      });
+      const cataData = await fetch(`contracts/${folder}/CATA.json`).then(res => res.json());
+      const catalystData = await fetch(`contracts/${folder}/CatalystNFTStaking.json`).then(res => res.json());
+
+      cata = new ethers.Contract(cataData.address, cataData.abi, signer);
+      catalyst = new ethers.Contract(catalystData.address, catalystData.abi, signer);
+
+      loadTransparency();
+      loadCollections();
     }
 
-    document.getElementById("registerCollection").addEventListener("click", async () => {
-      const collectionAddress = document.getElementById("collectionAddress").value.trim();
-      const declaredSupply = document.getElementById("declaredSupply").value;
-      const tier = document.getElementById("collectionTier").value;
-      try {
-        const tx = await contract.setCollectionConfig(collectionAddress, declaredSupply, tier);
-        await tx.wait();
-        alert("Collection Registered!");
-      } catch (err) {
-        console.error(err);
-        alert("Registration failed");
+    async function loadTransparency() {
+      const totalStaked = await catalyst.totalStakedNFTsCount();
+      const rewardRate = await catalyst.baseRewardRatePerDay();
+      const treasuryAddr = await catalyst.treasuryAddress();
+      const treasuryBal = await cata.balanceOf(treasuryAddr);
+      const collections = await catalyst.getRegisteredCount();
+
+      document.getElementById("totalStakedNFTs").innerText = totalStaked.toString();
+      document.getElementById("baseRewardRate").innerText = ethers.utils.formatEther(rewardRate);
+      document.getElementById("treasuryBalance").innerText = ethers.utils.formatEther(treasuryBal);
+      document.getElementById("topCollectionsCount").innerText = collections.toString();
+    }
+
+    async function loadCollections() {
+      const addresses = await catalyst.getRegisteredCollections();
+      document.getElementById("verifiedCollections").innerHTML = "";
+      document.getElementById("unverifiedCollections").innerHTML = "";
+
+      for (let addr of addresses) {
+        const config = await catalyst.getCollectionConfig(addr);
+        const li = document.createElement("li");
+        li.innerText = addr;
+        if (config.verified) {
+          document.getElementById("verifiedCollections").appendChild(li);
+        } else {
+          document.getElementById("unverifiedCollections").appendChild(li);
+        }
       }
-    });
+    }
   </script>
 
 </body>
