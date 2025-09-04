@@ -1,96 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Catalyst Protocol Dashboard</title>
+  <meta charset="UTF-8">
+  <title>Catalyst Protocol Transparency Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background:#111; color:#eee; margin:0; padding:20px; }
     h1,h2,h3 { color:#f0b90b; }
     .panel { background:#1c1c1c; padding:20px; margin-bottom:20px; border-radius:10px; }
     button { background:#f0b90b; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; font-weight:bold; }
-    button:hover { opacity:0.8; }
-    input { padding:8px; border-radius:5px; border:1px solid #333; margin:5px 0; width:100%; }
+    button:hover { opacity:0.85; }
     table { width:100%; border-collapse:collapse; margin-top:10px; }
-    td,th { border:1px solid #333; padding:8px; }
-    .flex { display:flex; gap:10px; flex-wrap:wrap; }
-    .half { flex:1; min-width:300px; }
+    th,td { border:1px solid #333; padding:8px; text-align:left; }
+    .highlight { font-weight:bold; color:#0ff; }
   </style>
 </head>
 <body>
-  <h1>🔥 Catalyst NFT Staking Protocol</h1>
-  <p>Stake NFTs • Earn CATA • Burn for Legitimacy • Govern Together</p>
+  <h1>🔥 Catalyst Transparency Dashboard</h1>
+  <p>Immutable 90/9/1 Fee Model • Real-Time Protocol Health</p>
 
+  <!-- Wallet -->
   <div class="panel">
-    <h2>Wallet</h2>
+    <h2>My Wallet</h2>
     <button onclick="connectWallet()">Connect Wallet</button>
     <p id="walletAddr">Not connected</p>
+    <p>My Burned CATA: <span class="highlight" id="myBurned">0</span></p>
+    <p>My Staked NFTs: <span class="highlight" id="myStaked">0</span></p>
   </div>
 
-  <div class="flex">
-    <div class="panel half">
-      <h2>Protocol Health</h2>
-      <p>Total Staked NFTs: <span id="totalStaked">0</span></p>
-      <p>Total Burned CATA: <span id="totalBurned">0</span></p>
-      <p>Treasury Bonus Cap: <span id="treasuryCap">0</span>%</p>
-    </div>
-    <div class="panel half">
-      <h2>My Stats</h2>
-      <p>My Pending CATA: <span id="myPending">0</span></p>
-      <p>My Staked NFTs: <span id="myStaked">0</span></p>
-      <p>My Burned CATA: <span id="myBurned">0</span></p>
-    </div>
-  </div>
-
+  <!-- Protocol Transparency -->
   <div class="panel">
-    <h2>Collection Registration</h2>
-    <p>Collection Address: <input id="regCollection" placeholder="0x..."/></p>
-    <p>Declared Supply: <input id="regSupply" placeholder="e.g. 10000"/></p>
-    <button onclick="registerCollection()">Register Collection</button>
+    <h2>Protocol Transparency</h2>
+    <p>Immutable Fee Distribution: <br>
+      🔥 Burn <span class="highlight">90%</span> • 🏦 Treasury <span class="highlight">9%</span> • 👤 Owner <span class="highlight">1%</span>
+    </p>
+    <p>Total Burned CATA: <span class="highlight" id="totalBurned">0</span></p>
+    <p>Total Staked NFTs: <span class="highlight" id="totalStaked">0</span></p>
+    <p>Treasury Balance: <span class="highlight" id="treasuryBal">0</span></p>
+    <p>Treasury Bonus Cap: <span class="highlight" id="treasuryCap">0</span>%</p>
+    <p>Deployer (Owner) Address: <span class="highlight" id="ownerAddr">0x...</span></p>
   </div>
 
+  <!-- Collections -->
   <div class="panel">
-    <h2>Collections</h2>
-    <input id="collectionSearch" placeholder="Search by contract address..." oninput="filterCollections()" />
-    <h3>Verified</h3>
-    <table id="verifiedTable"><tr><th>Collection</th><th>Staked</th><th>Burned</th></tr></table>
-    <h3>Unverified</h3>
-    <table id="unverifiedTable"><tr><th>Collection</th><th>Staked</th><th>Burned</th></tr></table>
+    <h2>Registered Collections</h2>
+    <table id="collectionsTable">
+      <tr><th>Collection</th><th>Verified?</th><th>Staked</th><th>Burned</th></tr>
+    </table>
   </div>
 
-  <div class="panel">
-    <h2>Stake / Unstake (Single NFT)</h2>
-    <p>Collection: <input id="stakeCollectionSingle" placeholder="Collection address"/></p>
-    <p>Token ID: <input id="stakeTokenId" placeholder="e.g. 1"/></p>
-    <button onclick="stakeSingle(false)">Term Stake</button>
-    <button onclick="stakeSingle(true)">Permanent Stake</button>
-    <button onclick="unstakeSingle()">Unstake</button>
-  </div>
-
-  <div class="panel">
-    <h2>Stake / Unstake (Batch)</h2>
-    <p>Collection: <input id="stakeCollection" placeholder="Collection address"/></p>
-    <p>Token IDs (comma-separated): <input id="stakeTokenIds" placeholder="e.g. 1,2,3"/></p>
-    <button onclick="batchStake(false)">Batch Term Stake</button>
-    <button onclick="batchStake(true)">Batch Permanent Stake</button>
-    <button onclick="batchUnstake()">Batch Unstake</button>
-  </div>
-
+  <!-- Governance -->
   <div class="panel">
     <h2>Governance Proposals</h2>
-    <table id="proposalTable"><tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th></tr></table>
-    <h3>Create Proposal</h3>
-    <p>Title: <input id="pTitle"/></p>
-    <p>Description: <input id="pDesc"/></p>
-    <p>Parameter: <input id="pParam"/></p>
-    <button onclick="createProposal()">Submit</button>
+    <table id="proposalTable">
+      <tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th></tr>
+    </table>
   </div>
 
 <script>
 let provider, signer, contract;
 const contractAddress = "YOUR_CONTRACT_ADDRESS";
-const contractABI = [ /* insert Catalyst ABI here */ ];
+const contractABI = [ /* Catalyst ABI here */ ];
 
 async function connectWallet(){
   if(window.ethereum){
@@ -98,92 +68,55 @@ async function connectWallet(){
     await provider.send("eth_requestAccounts", []);
     signer = provider.getSigner();
     contract = new ethers.Contract(contractAddress, contractABI, signer);
-    document.getElementById("walletAddr").innerText = await signer.getAddress();
+    const addr = await signer.getAddress();
+    document.getElementById("walletAddr").innerText = addr;
+    document.getElementById("ownerAddr").innerText = await contract.deployerAddress();
     refreshData();
   } else { alert("Please install MetaMask!"); }
 }
 
 async function refreshData(){
   if(!contract) return;
+  // Global stats
   document.getElementById("totalStaked").innerText = (await contract.totalStakedNFTsCount()).toString();
   document.getElementById("totalBurned").innerText = (await contract.totalBurnedCATA()).toString();
-  document.getElementById("treasuryCap").innerText = (await contract.treasuryBonusCapBP()).toString() / 100;
 
+  // Treasury
+  const tAddr = await contract.treasuryAddress();
+  const bal = await contract.cataToken().then(token => {
+    let tokenC = new ethers.Contract(token, ["function balanceOf(address) view returns(uint256)"], provider);
+    return tokenC.balanceOf(tAddr);
+  });
+  document.getElementById("treasuryBal").innerText = bal.toString();
+  document.getElementById("treasuryCap").innerText = (await contract.treasuryBonusCapBP()).toString()/100;
+
+  // User stats
   const user = await signer.getAddress();
-  let myBurned = await contract.burnedCatalystByAddress(user);
-  document.getElementById("myBurned").innerText = myBurned.toString();
-
-  let totalPending = ethers.BigNumber.from(0);
-  let totalStakedCount = 0;
-  let cols = await contract.getRegisteredCollections();
+  document.getElementById("myBurned").innerText = (await contract.getBurnedByAddress(user)).toString();
+  let totalStaked = 0;
+  const cols = await contract.getRegisteredCollections();
   for(let addr of cols){
     let tokens = await contract.getUserStakedTokens(addr, user);
-    totalStakedCount += tokens.length;
-    for(let t of tokens){
-      let p = await contract.pendingRewards(addr, t);
-      totalPending = totalPending.add(p);
-    }
+    totalStaked += tokens.length;
   }
-  document.getElementById("myStaked").innerText = totalStakedCount;
-  document.getElementById("myPending").innerText = totalPending.toString();
+  document.getElementById("myStaked").innerText = totalStaked;
 
-  document.getElementById("verifiedTable").innerHTML = "<tr><th>Collection</th><th>Staked</th><th>Burned</th></tr>";
-  document.getElementById("unverifiedTable").innerHTML = "<tr><th>Collection</th><th>Staked</th><th>Burned</th></tr>";
+  // Collections table
+  let html = "<tr><th>Collection</th><th>Verified?</th><th>Staked</th><th>Burned</th></tr>";
   for(let addr of cols){
     let cfg = await contract.getCollectionConfig(addr);
-    let row = `<tr><td>${addr}</td><td>${cfg.stakedCount}</td><td>${cfg.totalBurned}</td></tr>`;
-    if(cfg.verified){ document.getElementById("verifiedTable").innerHTML += row; }
-    else { document.getElementById("unverifiedTable").innerHTML += row; }
+    html += `<tr><td>${addr}</td><td>${cfg.verified?"✅":"❌"}</td><td>${cfg.stakedCount}</td><td>${cfg.totalBurned}</td></tr>`;
   }
+  document.getElementById("collectionsTable").innerHTML = html;
 
+  // Proposals
   let rows = "<tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th></tr>";
-  let pCount = await contract.proposalCount();
-  for(let i=0;i<pCount;i++){
+  let count = await contract.proposalCount();
+  for(let i=0;i<count;i++){
     let p = await contract.proposals(i);
-    rows += `<tr><td>${i}</td><td>${p.title}</td><td>${p.votesFor}</td><td>${p.votesAgainst}</td><td>${p.executed?"Done":"Active"}</td></tr>`;
+    rows += `<tr><td>${i}</td><td>${p.title}</td><td>${p.votesFor}</td><td>${p.votesAgainst}</td><td>${p.executed?"Executed":"Active"}</td></tr>`;
   }
   document.getElementById("proposalTable").innerHTML = rows;
-}
-
-// Collection registration
-async function registerCollection(){
-  let coll = document.getElementById("regCollection").value;
-  let supply = parseInt(document.getElementById("regSupply").value);
-  await contract.registerCollection(coll, supply);
-}
-
-// Single stake/unstake
-async function stakeSingle(permanent){
-  let coll = document.getElementById("stakeCollectionSingle").value;
-  let id = parseInt(document.getElementById("stakeTokenId").value);
-  if(permanent){ await contract.permanentStake(coll, id); }
-  else { await contract.termStake(coll, id); }
-}
-async function unstakeSingle(){
-  let coll = document.getElementById("stakeCollectionSingle").value;
-  let id = parseInt(document.getElementById("stakeTokenId").value);
-  await contract.unstake(coll, id);
-}
-
-// Batch stake/unstake
-async function batchStake(permanent){
-  let coll = document.getElementById("stakeCollection").value;
-  let ids = document.getElementById("stakeTokenIds").value.split(",").map(x=>x.trim()).filter(x=>x).map(x=>parseInt(x));
-  if(permanent){ await contract.permanentStakeBatch(coll, ids); }
-  else { await contract.termStakeBatch(coll, ids); }
-}
-async function batchUnstake(){
-  let coll = document.getElementById("stakeCollection").value;
-  let ids = document.getElementById("stakeTokenIds").value.split(",").map(x=>x.trim()).filter(x=>x).map(x=>parseInt(x));
-  await contract.unstakeBatch(coll, ids);
-}
-
-// Governance
-async function createProposal(){
-  let t = document.getElementById("pTitle").value;
-  let d = document.getElementById("pDesc").value;
-  let p = document.getElementById("pParam").value;
-  await contract.createProposal(t,d,p);
 }
 
 setInterval(refreshData, 30000);
