@@ -15,7 +15,7 @@ Catalyst changes this.
 
 Every ERC-721 NFT can be staked.
 
-Every collection can participate in governance.
+Every collection can participate in governance, with voting weight scaled by burns and stake-age.
 
 Every burn strengthens the ecosystem.
 
@@ -46,7 +46,7 @@ This 90/9/1 rule is hardcoded — ensuring Catalyst will always remain deflation
 ✅ Treasury Vault – automatic fee collection and transparent accounting.
 ✅ Governance – burn-weighted voting to propose and execute protocol changes.
 ✅ Top Burn Leaderboard – tracks the top 100 burners, ranked highest → lowest.
-✅ Quarterly Burner Bonus – the top 10% of burners automatically share treasury rewards.
+✅ Top 1% Burner Bonus – the most committed burners share treasury rewards each cycle, with eligibility requirements.
 ✅ Immutable Deflation – every action contributes to permanent token burn.
 
 
@@ -56,12 +56,11 @@ This 90/9/1 rule is hardcoded — ensuring Catalyst will always remain deflation
 
 Catalyst governance starts with burn-weighted voting.
 
-Critical parameters (rewards, fees, emission caps, treasury distributions) can be changed through on-chain proposals.
+Critical parameters (rewards, emission caps, treasury distributions) can be changed through on-chain proposals.
 
-Immutable rules — like the 90/9/1 split — can never be altered.
+⚠️ Immutable rules — like the 90/9/1 split — can never be altered.
 
 The Treasury Vault will gradually shift to full DAO control after community bootstrapping.
-
 
 
 ---
@@ -72,7 +71,7 @@ Built on OpenZeppelin audited standards.
 
 Protected by ReentrancyGuard, AccessControl, and Pausable.
 
-Top-100 leaderboard ensures scalability, while capped loops prevent gas overload.
+Top-100 leaderboard ensures transparency, while staking caps and bounded loops prevent gas overload.
 
 Continuous burn mechanics ensure long-term deflationary sustainability.
 
@@ -83,11 +82,8 @@ Continuous burn mechanics ensure long-term deflationary sustainability.
 🛡️ Next Steps
 
 🔎 Audit: External smart contract audit before mainnet deployment.
-
 🌐 Community Onboarding: Staker and burner incentive programs.
-
 🗳️ Governance Rollout: Transition of admin powers to DAO.
-
 
 
 ---
