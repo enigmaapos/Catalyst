@@ -1,128 +1,112 @@
-<!DOCTYPE html><html lang="en">
+<!doctype html>
+
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catalyst Protocol – Staking Dashboard</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catalyst V7 — Simple DApp</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #0d1117;
-      color: #e6edf3;
-      margin: 0;
-      padding: 0;
-    }
-    header, footer {
-      background-color: #161b22;
-      padding: 1em;
-      text-align: center;
-    }
-    main {
-      padding: 1.5em;
-    }
-    section {
-      margin-bottom: 2em;
-      background: #1c2128;
-      border-radius: 8px;
-      padding: 1em;
-    }
-    h2 {
-      color: #58a6ff;
-    }
-    button {
-      background-color: #238636;
-      border: none;
-      color: #fff;
-      padding: 0.5em 1em;
-      margin-top: 0.5em;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #2ea043;
-    }
-    input, select, textarea {
-      margin-top: 0.5em;
-      width: 100%;
-      padding: 0.5em;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-      background: #0d1117;
-      color: #e6edf3;
-    }
+    :root{--bg:#0b1220;--card:#0f1720;--muted:#9aa4b2;--accent:#58a6ff;--good:#2ea043}
+    body{font-family:Inter,system-ui,Arial; background:var(--bg); color:#e6edf3; margin:0}
+    header{padding:18px;text-align:center;background:linear-gradient(90deg,#071026, #0c1730)}
+    main{max-width:980px;margin:24px auto;padding:18px}
+    .card{background:var(--card);border-radius:10px;padding:14px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.03)}
+    h1,h2{color:var(--accent);margin:0 0 8px}
+    label{display:block;color:var(--muted);font-size:13px;margin-top:10px}
+    input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:#071021;color:#e6edf3}
+    button{background:var(--good);border:0;padding:10px 12px;border-radius:8px;color:#021;cursor:pointer;margin-top:10px}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    pre{background:#07101a;padding:10px;border-radius:8px;overflow:auto}
+    .muted{color:var(--muted);font-size:13px}
   </style>
 </head>
 <body>
   <header>
-    <h1>🚀 Catalyst Protocol </h1>
-    <p>Universal NFT Staking & Governance</p>
+    <h1>🚀 Catalyst Protocol — V7 (Immutable 90/9/1)</h1>
+    <div class="muted">Simple interface for staking, registration, governance & burner bonus (development / testing)</div>
   </header>  <main>
-
-<section>
-  <h2>Register Collection</h2>
-  <label>Collection Address:</label>
-  <input type="text" id="regCollection" placeholder="0x..." />
-
-  <label>Declared Supply:</label>
-  <input type="number" id="declaredSupply" placeholder="Max 20000" />
-
-  <label>Verified?</label>
-  <select id="isVerified">
-    <option value="false">Unverified</option>
-    <option value="true">Verified</option>
+    <div class="card">
+      <h2>Wallet / Contract</h2>
+      <label>RPC / Network</label>
+      <input id="rpcUrl" placeholder="https://rpc..." />
+      <label>Contract Address</label>
+      <input id="contractAddress" placeholder="0x... your deployed V7 contract" />
+      <label>ABI (min functions used) — paste or leave default</label>
+      <textarea id="contractAbi" rows="6"></textarea>
+      <div style="margin-top:8px" class="row">
+        <button onclick="connect()">Connect Wallet</button>
+        <button onclick="loadContract()">Load Contract</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+      </div>
+      <div id="walletInfo" class="muted">Not connected</div>
+    </div><!-- Collection Registration -->
+<div class="card">
+  <h2>Register Collection (Admin)</h2>
+  <div class="muted">Note: setCollectionConfig in V7 is admin-only. Use only if deployer/contract admin.</div>
+  <label>Collection Address</label>
+  <input id="regCollection" placeholder="0x..." />
+  <label>Declared Supply (max 20000)</label>
+  <input id="declaredSupply" type="number" placeholder="e.g. 10000" />
+  <label>Tier</label>
+  <select id="regTier">
+    <option value="0">UNVERIFIED</option>
+    <option value="1">VERIFIED</option>
   </select>
+  <div class="row">
+    <button onclick="registerCollection()">Register Collection</button>
+    <button onclick="estimateRegistrationFee()">Estimate Base Fee (view)</button>
+  </div>
+  <div id="regResult" class="muted"></div>
+</div>
 
-  <button onclick="registerCollection()">Register Collection</button>
-</section>
-    
-    <!-- Staking Section -->
-    <section>
-      <h2>Stake NFTs</h2>
-      <label>Collection Address:</label>
-      <input type="text" id="stakeCollection" placeholder="0x..." /><label>Token ID:</label>
-  <input type="number" id="stakeTokenId" placeholder="Enter Token ID" />
+<!-- Staking -->
+<div class="card">
+  <h2>Stake / Batch Stake</h2>
+  <label>Collection Address</label>
+  <input id="stakeCollection" placeholder="0x..." />
+  <label>Single Token ID</label>
+  <input id="stakeTokenId" type="number" />
+  <div class="row">
+    <button onclick="termStakeSingle()">Term Stake (single)</button>
+    <button onclick="permanentStakeSingle()">Permanent Stake (single)</button>
+  </div>
 
-  <button onclick="stakeNFT()">Stake (Term)</button>
-  <button onclick="permanentStakeNFT()">Stake (Permanent)</button>
+  <h3>Batch</h3>
+  <label>Token IDs (comma separated)</label>
+  <input id="batchStakeIds" placeholder="e.g. 1,2,3" />
+  <div class="row">
+    <button onclick="batchTermStake()">Batch Term Stake</button>
+    <button onclick="batchPermanentStake()">Batch Permanent Stake</button>
+  </div>
+  <div id="stakeLog" class="muted"></div>
+</div>
 
-  <h3>Batch Stake</h3>
-  <label>Token IDs (comma separated):</label>
-  <input type="text" id="batchStakeIds" placeholder="e.g. 1,2,3" />
-  <button onclick="batchTermStakeNFTs()">Batch Term Stake</button>
-  <button onclick="batchPermanentStakeNFTs()">Batch Permanent Stake</button>
-</section>
-
-<!-- Unstaking Section -->
-<section>
-  <h2>Unstake NFTs</h2>
-  <label>Collection Address:</label>
-  <input type="text" id="unstakeCollection" placeholder="0x..." />
-
-  <label>Token ID:</label>
-  <input type="number" id="unstakeTokenId" placeholder="Enter Token ID" />
-  <button onclick="unstakeNFT()">Unstake</button>
-
+<!-- Unstake -->
+<div class="card">
+  <h2>Unstake / Batch Unstake</h2>
+  <label>Collection Address</label>
+  <input id="unstakeCollection" placeholder="0x..." />
+  <label>Single Token ID</label>
+  <input id="unstakeTokenId" type="number" />
+  <div class="row">
+    <button onclick="unstakeSingle()">Unstake (single)</button>
+    <button onclick="harvestSingle()">Harvest (single)</button>
+  </div>
   <h3>Batch Unstake</h3>
-  <label>Token IDs (comma separated):</label>
-  <input type="text" id="batchUnstakeIds" placeholder="e.g. 1,2,3" />
-  <button onclick="batchUnstakeNFTs()">Batch Unstake</button>
-</section>
+  <label>Token IDs (comma separated)</label>
+  <input id="batchUnstakeIds" placeholder="e.g. 5,6,7" />
+  <div class="row">
+    <button onclick="batchUnstake()">Batch Unstake</button>
+    <button onclick="batchHarvest()">Batch Harvest</button>
+  </div>
+  <div id="unstakeLog" class="muted"></div>
+</div>
 
-<!-- Harvest Section -->
-<section>
-  <h2>Harvest Rewards</h2>
-  <label>Collection Address:</label>
-  <input type="text" id="harvestCollection" placeholder="0x..." />
-
-  <label>Token IDs (comma separated):</label>
-  <input type="text" id="harvestTokenIds" placeholder="e.g. 1,2,3" />
-
-  <button onclick="harvestBatch()">Harvest Batch</button>
-</section>
-
-<!-- Governance Section -->
-<section>
+<!-- Governance -->
+<div class="card">
   <h2>Governance</h2>
-  <label>Proposal Type:</label>
+  <label>Proposal Type</label>
   <select id="proposalType">
     <option value="0">BASE_REWARD</option>
     <option value="1">HARVEST_FEE</option>
@@ -131,76 +115,319 @@
     <option value="4">VOTING_PARAM</option>
     <option value="5">TIER_UPGRADE</option>
   </select>
+  <label>Param target (for VOTING_PARAM)</label>
+  <input id="paramTarget" type="number" placeholder="e.g. 0" />
+  <label>New Value</label>
+  <input id="newValue" type="number" />
+  <label>Collection Context (if needed)</label>
+  <input id="proposalCollection" placeholder="0x..." />
+  <div class="row">
+    <button onclick="createProposal()">Create Proposal</button>
+    <button onclick="voteProposal()">Vote</button>
+    <button onclick="executeProposal()">Execute</button>
+  </div>
+  <input id="proposalId" placeholder="bytes32 proposal id" />
+  <div id="govLog" class="muted"></div>
+</div>
 
-  <label>Parameter Target (for VOTING_PARAM):</label>
-  <input type="number" id="paramTarget" placeholder="0 = quorum, 1 = duration, ..." />
-
-  <label>New Value:</label>
-  <input type="number" id="newValue" placeholder="Enter new value" />
-
-  <label>Collection Context (for upgrades or voting):</label>
-  <input type="text" id="collectionContext" placeholder="0x... or empty" />
-
-  <button onclick="createProposal()">Create Proposal</button>
-  <hr />
-  <label>Proposal ID:</label>
-  <input type="text" id="proposalId" placeholder="0x..." />
-  <button onclick="voteOnProposal()">Vote</button>
-  <button onclick="executeProposal()">Execute</button>
-</section>
-
-<!-- Treasury Section -->
-<section>
+<!-- Treasury & Leaderboards -->
+<div class="card">
   <h2>Treasury & Bonuses</h2>
-  <button onclick="getTreasuryBalance()">Get Treasury Balance</button>
-  <button onclick="distributeTopBurnersBonus()">Distribute Top 1% Burner Bonus</button>
-</section>
+  <div class="row">
+    <button onclick="getTreasuryBalance()">Treasury Balance</button>
+    <button onclick="distributeBonus()">Distribute Top 1% Burner Bonus</button>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button onclick="getTopBurners()">Top Burners</button>
+    <button onclick="getTopCollections()">Top Collections</button>
+  </div>
+  <div id="treasuryLog" class="muted"></div>
+</div>
 
-<!-- Burn Section -->
-<section>
-  <h2>Burn CATA</h2>
-  <label>Amount:</label>
-  <input type="number" id="burnAmount" placeholder="Enter amount to burn" />
-  <button onclick="burnCATA()">Burn</button>
-</section>
+<!-- Utility: burn token -->
+<div class="card">
+  <h2>Burn CATA (voluntary)</h2>
+  <label>Amount</label>
+  <input id="burnAmount" type="number" />
+  <button onclick="burn()">Burn</button>
+  <div id="burnLog" class="muted"></div>
+</div>
 
-<!-- Leaderboards -->
-<section>
-  <h2>Leaderboards</h2>
-  <button onclick="getTopBurners()">Top Burners</button>
-  <button onclick="getTopCollections()">Top Collections</button>
-</section>
+<div class="card">
+  <h2>Logs</h2>
+  <pre id="logs" style="height:220px"></pre>
+</div>
 
-  </main>  <footer>
-    <p>© 2025 Catalyst Protocol </p>
-  </footer>  <script>
-    // Placeholder functions – connect with web3.js/ethers.js logic
-    async function registerCollection() {
-  const collection = document.getElementById("regCollection").value;
-  const supply = document.getElementById("declaredSupply").value;
-  const verified = document.getElementById("isVerified").value === "true";
+  </main>  <script>
+    // Minimal ethers.js integration (assumes ethers injected by browser wallet)
+    // This file is intentionally compact and readable. Replace ABI placeholder with full ABI for production.
+    let provider, signer, contract;
+    let defaultAbi = [
+      // essential fragments used by this UI
+      "function setCollectionConfig(address,uint256,uint8) external",
+      "function _calculateRegistrationBaseFee(uint256) view returns (uint256)",
+      "function termStake(address,uint256) external",
+      "function permanentStake(address,uint256) external",
+      "function unstake(address,uint256) external",
+      "function harvestBatch(address,uint256[]) external",
+      "function pendingRewards(address,address,uint256) view returns (uint256)",
+      "function propose(uint8,uint8,uint256,address) returns (bytes32)",
+      "function vote(bytes32) external",
+      "function executeProposal(bytes32) external",
+      "function distributeTopBurnersBonus() external",
+      "function getTopBurners() view returns (address[])",
+      "function getTopCollections() view returns (address[])",
+      "function burn(uint256) external"
+    ];
 
-  // estimate dynamic fee from contract (optional helper view function)
-  const fee = await contract.getRegistrationFee(supply, verified);
+    function log(...args){ const el=document.getElementById('logs'); el.textContent += args.map(a=>typeof a==='object'?JSON.stringify(a,null,2):String(a)).join(' ') + '\n'; el.scrollTop = el.scrollHeight; }
+    function clearLogs(){ document.getElementById('logs').textContent = ''; }
 
-  const tx = await contract.registerCollection(collection, supply, verified, { value: fee });
-  await tx.wait();
-  alert("Collection registered successfully!");
+    async function connect(){
+      if(window.ethereum){
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send('eth_requestAccounts',[]);
+        signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        document.getElementById('walletInfo').textContent = `Connected: ${addr}`;
+        log('wallet', addr);
+      } else {
+        alert('No injected wallet found. Use MetaMask or compatible wallet.');
+      }
     }
-    function stakeNFT() { alert("Stake NFT (Term) called"); }
-    function permanentStakeNFT() { alert("Stake NFT (Permanent) called"); }
-    function batchTermStakeNFTs() { alert("Batch Term Stake NFTs called"); }
-    function batchPermanentStakeNFTs() { alert("Batch Permanent Stake NFTs called"); }
-    function unstakeNFT() { alert("Unstake NFT called"); }
-    function batchUnstakeNFTs() { alert("Batch Unstake NFTs called"); }
-    function harvestBatch() { alert("Harvest Batch called"); }
-    function createProposal() { alert("Create Proposal called"); }
-    function voteOnProposal() { alert("Vote on Proposal called"); }
-    function executeProposal() { alert("Execute Proposal called"); }
-    function getTreasuryBalance() { alert("Get Treasury Balance called"); }
-    function distributeTopBurnersBonus() { alert("Distribute Top 1% Bonus called"); }
-    function burnCATA() { alert("Burn CATA called"); }
-    function getTopBurners() { alert("Get Top Burners called"); }
-    function getTopCollections() { alert("Get Top Collections called"); }
-  </script></body>
+
+    function loadContract(){
+      const addr = document.getElementById('contractAddress').value.trim();
+      if(!addr){ alert('Set contract address'); return; }
+      let abiText = document.getElementById('contractAbi').value.trim();
+      let abi = defaultAbi;
+      try{ if(abiText) abi = JSON.parse(abiText); }catch(e){ alert('ABI parse error — using minimal ABI'); }
+      contract = new ethers.Contract(addr, abi, signer || provider);
+      log('contract loaded', addr);
+    }
+
+    // ---------- Registration (admin-only in V7) ----------
+    async function estimateRegistrationFee(){
+      try{
+        const supply = Number(document.getElementById('declaredSupply').value || 0);
+        if(!supply) return alert('enter declared supply');
+        // call view helper if present; fallback: show note
+        if(!contract) return alert('load contract');
+        if(contract._calculateRegistrationBaseFee){
+          const fee = await contract._calculateRegistrationBaseFee(supply);
+          document.getElementById('regResult').textContent = `Base fee (CATA units): ${fee.toString()}`;
+          log('estimated fee', fee.toString());
+        } else {
+          document.getElementById('regResult').textContent = 'Contract view not available; admin-only registration will attempt to send tx.';
+        }
+      }catch(e){ log('err', e); alert('estimate failed'); }
+    }
+
+    async function registerCollection(){
+      try{
+        if(!contract) return alert('load contract');
+        const coll = document.getElementById('regCollection').value.trim();
+        const supply = Number(document.getElementById('declaredSupply').value || 0);
+        const tier = Number(document.getElementById('regTier').value || 0);
+        if(!coll || !supply) return alert('Missing fields');
+        // setCollectionConfig(address,uint256,CollectionTier) is admin-only in V7
+        const tx = await contract.setCollectionConfig(coll, supply, tier);
+        log('tx sent', tx.hash);
+        await tx.wait();
+        log('collection registered', coll);
+      }catch(e){ log('register err', String(e)); alert('register failed — ensure admin role'); }
+    }
+
+    // ---------- Staking helpers ----------
+    function parseIds(input){ return input.split(',').map(s=>s.trim()).filter(Boolean).map(x=>Number(x)); }
+
+    async function termStakeSingle(){
+      try{
+        if(!contract) return alert('load contract');
+        const coll = document.getElementById('stakeCollection').value.trim();
+        const id = Number(document.getElementById('stakeTokenId').value);
+        if(!coll || !id) return alert('missing');
+        const tx = await contract.termStake(coll, id);
+        log('termStake tx', tx.hash); await tx.wait(); log('staked', id);
+      }catch(e){ log('err stake', String(e)); }
+    }
+
+    async function permanentStakeSingle(){
+      try{
+        if(!contract) return alert('load contract');
+        const coll = document.getElementById('stakeCollection').value.trim();
+        const id = Number(document.getElementById('stakeTokenId').value);
+        if(!coll || !id) return alert('missing');
+        const tx = await contract.permanentStake(coll, id);
+        log('permanentStake tx', tx.hash); await tx.wait(); log('permanent staked', id);
+      }catch(e){ log('err perm stake', String(e)); }
+    }
+
+    // Batch term stake: loop sequentially to avoid reverts; you could optimize with multicall in production
+    async function batchTermStake(){
+      try{
+        if(!contract) return alert('load contract');
+        const coll = document.getElementById('stakeCollection').value.trim();
+        const ids = parseIds(document.getElementById('batchStakeIds').value || '');
+        if(!coll || ids.length === 0) return alert('missing');
+        document.getElementById('stakeLog').textContent = 'Batch staking...';
+        for(const id of ids){
+          try{
+            const tx = await contract.termStake(coll, id);
+            log('tx', tx.hash); await tx.wait(); log('staked', id);
+          }catch(inner){ log('failed id', id, String(inner)); }
+        }
+        document.getElementById('stakeLog').textContent = 'Done';
+      }catch(e){ log('batch stake err', String(e)); }
+    }
+
+    async function batchPermanentStake(){
+      try{
+        if(!contract) return alert('load contract');
+        const coll = document.getElementById('stakeCollection').value.trim();
+        const ids = parseIds(document.getElementById('batchStakeIds').value || '');
+        if(!coll || ids.length === 0) return alert('missing');
+        document.getElementById('stakeLog').textContent = 'Batch permanent staking...';
+        for(const id of ids){
+          try{
+            const tx = await contract.permanentStake(coll, id);
+            log('tx', tx.hash); await tx.wait(); log('permanently staked', id);
+          }catch(inner){ log('failed id', id, String(inner)); }
+        }
+        document.getElementById('stakeLog').textContent = 'Done';
+      }catch(e){ log('batch perm stake err', String(e)); }
+    }
+
+    // ---------- Unstake / Harvest ----------
+    async function unstakeSingle(){
+      try{
+        if(!contract) return alert('load contract');
+        const coll = document.getElementById('unstakeCollection').value.trim();
+        const id = Number(document.getElementById('unstakeTokenId').value || 0);
+        if(!coll || !id) return alert('missing');
+        const tx = await contract.unstake(coll, id);
+        log('unstake tx', tx.hash); await tx.wait(); log('unstaked', id);
+      }catch(e){ log('unstake err', String(e)); }
+    }
+
+    async function harvestSingle(){
+      try{
+        if(!contract) return alert('load contract');
+        const coll = document.getElementById('unstakeCollection').value.trim();
+        const id = Number(document.getElementById('unstakeTokenId').value || 0);
+        if(!coll || !id) return alert('missing');
+        await contract.harvestBatch(coll, [id]);
+        log('harvested', id);
+      }catch(e){ log('harvest err', String(e)); }
+    }
+
+    async function batchUnstake(){
+      try{
+        if(!contract) return alert('load contract');
+        const coll = document.getElementById('unstakeCollection').value.trim();
+        const ids = parseIds(document.getElementById('batchUnstakeIds').value || '');
+        if(!coll || ids.length===0) return alert('missing');
+        document.getElementById('unstakeLog').textContent = 'Batch unstaking...';
+        for(const id of ids){
+          try{ const tx = await contract.unstake(coll, id); log('tx',tx.hash); await tx.wait(); log('unstaked',id); }catch(inner){ log('fail unstake',id,String(inner)); }
+        }
+        document.getElementById('unstakeLog').textContent = 'Done';
+      }catch(e){ log('batch unstake err', String(e)); }
+    }
+
+    async function batchHarvest(){
+      try{
+        if(!contract) return alert('load contract');
+        const coll = document.getElementById('unstakeCollection').value.trim();
+        const ids = parseIds(document.getElementById('batchUnstakeIds').value || '');
+        if(!coll || ids.length===0) return alert('missing');
+        // use harvestBatch(coll, ids)
+        const tx = await contract.harvestBatch(coll, ids);
+        log('harvest tx', tx.hash); await tx.wait(); log('harvested batch');
+      }catch(e){ log('batch harvest err', String(e)); }
+    }
+
+    // ---------- Governance ----------
+    async function createProposal(){
+      try{
+        if(!contract) return alert('load contract');
+        const pType = Number(document.getElementById('proposalType').value);
+        const paramTarget = Number(document.getElementById('paramTarget').value || 0);
+        const newValue = Number(document.getElementById('newValue').value || 0);
+        const ctx = document.getElementById('proposalCollection').value || '0x0000000000000000000000000000000000000000';
+        // signature in V7: propose(ProposalType,uint8,uint256,address)
+        const tx = await contract.propose(pType, paramTarget, newValue, ctx);
+        log('propose tx', tx.hash); const receipt = await tx.wait();
+        log('proposal created', receipt.transactionHash);
+      }catch(e){ log('create prop err', String(e)); }
+    }
+
+    async function voteProposal(){
+      try{
+        if(!contract) return alert('load contract');
+        const id = document.getElementById('proposalId').value.trim(); if(!id) return alert('enter id');
+        const tx = await contract.vote(id);
+        log('vote tx', tx.hash); await tx.wait(); log('voted', id);
+      }catch(e){ log('vote err', String(e)); }
+    }
+
+    async function executeProposal(){
+      try{
+        if(!contract) return alert('load contract');
+        const id = document.getElementById('proposalId').value.trim(); if(!id) return alert('enter id');
+        const tx = await contract.executeProposal(id);
+        log('exec tx', tx.hash); await tx.wait(); log('executed', id);
+      }catch(e){ log('exec err', String(e)); }
+    }
+
+    // ---------- Treasury & leaderboard ----------
+    async function getTreasuryBalance(){
+      try{
+        if(!contract) return alert('load contract');
+        // treasury is stored at treasuryAddress variable in contract; easiest is to call balanceOf(treasuryAddress) if token contract is this contract
+        // Many V7 versions used ERC20 balanceOf(treasuryAddress)
+        // We'll attempt common patterns: call contract.treasuryAddress() then ERC20 balanceOf
+        if(contract.treasuryAddress){
+          const tAddr = await contract.treasuryAddress();
+          const tokenContract = new ethers.Contract(await contract.address, defaultAbi, provider); // simplified
+          // fallback: show treasury address
+          document.getElementById('treasuryLog').textContent = `Treasury address: ${tAddr}`;
+          log('treasury addr', tAddr);
+        } else { document.getElementById('treasuryLog').textContent = 'treasuryAddress not on contract ABI'; }
+      }catch(e){ log('treasury err', String(e)); }
+    }
+
+    async function distributeBonus(){
+      try{
+        if(!contract) return alert('load contract');
+        const tx = await contract.distributeTopBurnersBonus();
+        log('distribute tx', tx.hash); await tx.wait(); log('bonus distributed');
+      }catch(e){ log('distribute err', String(e)); }
+    }
+
+    async function getTopBurners(){
+      try{
+        if(!contract) return alert('load contract');
+        const arr = await contract.getTopBurners();
+        log('top burners', arr);
+      }catch(e){ log('get top burners err', String(e)); }
+    }
+    async function getTopCollections(){
+      try{ if(!contract) return alert('load contract'); const arr = await contract.getTopCollections(); log('top collections', arr);}catch(e){ log('err',String(e)); }
+    }
+
+    // ---------- Burn ----------
+    async function burn(){
+      try{
+        if(!contract) return alert('load contract');
+        const amt = Number(document.getElementById('burnAmount').value || 0);
+        if(!amt) return alert('enter amount');
+        const tx = await contract.burn(ethers.utils.parseUnits(String(amt), 18));
+        log('burn tx', tx.hash); await tx.wait(); log('burned', amt);
+      }catch(e){ log('burn err', String(e)); }
+    }
+
+    // Init default ABI placeholder
+    document.getElementById('contractAbi').value = JSON.stringify(defaultAbi, null, 2);
+  </script>  <!-- Note: This simple DApp uses the injected provider (MetaMask). Replace UI with a production-ready framework for real deployment. --></body>
 </html>
