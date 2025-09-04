@@ -55,18 +55,25 @@
       </div>
     </section>
 
-    <!-- Collections Section -->
+    <!-- Collections Section with Search -->
     <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
       <h2 class="text-xl font-semibold mb-4">Collections</h2>
       <div class="grid grid-cols-2 gap-8">
+
+        <!-- Verified -->
         <div>
-          <h3 class="text-lg font-bold">Verified Collections</h3>
+          <h3 class="text-lg font-bold mb-2">Verified Collections</h3>
+          <input type="text" id="searchVerified" placeholder="Search verified..." class="w-full p-2 text-black rounded mb-2">
           <ul id="verifiedCollections" class="list-disc list-inside space-y-1"></ul>
         </div>
+
+        <!-- Unverified -->
         <div>
-          <h3 class="text-lg font-bold">Unverified Collections</h3>
+          <h3 class="text-lg font-bold mb-2">Unverified Collections</h3>
+          <input type="text" id="searchUnverified" placeholder="Search unverified..." class="w-full p-2 text-black rounded mb-2">
           <ul id="unverifiedCollections" class="list-disc list-inside space-y-1"></ul>
         </div>
+
       </div>
     </section>
 
@@ -98,6 +105,8 @@
 
   <script>
     let provider, signer, cata, catalyst;
+    let verifiedList = [];
+    let unverifiedList = [];
 
     const chainMap = {
       1: "mainnet",
@@ -107,6 +116,8 @@
     };
 
     document.getElementById("connectWallet").addEventListener("click", init);
+    document.getElementById("searchVerified").addEventListener("input", renderCollections);
+    document.getElementById("searchUnverified").addEventListener("input", renderCollections);
 
     async function init() {
       if (!window.ethereum) {
@@ -152,19 +163,44 @@
 
     async function loadCollections() {
       const addresses = await catalyst.getRegisteredCollections();
-      document.getElementById("verifiedCollections").innerHTML = "";
-      document.getElementById("unverifiedCollections").innerHTML = "";
+      verifiedList = [];
+      unverifiedList = [];
 
       for (let addr of addresses) {
         const config = await catalyst.getCollectionConfig(addr);
-        const li = document.createElement("li");
-        li.innerText = addr;
         if (config.verified) {
-          document.getElementById("verifiedCollections").appendChild(li);
+          verifiedList.push(addr);
         } else {
-          document.getElementById("unverifiedCollections").appendChild(li);
+          unverifiedList.push(addr);
         }
       }
+      renderCollections();
+    }
+
+    function renderCollections() {
+      const searchV = document.getElementById("searchVerified").value.toLowerCase();
+      const searchU = document.getElementById("searchUnverified").value.toLowerCase();
+
+      const vContainer = document.getElementById("verifiedCollections");
+      const uContainer = document.getElementById("unverifiedCollections");
+      vContainer.innerHTML = "";
+      uContainer.innerHTML = "";
+
+      verifiedList
+        .filter(addr => addr.toLowerCase().includes(searchV))
+        .forEach(addr => {
+          const li = document.createElement("li");
+          li.innerText = addr;
+          vContainer.appendChild(li);
+        });
+
+      unverifiedList
+        .filter(addr => addr.toLowerCase().includes(searchU))
+        .forEach(addr => {
+          const li = document.createElement("li");
+          li.innerText = addr;
+          uContainer.appendChild(li);
+        });
     }
   </script>
 
