@@ -22,6 +22,16 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+// Interface for Ownable contracts, a common pattern for contracts with a single owner
+interface IOwnable {
+    function owner() external view returns (address);
+}
+
+// Custom interface for IERC721 to ensure compatibility with ownerOf(0) check
+interface IERC721Custom is IERC721 {
+    function ownerOf(uint256 tokenId) external view returns (address owner);
+}
+
 contract CatalystNFTStaking is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -32,7 +42,7 @@ contract CatalystNFTStaking is Ownable, ReentrancyGuard, Pausable {
 
     // ---------- Parameters (governable by owner / governance) ----------
     uint256 public baseRewardRatePerDay; // CATA units per NFT per day
-    uint256 public unstakeBurnFeeBP;    // basis points for unstake burn fee
+    uint256 public unstakeBurnFeeBP;     // basis points for unstake burn fee
     uint256 public constant MAX_BATCH = 50;
 
     // Tiered registration fees base (owner can adjust)
@@ -63,8 +73,8 @@ contract CatalystNFTStaking is Ownable, ReentrancyGuard, Pausable {
         bool registered;
         bool verified;
         uint256 stakedCount;
-        uint256 totalBurned;          // CATA burned attributed to this collection
-        uint256 declaredSupply;       // declared supply at registration time
+        uint256 totalBurned;        // CATA burned attributed to this collection
+        uint256 declaredSupply;      // declared supply at registration time
     }
 
     struct Proposal {
@@ -80,7 +90,7 @@ contract CatalystNFTStaking is Ownable, ReentrancyGuard, Pausable {
 
     // ---------- Storage ----------
     mapping(address => mapping(uint256 => StakeInfo)) public stakeLog; // collection -> tokenId -> StakeInfo
-    mapping(address => CollectionConfig) public collectionConfigs;     // collection address -> config
+    mapping(address => CollectionConfig) public collectionConfigs;      // collection address -> config
     EnumerableSet.AddressSet private _registeredCollections;           // enumerable list for frontend
 
     // user portfolio: collection -> user -> list of tokenIds
@@ -102,8 +112,7 @@ contract CatalystNFTStaking is Ownable, ReentrancyGuard, Pausable {
     uint256 public totalStakersCount;
 
     // ---------- Events ----------
-    event CollectionRegistered(address indexed collection, address indexed registrar, uint256 feePaid, uint256 declaredSupply);
-    event CollectionVerified(address indexed collection, bool verified);
+    event CollectionRegistered(address indexed collection, address indexed registrar, uint256 feePaid, uint256 declaredSupply, bool verifiedStatus);
     event Stake(address indexed user, address indexed collection, uint256 indexed tokenId, bool permanent);
     event Unstake(address indexed user, address indexed collection, uint256 indexed tokenId);
     event BatchStake(address indexed user, address indexed collection, uint256 count, bool permanent);
@@ -129,7 +138,7 @@ contract CatalystNFTStaking is Ownable, ReentrancyGuard, Pausable {
         uint256 _minStakedToQualifyBonus,
         uint256 _proposalDuration,
         uint256 _governanceTopCollectionsPercent
-    ) {
+    ) Ownable(msg.sender) {
         require(_cataToken != address(0), "zero CATA");
         require(_treasury != address(0), "zero treasury");
         require(_unstakeBurnFeeBP <= 10000, "bad bp");
@@ -196,10 +205,36 @@ contract CatalystNFTStaking is Ownable, ReentrancyGuard, Pausable {
     }
 
     // ---------- Collection Registration (tiered) ----------
-    // User passes declaredSupply (best-effort). We compute fee bracket from declaredSupply.
-    function registerCollection(address collection, uint256 declaredSupply) external whenNotPaused nonReentrant {
+    function registerCollection(address collection, uint256 declaredSupply, bool verified) external whenNotPaused nonReentrant {
         require(collection != address(0), "zero collection");
         require(!collectionConfigs[collection].registered, "already registered");
+
+        // Determine if caller is contract owner or collection owner
+        bool isContractOwner = msg.sender == owner();
+        bool isCollectionOwner = false;
+
+        // Check collection owner using ERC721 ownerOf pattern (try/catch for safety)
+        try IERC721Custom(collection).ownerOf(0) returns (address ownerAddr) {
+            if (ownerAddr == msg.sender) {
+                isCollectionOwner = true;
+            }
+        } catch {
+            // If token 0 doesn't exist, fallback to Ownable owner() check if supported
+            try IOwnable(collection).owner() returns (address contractOwner) {
+                if (contractOwner == msg.sender) {
+                    isCollectionOwner = true;
+                }
+            } catch {
+                isCollectionOwner = false;
+            }
+        }
+
+        // Tier rules:
+        // - Contract Owner or Collection Owner can set `verified` status
+        // - All others are forced to UNVERIFIED
+        if (!isContractOwner && !isCollectionOwner) {
+            verified = false;
+        }
 
         uint256 fee = _registrationFeeBySupply(declaredSupply);
         // pull fee
@@ -217,14 +252,14 @@ contract CatalystNFTStaking is Ownable, ReentrancyGuard, Pausable {
         // register
         collectionConfigs[collection] = CollectionConfig({
             registered: true,
-            verified: false,
+            verified: verified,
             stakedCount: 0,
             totalBurned: burnAmt,
             declaredSupply: declaredSupply
         });
         _registeredCollections.add(collection);
 
-        emit CollectionRegistered(collection, msg.sender, fee, declaredSupply);
+        emit CollectionRegistered(collection, msg.sender, fee, declaredSupply, verified);
     }
 
     function _registrationFeeBySupply(uint256 declaredSupply) internal view returns (uint256) {
@@ -240,11 +275,7 @@ contract CatalystNFTStaking is Ownable, ReentrancyGuard, Pausable {
         }
     }
 
-    function verifyCollection(address collection, bool verified) external onlyOwner {
-        require(collectionConfigs[collection].registered, "not registered");
-        collectionConfigs[collection].verified = verified;
-        emit CollectionVerified(collection, verified);
-    }
+    // Removed the now redundant verifyCollection function.
 
     // ---------- Staking (single & batch) ----------
     function termStake(address collection, uint256 tokenId) external whenNotPaused nonReentrant onlyRegistered(collection) {
