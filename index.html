@@ -1,198 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Catalyst dApp</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; background:#111; color:#eee; margin:0; padding:20px; }
-    h1,h2,h3 { color:#f0b90b; }
-    .panel { background:#1c1c1c; padding:20px; margin-bottom:20px; border-radius:10px; }
-    button { background:#f0b90b; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; font-weight:bold; }
-    button:hover { opacity:0.85; }
-    input,select { padding:6px; margin:5px; border-radius:5px; border:1px solid #333; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
-    th,td { border:1px solid #333; padding:8px; text-align:left; }
-    .highlight { font-weight:bold; color:#0ff; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalyst NFT Staking Protocol</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: #1e1e1e;
+            padding: 20px 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+        h1, h2, h3 {
+            color: #ffffff;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-top: 20px;
+        }
+        h2 {
+            color: #4CAF50;
+            font-size: 1.8em;
+        }
+        h3 {
+            color: #ff9800;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .button-group button, .connect-wallet {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .button-group button:hover, .connect-wallet:hover {
+            background-color: #45a049;
+        }
+        .button-group button.secondary {
+            background-color: #f44336;
+        }
+        .button-group button.secondary:hover {
+            background-color: #e53935;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .card {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .card h4 {
+            margin-top: 0;
+            color: #ffeb3b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            background-color: #333;
+            color: #ffeb3b;
+        }
+        .transparency-section p {
+            background: #2a2a2a;
+            padding: 15px;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+        }
+        .proposal-card {
+            border-left: 4px solid #2196F3;
+        }
+        .proposal-card h4 {
+            color: #2196F3;
+        }
+        .search-container {
+            margin-bottom: 20px;
+        }
+        .search-container input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+        }
+    </style>
 </head>
 <body>
-  <h1>🔥 Catalyst Protocol</h1>
-  <p>Universal NFT Staking & Governance • Immutable 90/9/1 Fee Rule</p>
 
-  <!-- Wallet -->
-  <div class="panel">
-    <h2>Wallet</h2>
-    <button onclick="connectWallet()">Connect Wallet</button>
-    <p id="walletAddr">Not connected</p>
-    <p>My Burned CATA: <span class="highlight" id="myBurned">0</span></p>
-    <p>My Staked NFTs: <span class="highlight" id="myStaked">0</span></p>
-  </div>
+<div class="container">
+    <h1>Catalyst NFT Staking Protocol</h1>
+    <p>Welcome to the Catalyst NFT Staking Protocol. This system allows users to stake NFTs to earn CATA rewards and participate in governance.</p>
 
-  <!-- Protocol Transparency -->
-  <div class="panel">
-    <h2>Protocol Transparency</h2>
-    <p>Fee Distribution: 🔥 Burn 90% • 🏦 Treasury 9% • (Immutable)</p>
-    <p>Total Burned CATA: <span class="highlight" id="totalBurned">0</span></p>
-    <p>Total Staked NFTs: <span class="highlight" id="totalStaked">0</span></p>
-    <p>Treasury Balance: <span class="highlight" id="treasuryBal">0</span></p>
-    <p>Treasury Bonus Cap: <span class="highlight" id="treasuryCap">0</span>%</p>
-  </div>
+    <hr>
 
-  <!-- Collection Management -->
-  <div class="panel">
-    <h2>Collection Management</h2>
-    <input id="colAddr" placeholder="Collection contract address">
-    <button onclick="registerCollection()">Register Collection</button>
-    <h3>All Registered Collections</h3>
-    <input id="searchCol" placeholder="Search collection..." oninput="filterCollections()">
-    <table id="collectionsTable">
-      <tr><th>Collection</th><th>Verified</th><th>Staked</th><th>Burned</th></tr>
-    </table>
-  </div>
+    <div class="section">
+        <h2>Show Transparency</h2>
+        <div class="transparency-section">
+            <div class="card">
+                <h4>Protocol Statistics</h4>
+                <p><strong>Total Burned CATA:</strong> <span id="totalBurnedCATA">...</span> CATA</p>
+                <p><strong>Total Staked NFTs:</strong> <span id="totalStakedNFTs">...</span> NFTs</p>
+                <p><strong>Treasury Balance:</strong> <span id="treasuryBalance">...</span> CATA</p>
+                <p><strong>Bonus Pool Cap:</strong> <span id="bonusPoolCap">...</span> CATA</p>
+            </div>
+            <div class="card">
+                <h4>Fee Structure</h4>
+                <p>
+                    All protocol fees follow a fixed rule: 90% is burned, 9% goes to the treasury, and 1% is sent to the deployer. This structure ensures a deflationary mechanism while funding the protocol's treasury.
+                </p>
+            </div>
+        </div>
+    </div>
 
-  <!-- NFT Staking -->
-  <div class="panel">
-    <h2>NFT Staking</h2>
-    <input id="stakeCol" placeholder="Collection address">
-    <input id="tokenId" placeholder="Token ID">
-    <button onclick="stakeTerm()">Stake Term</button>
-    <button onclick="stakePermanent()">Stake Permanent</button>
-    <button onclick="unstake()">Unstake</button>
-    <button onclick="harvestAll()">Harvest Rewards</button>
-  </div>
+    <hr>
 
-  <!-- Governance -->
-  <div class="panel">
-    <h2>Governance</h2>
-    <h3>Active Proposals</h3>
-    <table id="proposalTable">
-      <tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th><th>Action</th></tr>
-    </table>
-    <h3>Create Proposal</h3>
-    <input id="propTitle" placeholder="Proposal title">
-    <button onclick="createProposal()">Submit Proposal</button>
-  </div>
+    <div class="section">
+        <h2>All Key User Functions</h2>
+        <p>Interact with the core functions of the protocol.</p>
+        <div class="button-group">
+            <button class="connect-wallet">Connect Wallet</button>
+        </div>
+        <div class="button-group">
+            <button onclick="registerCollection()">Register Collection</button>
+            <button onclick="termStake()">Term Stake</button>
+            <button onclick="permanentStake()">Permanent Stake</button>
+            <button onclick="unstake()">Unstake</button>
+            <button onclick="harvestRewards()">Harvest Rewards</button>
+            <label><input type="checkbox" id="batchToggle"> Enable Batch Functions</label>
+        </div>
+        <div class="button-group">
+            <button onclick="propose()">Propose</button>
+            <button onclick="vote()">Vote</button>
+            <button onclick="executeProposal()">Execute Proposal</button>
+        </div>
+    </div>
 
-<script>
-let provider, signer, contract;
-const contractAddress = "YOUR_CONTRACT_ADDRESS";
-const contractABI = [ /* Catalyst ABI here */ ];
+    <hr>
 
-async function connectWallet(){
-  if(window.ethereum){
-    provider = new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    signer = provider.getSigner();
-    contract = new ethers.Contract(contractAddress, contractABI, signer);
-    const addr = await signer.getAddress();
-    document.getElementById("walletAddr").innerText = addr;
-    refreshData();
-  } else { alert("Please install MetaMask!"); }
-}
+    <div class="section">
+        <h2>Collections Section</h2>
+        <p>Explore the registered NFT collections within the protocol.</p>
+        
+        <div class="search-container">
+            <input type="text" id="collectionSearch" placeholder="Search by collection address or name...">
+        </div>
+        
+        <h3>Verified Collections</h3>
+        <div id="verifiedCollections">
+            <div class="card">
+                <h4>Example Verified Collection</h4>
+                <p>Address: <code>0x...</code></p>
+                <p>Burn Contribution: <span class="burn-contribution">15,000,000 CATA</span></p>
+                <p>Staked Count: <span class="staked-count">5,000 NFTs</span></p>
+            </div>
+            </div>
 
-async function refreshData(){
-  if(!contract) return;
-  // Global stats
-  document.getElementById("totalStaked").innerText = (await contract.totalStakedNFTsCount()).toString();
-  document.getElementById("totalBurned").innerText = (await contract.totalBurnedCATA()).toString();
+        <h3>Unverified Collections</h3>
+        <div id="unverifiedCollections">
+            <div class="card">
+                <h4>Example Unverified Collection</h4>
+                <p>Address: <code>0x...</code></p>
+                <p>Burn Contribution: <span class="burn-contribution">500,000 CATA</span></p>
+                <p>Staked Count: <span class="staked-count">1,500 NFTs</span></p>
+            </div>
+            </div>
+    </div>
 
-  // Treasury
-  const tAddr = await contract.treasuryAddress();
-  const bal = await contract.cataToken().then(token => {
-    let tokenC = new ethers.Contract(token, ["function balanceOf(address) view returns(uint256)"], provider);
-    return tokenC.balanceOf(tAddr);
-  });
-  document.getElementById("treasuryBal").innerText = bal.toString();
-  document.getElementById("treasuryCap").innerText = (await contract.treasuryBonusCapBP()).toString()/100;
+    <hr>
 
-  // User stats
-  const user = await signer.getAddress();
-  document.getElementById("myBurned").innerText = (await contract.getBurnedByAddress(user)).toString();
-  let totalStaked = 0;
-  const cols = await contract.getRegisteredCollections();
-  for(let addr of cols){
-    let tokens = await contract.getUserStakedTokens(addr, user);
-    totalStaked += tokens.length;
-  }
-  document.getElementById("myStaked").innerText = totalStaked;
+    <div class="section">
+        <h2>Governance Section</h2>
+        <p>Details on the protocol's governance model and active proposals.</p>
+        
+        <h3>Proposals</h3>
+        <div id="proposalsList">
+            <div class="card proposal-card">
+                <h4>Proposal to Increase Base Reward Rate</h4>
+                <p>ID: <code>0x...</code></p>
+                <p>Type: <strong>Base Reward</strong></p>
+                <p>Status: Voting Active</p>
+                <div class="button-group">
+                    <button onclick="voteFor('0x...')">Vote For</button>
+                    <button class="secondary" onclick="voteAgainst('0x...')">Vote Against</button>
+                    <button onclick="executeProposal('0x...')">Execute</button>
+                </div>
+            </div>
+            </div>
+    </div>
 
-  // Collections table
-  let html = "<tr><th>Collection</th><th>Verified</th><th>Staked</th><th>Burned</th></tr>";
-  for(let addr of cols){
-    let cfg = await contract.getCollectionConfig(addr);
-    html += `<tr><td>${addr}</td><td>${cfg.verified?"✅":"❌"}</td><td>${cfg.stakedCount}</td><td>${cfg.totalBurned}</td></tr>`;
-  }
-  document.getElementById("collectionsTable").innerHTML = html;
+</div>
 
-  // Proposals
-  let rows = "<tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th><th>Action</th></tr>";
-  let count = await contract.proposalCount();
-  for(let i=0;i<count;i++){
-    let p = await contract.proposals(i);
-    rows += `<tr>
-      <td>${i}</td><td>${p.title}</td>
-      <td>${p.votesFor}</td><td>${p.votesAgainst}</td>
-      <td>${p.executed?"Executed":"Active"}</td>
-      <td>
-        <button onclick="vote(${i},true)">For</button>
-        <button onclick="vote(${i},false)">Against</button>
-        <button onclick="executeProposal(${i})">Execute</button>
-      </td></tr>`;
-  }
-  document.getElementById("proposalTable").innerHTML = rows;
-}
-
-async function registerCollection(){
-  const addr = document.getElementById("colAddr").value;
-  await contract.registerCollection(addr);
-  refreshData();
-}
-
-async function stakeTerm(){
-  const col = document.getElementById("stakeCol").value;
-  const tokenId = document.getElementById("tokenId").value;
-  await contract.termStake(col, tokenId);
-  refreshData();
-}
-
-async function stakePermanent(){
-  const col = document.getElementById("stakeCol").value;
-  const tokenId = document.getElementById("tokenId").value;
-  await contract.permanentStake(col, tokenId);
-  refreshData();
-}
-
-async function unstake(){
-  const col = document.getElementById("stakeCol").value;
-  const tokenId = document.getElementById("tokenId").value;
-  await contract.unstake(col, tokenId);
-  refreshData();
-}
-
-async function harvestAll(){
-  const col = document.getElementById("stakeCol").value;
-  await contract.harvestAll(col);
-  refreshData();
-}
-
-async function vote(id, support){
-  await contract.vote(id, support);
-  refreshData();
-}
-
-async function executeProposal(id){
-  await contract.executeProposal(id);
-  refreshData();
-}
-
-async function createProposal(){
-  const title = document.getElementById("propTitle").value;
-  await contract.createProposal(title);
-  refreshData();
-}
-
-setInterval(refreshData, 30000);
-</script>
 </body>
 </html>
