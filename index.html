@@ -1,235 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catalyst Dapp</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
-            color: #e2e8f0;
-        }
-        .container {
-            max-width: 1280px;
-            margin: auto;
-        }
-        .section-title {
-            position: relative;
-            padding-bottom: 0.5rem;
-            margin-bottom: 2rem;
-        }
-        .section-title::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 50px;
-            height: 3px;
-            background-color: #3b82f6;
-            border-radius: 9999px;
-        }
-        .card {
-            background-color: #1a202c;
-            border: 1px solid #2d3748;
-            border-radius: 1rem;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalyst NFT Staking DApp</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 </head>
-<body class="bg-gray-900 text-gray-200">
+<body class="bg-gray-900 text-white">
 
-    <!-- Header -->
-    <header class="bg-gray-800 bg-opacity-70 backdrop-blur-lg sticky top-0 z-50 p-4">
-        <nav class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-white">Catalyst Dapp</h1>
-            <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-full transition-colors duration-300">
-                Connect Wallet
-            </button>
-        </nav>
-    </header>
+  <!-- Header -->
+  <header class="p-6 bg-gray-800 flex justify-between items-center shadow-lg">
+    <h1 class="text-2xl font-bold">Catalyst NFT Staking</h1>
+    <button id="connectWallet" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded">Connect Wallet</button>
+  </header>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8 space-y-12">
+  <main class="p-6 space-y-8">
 
-        <!-- Transparency Section -->
-        <section class="text-center py-16 bg-blue-900 bg-opacity-30 rounded-3xl shadow-lg border border-blue-800">
-            <h2 class="text-5xl font-extrabold text-white leading-tight mb-4">
-                Transparent and Decentralized NFT Staking
-            </h2>
-            <p class="text-lg text-gray-300 max-w-2xl mx-auto mb-8">
-                Catalyst empowers NFT holders with a transparent and secure platform for staking their assets and participating in governance.
-            </p>
-            <div class="flex justify-center space-x-4">
-                <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300">
-                    Get Started
-                </button>
-                <button class="bg-transparent border-2 border-white text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300">
-                    Learn More
-                </button>
-            </div>
-        </section>
+    <!-- Transparency -->
+    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h2 class="text-xl font-semibold mb-4">Transparency</h2>
+      <div id="transparencyData" class="grid grid-cols-2 gap-4 text-sm">
+        <div>Total Staked NFTs: <span class="font-bold" id="totalStakedNFTs">0</span></div>
+        <div>Base Reward Rate: <span class="font-bold" id="baseRewardRate">0</span></div>
+        <div>Treasury Balance: <span class="font-bold" id="treasuryBalance">0</span></div>
+        <div>Top Collections Count: <span class="font-bold" id="topCollectionsCount">0</span></div>
+      </div>
+    </section>
 
-        <!-- Key User Functions Section -->
-        <section id="user-functions" class="space-y-8">
-            <h3 class="text-4xl font-bold section-title">User Functions</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Collection Registration -->
+    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h2 class="text-xl font-semibold mb-4">Collection Registration (Admin)</h2>
+      <input type="text" id="collectionAddress" placeholder="Collection Address" class="w-full p-2 text-black rounded mb-2">
+      <input type="number" id="declaredSupply" placeholder="Declared Max Supply" class="w-full p-2 text-black rounded mb-2">
+      <select id="collectionTier" class="w-full p-2 text-black rounded mb-2">
+        <option value="0">Unverified</option>
+        <option value="1">Verified</option>
+      </select>
+      <button id="registerCollection" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full">Register Collection</button>
+    </section>
 
-                <!-- Stake/Unstake NFT -->
-                <div class="card p-6 flex flex-col items-center text-center">
-                    <svg class="w-16 h-16 text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8a4 4 0 00-4 4v2a4 4 0 004 4m0-8V6a4 4 0 014-4h2a4 4 0 014 4v2m-8 0H6a4 4 0 00-4 4v2a4 4 0 004 4h2m8 0h4a4 4 0 004-4v-2a4 4 0 00-4-4h-4"></path></svg>
-                    <h4 class="text-xl font-semibold mb-2">Stake NFT</h4>
-                    <p class="text-gray-400 mb-4">Lock your NFT to earn rewards.</p>
-                    <div class="flex space-x-2 w-full">
-                        <button class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-full transition-colors duration-300">Stake Term</button>
-                        <button class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-full transition-colors duration-300">Stake Permanent</button>
-                    </div>
-                </div>
+    <!-- Key User Functions -->
+    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h2 class="text-xl font-semibold mb-4">Key User Functions</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <button id="stakeTerm" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">Stake (Term)</button>
+        <button id="stakePermanent" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded">Stake (Permanent)</button>
+        <button id="batchStake" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded">Batch Stake</button>
+        <button id="batchUnstake" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">Batch Unstake</button>
+        <button id="harvestRewards" class="bg-teal-500 hover:bg-teal-600 px-4 py-2 rounded">Harvest Rewards</button>
+      </div>
+    </section>
 
-                <!-- Unstake -->
-                <div class="card p-6 flex flex-col items-center text-center">
-                    <svg class="w-16 h-16 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <h4 class="text-xl font-semibold mb-2">Unstake NFT</h4>
-                    <p class="text-gray-400 mb-4">Withdraw your NFT from the staking pool.</p>
-                    <button class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-full transition-colors duration-300">Unstake</button>
-                </div>
+    <!-- Collections Section -->
+    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h2 class="text-xl font-semibold mb-4">Collections</h2>
+      <div class="grid grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-lg font-bold">Verified Collections</h3>
+          <ul id="verifiedCollections" class="list-disc list-inside space-y-1"></ul>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold">Unverified Collections</h3>
+          <ul id="unverifiedCollections" class="list-disc list-inside space-y-1"></ul>
+        </div>
+      </div>
+    </section>
 
-                <!-- Claim Rewards -->
-                <div class="card p-6 flex flex-col items-center text-center">
-                    <svg class="w-16 h-16 text-yellow-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    <h4 class="text-xl font-semibold mb-2">Claim Rewards</h4>
-                    <p class="text-gray-400 mb-4">Harvest your earned tokens.</p>
-                    <button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 rounded-full transition-colors duration-300">Claim</button>
-                </div>
+    <!-- Governance Section -->
+    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h2 class="text-xl font-semibold mb-4">Governance</h2>
+      <div class="space-y-4">
+        <div>
+          <h3 class="font-bold">Propose</h3>
+          <select id="proposalType" class="w-full p-2 text-black rounded mb-2">
+            <option value="0">Base Reward</option>
+            <option value="1">Harvest Fee</option>
+            <option value="2">Unstake Fee</option>
+            <option value="3">Registration Fee</option>
+            <option value="4">Treasury Split</option>
+            <option value="5">Voting Param</option>
+            <option value="6">Tier Upgrade</option>
+          </select>
+          <input type="number" id="newValue" placeholder="New Value" class="w-full p-2 text-black rounded mb-2">
+          <input type="text" id="collectionContext" placeholder="Collection Address (if applicable)" class="w-full p-2 text-black rounded mb-2">
+          <button id="createProposal" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded w-full">Create Proposal</button>
+        </div>
+        <div>
+          <h3 class="font-bold">Vote</h3>
+          <input type="text" id="proposalIdVote" placeholder="Proposal ID" class="w-full p-2 text-black rounded mb-2">
+          <button id="voteProposal" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full">Vote</button>
+        </div>
+        <div>
+          <h3 class="font-bold">Execute</h3>
+          <input type="text" id="proposalIdExecute" placeholder="Proposal ID" class="w-full p-2 text-black rounded mb-2">
+          <button id="executeProposal" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full">Execute</button>
+        </div>
+      </div>
+    </section>
 
-                <!-- View Staked NFTs -->
-                <div class="card p-6 flex flex-col items-center text-center">
-                    <svg class="w-16 h-16 text-purple-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-                    <h4 class="text-xl font-semibold mb-2">View My Stakes</h4>
-                    <p class="text-gray-400 mb-4">See your staked NFTs and their status.</p>
-                    <button class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-full transition-colors duration-300">View</button>
-                </div>
+  </main>
 
-            </div>
-        </section>
+  <script>
+    const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS";
+    const ABI = []; // Paste your contract ABI here
 
-        <!-- Collection Registration -->
-        <section id="collection-registration" class="card p-8 space-y-6">
-            <h3 class="text-3xl font-bold section-title">Collection Registration</h3>
-            <p class="text-gray-400">
-                Register a new NFT collection on the Catalyst protocol.
-            </p>
-            <form class="space-y-4">
-                <div>
-                    <label for="collectionAddress" class="block text-gray-300 mb-2">Collection Address</label>
-                    <input type="text" id="collectionAddress" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter collection contract address">
-                </div>
-                <div class="flex items-center">
-                    <input type="checkbox" id="permanentStake" class="h-4 w-4 text-blue-600 rounded focus:ring-blue-500" checked>
-                    <label for="permanentStake" class="ml-2 text-gray-300">Enable Permanent Staking</label>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition-colors duration-300">
-                    Register Collection
-                </button>
-            </form>
-        </section>
+    let provider, signer, contract;
 
-        <!-- Collections Section -->
-        <section id="collections" class="space-y-8">
-            <h3 class="text-4xl font-bold section-title">Collections</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                
-                <!-- Verified Collections -->
-                <div class="card p-6 space-y-4">
-                    <h4 class="text-2xl font-semibold text-blue-400">Verified Collections</h4>
-                    <p class="text-gray-400">High-trust collections with full protocol integration.</p>
-                    <ul class="space-y-4">
-                        <li class="p-4 bg-gray-800 rounded-xl flex justify-between items-center">
-                            <span class="font-medium text-white">Bored Ape Yacht Club</span>
-                            <div class="space-x-2">
-                                <span class="text-sm font-semibold text-green-400 bg-green-900 px-3 py-1 rounded-full">Staking Live</span>
-                                <button class="bg-gray-700 text-white text-sm px-4 py-1 rounded-full hover:bg-gray-600">Details</button>
-                            </div>
-                        </li>
-                        <li class="p-4 bg-gray-800 rounded-xl flex justify-between items-center">
-                            <span class="font-medium text-white">CryptoPunks</span>
-                            <div class="space-x-2">
-                                <span class="text-sm font-semibold text-green-400 bg-green-900 px-3 py-1 rounded-full">Staking Live</span>
-                                <button class="bg-gray-700 text-white text-sm px-4 py-1 rounded-full hover:bg-gray-600">Details</button>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
+    document.getElementById("connectWallet").addEventListener("click", async () => {
+      if (window.ethereum) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+        alert("Wallet Connected!");
+      } else {
+        alert("MetaMask not found");
+      }
+    });
 
-                <!-- Unverified Collections -->
-                <div class="card p-6 space-y-4">
-                    <h4 class="text-2xl font-semibold text-yellow-400">Unverified Collections</h4>
-                    <p class="text-gray-400">New collections pending verification, with escrow.</p>
-                    <ul class="space-y-4">
-                        <li class="p-4 bg-gray-800 rounded-xl flex justify-between items-center">
-                            <span class="font-medium text-white">Pixel Paws</span>
-                            <div class="space-x-2">
-                                <span class="text-sm font-semibold text-gray-400 bg-gray-900 px-3 py-1 rounded-full">Pending</span>
-                                <button class="bg-gray-700 text-white text-sm px-4 py-1 rounded-full hover:bg-gray-600">Details</button>
-                            </div>
-                        </li>
-                        <li class="p-4 bg-gray-800 rounded-xl flex justify-between items-center">
-                            <span class="font-medium text-white">Mystic Monsters</span>
-                            <div class="space-x-2">
-                                <span class="text-sm font-semibold text-gray-400 bg-gray-900 px-3 py-1 rounded-full">Pending</span>
-                                <button class="bg-gray-700 text-white text-sm px-4 py-1 rounded-full hover:bg-gray-600">Details</button>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- Governance Section -->
-        <section id="governance" class="space-y-8">
-            <h3 class="text-4xl font-bold section-title">Governance</h3>
-            <p class="text-gray-400 max-w-2xl">
-                The Catalyst DAO allows token holders to propose, vote on, and execute changes to the protocol.
-            </p>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                <!-- Propose -->
-                <div class="card p-6 text-center">
-                    <svg class="w-16 h-16 text-blue-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    <h4 class="text-xl font-semibold mb-2">Propose</h4>
-                    <p class="text-gray-400 mb-4">Create a new governance proposal.</p>
-                    <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-full transition-colors duration-300">New Proposal</button>
-                </div>
-
-                <!-- Vote -->
-                <div class="card p-6 text-center">
-                    <svg class="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <h4 class="text-xl font-semibold mb-2">Vote</h4>
-                    <p class="text-gray-400 mb-4">Cast your vote on active proposals.</p>
-                    <button class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-full transition-colors duration-300">View Proposals</button>
-                </div>
-
-                <!-- Execute -->
-                <div class="card p-6 text-center">
-                    <svg class="w-16 h-16 text-purple-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    <h4 class="text-xl font-semibold mb-2">Execute</h4>
-                    <p class="text-gray-400 mb-4">Execute proposals that have passed.</p>
-                    <button class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-full transition-colors duration-300">Execute</button>
-                </div>
-
-            </div>
-
-        </section>
-        
-    </main>
-
-    <!-- Footer -->
-    <footer class="text-center py-6 bg-gray-800 bg-opacity-70 backdrop-blur-lg mt-12">
-        <p class="text-gray-400">&copy; 2024 Catalyst. All rights reserved.</p>
-    </footer>
+    // More JS logic for reading/writing to contract will go here...
+  </script>
 
 </body>
 </html>
