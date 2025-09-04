@@ -1,966 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Catalyst NFT Staking — Dashboard</title>
-
-  <!-- Ethers.js -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
-  <!-- Tailwind for styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <style>
-    :root{
-      --bg:#06101a;
-      --card:#0f1720;
-      --muted:#9aa4b2;
-      --accent:#ff6b35;
-      --glass: rgba(255,255,255,0.03);
-    }
-    html,body{height:100%}
-    body{
-      background:linear-gradient(180deg,#07121a 0%,var(--bg) 100%);
-      color:#e6eef6;
-      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
-      padding:28px;
-    }
-    .container{max-width:1200px;margin:0 auto;}
-    .card{background:var(--card);border:1px solid rgba(255,255,255,0.03);border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(2,6,23,0.6);}
-    .muted{color:var(--muted)}
-    .accent{color:var(--accent)}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
-    .btn-primary{background:linear-gradient(90deg,var(--accent),#ff8b57);color:#071014}
-    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:#dbe8f5}
-    .small{font-size:13px;padding:6px 10px}
-    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    @media(max-width:900px){
-      .grid-4{grid-template-columns:repeat(2,1fr)}
-      .grid-3{grid-template-columns:repeat(1,1fr)}
-    }
-    .badge{background:var(--glass);padding:6px 8px;border-radius:8px;font-size:12px;color:var(--muted)}
-    pre { white-space: pre-wrap; word-break: break-word; font-size:12px; }
-    input, select, textarea { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03); color: #e6eef6; padding: 8px; border-radius: 8px; }
-    label { font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
-    .link { color: var(--accent); text-decoration: underline; cursor:pointer; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Catalyst Protocol Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 </head>
-<body>
-  <main class="container space-y-6">
+<body class="bg-gray-900 text-gray-200">
+  <div class="max-w-6xl mx-auto p-6">
     <!-- Header -->
-    <header class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-extrabold">Catalyst NFT Staking Protocol</h1>
-        <p class="muted small mt-1">Stake NFTs • Earn <span class="accent">CATA</span> • Power NFT ecosystems</p>
-      </div>
-
-      <div class="flex items-center gap-4">
-        <div class="text-right">
-          <div class="muted small">Connected wallet</div>
-          <div id="wallet-address" class="font-medium">Not connected</div>
-        </div>
-        <div class="text-right">
-          <div class="muted small">CATA Balance</div>
-          <div id="wallet-balance" class="font-medium">0</div>
-        </div>
-
-        <button id="connect-btn" class="btn btn-primary">Connect Wallet</button>
-      </div>
+    <header class="flex items-center justify-between mb-8">
+      <h1 class="text-2xl font-bold">Catalyst Dashboard</h1>
+      <button id="connectBtn" class="px-4 py-2 bg-green-600 rounded">Connect Wallet</button>
     </header>
 
-    <!-- Top stats -->
-    <section class="card">
-      <div class="grid-4">
-        <div class="text-center">
-          <div class="muted small">Total Staked NFTs</div>
-          <div id="total-staked" class="text-xl font-semibold">0</div>
-        </div>
+    <!-- Global Stats -->
+    <section class="grid grid-cols-4 gap-4 mb-6">
+      <div class="bg-gray-800 p-4 rounded">
+        <p class="text-sm text-gray-400">Total Staked NFTs</p>
+        <p id="totalStaked" class="text-xl font-semibold">—</p>
+      </div>
+      <div class="bg-gray-800 p-4 rounded">
+        <p class="text-sm text-gray-400">Total Stakers</p>
+        <p id="totalStakers" class="text-xl font-semibold">—</p>
+      </div>
+      <div class="bg-gray-800 p-4 rounded">
+        <p class="text-sm text-gray-400">Treasury Balance</p>
+        <p id="treasuryBalance" class="text-xl font-semibold">—</p>
+      </div>
+      <div class="bg-gray-800 p-4 rounded">
+        <p class="text-sm text-gray-400">Total Burned</p>
+        <p id="totalBurned" class="text-xl font-semibold">—</p>
+      </div>
+    </section>
 
-        <div class="text-center">
-          <div class="muted small">Total Stakers</div>
-          <div id="total-stakers" class="text-xl font-semibold">0</div>
+    <!-- User Stats -->
+    <section class="bg-gray-800 p-6 rounded mb-6">
+      <h2 class="text-lg font-semibold mb-4">My Stats</h2>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-400">Pending CATA</p>
+          <p id="pendingCata" class="text-sm">0.00</p>
         </div>
-
-        <div class="text-center">
-          <div class="muted small">Base Reward Rate</div>
-          <div id="base-reward-rate" class="text-xl font-semibold">0</div>
+        <div class="bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-400">My Staked NFTs</p>
+          <p id="myStakedCount" class="text-sm">0</p>
         </div>
+        <div class="bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-400">My Burned CATA</p>
+          <p id="myBurned" class="text-sm">0</p>
+        </div>
+      </div>
+      <div class="mt-4 flex gap-3">
+        <button id="harvestBtn" class="px-4 py-2 bg-indigo-600 rounded">Harvest All</button>
+        <button id="burnBtn" class="px-4 py-2 border border-gray-600 rounded">Burn CATA</button>
+        <button id="stakeBtn" class="px-4 py-2 border border-gray-600 rounded">Stake NFT</button>
+      </div>
+    </section>
 
-        <div class="text-center">
-          <div class="muted small">Unstake Burn Fee</div>
-          <div id="unstake-burn-fee" class="text-xl font-semibold">0</div>
+    <!-- Top Burners -->
+    <section class="bg-gray-800 p-6 rounded mb-6">
+      <h2 class="text-lg font-semibold mb-4">Top 1% Burners</h2>
+      <div id="burnerList" class="space-y-2 max-h-60 overflow-auto">
+        <p class="text-sm text-gray-400">Loading...</p>
+      </div>
+    </section>
+
+    <!-- Protocol Health -->
+    <section class="bg-gray-800 p-6 rounded mb-6">
+      <h2 class="text-lg font-semibold mb-4">Protocol Health</h2>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-400">Registered Collections</p>
+          <p id="registeredCollections" class="text-sm">—</p>
+        </div>
+        <div class="bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-400">Bonus Pool % Per Cycle</p>
+          <p id="bonusPoolPercent" class="text-sm">—</p>
+        </div>
+        <div class="bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-400">Next Distribution</p>
+          <p id="nextDistribution" class="text-sm">—</p>
         </div>
       </div>
     </section>
 
-    <!-- three-column area -->
-    <div class="grid-3">
-      <!-- My rewards card -->
-      <section class="card">
-        <div class="flex justify-between items-start">
-          <div>
-            <h2 class="font-bold">My Rewards</h2>
-            <p class="muted small mt-1">Pending harvest, burn fee, estimated payout</p>
-          </div>
-          <div class="badge">Harvest Burn: <span id="harvest-burn-fee" class="accent">0%</span></div>
-        </div>
-
-        <div class="mt-4">
-          <div class="text-lg">Pending CATA</div>
-          <div id="pending-rewards" class="text-3xl font-extrabold accent">0.00</div>
-          <div class="mt-4 flex gap-3">
-            <button id="harvest-btn" class="btn btn-primary small" disabled>Harvest All</button>
-            <button id="refresh-btn" class="btn btn-ghost small">Refresh</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Earnings and contributors -->
-      <section class="card">
-        <h2 class="font-bold">Earnings & Contributions</h2>
-        <p class="muted small mt-1">Deployer share, community treasury, protocol burn</p>
-
-        <div class="grid-4 mt-4 text-center">
-          <div>
-            <div class="muted small">Deployer (CATA)</div>
-            <div id="deployer-earnings" class="font-semibold">0</div>
-          </div>
-          <div>
-            <div class="muted small">Community Treasury</div>
-            <div id="treasury-earnings" class="font-semibold">0</div>
-          </div>
-          <div>
-            <div class="muted small">Total Burn</div>
-            <div id="total-burn" class="font-semibold">0</div>
-          </div>
-          <div>
-            <div class="muted small">Registered Collections</div>
-            <div id="registered-count" class="font-semibold">0</div>
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <h3 class="font-semibold small muted">Top Contributing Collections</h3>
-          <div id="collections-council-list" class="space-y-2 mt-3"></div>
-        </div>
-      </section>
-
-      <!-- Manage collections -->
-      <section class="card">
-        <h2 class="font-bold">Manage NFT Collections</h2>
-        <p class="muted small mt-1">Register a collection to enable staking for it (admin-only).</p>
-
-        <div class="mt-4 space-y-3">
-          <div>
-            <label for="new-collection-address">Collection Address</label>
-            <input id="new-collection-address" class="w-full rounded-md" placeholder="0x... collection address" />
-          </div>
-
-          <div class="flex gap-2 items-center">
-            <button id="add-collection-btn" class="btn btn-primary small" disabled>Register Collection</button>
-            <button id="remove-collection-btn" class="btn btn-ghost small" disabled>Delist Collection</button>
-          </div>
-
-          <div class="muted small">Registration Fee: <span id="registration-fee">0</span> <span class="accent">CATA</span> (90% burned)</div>
-          <div class="muted small">Tip: Only addresses with <code>CONTRACT_ADMIN_ROLE</code> can call registration on-chain.</div>
-        </div>
-      </section>
-    </div>
-
-    <!-- NFT Manager (select collection, show unstaked/staked) -->
-    <section class="card">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="font-bold">NFT Collections</h2>
-          <p class="muted small mt-1">Choose a registered collection to view & manage your NFTs</p>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <select id="collection-select" class="rounded-md px-3 py-2"></select>
-          <button id="load-nfts-btn" class="btn btn-ghost small">Load NFTs</button>
-          <div class="muted small"> • Or paste a tokenId to operate below</div>
-        </div>
-      </div>
-
-      <div class="mt-4 grid gap-4 md:grid-cols-2">
-        <!-- Unstaked -->
-        <div>
-          <h3 class="font-semibold">My Unstaked NFTs</h3>
-          <p class="muted small mt-1">(Use an indexer for automatic discovery. For now you can manually enter a tokenId.)</p>
-
-          <div class="mt-3 space-y-3">
-            <div>
-              <label for="manual-token-id">Token ID</label>
-              <input id="manual-token-id" placeholder="e.g. 123" />
-            </div>
-
-            <div class="flex gap-2">
-              <button id="term-stake-manual" class="btn btn-primary small" disabled>Term Stake (manual)</button>
-              <button id="permanent-stake-manual" class="btn btn-primary small" disabled>Permanent Stake (manual)</button>
-            </div>
-
-            <div class="muted small">Need to approve the staking contract for this collection first — use "Approve Collection" below.</div>
-
-            <div id="unstaked-nfts" class="mt-3 space-y-2"></div>
-          </div>
-        </div>
-
-        <!-- Staked -->
-        <div>
-          <h3 class="font-semibold">My Staked NFTs</h3>
-          <div id="staked-nfts" class="mt-3 space-y-3"></div>
-        </div>
+    <!-- Governance -->
+    <section class="bg-gray-800 p-6 rounded">
+      <h2 class="text-lg font-semibold mb-4">Governance Proposals</h2>
+      <div id="proposalList" class="space-y-2">
+        <p class="text-sm text-gray-400">No proposals yet</p>
       </div>
     </section>
+  </div>
 
-    <!-- Approvals and Fees -->
-    <section class="card">
-      <div class="grid-4 items-start">
-        <div>
-          <h3 class="font-semibold">Approve Collection</h3>
-          <p class="muted small mt-1">Allow the staking contract to transfer your NFTs for a specific collection.</p>
-          <div class="mt-3">
-            <label for="approve-collection-address">Collection Address</label>
-            <input id="approve-collection-address" placeholder="0x..." />
-            <div class="mt-2 flex gap-2">
-              <button id="check-approval-btn" class="btn btn-ghost small" disabled>Check Approval</button>
-              <button id="set-approval-btn" class="btn btn-primary small" disabled>Set Approval For All</button>
-            </div>
-            <div id="approval-status" class="muted small mt-2"></div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-semibold">Protocol Fees</h3>
-          <div class="muted small mt-1">Dynamic permanent stake fee, harvest burn rate</div>
-          <div class="mt-3">
-            <div class="muted small">Permanent Stake Fee</div>
-            <div id="permanent-stake-fee" class="font-semibold">0 CATA</div>
-
-            <div class="muted small mt-3">Harvest Burn Rate</div>
-            <div id="dynamic-harvest-rate" class="font-semibold">0%</div>
-
-            <div class="muted small mt-3">Unstake Burn Fee</div>
-            <div id="unstake-fee" class="font-semibold">0 CATA</div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-semibold">Treasury / Deployer</h3>
-          <div class="muted small mt-1">Balances</div>
-          <div class="mt-3">
-            <div class="muted small">Deployer</div>
-            <div id="deployer-address" class="font-semibold">—</div>
-            <div id="deployer-balance" class="muted small">0</div>
-
-            <div class="muted small mt-2">Treasury</div>
-            <div id="treasury-address" class="font-semibold">—</div>
-            <div id="treasury-balance" class="muted small">0</div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-semibold">Contract Info</h3>
-          <div class="muted small mt-1">Quick helpful values</div>
-          <div class="mt-3">
-            <div class="muted small">Registration Fee</div>
-            <div id="reg-fee" class="font-semibold">0</div>
-
-            <div class="muted small mt-2">Total Staked Count</div>
-            <div id="global-staked" class="font-semibold">0</div>
-
-            <div class="muted small mt-2">Base Reward Rate</div>
-            <div id="global-base-rate" class="font-semibold">0</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Stake log details and governance panel -->
-    <section class="card">
-      <div class="flex items-start justify-between">
-        <div style="flex:1">
-          <h3 class="font-semibold">Stake Log (per token)</h3>
-          <p class="muted small mt-1">Enter a tokenId and collection to view its stake details</p>
-
-          <div class="mt-3 grid gap-2 md:grid-cols-3">
-            <input id="log-collection-address" placeholder="Collection address" />
-            <input id="log-token-id" placeholder="Token ID" />
-            <button id="fetch-stake-log" class="btn btn-ghost small" disabled>Fetch Stake Log</button>
-          </div>
-
-          <div id="stake-log-output" class="mt-3 muted small"></div>
-        </div>
-
-        <div style="width:320px;margin-left:24px">
-          <h3 class="font-semibold">Governance</h3>
-          <p class="muted small mt-1">Propose a new base reward rate for a collection (requires votes)</p>
-
-          <div class="mt-3 space-y-2">
-            <div>
-              <label>Collection Address</label>
-              <input id="gov-collection" placeholder="0x..." />
-            </div>
-            <div>
-              <label>New Base Reward Rate (in wei units)</label>
-              <input id="gov-new-rate" placeholder="e.g. 1000000000000000000" />
-            </div>
-            <div class="flex gap-2">
-              <button id="gov-propose-btn" class="btn btn-primary small" disabled>Propose & Vote</button>
-              <button id="gov-check-btn" class="btn btn-ghost small" disabled>Check Votes</button>
-            </div>
-            <div id="gov-status" class="muted small mt-2"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="flex items-center justify-between muted small">
-      <div>Built for Catalyst — <span class="accent">CATA</span></div>
-      <div>
-        <button id="open-console" class="btn btn-ghost small">Open Console</button>
-      </div>
-    </footer>
-  </main>
-
-  <!-- =================== SCRIPT =================== -->
   <script>
-    /*************************************************************************
-     * IMPORTANT:
-     * BEFORE TESTING:
-     * 1) Replace CATALYST_CONTRACT_ADDRESS with your deployed contract address.
-     * 2) Replace CATALYST_ABI with the compiled ABI JSON array for CatalystNFTStaking.sol.
-     *
-     * Minimal sample ABI entries used are included, but for full functionality paste full ABI.
-     *
-     *************************************************************************/
+    const CONTRACT_ADDRESS = "0xYourContractAddressHere";
+    const CONTRACT_ABI = [/* ABI goes here */];
 
-    // --------- CONFIG: replace these before using ----------
-    const CATALYST_CONTRACT_ADDRESS = "0xYOUR_CATALYST_CONTRACT_ADDRESS_HERE";
-
-    // --- Replace this minimal ABI with the full ABI from compilation.
-    // For full features, paste the entire ABI json array here.
-    const CATALYST_ABI = [
-      "function collectionRegistrationFee() view returns (uint256)",
-      "function unstakeBurnFee() view returns (uint256)",
-      "function totalStakedNFTsCount() view returns (uint256)",
-      "function baseRewardRate() view returns (uint256)",
-      "function getDynamicHarvestBurnFeeRate() view returns (uint256)",
-      "function getDynamicPermanentStakeFee() view returns (uint256)",
-      "function setCollectionConfig(address)",
-      "function collectionConfigs(address) view returns (uint256,uint256,bool)",
-      "function stakePortfolioByUser(address,address) view returns (uint256[])",
-      "function stakeLog(address,address,uint256) view returns (uint256,bool,bool,uint256)",
-      "function pendingRewards(address,address,uint256) view returns (uint256)",
-      "function termStake(address,uint256)",
-      "function permanentStake(address,uint256)",
-      "function unstake(address,uint256)",
-      "function harvestAll(address)",
-      "function getBurnedCatalystByCollection(address) view returns (uint256)",
-      "function treasuryAddress() view returns (address)",
-      "function deployerAddress() view returns (address)",
-      "function balanceOf(address) view returns (uint256)",
-      "event CollectionAdded(address indexed collectionAddress)",
-      "function proposeAndVote(uint256,address)"
-    ];
-
-    // Minimal ERC721 ABI entries used
-    const ERC721_ABI = [
-      "function isApprovedForAll(address owner, address operator) view returns (bool)",
-      "function setApprovalForAll(address operator, bool approved)",
-      "function approve(address to, uint256 tokenId)",
-      "function ownerOf(uint256 tokenId) view returns (address)",
-      "function balanceOf(address owner) view returns (uint256)",
-      "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)"
-    ];
-
-    // ---------------- state ----------------
-    let provider, signer, userAddress;
-    let catalystContract;
-    let registeredCollections = {}; // client-side registry name->address
-    // If you have known collection addresses you want seeded, add them to this object:
-    // registeredCollections["Bird Collection"] = "0x51Ea4659...";
-
-    // ---------------- dom helpers ----------------
-    const $ = (id) => document.getElementById(id);
-    const showToast = (msg, isError=false) => {
-      // Using alert for visible feedback on mobile in MetaMask browser
-      alert((isError ? "❌ " : "✅ ") + msg);
-      console.log(msg);
-    };
-
-    function shortAddr(addr) {
-      if (!addr) return "";
-      return addr.slice(0,6) + "..." + addr.slice(-4);
-    }
-
-    function formatEther(bn) {
-      try { return ethers.utils.formatEther(bn); } catch(e) { return "0"; }
-    }
-
-    // ---------------- init DOM refs ----------------
-    const connectBtn = $('connect-btn');
-    const walletAddrEl = $('wallet-address');
-    const walletBalEl = $('wallet-balance');
-    const addCollectionBtn = $('add-collection-btn');
-    const removeCollectionBtn = $('remove-collection-btn');
-    const newCollectionInput = $('new-collection-address');
-    const collectionSelect = $('collection-select');
-    const loadNftsBtn = $('load-nfts-btn');
-    const unstakedContainer = $('unstaked-nfts');
-    const stakedContainer = $('staked-nfts');
-    const pendingRewardsEl = $('pending-rewards');
-    const harvestBtn = $('harvest-btn');
-    const refreshBtn = $('refresh-btn');
-    const regFeeEl = $('reg-fee');
-    const registrationFeeEl = $('registration-fee');
-    const permanentStakeFeeEl = $('permanent-stake-fee');
-    const dynamicHarvestRateEl = $('dynamic-harvest-rate');
-    const unstakeFeeEl = $('unstake-fee');
-    const totalStakedEl = $('total-staked');
-    const totalStakersEl = $('total-stakers');
-    const baseRewardRateEl = $('base-reward-rate');
-    const totalBurnEl = $('total-burn');
-    const registrationFeeDisplay = $('registration-fee');
-    const collectionCouncilList = $('collections-council-list');
-    const registeredCountEl = $('registered-count');
-    const checkApprovalBtn = $('check-approval-btn');
-    const setApprovalBtn = $('set-approval-btn');
-    const approveCollectionInput = $('approve-collection-address');
-    const approvalStatusEl = $('approval-status');
-    const manualTokenInput = $('manual-token-id');
-    const termStakeManualBtn = $('term-stake-manual');
-    const permanentStakeManualBtn = $('permanent-stake-manual');
-    const fetchStakeLogBtn = $('fetch-stake-log');
-    const logCollectionInput = $('log-collection-address');
-    const logTokenInput = $('log-token-id');
-    const stakeLogOutput = $('stake-log-output');
-    const govCollectionInput = $('gov-collection');
-    const govNewRateInput = $('gov-new-rate');
-    const govProposeBtn = $('gov-propose-btn');
-    const govStatusEl = $('gov-status');
-    const deployerAddrEl = $('deployer-address');
-    const deployerBalEl = $('deployer-balance');
-    const treasuryAddrEl = $('treasury-address');
-    const treasuryBalEl = $('treasury-balance');
-    const globalStakedEl = $('global-staked');
-    const globalBaseRateEl = $('global-base-rate');
-    const openConsoleBtn = $('open-console');
-
-    // ---------------- wallet connect ----------------
-    connectBtn.addEventListener('click', async () => {
-      await connectWallet();
-    });
+    let provider, signer, contract;
 
     async function connectWallet() {
-      if (window.ethereum === undefined) {
-        showToast("MetaMask (or another web3 provider) was not detected in this browser. Use the MetaMask mobile browser or desktop extension.", true);
+      if (!window.ethereum) {
+        alert("MetaMask required");
         return;
       }
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      loadStats();
+    }
+
+    async function loadStats() {
       try {
-        provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-        await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
-        userAddress = await signer.getAddress();
-        walletAddrEl.textContent = shortAddr(userAddress);
+        document.getElementById("totalStaked").innerText =
+          (await contract.totalStakedNFTsCount()).toString();
+        document.getElementById("totalStakers").innerText =
+          (await contract.totalStakersCount()).toString();
+        document.getElementById("treasuryBalance").innerText =
+          ethers.utils.formatEther(await contract.balanceOf(await contract.treasuryAddress()));
+        document.getElementById("totalBurned").innerText =
+          ethers.utils.formatEther(await contract.totalBurnedCATA());
 
-        catalystContract = new ethers.Contract(CATALYST_CONTRACT_ADDRESS, CATALYST_ABI, signer);
+        const addr = await signer.getAddress();
+        document.getElementById("pendingCata").innerText =
+          ethers.utils.formatEther(await contract.pendingUserRewards(addr));
+        document.getElementById("myBurned").innerText =
+          ethers.utils.formatEther(await contract.burnedCatalystByAddress(addr));
+        document.getElementById("myStakedCount").innerText =
+          (await contract.getUserStakedCount(addr)).toString();
 
-        // enable UI
-        addCollectionBtn.disabled = false;
-        removeCollectionBtn.disabled = false;
-        checkApprovalBtn.disabled = false;
-        setApprovalBtn.disabled = false;
-        termStakeManualBtn.disabled = false;
-        permanentStakeManualBtn.disabled = false;
-        fetchStakeLogBtn.disabled = false;
-        govProposeBtn.disabled = false;
-        harvestBtn.disabled = false;
+        const burners = await contract.getTopBurners();
+        const list = document.getElementById("burnerList");
+        list.innerHTML = "";
+        burners.forEach((b, i) => {
+          const item = document.createElement("div");
+          item.className = "flex justify-between p-2 bg-gray-700 rounded";
+          item.innerHTML = `<span>#${i+1} ${b.substring(0,6)}...${b.substring(b.length-4)}</span>`;
+          list.appendChild(item);
+        });
 
-        await refreshAll();
-        showToast("Wallet connected: " + shortAddr(userAddress));
+        // Protocol Health
+        document.getElementById("registeredCollections").innerText =
+          (await contract.getRegisteredCollections()).length;
+        document.getElementById("bonusPoolPercent").innerText =
+          (await contract.bonusPoolPercentPerCycleBP()) / 100 + "%";
+        document.getElementById("nextDistribution").innerText =
+          new Date((await contract.lastBonusDistribution()).toNumber() * 1000).toLocaleString();
+
       } catch (err) {
         console.error(err);
-        showToast((err && err.message) || "Failed to connect wallet", true);
       }
     }
 
-    // open console helper
-    openConsoleBtn.addEventListener('click', () => {
-      showToast("Open dev console (F12) to see detailed logs");
-    });
-
-    // ---------------- refresh / dashboard ----------------
-    refreshBtn.addEventListener('click', refreshAll);
-
-    async function refreshAll() {
-      if (!catalystContract) return;
-      try {
-        // load global stats
-        const [
-          totalStaked,
-          baseRate,
-          unstakeBurn,
-          regFee,
-          harvestRate,
-          permFee
-        ] = await Promise.all([
-          catalystContract.totalStakedNFTsCount(),
-          catalystContract.baseRewardRate(),
-          catalystContract.unstakeBurnFee(),
-          catalystContract.collectionRegistrationFee(),
-          catalystContract.getDynamicHarvestBurnFeeRate(),
-          catalystContract.getDynamicPermanentStakeFee()
-        ]);
-
-        totalStakedEl.textContent = totalStaked.toString();
-        baseRewardRateEl.textContent = formatEther(baseRate) + " CATA";
-        unstakeFeeEl.textContent = formatEther(unstakeBurn) + " CATA";
-        registrationFeeEl.textContent = formatEther(regFee);
-        regFeeEl.textContent = formatEther(regFee) + " CATA";
-        dynamicHarvestRateEl.textContent = harvestRate.toString() + " %";
-        permanentStakeFeeEl.textContent = formatEther(permFee) + " CATA";
-        globalStakedEl.textContent = totalStaked.toString();
-        globalBaseRateEl.textContent = formatEther(baseRate) + " CATA";
-
-        // balances for deployer & treasury (if addresses exposed)
-        try {
-          const [deployerAddr, treasuryAddr] = await Promise.all([
-            catalystContract.deployerAddress(),
-            catalystContract.treasuryAddress()
-          ]);
-          deployerAddrEl.textContent = shortAddr(deployerAddr);
-          treasuryAddrEl.textContent = shortAddr(treasuryAddr);
-          const [deployerBal, treasuryBal] = await Promise.all([
-            catalystContract.balanceOf(deployerAddr),
-            catalystContract.balanceOf(treasuryAddr)
-          ]);
-          deployerBalEl.textContent = formatEther(deployerBal) + " CATA";
-          treasuryBalEl.textContent = formatEther(treasuryBal) + " CATA";
-        } catch(e) {
-          // Not all setups expose addresses; ignore if not available.
-        }
-
-        // update collection leaderboard from local registry
-        await updateEarningsAndContributors();
-
-        // user balance
-        const bal = await catalystContract.balanceOf(userAddress);
-        walletBalEl.textContent = formatEther(bal) + " CATA";
-      } catch (err) {
-        console.error("refreshAll error:", err);
-        showToast("Error refreshing dashboard: " + (err && err.message), true);
-      }
-    }
-
-    async function updateEarningsAndContributors() {
-      if (!catalystContract) return;
-      try {
-        let totalBurn = ethers.BigNumber.from(0);
-        const contributors = [];
-        for (const name in registeredCollections) {
-          const addr = registeredCollections[name];
-          try {
-            const burned = await catalystContract.getBurnedCatalystByCollection(addr);
-            totalBurn = totalBurn.add(burned);
-            contributors.push({ name, addr, burned });
-          } catch(e) {
-            console.debug("getBurn failed for", addr, e);
-          }
-        }
-        totalBurnEl.textContent = formatEther(totalBurn) + " CATA";
-
-        // sort
-        contributors.sort((a,b) => b.burned.sub(a.burned));
-        collectionCouncilList.innerHTML = '';
-        contributors.slice(0,6).forEach(c => {
-          const el = document.createElement('div');
-          el.className = 'flex items-center justify-between p-2 rounded-md bg-[rgba(255,255,255,0.02)]';
-          el.innerHTML = `<div class="text-sm font-medium">${c.name}</div>
-                          <div class="muted small">${shortAddr(c.addr)}</div>
-                          <div class="font-semibold accent">${formatEther(c.burned)} CATA</div>`;
-          collectionCouncilList.appendChild(el);
-        });
-
-        registeredCountEl.textContent = Object.keys(registeredCollections).length;
-      } catch(e) {
-        console.error("updateEarningsAndContributors error", e);
-      }
-    }
-
-    // ---------------- collection registry UI ----------------
-    addCollectionBtn.addEventListener('click', async () => {
-      const addr = newCollectionInput.value.trim();
-      if (!ethers.utils.isAddress(addr)) {
-        showToast("Invalid collection address", true);
-        return;
-      }
-      try {
-        addCollectionBtn.disabled = true;
-        showToast("Registering collection on-chain (admin only)...");
-        const tx = await catalystContract.setCollectionConfig(addr);
-        await tx.wait();
-        // add to client registry
-        registeredCollections[`Collection ${shortAddr(addr)}`] = addr;
-        populateCollectionSelect();
-        await refreshAll();
-        newCollectionInput.value = '';
-        showToast("Collection registered");
-      } catch (err) {
-        console.error("registerCollection error", err);
-        showToast("Failed to register collection: " + (err && err.message), true);
-      } finally {
-        addCollectionBtn.disabled = false;
-      }
-    });
-
-    removeCollectionBtn.addEventListener('click', async () => {
-      // The current contract does not expose a removeCollection function.
-      // We provide client-side delist only.
-      const addr = newCollectionInput.value.trim();
-      if (!addr) { showToast("Paste the collection address to delist locally"); return; }
-      for (const k in registeredCollections) {
-        if (registeredCollections[k].toLowerCase() === addr.toLowerCase()) {
-          delete registeredCollections[k];
-          populateCollectionSelect();
-          showToast("Collection delisted locally (note: on-chain registry unchanged)");
-          return;
-        }
-      }
-      showToast("Collection not found in local registry", true);
-    });
-
-    function populateCollectionSelect() {
-      collectionSelect.innerHTML = '';
-      for (const name in registeredCollections) {
-        const opt = document.createElement('option');
-        opt.value = registeredCollections[name];
-        opt.text = name + ' — ' + shortAddr(registeredCollections[name]);
-        collectionSelect.appendChild(opt);
-      }
-    }
-
-    // ---------------- Approvals ----------------
-    checkApprovalBtn.addEventListener('click', async () => {
-      const coll = approveCollectionInput.value.trim();
-      if (!ethers.utils.isAddress(coll)) { showToast("Enter a valid collection address", true); return; }
-      try {
-        const nft = new ethers.Contract(coll, ERC721_ABI, provider);
-        const approved = await nft.isApprovedForAll(userAddress, CATALYST_CONTRACT_ADDRESS);
-        approvalStatusEl.textContent = approved ? "Approved: staking contract is operator" : "Not approved";
-        showToast("Approval checked: " + (approved ? "Yes" : "No"));
-      } catch(e) {
-        console.error("check approval error", e);
-        showToast("Failed to check approval: " + (e && e.message), true);
-      }
-    });
-
-    setApprovalBtn.addEventListener('click', async () => {
-      const coll = approveCollectionInput.value.trim();
-      if (!ethers.utils.isAddress(coll)) { showToast("Enter a valid collection address", true); return; }
-      try {
-        setApprovalBtn.disabled = true;
-        const nftWithSigner = new ethers.Contract(coll, ERC721_ABI, signer);
-        const tx = await nftWithSigner.setApprovalForAll(CATALYST_CONTRACT_ADDRESS, true);
-        await tx.wait();
-        approvalStatusEl.textContent = "Approved";
-        showToast("Approval set");
-      } catch(e) {
-        console.error("set approval error", e);
-        showToast("Failed to set approval: " + (e && e.message), true);
-      } finally {
-        setApprovalBtn.disabled = false;
-      }
-    });
-
-    // ---------------- Manual stake (operates on selected collection) ----------------
-    termStakeManualBtn.addEventListener('click', async () => {
-      const collection = collectionSelect.value || newCollectionInput.value.trim();
-      const tokenId = manualTokenInput.value.trim();
-      if (!collection || !ethers.utils.isAddress(collection)) { showToast("Select a collection", true); return; }
-      if (!tokenId) { showToast("Enter tokenId", true); return; }
-      await handleTermStake(collection, tokenId);
-    });
-
-    permanentStakeManualBtn.addEventListener('click', async () => {
-      const collection = collectionSelect.value || newCollectionInput.value.trim();
-      const tokenId = manualTokenInput.value.trim();
-      if (!collection || !ethers.utils.isAddress(collection)) { showToast("Select a collection", true); return; }
-      if (!tokenId) { showToast("Enter tokenId", true); return; }
-      await handlePermanentStake(collection, tokenId);
-    });
-
-    // ---------------- load user NFTs (staked via contract) ----------------
-    loadNftsBtn.addEventListener('click', async () => {
-      await loadUserNFTs();
-    });
-
-    async function loadUserNFTs() {
-      if (!catalystContract) return;
-      const coll = collectionSelect.value;
-      if (!coll) { showToast("Select a registered collection", true); return; }
-
-      stakedContainer.innerHTML = '';
-      unstakedContainer.innerHTML = '';
-
-      try {
-        const stakedIds = await catalystContract.stakePortfolioByUser(coll, userAddress);
-        if (!stakedIds || stakedIds.length === 0) {
-          stakedContainer.innerHTML = '<div class="muted small">No staked NFTs found for this collection.</div>';
-        } else {
-          for (const id of stakedIds) {
-            const [lastHarvest, currentlyStaked, isPermanent, unstakeDeadline] = await catalystContract.stakeLog(coll, userAddress, id);
-            const card = buildStakedCard(coll, id.toString(), !!isPermanent, unstakeDeadline.toNumber());
-            stakedContainer.appendChild(card);
-          }
-        }
-
-        // For unstaked NFTs we recommend using an indexer. Here we show a placeholder.
-        unstakedContainer.innerHTML = `<div class="muted small">Unstaked discovery requires an indexer (OpenSea/Alchemy). You can manually enter token IDs above to stake.</div>`;
-
-        // update pending rewards aggregate
-        let totalPending = ethers.BigNumber.from(0);
-        for (const id of stakedIds) {
-          const pending = await catalystContract.pendingRewards(coll, userAddress, id);
-          totalPending = totalPending.add(pending);
-        }
-        pendingRewardsEl.textContent = formatEther(totalPending);
-      } catch (err) {
-        console.error("loadUserNFTs error", err);
-        showToast("Failed loading NFTs: " + (err && err.message), true);
-      }
-    }
-
-    function buildStakedCard(collection, tokenId, isPermanent, unstakeDeadlineBlock) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'p-3 rounded-md bg-[rgba(255,255,255,0.02)] flex items-center justify-between';
-
-      const left = document.createElement('div');
-      left.innerHTML = `<div class="font-semibold">#${tokenId}</div><div class="muted small">Collection ${shortAddr(collection)}</div>`;
-
-      const right = document.createElement('div');
-      right.className = 'text-right';
-      if (isPermanent) {
-        right.innerHTML = `<div class="accent font-semibold">Permanent Stake</div>
-                           <div class="muted small">Unstake fee applies</div>
-                           <div class="mt-2"><button class="btn btn-ghost small" data-action="unstake" data-token="${tokenId}" data-coll="${collection}">Unstake</button></div>`;
-      } else {
-        right.innerHTML = `<div class="accent font-semibold">Term Stake</div>
-                           <div class="muted small">Check time to unlock</div>
-                           <div class="mt-2"><button class="btn btn-ghost small" data-action="unstake" data-token="${tokenId}" data-coll="${collection}">Unstake</button></div>`;
-      }
-
-      wrapper.appendChild(left);
-      wrapper.appendChild(right);
-
-      // add event
-      right.querySelectorAll('button[data-action="unstake"]').forEach(b => {
-        b.addEventListener('click', async (e) => {
-          const token = e.target.dataset.token;
-          const coll = e.target.dataset.coll;
-          await handleUnstake(coll, token);
-        });
-      });
-
-      return wrapper;
-    }
-
-    // ---------------- staking / unstaking / harvest handlers ----------------
-    async function handleTermStake(collectionAddr, tokenId) {
-      try {
-        showToast(`Term staking #${tokenId} from collection ${shortAddr(collectionAddr)}...`);
-        const tx = await catalystContract.termStake(collectionAddr, tokenId);
-        await tx.wait();
-        showToast(`Term stake success #${tokenId}`);
-        await loadUserNFTs();
-        await refreshAll();
-      } catch (err) {
-        console.error("termStake error", err);
-        showToast("Term stake failed: " + (err && err.message), true);
-      }
-    }
-
-    async function handlePermanentStake(collectionAddr, tokenId) {
-      try {
-        showToast(`Permanent staking #${tokenId} from collection ${shortAddr(collectionAddr)}...`);
-        const tx = await catalystContract.permanentStake(collectionAddr, tokenId);
-        await tx.wait();
-        showToast(`Permanent stake success #${tokenId}`);
-        await loadUserNFTs();
-        await refreshAll();
-      } catch (err) {
-        console.error("permanentStake error", err);
-        showToast("Permanent stake failed: " + (err && err.message), true);
-      }
-    }
-
-    async function handleUnstake(collectionAddr, tokenId) {
-      try {
-        showToast(`Unstaking #${tokenId}...`);
-        const tx = await catalystContract.unstake(collectionAddr, tokenId);
-        await tx.wait();
-        showToast(`Unstaked #${tokenId}`);
-        await loadUserNFTs();
-        await refreshAll();
-      } catch (err) {
-        console.error("unstake error", err);
-        showToast("Unstake failed: " + (err && err.message), true);
-      }
-    }
-
-    harvestBtn.addEventListener('click', async () => {
-      const selected = collectionSelect.value;
-      if (!selected) { showToast("Select a collection to harvest from", true); return; }
-      try {
-        showToast("Harvesting all rewards...");
-        const tx = await catalystContract.harvestAll(selected);
-        await tx.wait();
-        showToast("Harvest successful");
-        await loadUserNFTs();
-        await refreshAll();
-      } catch (err) {
-        console.error("harvestAll error", err);
-        showToast("Harvest failed: " + (err && err.message), true);
-      }
-    });
-
-    // ---------------- stake log per token ----------------
-    fetchStakeLogBtn.addEventListener('click', async () => {
-      const coll = logCollectionInput.value.trim();
-      const tokenId = logTokenInput.value.trim();
-      if (!ethers.utils.isAddress(coll) || !tokenId) { showToast("Enter valid collection & tokenId", true); return; }
-      try {
-        const info = await catalystContract.stakeLog(coll, userAddress, tokenId);
-        // stakeLog returns (lastHarvestBlock, currentlyStaked, isPermanent, unstakeDeadlineBlock)
-        const [lastHarvest, currentlyStaked, isPermanent, unstakeDeadline] = info;
-        let html = `<div>Last Harvest Block: ${lastHarvest.toString()}</div>`;
-        html += `<div>Currently Staked: ${currentlyStaked ? "Yes" : "No"}</div>`;
-        html += `<div>Permanent: ${isPermanent ? "Yes" : "No"}</div>`;
-        html += `<div>Unstake Deadline Block: ${unstakeDeadline.toString()}</div>`;
-        stakeLogOutput.innerHTML = html;
-      } catch (err) {
-        console.error("fetchStakeLog error", err);
-        showToast("Failed to fetch stake log: " + (err && err.message), true);
-      }
-    });
-
-    // ---------------- governance ----------------
-    govProposeBtn.addEventListener('click', async () => {
-      const coll = govCollectionInput.value.trim();
-      const newRate = govNewRateInput.value.trim();
-      if (!ethers.utils.isAddress(coll) || !newRate) { showToast("Enter collection and new rate", true); return; }
-      try {
-        govProposeBtn.disabled = true;
-        const tx = await catalystContract.proposeAndVote(newRate, coll);
-        await tx.wait();
-        showToast("Proposal submitted & vote cast");
-        govProposeBtn.disabled = false;
-      } catch (err) {
-        govProposeBtn.disabled = false;
-        console.error("proposeAndVote error", err);
-        showToast("Propose & Vote failed: " + (err && err.message), true);
-      }
-    });
-
-    // ---------------- utilities: seed demo local collections ----------------
-    (function seedLocalCollections(){
-      // If you want some starter entries, uncomment and set addresses:
-      // registeredCollections["Bird Collection"] = "0x51Ea4659223D17d71003E99c01c0c1C98B26a911";
-      // registeredCollections["Cape Collection"] = "0xB50D0563b7eC5E32a0F8387a3240e9499806b744";
-      populateCollectionSelect();
-    })();
-
-    function populateCollectionSelect(){
-      collectionSelect.innerHTML = '<option value="">-- Select collection --</option>';
-      for (const name in registeredCollections) {
-        const opt = document.createElement('option');
-        opt.value = registeredCollections[name];
-        opt.text = name + ' — ' + shortAddr(registeredCollections[name]);
-        collectionSelect.appendChild(opt);
-      }
-    }
-
-    // ---------------- auto-update UI if contract emits CollectionAdded ----------------
-    function setupEventListeners() {
-      if (!catalystContract) return;
-      try {
-        catalystContract.on("CollectionAdded", (collectionAddress) => {
-          // Add to the local registry (name is fallback)
-          registeredCollections[`Collection ${shortAddr(collectionAddress)}`] = collectionAddress;
-          populateCollectionSelect();
-          refreshAll();
-        });
-      } catch(e) {
-        console.debug("Event setup failed:", e);
-      }
-    }
-
-    // ---------------- page ready ----------------
-    window.addEventListener('load', () => {
-      // hook some UI events that require no wallet
-      populateCollectionSelect();
-
-      // enable approve buttons only when user connects - they are disabled until then
-      approveCollectionInput.addEventListener('input', () => {
-        const val = approveCollectionInput.value.trim();
-        checkApprovalBtn.disabled = !ethers.utils.isAddress(val) || !provider;
-        setApprovalBtn.disabled = !ethers.utils.isAddress(val) || !signer;
-      });
-      newCollectionInput.addEventListener('input', () => {
-        addCollectionBtn.disabled = !newCollectionInput.value.trim() || !signer;
-      });
-
-      // Manual token input toggle
-      manualTokenInput.addEventListener('input', () => {
-        const val = manualTokenInput.value.trim();
-        termStakeManualBtn.disabled = !val || !collectionSelect.value;
-        permanentStakeManualBtn.disabled = !val || !collectionSelect.value;
-      });
-
-      // Fetch stake log button enabling
-      logCollectionInput.addEventListener('input', () => {
-        fetchStakeLogBtn.disabled = !(ethers.utils.isAddress(logCollectionInput.value.trim())) || !logTokenInput.value.trim();
-      });
-      logTokenInput.addEventListener('input', () => {
-        fetchStakeLogBtn.disabled = !(ethers.utils.isAddress(logCollectionInput.value.trim())) || !logTokenInput.value.trim();
-      });
-
-      // Governance enabling
-      govCollectionInput.addEventListener('input', () => {
-        govProposeBtn.disabled = !(ethers.utils.isAddress(govCollectionInput.value.trim())) || !govNewRateInput.value.trim();
-      });
-      govNewRateInput.addEventListener('input', () => {
-        govProposeBtn.disabled = !(ethers.utils.isAddress(govCollectionInput.value.trim())) || !govNewRateInput.value.trim();
-      });
-    });
-
-    // ---------------- final notes ----------------
-    // 1) IMPORTANT: Replace the placeholder address & ABI above with the actual deployed contract address and the ABI array.
-    // 2) For unstaked NFT discovery you should integrate an indexer (Alchemy, TheGraph, Moralis, or OpenSea). The contract does not provide an on-chain enumeration of collection owners.
-    // 3) For permanent stake fees and burning behavior, read the contract's events and logs for accurate analytics.
-    // 4) On mobile use the MetaMask in-app browser or add WalletConnect if you want to support external mobile browsers.
-
-    // Expose some functions to the window for debugging
-    window.__catalyst = {
-      connectWallet,
-      refreshAll,
-      loadUserNFTs,
-      registeredCollections,
-      catalystContract
-    };
-
-    // Try to auto-setup provider if available (no connect yet)
-    if (typeof window.ethereum !== 'undefined') {
-      // create a temporary provider for read-only calls before connect
-      try {
-        provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-        // do not request accounts automatically; wait for user to click connect
-      } catch(e) {
-        console.debug("init provider:", e);
-      }
-    }
+    document.getElementById("connectBtn").onclick = connectWallet;
   </script>
 </body>
 </html>
