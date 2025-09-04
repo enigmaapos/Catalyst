@@ -41,7 +41,7 @@
             gap: 10px;
             margin: 20px 0;
         }
-        .button-group button, .connect-wallet {
+        .button-group button {
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -51,7 +51,7 @@
             font-size: 16px;
             transition: background-color 0.3s ease;
         }
-        .button-group button:hover, .connect-wallet:hover {
+        .button-group button:hover {
             background-color: #45a049;
         }
         .button-group button.secondary {
@@ -100,17 +100,6 @@
         .proposal-card h4 {
             color: #2196F3;
         }
-        .search-container {
-            margin-bottom: 20px;
-        }
-        .search-container input {
-            width: calc(100% - 22px);
-            padding: 10px;
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 5px;
-            color: #e0e0e0;
-        }
     </style>
 </head>
 <body>
@@ -124,39 +113,25 @@
     <div class="section">
         <h2>Show Transparency</h2>
         <div class="transparency-section">
-            <div class="card">
-                <h4>Protocol Statistics</h4>
-                <p><strong>Total Burned CATA:</strong> <span id="totalBurnedCATA">...</span> CATA</p>
-                <p><strong>Total Staked NFTs:</strong> <span id="totalStakedNFTs">...</span> NFTs</p>
-                <p><strong>Treasury Balance:</strong> <span id="treasuryBalance">...</span> CATA</p>
-                <p><strong>Bonus Pool Cap:</strong> <span id="bonusPoolCap">...</span> CATA</p>
-            </div>
-            <div class="card">
-                <h4>Fee Structure</h4>
-                <p>
-                    All protocol fees follow a fixed rule: 90% is burned, 9% goes to the treasury, and 1% is sent to the deployer. This structure ensures a deflationary mechanism while funding the protocol's treasury.
-                </p>
-            </div>
+            <p>
+                The Catalyst NFT Staking Protocol is a full system with a two-tier collection structure (Verified and Unverified), governance capabilities based on burned CATA tokens, and dynamic fees. It includes anti-flash protections and a 20,000 stake cap per collection. [cite_start]The system also features a Burner Bonus for the top 1% of token burners, paid from the treasury[cite: 268].
+            </p>
+            <p>
+                [cite_start]The protocol's smart contract, named <code>CatalystNFTStaking</code>, inherits from several OpenZeppelin contracts for secure access control, reentrancy protection, and pausing functionality[cite: 270]. [cite_start]All actions within the protocol are publicly recorded via events, such as <code>NFTStaked</code>, <code>ProposalCreated</code>, and <code>BurnerBonusDistributed</code>[cite: 309, 311, 314].
+            </p>
         </div>
     </div>
 
     <hr>
 
     <div class="section">
-        <h2>All Key User Functions</h2>
+        <h2>All Key User Functions (with buttons)</h2>
         <p>Interact with the core functions of the protocol.</p>
         <div class="button-group">
-            <button class="connect-wallet">Connect Wallet</button>
-        </div>
-        <div class="button-group">
-            <button onclick="registerCollection()">Register Collection</button>
             <button onclick="termStake()">Term Stake</button>
             <button onclick="permanentStake()">Permanent Stake</button>
             <button onclick="unstake()">Unstake</button>
-            <button onclick="harvestRewards()">Harvest Rewards</button>
-            <label><input type="checkbox" id="batchToggle"> Enable Batch Functions</label>
-        </div>
-        <div class="button-group">
+            <button onclick="harvestBatch()">Harvest Rewards</button>
             <button onclick="propose()">Propose</button>
             <button onclick="vote()">Vote</button>
             <button onclick="executeProposal()">Execute Proposal</button>
@@ -169,17 +144,13 @@
         <h2>Collections Section</h2>
         <p>Explore the registered NFT collections within the protocol.</p>
         
-        <div class="search-container">
-            <input type="text" id="collectionSearch" placeholder="Search by collection address or name...">
-        </div>
-        
         <h3>Verified Collections</h3>
         <div id="verifiedCollections">
             <div class="card">
                 <h4>Example Verified Collection</h4>
                 <p>Address: <code>0x...</code></p>
-                <p>Burn Contribution: <span class="burn-contribution">15,000,000 CATA</span></p>
-                <p>Staked Count: <span class="staked-count">5,000 NFTs</span></p>
+                <p>Total Staked: 5,000</p>
+                <p>Total Stakers: 200</p>
             </div>
             </div>
 
@@ -188,8 +159,8 @@
             <div class="card">
                 <h4>Example Unverified Collection</h4>
                 <p>Address: <code>0x...</code></p>
-                <p>Burn Contribution: <span class="burn-contribution">500,000 CATA</span></p>
-                <p>Staked Count: <span class="staked-count">1,500 NFTs</span></p>
+                <p>Total Staked: 1,500</p>
+                <p>Surcharge Escrow: 1000 CATA</p>
             </div>
             </div>
     </div>
@@ -201,19 +172,41 @@
         <p>Details on the protocol's governance model and active proposals.</p>
         
         <h3>Proposals</h3>
+        [cite_start]<p>Proposals can be created by users who meet certain eligibility criteria, such as being a top collection staker or having a minimum CATA burn contribution[cite: 431, 435]. [cite_start]Voting is based on a scaled weight system, with a per-collection vote cap to prevent a single collection from dominating the process[cite: 398].</p>
         <div id="proposalsList">
             <div class="card proposal-card">
                 <h4>Proposal to Increase Base Reward Rate</h4>
                 <p>ID: <code>0x...</code></p>
                 <p>Type: <strong>Base Reward</strong></p>
+                <p>New Value: <code>1000000000000000000</code></p>
                 <p>Status: Voting Active</p>
-                <div class="button-group">
-                    <button onclick="voteFor('0x...')">Vote For</button>
-                    <button class="secondary" onclick="voteAgainst('0x...')">Vote Against</button>
-                    <button onclick="executeProposal('0x...')">Execute</button>
-                </div>
+                <p>Votes: <code>5000000000000000000</code></p>
             </div>
             </div>
+
+        <h3>Top Collections for Governance</h3>
+        [cite_start]<p>The top collections, sorted by the amount of CATA burned, are used to determine voting eligibility for some proposals[cite: 294, 439]. [cite_start]The number of top collections is a percentage of all registered collections, with a minimum of one[cite: 326, 327].</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Collection Address</th>
+                    <th>Burned CATA</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td><code>0x...</code></td>
+                    <td>15,000,000 CATA</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><code>0x...</code></td>
+                    <td>12,500,000 CATA</td>
+                </tr>
+                </tbody>
+        </table>
     </div>
 
 </div>
