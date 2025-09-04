@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,7 +31,7 @@
 
     <!-- Collection Registration -->
     <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h2 class="text-xl font-semibold mb-4">Collection Registration (Admin)</h2>
+      <h2 class="text-xl font-semibold mb-4">Collection Registration</h2>
       <input type="text" id="collectionAddress" placeholder="Collection Address" class="w-full p-2 text-black rounded mb-2">
       <input type="number" id="declaredSupply" placeholder="Declared Max Supply" class="w-full p-2 text-black rounded mb-2">
       <select id="collectionTier" class="w-full p-2 text-black rounded mb-2">
@@ -103,23 +104,84 @@
 
   <script>
     const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS";
-    const ABI = []; // Paste your contract ABI here
+    const ABI = []; // Paste your CatalystNFTStaking ABI here
+    const CONTRACT_ADMIN_ROLE = ethers.utils.id("CONTRACT_ADMIN_ROLE");
 
-    let provider, signer, contract;
+    let provider, signer, contract, userAddress;
 
     document.getElementById("connectWallet").addEventListener("click", async () => {
       if (window.ethereum) {
         provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = provider.getSigner();
+        userAddress = await signer.getAddress();
         contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-        alert("Wallet Connected!");
+        alert(`Wallet Connected: ${userAddress}`);
+        setupTierLocking();
       } else {
         alert("MetaMask not found");
       }
     });
 
-    // More JS logic for reading/writing to contract will go here...
+    async function setupTierLocking() {
+      const tierSelect = document.getElementById("collectionTier");
+      const collectionAddressInput = document.getElementById("collectionAddress");
+
+      async function isAdmin() {
+        try {
+          return await contract.hasRole(CONTRACT_ADMIN_ROLE, userAddress);
+        } catch {
+          return false;
+        }
+      }
+
+      async function isCollectionOwner(collectionAddress) {
+        if (!ethers.utils.isAddress(collectionAddress)) return false;
+        const nft = new ethers.Contract(
+          collectionAddress,
+          [
+            "function ownerOf(uint256 tokenId) public view returns (address)",
+            "function owner() public view returns (address)"
+          ],
+          provider
+        );
+        try {
+          const owner0 = await nft.ownerOf(0);
+          if (owner0.toLowerCase() === userAddress.toLowerCase()) return true;
+        } catch {}
+        try {
+          const contractOwner = await nft.owner();
+          if (contractOwner.toLowerCase() === userAddress.toLowerCase()) return true;
+        } catch {}
+        return false;
+      }
+
+      collectionAddressInput.addEventListener("input", async () => {
+        const collectionAddr = collectionAddressInput.value.trim();
+        const admin = await isAdmin();
+        const owner = await isCollectionOwner(collectionAddr);
+        if (admin || owner) {
+          tierSelect.disabled = false;
+        } else {
+          tierSelect.value = "0"; // Force Unverified
+          tierSelect.disabled = true;
+        }
+      });
+    }
+
+    document.getElementById("registerCollection").addEventListener("click", async () => {
+      const collectionAddress = document.getElementById("collectionAddress").value.trim();
+      const declaredSupply = document.getElementById("declaredSupply").value;
+      const tier = document.getElementById("collectionTier").value;
+      try {
+        const tx = await contract.setCollectionConfig(collectionAddress, declaredSupply, tier);
+        await tx.wait();
+        alert("Collection Registered!");
+      } catch (err) {
+        console.error(err);
+        alert("Registration failed");
+      }
+    });
   </script>
 
 </body>
