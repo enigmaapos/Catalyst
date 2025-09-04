@@ -1,0 +1,176 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catalyst Protocol V7 – Staking Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0d1117;
+      color: #e6edf3;
+      margin: 0;
+      padding: 0;
+    }
+    header, footer {
+      background-color: #161b22;
+      padding: 1em;
+      text-align: center;
+    }
+    main {
+      padding: 1.5em;
+    }
+    section {
+      margin-bottom: 2em;
+      background: #1c2128;
+      border-radius: 8px;
+      padding: 1em;
+    }
+    h2 {
+      color: #58a6ff;
+    }
+    button {
+      background-color: #238636;
+      border: none;
+      color: #fff;
+      padding: 0.5em 1em;
+      margin-top: 0.5em;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2ea043;
+    }
+    input, select, textarea {
+      margin-top: 0.5em;
+      width: 100%;
+      padding: 0.5em;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      background: #0d1117;
+      color: #e6edf3;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚀 Catalyst Protocol V7 (Immutable 90/9/1)</h1>
+    <p>Universal NFT Staking & Governance</p>
+  </header>  <main>
+    <!-- Staking Section -->
+    <section>
+      <h2>Stake NFTs</h2>
+      <label>Collection Address:</label>
+      <input type="text" id="stakeCollection" placeholder="0x..." /><label>Token ID:</label>
+  <input type="number" id="stakeTokenId" placeholder="Enter Token ID" />
+
+  <button onclick="stakeNFT()">Stake (Term)</button>
+  <button onclick="permanentStakeNFT()">Stake (Permanent)</button>
+
+  <h3>Batch Stake</h3>
+  <label>Token IDs (comma separated):</label>
+  <input type="text" id="batchStakeIds" placeholder="e.g. 1,2,3" />
+  <button onclick="batchTermStakeNFTs()">Batch Term Stake</button>
+  <button onclick="batchPermanentStakeNFTs()">Batch Permanent Stake</button>
+</section>
+
+<!-- Unstaking Section -->
+<section>
+  <h2>Unstake NFTs</h2>
+  <label>Collection Address:</label>
+  <input type="text" id="unstakeCollection" placeholder="0x..." />
+
+  <label>Token ID:</label>
+  <input type="number" id="unstakeTokenId" placeholder="Enter Token ID" />
+  <button onclick="unstakeNFT()">Unstake</button>
+
+  <h3>Batch Unstake</h3>
+  <label>Token IDs (comma separated):</label>
+  <input type="text" id="batchUnstakeIds" placeholder="e.g. 1,2,3" />
+  <button onclick="batchUnstakeNFTs()">Batch Unstake</button>
+</section>
+
+<!-- Harvest Section -->
+<section>
+  <h2>Harvest Rewards</h2>
+  <label>Collection Address:</label>
+  <input type="text" id="harvestCollection" placeholder="0x..." />
+
+  <label>Token IDs (comma separated):</label>
+  <input type="text" id="harvestTokenIds" placeholder="e.g. 1,2,3" />
+
+  <button onclick="harvestBatch()">Harvest Batch</button>
+</section>
+
+<!-- Governance Section -->
+<section>
+  <h2>Governance</h2>
+  <label>Proposal Type:</label>
+  <select id="proposalType">
+    <option value="0">BASE_REWARD</option>
+    <option value="1">HARVEST_FEE</option>
+    <option value="2">UNSTAKE_FEE</option>
+    <option value="3">REGISTRATION_FEE_FALLBACK</option>
+    <option value="4">VOTING_PARAM</option>
+    <option value="5">TIER_UPGRADE</option>
+  </select>
+
+  <label>Parameter Target (for VOTING_PARAM):</label>
+  <input type="number" id="paramTarget" placeholder="0 = quorum, 1 = duration, ..." />
+
+  <label>New Value:</label>
+  <input type="number" id="newValue" placeholder="Enter new value" />
+
+  <label>Collection Context (for upgrades or voting):</label>
+  <input type="text" id="collectionContext" placeholder="0x... or empty" />
+
+  <button onclick="createProposal()">Create Proposal</button>
+  <hr />
+  <label>Proposal ID:</label>
+  <input type="text" id="proposalId" placeholder="0x..." />
+  <button onclick="voteOnProposal()">Vote</button>
+  <button onclick="executeProposal()">Execute</button>
+</section>
+
+<!-- Treasury Section -->
+<section>
+  <h2>Treasury & Bonuses</h2>
+  <button onclick="getTreasuryBalance()">Get Treasury Balance</button>
+  <button onclick="distributeTopBurnersBonus()">Distribute Top 1% Burner Bonus</button>
+</section>
+
+<!-- Burn Section -->
+<section>
+  <h2>Burn CATA</h2>
+  <label>Amount:</label>
+  <input type="number" id="burnAmount" placeholder="Enter amount to burn" />
+  <button onclick="burnCATA()">Burn</button>
+</section>
+
+<!-- Leaderboards -->
+<section>
+  <h2>Leaderboards</h2>
+  <button onclick="getTopBurners()">Top Burners</button>
+  <button onclick="getTopCollections()">Top Collections</button>
+</section>
+
+  </main>  <footer>
+    <p>© 2025 Catalyst Protocol V7 – Immutable 90/9/1</p>
+  </footer>  <script>
+    // Placeholder functions – connect with web3.js/ethers.js logic
+    function stakeNFT() { alert("Stake NFT (Term) called"); }
+    function permanentStakeNFT() { alert("Stake NFT (Permanent) called"); }
+    function batchTermStakeNFTs() { alert("Batch Term Stake NFTs called"); }
+    function batchPermanentStakeNFTs() { alert("Batch Permanent Stake NFTs called"); }
+    function unstakeNFT() { alert("Unstake NFT called"); }
+    function batchUnstakeNFTs() { alert("Batch Unstake NFTs called"); }
+    function harvestBatch() { alert("Harvest Batch called"); }
+    function createProposal() { alert("Create Proposal called"); }
+    function voteOnProposal() { alert("Vote on Proposal called"); }
+    function executeProposal() { alert("Execute Proposal called"); }
+    function getTreasuryBalance() { alert("Get Treasury Balance called"); }
+    function distributeTopBurnersBonus() { alert("Distribute Top 1% Bonus called"); }
+    function burnCATA() { alert("Burn CATA called"); }
+    function getTopBurners() { alert("Get Top Burners called"); }
+    function getTopCollections() { alert("Get Top Collections called"); }
+  </script></body>
+</html>
