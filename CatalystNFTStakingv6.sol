@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 /**
- * @title CatalystNFTStaking (Option B V6 - Full)
+ * @title CatalystNFTStaking 
  * @notice NFT-neutral staking + deflationary token + verified/unverified collections + top-100 leaderboard + quarterly bonus
  */
 contract CatalystNFTStaking is
