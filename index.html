@@ -17,40 +17,19 @@
 
     <!-- Global Stats -->
     <section class="grid grid-cols-4 gap-4 mb-6">
-      <div class="bg-gray-800 p-4 rounded">
-        <p class="text-sm text-gray-400">Total Staked NFTs</p>
-        <p id="totalStaked" class="text-xl font-semibold">—</p>
-      </div>
-      <div class="bg-gray-800 p-4 rounded">
-        <p class="text-sm text-gray-400">Total Stakers</p>
-        <p id="totalStakers" class="text-xl font-semibold">—</p>
-      </div>
-      <div class="bg-gray-800 p-4 rounded">
-        <p class="text-sm text-gray-400">Treasury Balance</p>
-        <p id="treasuryBalance" class="text-xl font-semibold">—</p>
-      </div>
-      <div class="bg-gray-800 p-4 rounded">
-        <p class="text-sm text-gray-400">Total Burned</p>
-        <p id="totalBurned" class="text-xl font-semibold">—</p>
-      </div>
+      <div class="bg-gray-800 p-4 rounded"><p class="text-sm text-gray-400">Total Staked NFTs</p><p id="totalStaked" class="text-xl font-semibold">—</p></div>
+      <div class="bg-gray-800 p-4 rounded"><p class="text-sm text-gray-400">Total Stakers</p><p id="totalStakers" class="text-xl font-semibold">—</p></div>
+      <div class="bg-gray-800 p-4 rounded"><p class="text-sm text-gray-400">Treasury Balance</p><p id="treasuryBalance" class="text-xl font-semibold">—</p></div>
+      <div class="bg-gray-800 p-4 rounded"><p class="text-sm text-gray-400">Total Burned</p><p id="totalBurned" class="text-xl font-semibold">—</p></div>
     </section>
 
     <!-- User Stats -->
     <section class="bg-gray-800 p-6 rounded mb-6">
       <h2 class="text-lg font-semibold mb-4">My Stats</h2>
       <div class="grid grid-cols-3 gap-4">
-        <div class="bg-gray-700 p-3 rounded">
-          <p class="text-xs text-gray-400">Pending CATA</p>
-          <p id="pendingCata" class="text-sm">0.00</p>
-        </div>
-        <div class="bg-gray-700 p-3 rounded">
-          <p class="text-xs text-gray-400">My Staked NFTs</p>
-          <p id="myStakedCount" class="text-sm">0</p>
-        </div>
-        <div class="bg-gray-700 p-3 rounded">
-          <p class="text-xs text-gray-400">My Burned CATA</p>
-          <p id="myBurned" class="text-sm">0</p>
-        </div>
+        <div class="bg-gray-700 p-3 rounded"><p class="text-xs text-gray-400">Pending CATA</p><p id="pendingCata" class="text-sm">0.00</p></div>
+        <div class="bg-gray-700 p-3 rounded"><p class="text-xs text-gray-400">My Staked NFTs</p><p id="myStakedCount" class="text-sm">0</p></div>
+        <div class="bg-gray-700 p-3 rounded"><p class="text-xs text-gray-400">My Burned CATA</p><p id="myBurned" class="text-sm">0</p></div>
       </div>
       <div class="mt-4 flex gap-3">
         <button id="harvestBtn" class="px-4 py-2 bg-indigo-600 rounded">Harvest All</button>
@@ -62,52 +41,65 @@
     <!-- Top Burners -->
     <section class="bg-gray-800 p-6 rounded mb-6">
       <h2 class="text-lg font-semibold mb-4">Top 1% Burners</h2>
-      <div id="burnerList" class="space-y-2 max-h-60 overflow-auto">
-        <p class="text-sm text-gray-400">Loading...</p>
-      </div>
+      <div id="burnerList" class="space-y-2 max-h-60 overflow-auto"><p class="text-sm text-gray-400">Loading...</p></div>
     </section>
 
     <!-- Protocol Health -->
     <section class="bg-gray-800 p-6 rounded mb-6">
       <h2 class="text-lg font-semibold mb-4">Protocol Health</h2>
       <div class="grid grid-cols-3 gap-4">
-        <div class="bg-gray-700 p-3 rounded">
-          <p class="text-xs text-gray-400">Registered Collections</p>
-          <p id="registeredCollections" class="text-sm">—</p>
-        </div>
-        <div class="bg-gray-700 p-3 rounded">
-          <p class="text-xs text-gray-400">Bonus Pool % Per Cycle</p>
-          <p id="bonusPoolPercent" class="text-sm">—</p>
-        </div>
-        <div class="bg-gray-700 p-3 rounded">
-          <p class="text-xs text-gray-400">Next Distribution</p>
-          <p id="nextDistribution" class="text-sm">—</p>
-        </div>
+        <div class="bg-gray-700 p-3 rounded"><p class="text-xs text-gray-400">Registered Collections</p><p id="registeredCollections" class="text-sm">—</p></div>
+        <div class="bg-gray-700 p-3 rounded"><p class="text-xs text-gray-400">Bonus Pool % Per Cycle</p><p id="bonusPoolPercent" class="text-sm">—</p></div>
+        <div class="bg-gray-700 p-3 rounded"><p class="text-xs text-gray-400">Next Distribution</p><p id="nextDistribution" class="text-sm">—</p></div>
       </div>
     </section>
 
-    <!-- Collection Registration -->
+    <!-- Collection Management -->
     <section class="bg-gray-800 p-6 rounded mb-6">
-      <h2 class="text-lg font-semibold mb-4">Register a Collection</h2>
-      <p class="text-sm text-gray-400 mb-3">Add a new NFT collection to enable staking (fee required, mostly burned).</p>
+      <h2 class="text-lg font-semibold mb-4">NFT Collections</h2>
+      <p class="text-sm text-gray-400 mb-3">Search, register, and interact with NFT collections in Catalyst.</p>
+
+      <!-- Search -->
+      <div class="flex gap-2 mb-3">
+        <input id="checkAddress" type="text" placeholder="Enter contract address" class="flex-1 p-2 rounded bg-gray-700 text-gray-200 text-sm"/>
+        <button id="checkBtn" class="px-4 py-2 bg-blue-600 rounded">Check</button>
+      </div>
+      <p id="checkStatus" class="mb-4 text-xs text-gray-300">—</p>
+
+      <!-- Register -->
       <div class="flex gap-2 mb-4">
-        <input id="collectionAddress" type="text" placeholder="Collection contract address"
-          class="flex-1 p-2 rounded bg-gray-700 text-gray-200 text-sm"/>
+        <input id="collectionAddress" type="text" placeholder="Collection contract address" class="flex-1 p-2 rounded bg-gray-700 text-gray-200 text-sm"/>
         <button id="registerBtn" class="px-4 py-2 bg-indigo-600 rounded">Register</button>
       </div>
       <p id="regStatus" class="mb-4 text-xs text-gray-400"></p>
 
+      <!-- Latest Registered -->
       <h3 class="text-md font-semibold mb-2">Latest Registered Collections</h3>
-      <div id="latestCollections" class="space-y-2 max-h-40 overflow-auto">
-        <p class="text-sm text-gray-400">Loading...</p>
-      </div>
+      <div id="latestCollections" class="space-y-2 max-h-40 overflow-auto mb-6"><p class="text-sm text-gray-400">Loading...</p></div>
+
+      <!-- Verified Collections -->
+      <h3 class="text-md font-semibold mb-2">Verified Collections</h3>
+      <input id="verifiedFilter" type="text" placeholder="Search verified..." class="w-full p-2 mb-3 rounded bg-gray-700 text-gray-200 text-sm"/>
+      <div id="verifiedCollections" class="space-y-2 max-h-60 overflow-auto mb-6"><p class="text-sm text-gray-400">Loading...</p></div>
+
+      <!-- Unverified Collections -->
+      <h3 class="text-md font-semibold mb-2">Unverified Collections</h3>
+      <input id="unverifiedFilter" type="text" placeholder="Search unverified..." class="w-full p-2 mb-3 rounded bg-gray-700 text-gray-200 text-sm"/>
+      <div id="unverifiedCollections" class="space-y-2 max-h-60 overflow-auto"><p class="text-sm text-gray-400">Loading...</p></div>
     </section>
 
     <!-- Governance -->
     <section class="bg-gray-800 p-6 rounded">
       <h2 class="text-lg font-semibold mb-4">Governance Proposals</h2>
-      <div id="proposalList" class="space-y-2">
-        <p class="text-sm text-gray-400">No proposals yet</p>
+      <p class="text-sm text-gray-400 mb-3">Participate in Catalyst governance: vote or create proposals.</p>
+      <div id="proposalList" class="space-y-3 mb-6"><p class="text-sm text-gray-400">Loading proposals...</p></div>
+      <h3 class="text-md font-semibold mb-2">Create New Proposal</h3>
+      <div class="flex flex-col gap-2">
+        <input id="proposalTitle" type="text" placeholder="Proposal title" class="p-2 rounded bg-gray-700 text-gray-200 text-sm"/>
+        <textarea id="proposalDesc" placeholder="Proposal description" class="p-2 rounded bg-gray-700 text-gray-200 text-sm"></textarea>
+        <input id="proposalParam" type="text" placeholder="Parameter (e.g. new fee %)" class="p-2 rounded bg-gray-700 text-gray-200 text-sm"/>
+        <button id="createProposalBtn" class="px-4 py-2 bg-green-600 rounded">Submit Proposal</button>
+        <p id="proposalStatus" class="text-xs text-gray-400"></p>
       </div>
     </section>
   </div>
@@ -119,94 +111,113 @@
     let provider, signer, contract;
 
     async function connectWallet() {
-      if (!window.ethereum) {
-        alert("MetaMask required");
-        return;
-      }
+      if (!window.ethereum) { alert("MetaMask required"); return; }
       provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       signer = provider.getSigner();
       contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      loadStats();
-      setInterval(loadStats, 30000); // auto-refresh every 30s
+      loadStats(); loadCollections(); loadProposals();
+      setInterval(() => { loadStats(); loadCollections(); loadProposals(); }, 30000);
     }
 
     async function loadStats() {
       try {
-        // Global stats
-        document.getElementById("totalStaked").innerText =
-          (await contract.totalStakedNFTsCount()).toString();
-        document.getElementById("totalStakers").innerText =
-          (await contract.totalStakersCount()).toString();
-        document.getElementById("treasuryBalance").innerText =
-          ethers.utils.formatEther(await contract.balanceOf(await contract.treasuryAddress()));
-        document.getElementById("totalBurned").innerText =
-          ethers.utils.formatEther(await contract.totalBurnedCATA());
-
-        // User stats
+        document.getElementById("totalStaked").innerText = (await contract.totalStakedNFTsCount()).toString();
+        document.getElementById("totalStakers").innerText = (await contract.totalStakersCount()).toString();
+        document.getElementById("treasuryBalance").innerText = ethers.utils.formatEther(await contract.balanceOf(await contract.treasuryAddress()));
+        document.getElementById("totalBurned").innerText = ethers.utils.formatEther(await contract.totalBurnedCATA());
         const addr = await signer.getAddress();
-        document.getElementById("pendingCata").innerText =
-          ethers.utils.formatEther(await contract.pendingUserRewards(addr));
-        document.getElementById("myBurned").innerText =
-          ethers.utils.formatEther(await contract.burnedCatalystByAddress(addr));
-        document.getElementById("myStakedCount").innerText =
-          (await contract.getUserStakedCount(addr)).toString();
-
-        // Top burners
+        document.getElementById("pendingCata").innerText = ethers.utils.formatEther(await contract.pendingUserRewards(addr));
+        document.getElementById("myBurned").innerText = ethers.utils.formatEther(await contract.burnedCatalystByAddress(addr));
+        document.getElementById("myStakedCount").innerText = (await contract.getUserStakedCount(addr)).toString();
         const burners = await contract.getTopBurners();
-        const list = document.getElementById("burnerList");
-        list.innerHTML = "";
-        burners.forEach((b, i) => {
-          const item = document.createElement("div");
-          item.className = "flex justify-between p-2 bg-gray-700 rounded";
-          item.innerHTML = `<span>#${i+1} ${b.substring(0,6)}...${b.substring(b.length-4)}</span>`;
-          list.appendChild(item);
-        });
-
-        // Protocol health
+        const list = document.getElementById("burnerList"); list.innerHTML = "";
+        burners.forEach((b, i) => { const item=document.createElement("div"); item.className="flex justify-between p-2 bg-gray-700 rounded"; item.innerHTML=`<span>#${i+1} ${b.substring(0,6)}...${b.substring(b.length-4)}</span>`; list.appendChild(item); });
         const collections = await contract.getRegisteredCollections();
         document.getElementById("registeredCollections").innerText = collections.length;
-        document.getElementById("bonusPoolPercent").innerText =
-          (await contract.bonusPoolPercentPerCycleBP()) / 100 + "%";
-        document.getElementById("nextDistribution").innerText =
-          new Date((await contract.lastBonusDistribution()).toNumber() * 1000).toLocaleString();
-
-        // Latest collections
-        const latestList = document.getElementById("latestCollections");
-        latestList.innerHTML = "";
-        collections.slice(-5).reverse().forEach((c, i) => {
-          const item = document.createElement("div");
-          item.className = "p-2 bg-gray-700 rounded text-xs";
-          item.innerHTML = `${c.substring(0,6)}...${c.substring(c.length-4)}`;
-          latestList.appendChild(item);
-        });
-
-      } catch (err) {
-        console.error(err);
-      }
+        document.getElementById("bonusPoolPercent").innerText = (await contract.bonusPoolPercentPerCycleBP()) / 100 + "%";
+        document.getElementById("nextDistribution").innerText = new Date((await contract.lastBonusDistribution()).toNumber()*1000).toLocaleString();
+        const latestList = document.getElementById("latestCollections"); latestList.innerHTML="";
+        collections.slice(-5).reverse().forEach(c => { const item=document.createElement("div"); item.className="p-2 bg-gray-700 rounded text-xs"; item.innerHTML=`${c.addr?c.addr.substring(0,6):c.substring(0,6)}...${c.addr?c.addr.substring(c.addr.length-4):c.substring(c.length-4)}`; latestList.appendChild(item); });
+      } catch (err) { console.error(err); }
     }
 
-    // Collection registration
-    document.getElementById("registerBtn").onclick = async () => {
+    async function loadCollections() {
       try {
-        const addr = document.getElementById("collectionAddress").value.trim();
-        if (!ethers.utils.isAddress(addr)) {
-          alert("Invalid address");
-          return;
+        const collections = await contract.getRegisteredCollections();
+        const verifiedList=document.getElementById("verifiedCollections");
+        const unverifiedList=document.getElementById("unverifiedCollections");
+        verifiedList.innerHTML=""; unverifiedList.innerHTML="";
+
+        collections.forEach(c => {
+          const addr = c.addr || c;
+          const verified = c.verified;
+          const item=document.createElement("div");
+          item.className="p-3 bg-gray-700 rounded text-xs flex flex-col";
+          item.innerHTML=`
+            <div class="flex justify-between"><span>${addr.substring(0,6)}...${addr.substring(addr.length-4)}</span><span>${verified?"🔵 Verified":"⚪ Unverified"}</span></div>
+            <div class="flex justify-between mt-1 text-gray-300 text-[10px]"><span>Staked: ${c.stakedCount||0}</span><span>Burned: ${c.burnedCata?ethers.utils.formatEther(c.burnedCata):"0"} CATA</span></div>
+            <div class="mt-2 flex gap-2">
+              <button class="px-2 py-1 bg-indigo-600 rounded text-[10px]" onclick="stakeFromCollection('${addr}')">Stake</button>
+              <button class="px-2 py-1 bg-red-600 rounded text-[10px]" onclick="burnForCollection('${addr}')">Burn</button>
+              <button class="px-2 py-1 bg-gray-500 rounded text-[10px]" onclick="governCollection('${addr}')">Govern</button>
+            </div>`;
+          if (verified) verifiedList.appendChild(item);
+          else unverifiedList.appendChild(item);
+        });
+
+        document.getElementById("verifiedFilter").oninput = e => {
+          const term=e.target.value.toLowerCase();
+          [...verifiedList.children].forEach(div => {div.style.display=div.innerText.toLowerCase().includes(term)?"block":"none";});
+        };
+        document.getElementById("unverifiedFilter").oninput = e => {
+          const term=e.target.value.toLowerCase();
+          [...unverifiedList.children].forEach(div => {div.style.display=div.innerText.toLowerCase().includes(term)?"block":"none";});
+        };
+
+      } catch(err){console.error(err); document.getElementById("verifiedCollections").innerText="Error loading collections."; document.getElementById("unverifiedCollections").innerText="Error loading collections.";}
+    }
+
+    async function loadProposals() {
+      try {
+        const proposalCount=await contract.proposalCount();
+        const list=document.getElementById("proposalList"); list.innerHTML="";
+        for(let i=proposalCount-1;i>=0&&i>=proposalCount-10;i--){
+          const proposal=await contract.proposals(i);
+          const item=document.createElement("div"); item.className="p-3 bg-gray-700 rounded text-sm flex flex-col gap-2";
+          const status=proposal.executed?"✅ Executed":(Date.now()/1000>proposal.endTime.toNumber()?"❌ Expired":"⏳ Active");
+          item.innerHTML=`
+            <div class="flex justify-between"><span class="font-semibold">#${i} – ${proposal.title}</span><span>${status}</span></div>
+            <p class="text-gray-300 text-xs">${proposal.description}</p>
+            <div class="flex justify-between text-xs mt-1"><span>For: ${proposal.votesFor.toString()}</span><span>Against: ${proposal.votesAgainst.toString()}</span><span>Ends: ${new Date(proposal.endTime.toNumber()*1000).toLocaleString()}</span></div>
+            <div class="flex gap-2 mt-2"><button class="px-2 py-1 bg-green-600 rounded text-xs" onclick="voteProposal(${i},true)">Vote For</button><button class="px-2 py-1 bg-red-600 rounded text-xs" onclick="voteProposal(${i},false)">Vote Against</button></div>`;
+          list.appendChild(item);
         }
-        const fee = await contract.collectionRegistrationFee();
-        const tx = await contract.setCollectionConfig(addr, { value: fee });
-        document.getElementById("regStatus").innerText = "Transaction sent...";
-        await tx.wait();
-        document.getElementById("regStatus").innerText = "Collection registered successfully!";
-        loadStats();
-      } catch (err) {
-        console.error(err);
-        document.getElementById("regStatus").innerText = "Registration failed.";
-      }
+      } catch(err){console.error(err); document.getElementById("proposalList").innerText="Error loading proposals.";}
+    }
+
+    async function voteProposal(id,support){
+      try{const tx=await contract.voteOnProposal(id,support); await tx.wait(); alert("Vote submitted!"); loadProposals();}
+      catch(err){console.error(err); alert("Vote failed.");}
+    }
+
+    document.getElementById("createProposalBtn").onclick = async () => {
+      try {
+        const title=document.getElementById("proposalTitle").value.trim();
+        const desc=document.getElementById("proposalDesc").value.trim();
+        const param=document.getElementById("proposalParam").value.trim();
+        if(!title||!desc){alert("Title and description required");return;}
+        const tx=await contract.createProposal(title,desc,param);
+        document.getElementById("proposalStatus").innerText="Transaction sent..."; await tx.wait();
+        document.getElementById("proposalStatus").innerText="Proposal created!"; loadProposals();
+      } catch(err){console.error(err); document.getElementById("proposalStatus").innerText="Proposal creation failed.";}
     };
 
-    document.getElementById("connectBtn").onclick = connectWallet;
+    async function stakeFromCollection(addr){alert("Stake NFTs from "+addr);}
+    async function burnForCollection(addr){alert("Burn CATA for "+addr);}
+    async function governCollection(addr){alert("Governance for "+addr);}
+
+    document.getElementById("connectBtn").onclick=connectWallet;
   </script>
 </body>
 </html>
