@@ -2,16 +2,17 @@
 pragma solidity ^0.8.17;
 
 /*
-    Catalyst NFT Staking Protocol
-    - Two-tier collections: VERIFIED vs UNVERIFIED (junk/unproven)
-    - Unverified pay base fee + SURCHARGE ESCROW (refundable on upgrade)
-    - Tier upgrade via governance if objective criteria are met
-    - Escrow forfeit if not upgraded before deadline (anti-spam)
-    - Top-% (not Top-10) governance eligibility by burned CATA
-    - Per-collection vote cap & stake-age requirement for voting
-    - Dynamic registration fees by declared supply bracket
-    - 20,000 stake cap per collection
-    NOTE: This code is large; run comprehensive tests and a professional audit.
+  Catalyst NFT Staking Protocol
+  - Full system with:
+    - Two-tier collections (VERIFIED / UNVERIFIED w/ escrow)
+    - Top-% governance by burned CATA
+    - Per-collection vote caps, stake-age, anti-flash protections
+    - 20k stake cap per collection
+    - Dynamic registration fees (supply-based)
+    - Top-1% Burner Bonus paid from Treasury (with anti-whale, anti-gaming, and treasury cap)
+    - Admin-invoked leaderboard rebuild (cheap updates on burns)
+    - Many governance-adjustable parameters (via VOTING_PARAM)
+  NOTE: Test & audit before production.
 */
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -26,15 +27,13 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     // ---------- Roles ----------
     bytes32 public constant CONTRACT_ADMIN_ROLE = keccak256("CONTRACT_ADMIN_ROLE");
 
-    // ---------- Governance constants ----------
+    // ---------- Constants ----------
     uint256 public constant WEIGHT_SCALE = 1e18;
     uint256 public constant MAX_HARVEST_BATCH = 50;
     uint256 public constant MAX_STAKE_PER_COLLECTION = 20000;
 
-    // ---------- Tiers ----------
+    // ---------- Enums ----------
     enum CollectionTier { UNVERIFIED, VERIFIED }
-
-    // ---------- Proposals ----------
     enum ProposalType {
         BASE_REWARD,
         HARVEST_FEE,
@@ -42,22 +41,22 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         REGISTRATION_FEE_FALLBACK,
         TREASURY_SPLIT,
         VOTING_PARAM,
-        TIER_UPGRADE // NEW: upgrade collection from UNVERIFIED -> VERIFIED
+        TIER_UPGRADE
     }
 
+    // ---------- Structs ----------
     struct Proposal {
         ProposalType pType;
-        uint8 paramTarget;              // for VOTING_PARAM
-        uint256 newValue;               // generic value
-        address collectionAddress;      // context for TIER_UPGRADE or fee targeting
+        uint8 paramTarget;
+        uint256 newValue;
+        address collectionAddress;
         address proposer;
         uint256 startBlock;
         uint256 endBlock;
-        uint256 votesScaled;            // accumulated votes
+        uint256 votesScaled;
         bool executed;
     }
 
-    // ---------- Collection config ----------
     struct CollectionConfig {
         uint256 totalStaked;
         uint256 totalStakers;
@@ -66,43 +65,41 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     }
 
     struct StakeInfo {
-        uint256 stakeBlock;            // stake-age for voting
+        uint256 stakeBlock;
         uint256 lastHarvestBlock;
         bool currentlyStaked;
         bool isPermanent;
-        uint256 unstakeDeadlineBlock;  // for term stakes
+        uint256 unstakeDeadlineBlock;
     }
 
     struct CollectionMeta {
         CollectionTier tier;
-        address registrant;            // who paid registration fee
-        uint256 surchargeEscrow;       // locked extra CATA for UNVERIFIED registration
-        uint256 registeredAtBlock;     // for min-age checks
-        uint256 lastTierProposalBlock; // to rate-limit upgrade proposals
+        address registrant;
+        uint256 surchargeEscrow;
+        uint256 registeredAtBlock;
+        uint256 lastTierProposalBlock;
     }
 
-    // ---------- Storage ----------
+    // ---------- Storage: collections & staking ----------
     mapping(address => CollectionConfig) public collectionConfigs;
-    mapping(address => CollectionMeta)    public collectionMeta;
-
+    mapping(address => CollectionMeta) public collectionMeta;
     mapping(address => mapping(address => mapping(uint256 => StakeInfo))) public stakeLog;
     mapping(address => mapping(address => uint256[])) public stakePortfolioByUser;
     mapping(address => mapping(uint256 => uint256)) public indexOfTokenIdInStakePortfolio;
-
     mapping(address => uint256) public burnedCatalystByCollection;
 
-    // proposals
+    // ---------- Proposals & voting ----------
     mapping(bytes32 => Proposal) public proposals;
     mapping(bytes32 => mapping(address => bool)) public hasVoted;
-    mapping(bytes32 => mapping(address => uint256)) public proposalCollectionVotesScaled; // per-proposal per-collection cap accounting
+    mapping(bytes32 => mapping(address => uint256)) public proposalCollectionVotesScaled;
 
-    // registration enumeration
+    // ---------- Registered collections enumeration ----------
     address[] public registeredCollections;
-    mapping(address => uint256) public registeredIndex; // 1-based; 0 means not registered
+    mapping(address => uint256) public registeredIndex; // 1-based, 0 = not registered
 
-    // ---------- Tokenomics ----------
+    // ---------- Tokenomics params ----------
     uint256 public numberOfBlocksPerRewardUnit = 18782;
-    uint256 public collectionRegistrationFee;  // legacy fallback (kept)
+    uint256 public collectionRegistrationFee; // fallback
     uint256 public unstakeBurnFee;
     address public treasuryAddress;
     uint256 public totalStakedNFTsCount;
@@ -113,14 +110,13 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     uint256 public harvestRateAdjustmentFactor;
     uint256 public minBurnContributionForVote;
 
-    // dynamic fees & rewards
     uint256 public initialCollectionFee;
     uint256 public feeMultiplier;
     uint256 public rewardRateIncrementPerNFT;
     uint256 public welcomeBonusBaseRate;
     uint256 public welcomeBonusIncrementPerNFT;
 
-    // declared-supply fee brackets
+    // ---------- Tier / registration fee brackets ----------
     uint256 public SMALL_MIN_FEE = 1000 * 10**18;
     uint256 public SMALL_MAX_FEE = 5000 * 10**18;
     uint256 public MED_MIN_FEE   = 5000 * 10**18;
@@ -128,28 +124,45 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     uint256 public LARGE_MIN_FEE = 10000 * 10**18;
     uint256 public LARGE_MAX_FEE_CAP = 20000 * 10**18;
 
-    // Tier mechanics
-    uint256 public unverifiedSurchargeBP = 20000; // 2x of base fee (10000 = 1x, 20000 = 2x)
-    uint256 public tierUpgradeMinAgeBlocks = 200000;      // must be registered this long
-    uint256 public tierUpgradeMinBurn = 50_000 * 10**18;  // must burn at least this much CATA
-    uint256 public tierUpgradeMinStakers = 50;            // must have at least this many unique stakers
-    uint256 public tierProposalCooldownBlocks = 30000;    // rate-limit proposals per collection
-    uint256 public surchargeForfeitBlocks = 600000;       // if not upgraded by then, escrow can be forfeited
+    // Unverified surcharge basis points (BP) (10000 = 1x)
+    uint256 public unverifiedSurchargeBP = 20000; // default 2x total (10000 -> 1x; 20000 -> 2x)
 
-    // governance params
-    address public immutable deployerAddress;
-    uint256 public deployerFeeShareRate; // percent 0..100
+    // Tier upgrade thresholds & timings
+    uint256 public tierUpgradeMinAgeBlocks = 200000;
+    uint256 public tierUpgradeMinBurn = 50_000 * 10**18;
+    uint256 public tierUpgradeMinStakers = 50;
+    uint256 public tierProposalCooldownBlocks = 30000;
+    uint256 public surchargeForfeitBlocks = 600000;
 
-    address[] public topCollections;  // dynamic Top-% by burned CATA
-    uint256 public topPercent = 10;   // eligible = max(1, N * topPercent / 100)
+    // ---------- Governance / leaderboards ----------
+    address[] public topCollections; // sorted desc by burnedCatalystByCollection
+    uint256 public topPercent = 10;
     uint256 public minVotesRequiredScaled = 3 * WEIGHT_SCALE;
     uint256 public votingDurationBlocks = 46000;
-    uint256 public smallCollectionVoteWeightScaled = (WEIGHT_SCALE * 50) / 100; // 0.5 vote
+    uint256 public smallCollectionVoteWeightScaled = (WEIGHT_SCALE * 50) / 100;
     uint256 public maxBaseRewardRate = type(uint256).max;
 
-    // anti-collusion & voter quality
-    uint256 public collectionVoteCapPercent = 70; // % of required votes a single collection may contribute per proposal
-    uint256 public minStakeAgeForVoting = 100;    // blocks
+    // anti-collusion & stake-age
+    uint256 public collectionVoteCapPercent = 70; // percent of minVotes allowed per collection
+    uint256 public minStakeAgeForVoting = 100; // blocks
+
+    // ---------- Burner bonus system ----------
+    address[] public participatingWallets; // addresses that have burned at least once via contract flows
+    mapping(address => bool) public isParticipating;
+    mapping(address => uint256) public burnedCatalystByAddress; // total burned by address (counts burns done by that address)
+    mapping(address => uint256) public lastBurnBlock; // last block where user burned via contract flow
+
+    address[] public topBurners; // admin-built top burner list for current cycle
+    uint256 public bonusCycleLengthBlocks = 65000; // how often bonuses can be distributed (approx ~1 week depending on chain)
+    uint256 public lastBonusCycleBlock = 0;
+    uint256 public bonusPoolPercentPerCycleBP = 500; // 5% = 500 BP of treasury available per cycle (BP = 10000)
+    uint256 public minBurnForRanking = 100 * 10**18; // minimum total burned by address to be considered for ranking
+    uint256 public minStakedNFTsForBonus = 1; // requirement: must stake >= this or burn >= minBurnForRanking to be eligible
+    uint256 public minBurnToEnterTopPercent = 10 * 10**18; // minimum burn per address to even be in top-percent calculations
+
+    // governance / deployer
+    address public immutable deployerAddress;
+    uint256 public deployerFeeShareRate; // percent 0..100
 
     // ---------- Events ----------
     event RewardsHarvested(address indexed owner, address indexed collection, uint256 payoutAmount, uint256 burnedAmount);
@@ -158,7 +171,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
     event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 baseFee, uint256 surchargeEscrow, CollectionTier tier);
     event CollectionRemoved(address indexed collection);
-
     event PermanentStakeFeePaid(address indexed staker, uint256 feeAmount);
 
     event ProposalCreated(bytes32 indexed id, ProposalType pType, uint8 paramTarget, address indexed collection, address indexed proposer, uint256 newValue, uint256 startBlock, uint256 endBlock);
@@ -166,24 +178,17 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     event ProposalExecuted(bytes32 indexed id, uint256 appliedValue);
 
     event TierUpgraded(address indexed collection, address indexed registrant, uint256 escrowRefunded);
-    event TierProposalRejected(address indexed collection);
     event EscrowForfeited(address indexed collection, uint256 amountToTreasury, uint256 amountBurned);
+
+    event TopBurnersRebuilt(address indexed admin, uint256 count);
+    event BurnerBonusDistributed(uint256 cycleStartBlock, uint256 poolAmount, uint256 recipientsCount);
 
     event AdminAdded(address indexed admin);
     event AdminRemoved(address indexed admin);
     event Paused(address indexed account);
     event Unpaused(address indexed account);
-    event EmergencyWithdrawnERC20(address token, address to, uint256 amount);
-    event RescuedERC721(address token, uint256 tokenId, address to);
 
-    // Optional param update events
-    event BaseRewardRateUpdated(uint256 oldValue, uint256 newValue);
-    event HarvestFeeUpdated(uint256 oldValue, uint256 newValue);
-    event UnstakeFeeUpdated(uint256 oldValue, uint256 newValue);
-    event RegistrationFeeUpdated(uint256 oldValue, uint256 newValue);
-    event TreasurySplitUpdated(uint256 oldValue, uint256 newValue);
-    event VotingParamUpdated(uint8 target, uint256 oldValue, uint256 newValue);
-
+    // ---------- Constructor ----------
     constructor(
         address _owner,
         address _treasury,
@@ -269,7 +274,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
     function _applyTierSurcharge(address collection, uint256 baseFee) internal view returns (uint256 feeToPay, uint256 surchargeAmount) {
         CollectionTier tier = collectionMeta[collection].tier;
-        uint256 multBP = (tier == CollectionTier.UNVERIFIED) ? unverifiedSurchargeBP : 10000; // basis points
+        uint256 multBP = (tier == CollectionTier.UNVERIFIED) ? unverifiedSurchargeBP : 10000;
         uint256 total = (baseFee * multBP) / 10000;
         feeToPay = total;
         surchargeAmount = (multBP > 10000) ? (total - baseFee) : 0;
@@ -280,32 +285,31 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         require(collection != address(0), "CATA: bad addr");
         require(!_isRegistered(collection), "CATA: already reg");
         require(declaredMaxSupply >= 1, "CATA: supply>=1");
-        require(uint8(tier) <= 1, "CATA: tier");
 
         uint256 baseFee = _calculateRegistrationBaseFee(declaredMaxSupply);
         (uint256 totalFee, uint256 surcharge) = _applyTierSurcharge(collection, baseFee);
         require(balanceOf(_msgSender()) >= totalFee, "CATA: insufficient CATA");
 
-        // Process base fee normally (burn 90% of base, rest to treasury/deployer)
+        // base fee burn + splits
         uint256 baseBurn = (baseFee * 90) / 100;
         _burn(_msgSender(), baseBurn);
         burnedCatalystByCollection[collection] += baseBurn;
+        _recordUserBurn(_msgSender(), baseBurn);
 
         uint256 baseRemainder = baseFee - baseBurn;
-        uint256 deployerShare = (baseRemainder * deployerFeeShareRate) / 100;
-        uint256 communityShare = baseRemainder - deployerShare;
-        _transfer(_msgSender(), deployerAddress, deployerShare);
-        _transfer(_msgSender(), treasuryAddress, communityShare);
+        uint256 dep = (baseRemainder * deployerFeeShareRate) / 100;
+        uint256 tre = baseRemainder - dep;
+        _transfer(_msgSender(), deployerAddress, dep);
+        _transfer(_msgSender(), treasuryAddress, tre);
 
-        // Surcharge escrow (if UNVERIFIED): lock it on contract (not burned)
+        // surcharge escrow: move to contract (only for UNVERIFIED)
         uint256 escrowAmt = 0;
         if (surcharge > 0) {
-            // move surcharge from registrant to contract as escrow
             _transfer(_msgSender(), address(this), surcharge);
-            escrowAmt = surcharge;
+            escrowAmt = surcharge; // not burned yet
         }
 
-        // register
+        // register enumerations
         registeredCollections.push(collection);
         registeredIndex[collection] = registeredCollections.length;
 
@@ -324,8 +328,8 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             lastTierProposalBlock: 0
         });
 
-        _updateTopCollectionsOnBurn(collection); // cheap incremental
-        _maybeRebuildTopCollections();           // adjust list size if eligibleCount grew
+        _updateTopCollectionsOnBurn(collection);
+        _maybeRebuildTopCollections();
 
         emit CollectionAdded(collection, declaredMaxSupply, baseFee, escrowAmt, tier);
     }
@@ -334,7 +338,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         require(collectionConfigs[collection].registered, "CATA: not reg");
         collectionConfigs[collection].registered = false;
 
-        // remove from registeredCollections
         uint256 idx = registeredIndex[collection];
         if (idx != 0) {
             uint256 i = idx - 1;
@@ -348,12 +351,10 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             registeredIndex[collection] = 0;
         }
 
-        // drop from topCollections
+        // remove from topCollections if present
         for (uint256 t = 0; t < topCollections.length; t++) {
             if (topCollections[t] == collection) {
-                for (uint256 j = t; j + 1 < topCollections.length; j++) {
-                    topCollections[j] = topCollections[j + 1];
-                }
+                for (uint256 j = t; j + 1 < topCollections.length; j++) topCollections[j] = topCollections[j + 1];
                 topCollections.pop();
                 break;
             }
@@ -362,7 +363,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         emit CollectionRemoved(collection);
     }
 
-    // ---------- Tier Upgrade / Escrow Forfeit (through governance) ----------
+    // ---------- Tier upgrade eligibility & escrow forfeit ----------
     function _eligibleForTierUpgrade(address collection) internal view returns (bool) {
         CollectionMeta memory m = collectionMeta[collection];
         if (m.tier != CollectionTier.UNVERIFIED) return false;
@@ -373,7 +374,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     }
 
     function forfeitEscrowIfExpired(address collection) external onlyRole(CONTRACT_ADMIN_ROLE) {
-        // If still UNVERIFIED and past deadline, escrow is forfeited: 50% burned, 50% to treasury
         CollectionMeta storage m = collectionMeta[collection];
         require(collectionConfigs[collection].registered, "CATA: not reg");
         require(m.tier == CollectionTier.UNVERIFIED, "CATA: already verified");
@@ -381,9 +381,9 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         uint256 amt = m.surchargeEscrow;
         require(amt > 0, "CATA: no escrow");
 
-        // split: 50% burn, 50% treasury
         uint256 toBurn = amt / 2;
         uint256 toTreasury = amt - toBurn;
+        // burn contract-held tokens: need to burn from contract balance
         _burn(address(this), toBurn);
         _transfer(address(this), treasuryAddress, toTreasury);
         m.surchargeEscrow = 0;
@@ -417,7 +417,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         stakePortfolioByUser[collection][_msgSender()].push(tokenId);
         indexOfTokenIdInStakePortfolio[collection][tokenId] = stakePortfolioByUser[collection][_msgSender()].length - 1;
 
-        // welcome bonus
         uint256 dynamicWelcome = welcomeBonusBaseRate + (totalStakedNFTsCount * welcomeBonusIncrementPerNFT);
         _mint(_msgSender(), dynamicWelcome);
 
@@ -437,10 +436,11 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         StakeInfo storage info = stakeLog[collection][_msgSender()][tokenId];
         require(!info.currentlyStaked, "CATA: already staked");
 
-        // burn 90% of fee, route remainder to treasury/deployer
         uint256 burnAmt = (fee * 90) / 100;
         _burn(_msgSender(), burnAmt);
         burnedCatalystByCollection[collection] += burnAmt;
+        _recordUserBurn(_msgSender(), burnAmt);
+
         _updateTopCollectionsOnBurn(collection);
 
         uint256 rem = fee - burnAmt;
@@ -465,7 +465,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         stakePortfolioByUser[collection][_msgSender()].push(tokenId);
         indexOfTokenIdInStakePortfolio[collection][tokenId] = stakePortfolioByUser[collection][_msgSender()].length - 1;
 
-        // welcome bonus
         uint256 dynamicWelcome = welcomeBonusBaseRate + (totalStakedNFTsCount * welcomeBonusIncrementPerNFT);
         _mint(_msgSender(), dynamicWelcome);
 
@@ -482,6 +481,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         _harvest(collection, _msgSender(), tokenId);
         require(balanceOf(_msgSender()) >= unstakeBurnFee, "CATA: fee");
         _burn(_msgSender(), unstakeBurnFee);
+        _recordUserBurn(_msgSender(), unstakeBurnFee);
 
         info.currentlyStaked = false;
 
@@ -518,9 +518,11 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         uint256 payout = reward - burnAmt;
 
         _mint(user, reward);
+
         if (burnAmt > 0) {
             _burn(user, burnAmt);
             burnedCatalystByCollection[collection] += burnAmt;
+            _recordUserBurn(user, burnAmt);
             _updateTopCollectionsOnBurn(collection);
         }
         info.lastHarvestBlock = block.number;
@@ -530,9 +532,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
     function harvestBatch(address collection, uint256[] calldata tokenIds) external nonReentrant whenNotPaused {
         require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            _harvest(collection, _msgSender(), tokenIds[i]);
-        }
+        for (uint256 i = 0; i < tokenIds.length; i++) _harvest(collection, _msgSender(), tokenIds[i]);
     }
 
     function pendingRewards(address collection, address owner, uint256 tokenId) public view returns (uint256) {
@@ -546,18 +546,16 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         return rewardAmount;
     }
 
-    // ---------- Governance ----------
+    // ---------- Governance: propose / vote / execute ----------
     function propose(
         ProposalType pType,
         uint8 paramTarget,
         uint256 newValue,
         address collectionContext
     ) external whenNotPaused returns (bytes32) {
-        // must be eligible proposer: staker in any top-% collection (stake-age) OR staker in collectionContext that meets burn threshold
         bool eligible = _isEligibleProposer(_msgSender(), collectionContext);
         require(eligible, "CATA: proposer not eligible");
 
-        // rate-limit tier proposals per collection
         if (pType == ProposalType.TIER_UPGRADE) {
             require(collectionContext != address(0), "CATA: collection req");
             CollectionMeta storage m = collectionMeta[collectionContext];
@@ -576,6 +574,8 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         p.proposer = _msgSender();
         p.startBlock = block.number;
         p.endBlock = block.number + votingDurationBlocks;
+        p.votesScaled = 0;
+        p.executed = false;
 
         emit ProposalCreated(id, pType, paramTarget, collectionContext, _msgSender(), newValue, p.startBlock, p.endBlock);
         return id;
@@ -591,7 +591,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         (uint256 weight, address attributedCollection) = _votingWeight(_msgSender(), p.collectionAddress);
         require(weight > 0, "CATA: not eligible to vote");
 
-        // per-collection cap
         uint256 cap = (minVotesRequiredScaled * collectionVoteCapPercent) / 100;
         uint256 cur = proposalCollectionVotesScaled[id][attributedCollection];
         require(cur + weight <= cap, "CATA: collection cap");
@@ -648,6 +647,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             else if (t == 6) { uint256 old = collectionVoteCapPercent; collectionVoteCapPercent = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
             else if (t == 7) { uint256 old = minStakeAgeForVoting; minStakeAgeForVoting = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
             else if (t == 8) { uint256 old = topPercent; require(p.newValue>=1 && p.newValue<=100, "CATA: 1..100"); topPercent = p.newValue; _rebuildTopCollections(); emit VotingParamUpdated(t, old, p.newValue); }
+            else if (t == 9) { uint256 old = bonusPoolPercentPerCycleBP; bonusPoolPercentPerCycleBP = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
             else { revert("CATA: unknown target"); }
             emit ProposalExecuted(id, p.newValue);
         } else if (p.pType == ProposalType.TIER_UPGRADE) {
@@ -655,15 +655,10 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             require(_eligibleForTierUpgrade(c), "CATA: prereq fail");
             CollectionMeta storage m = collectionMeta[c];
             require(m.tier == CollectionTier.UNVERIFIED, "CATA: already verified");
-
-            // Upgrade and refund escrow
             m.tier = CollectionTier.VERIFIED;
             uint256 refund = m.surchargeEscrow;
             m.surchargeEscrow = 0;
-            if (refund > 0) {
-                // send escrow back to original registrant
-                _transfer(address(this), m.registrant, refund);
-            }
+            if (refund > 0) _transfer(address(this), m.registrant, refund);
             emit TierUpgraded(c, m.registrant, refund);
             emit ProposalExecuted(id, 1);
         } else {
@@ -675,7 +670,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
     // ---------- Voting helpers ----------
     function _isEligibleProposer(address user, address collectionContext) internal view returns (bool) {
-        // Full eligibility if staker in any top-% collection with stake-age
         for (uint256 i = 0; i < topCollections.length; i++) {
             address coll = topCollections[i];
             uint256[] storage port = stakePortfolioByUser[coll][user];
@@ -685,7 +679,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
                 if (si.currentlyStaked && block.number >= si.stakeBlock + minStakeAgeForVoting) return true;
             }
         }
-        // Fallback: staker in collectionContext that burned >= threshold
         if (collectionContext != address(0) && burnedCatalystByCollection[collectionContext] >= minBurnContributionForVote) {
             uint256[] storage p = stakePortfolioByUser[collectionContext][user];
             if (p.length > 0) {
@@ -699,7 +692,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     }
 
     function _votingWeight(address voter, address context) internal view returns (uint256 weight, address attributedCollection) {
-        // Full weight if voter stakes in a top-% collection with stake-age
         for (uint256 i = 0; i < topCollections.length; i++) {
             address coll = topCollections[i];
             uint256[] storage port = stakePortfolioByUser[coll][voter];
@@ -711,7 +703,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             }
             if (oldStake) return (WEIGHT_SCALE, coll);
         }
-        // Fractional weight via context collection (burn threshold + stake-age)
         if (context != address(0) && burnedCatalystByCollection[context] >= minBurnContributionForVote) {
             uint256[] storage p = stakePortfolioByUser[context][voter];
             if (p.length > 0) {
@@ -726,12 +717,12 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         return (0, address(0));
     }
 
-    // ---------- Top-% leaderboard maintenance ----------
+    // ---------- Top Collections maintenance ----------
     function _updateTopCollectionsOnBurn(address collection) internal {
         if (!_isRegistered(collection)) return;
+        uint256 burned = burnedCatalystByCollection[collection];
 
-        uint256 b = burnedCatalystByCollection[collection];
-        // remove if exists
+        // remove existing if present
         for (uint256 i = 0; i < topCollections.length; i++) {
             if (topCollections[i] == collection) {
                 for (uint256 j = i; j + 1 < topCollections.length; j++) topCollections[j] = topCollections[j + 1];
@@ -739,20 +730,19 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
                 break;
             }
         }
-        // insert sorted desc
-        bool ins = false;
+
+        bool inserted = false;
         for (uint256 i = 0; i < topCollections.length; i++) {
-            if (b > burnedCatalystByCollection[topCollections[i]]) {
+            if (burned > burnedCatalystByCollection[topCollections[i]]) {
                 topCollections.push(topCollections[topCollections.length - 1]);
-                for (uint256 k = topCollections.length - 1; k > i; k--) topCollections[k] = topCollections[k - 1];
+                for (uint256 j = topCollections.length - 1; j > i; j--) topCollections[j] = topCollections[j - 1];
                 topCollections[i] = collection;
-                ins = true;
+                inserted = true;
                 break;
             }
         }
-        if (!ins) topCollections.push(collection);
+        if (!inserted) topCollections.push(collection);
 
-        // trim to eligibleCount
         uint256 ec = eligibleCount();
         while (topCollections.length > ec) topCollections.pop();
     }
@@ -761,14 +751,13 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         uint256 total = registeredCollections.length;
         delete topCollections;
         if (total == 0) return;
-
         uint256 ec = eligibleCount();
         if (ec > total) ec = total;
-
-        // selection of top ec by burned
         bool[] memory picked = new bool[](total);
         for (uint256 s = 0; s < ec; s++) {
-            uint256 maxB = 0; uint256 maxIdx = 0; bool found = false;
+            uint256 maxB = 0;
+            uint256 maxIdx = 0;
+            bool found = false;
             for (uint256 i = 0; i < total; i++) {
                 if (picked[i]) continue;
                 address cand = registeredCollections[i];
@@ -785,17 +774,133 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         else if (topCollections.length == 0 && registeredCollections.length > 0) _rebuildTopCollections();
     }
 
-    // ---------- Admin setters ----------
+    // ---------- Burner bonus bookkeeping ----------
+    function _recordUserBurn(address user, uint256 amount) internal {
+        if (amount == 0) return;
+        burnedCatalystByAddress[user] += amount;
+        lastBurnBlock[user] = block.number;
+        if (!isParticipating[user]) {
+            isParticipating[user] = true;
+            participatingWallets.push(user);
+        }
+    }
+
+    // Admin-invoked: rebuild topBurners list (rare). This selects top N addresses by burnedCatalystByAddress,
+    // but only addresses meeting minBurnForRanking OR minStakedNFTsForBonus are considered.
+    function rebuildTopBurners(uint256 topN) external onlyRole(CONTRACT_ADMIN_ROLE) {
+        require(topN > 0, "CATA: topN>0");
+
+        // choose eligible participants
+        uint256 total = participatingWallets.length;
+        if (total == 0) { delete topBurners; emit TopBurnersRebuilt(_msgSender(), 0); return; }
+
+        // selection algorithm (O(total * topN)) - admin-run and expected rarely
+        address[] memory selected = new address[](topN);
+        bool[] memory picked = new bool[](total);
+
+        for (uint256 s = 0; s < topN; s++) {
+            uint256 maxBurn = 0;
+            uint256 maxIdx = 0;
+            bool found = false;
+            for (uint256 i = 0; i < total; i++) {
+                if (picked[i]) continue;
+                address cand = participatingWallets[i];
+                // eligibility checks: must have burned >= minBurnForRanking OR currently stake >= minStakedNFTsForBonus
+                bool eligibleByBurn = burnedCatalystByAddress[cand] >= minBurnForRanking;
+                bool eligibleByStake = stakePortfolioByUser[address(0)][cand].length >= minStakedNFTsForBonus; // NOTE: stakePortfolioByUser keyed by collection -> this is placeholder; we'll instead check total stakes across collections
+                // compute total staked count across all collections for user
+                uint256 totalUserStaked = _totalStakedByUser(cand);
+                eligibleByStake = totalUserStaked >= minStakedNFTsForBonus;
+
+                if (!eligibleByBurn && !eligibleByStake) continue;
+                uint256 b = burnedCatalystByAddress[cand];
+                if (!found || b > maxBurn) { maxBurn = b; maxIdx = i; found = true; }
+            }
+            if (found) {
+                picked[maxIdx] = true;
+                selected[s] = participatingWallets[maxIdx];
+            } else {
+                break; // no more eligible
+            }
+        }
+
+        // write topBurners
+        delete topBurners;
+        for (uint256 k = 0; k < topN; k++) {
+            if (selected[k] == address(0)) break;
+            topBurners.push(selected[k]);
+        }
+
+        emit TopBurnersRebuilt(_msgSender(), topBurners.length);
+    }
+
+    // helper: compute total NFTs staked by a user across all collections (expensive; admin-level use ok)
+    function _totalStakedByUser(address user) internal view returns (uint256 total) {
+        total = 0;
+        uint256 rc = registeredCollections.length;
+        for (uint256 i = 0; i < rc; i++) {
+            address coll = registeredCollections[i];
+            total += stakePortfolioByUser[coll][user].length;
+        }
+    }
+
+    // ---------- Distribute Top-1% Burner Bonus ----------
+    // Requires an up-to-date topBurners list (admin should rebuildTopBurners before calling)
+    function distributeTopBurnersBonus() external nonReentrant whenNotPaused onlyRole(CONTRACT_ADMIN_ROLE) {
+        // rate-limiting by cycle
+        require(block.number >= lastBonusCycleBlock + bonusCycleLengthBlocks, "CATA: cycle not ready");
+
+        uint256 participants = participatingWallets.length;
+        require(participants > 0, "CATA: no participants");
+
+        // Determine top1 count
+        uint256 topCount = (participants * 1) / 100;
+        if (topCount == 0) topCount = 1;
+
+        // topBurners array must be >= topCount; admin should ensure it
+        require(topBurners.length >= topCount, "CATA: topBurners too small");
+
+        // compute bonus pool from treasury (cap by BP)
+        uint256 treasuryBal = balanceOf(treasuryAddress);
+        require(treasuryBal > 0, "CATA: empty treasury");
+        uint256 pool = (treasuryBal * bonusPoolPercentPerCycleBP) / 10000;
+        require(pool > 0, "CATA: pool zero");
+
+        // compute total burn among selected topCount addresses (but enforce minBurnToEnterTopPercent)
+        uint256 totalBurnTop = 0;
+        address[] memory recipients = new address[](topCount);
+        uint256 filled = 0;
+        for (uint256 i = 0; i < topCount; i++) {
+            address a = topBurners[i];
+            if (a == address(0)) continue;
+            // eligibility: must have burned >= minBurnToEnterTopPercent OR stake >= minStakedNFTsForBonus
+            uint256 totalUserStaked = _totalStakedByUser(a);
+            if (burnedCatalystByAddress[a] < minBurnToEnterTopPercent && totalUserStaked < minStakedNFTsForBonus) continue;
+            recipients[filled] = a;
+            totalBurnTop += burnedCatalystByAddress[a];
+            filled++;
+        }
+
+        require(filled > 0, "CATA: no eligible top burners");
+        // cap pool if governance wants less: pool already computed by BP
+        // distribute proportionally to burned amounts among recipients
+        for (uint256 j = 0; j < filled; j++) {
+            address r = recipients[j];
+            uint256 share = (pool * burnedCatalystByAddress[r]) / totalBurnTop;
+            if (share > 0) {
+                _transfer(treasuryAddress, r, share);
+            }
+        }
+
+        lastBonusCycleBlock = block.number;
+        emit BurnerBonusDistributed(block.number, pool, filled);
+    }
+
+    // ---------- Admin setters & rescue ----------
     function setTopPercent(uint256 p) external onlyRole(CONTRACT_ADMIN_ROLE) { require(p>=1 && p<=100,"CATA:1..100"); topPercent=p; _rebuildTopCollections(); }
     function setCollectionVoteCapPercent(uint256 p) external onlyRole(CONTRACT_ADMIN_ROLE) { require(p>=1 && p<=100,"CATA:1..100"); collectionVoteCapPercent=p; }
     function setMinStakeAgeForVoting(uint256 blocks_) external onlyRole(CONTRACT_ADMIN_ROLE) { minStakeAgeForVoting=blocks_; }
     function setMaxBaseRewardRate(uint256 cap_) external onlyRole(CONTRACT_ADMIN_ROLE) { maxBaseRewardRate=cap_; }
-
-    function setWelcomeBonusBaseRate(uint256 v) external onlyRole(CONTRACT_ADMIN_ROLE) { welcomeBonusBaseRate=v; }
-    function setWelcomeBonusIncrementPerNFT(uint256 v) external onlyRole(CONTRACT_ADMIN_ROLE) { welcomeBonusIncrementPerNFT=v; }
-    function setHarvestRateAdjustmentFactor(uint256 v) external onlyRole(CONTRACT_ADMIN_ROLE) { require(v>0,"CATA:>0"); harvestRateAdjustmentFactor=v; }
-    function setTermDurationBlocks(uint256 v) external onlyRole(CONTRACT_ADMIN_ROLE) { termDurationBlocks=v; }
-    function setStakingCooldownBlocks(uint256 v) external onlyRole(CONTRACT_ADMIN_ROLE) { stakingCooldownBlocks=v; }
 
     function setRegistrationFeeBrackets(
         uint256 sMin, uint256 sMax, uint256 mMin, uint256 mMax, uint256 lMin, uint256 lCap
@@ -822,6 +927,13 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         surchargeForfeitBlocks = blocks_;
     }
 
+    // Bonus params
+    function setBonusCycleLengthBlocks(uint256 blocks_) external onlyRole(CONTRACT_ADMIN_ROLE) { bonusCycleLengthBlocks = blocks_; }
+    function setBonusPoolPercentPerCycleBP(uint256 bp_) external onlyRole(CONTRACT_ADMIN_ROLE) { require(bp_ <= 10000, "CATA: bp<=10000"); bonusPoolPercentPerCycleBP = bp_; }
+    function setMinBurnForRanking(uint256 amt) external onlyRole(CONTRACT_ADMIN_ROLE) { minBurnForRanking = amt; }
+    function setMinStakedNFTsForBonus(uint256 n) external onlyRole(CONTRACT_ADMIN_ROLE) { minStakedNFTsForBonus = n; }
+    function setMinBurnToEnterTopPercent(uint256 amt) external onlyRole(CONTRACT_ADMIN_ROLE) { minBurnToEnterTopPercent = amt; }
+
     function pause() external onlyRole(CONTRACT_ADMIN_ROLE) { _pause(); emit Paused(_msgSender()); }
     function unpause() external onlyRole(CONTRACT_ADMIN_ROLE) { _unpause(); emit Unpaused(_msgSender()); }
 
@@ -829,13 +941,13 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     function removeContractAdmin(address admin) external onlyRole(DEFAULT_ADMIN_ROLE) { revokeRole(CONTRACT_ADMIN_ROLE, admin); emit AdminRemoved(admin); }
 
     function emergencyWithdrawERC20(address token, address to, uint256 amount) external onlyRole(CONTRACT_ADMIN_ROLE) {
-        require(to != address(0), "CATA: bad to"); IERC20(token).transfer(to, amount); emit EmergencyWithdrawnERC20(token, to, amount);
+        require(to != address(0), "CATA: bad to"); IERC20(token).transfer(to, amount);
     }
     function rescueERC721(address token, uint256 tokenId, address to) external onlyRole(CONTRACT_ADMIN_ROLE) {
-        require(to != address(0), "CATA: bad to"); IERC721(token).safeTransferFrom(address(this), to, tokenId); emit RescuedERC721(token, tokenId, to);
+        require(to != address(0), "CATA: bad to"); IERC721(token).safeTransferFrom(address(this), to, tokenId);
     }
 
-    // ---------- Math & dynamics ----------
+    // ---------- Helpers & math ----------
     function _sqrt(uint256 y) internal pure returns (uint256 z) {
         if (y > 3) { z = y; uint256 x = y / 2 + 1; while (x < z) { z = x; x = (y / x + x) / 2; } }
         else if (y != 0) { z = 1; }
@@ -855,11 +967,12 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     // ---------- Views ----------
     function getTopCollections() external view returns (address[] memory) { return topCollections; }
     function getRegisteredCollections() external view returns (address[] memory) { return registeredCollections; }
+    function getTopBurners() external view returns (address[] memory) { return topBurners; }
+    function getParticipatingWallets() external view returns (address[] memory) { return participatingWallets; }
     function getProposal(bytes32 id) external view returns (Proposal memory) { return proposals[id]; }
-    function getBurnedCatalystByCollection(address c) external view returns (uint256) { return burnedCatalystByCollection[c]; }
     function getCollectionMeta(address c) external view returns (CollectionMeta memory) { return collectionMeta[c]; }
 
-    // ---------- ERC721 Receiver ----------
+    // ERC721 Receiver
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return this.onERC721Received.selector;
     }
