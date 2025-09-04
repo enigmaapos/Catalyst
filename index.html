@@ -1,274 +1,490 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catalyst NFT Staking</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catalyst — Auto NFT Scanner & Batch Stake</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    /* small card tweak */
+    .nft-card { background: #0b1220; border: 1px solid #23303f; border-radius: 10px; padding: 10px; }
+    .nft-img { width: 100%; height: 160px; object-fit: cover; border-radius: 8px; background: #0a0f15; }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+<body class="bg-slate-900 text-white min-h-screen">
 
-  <!-- Header -->
-  <header class="p-6 bg-gray-800 flex justify-between items-center shadow-lg">
-    <h1 class="text-2xl font-bold">Catalyst NFT Staking</h1>
-    <div class="flex items-center space-x-4">
-      <span id="walletStatus" class="text-sm text-gray-300">Not connected</span>
-      <button id="connectWallet" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded">Connect Wallet</button>
+  <header class="p-6 bg-gray-800 flex justify-between items-center">
+    <h1 class="text-2xl font-semibold">Catalyst — Auto NFT Scanner & Batch Stake</h1>
+    <div class="flex items-center gap-4">
+      <div id="networkTag" class="text-sm text-gray-300">Not connected</div>
+      <button id="connectBtn" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded">Connect Wallet</button>
     </div>
   </header>
 
-  <main class="p-6 space-y-8 flex-grow">
+  <main class="p-6 space-y-6">
+    <section class="bg-gray-800 p-4 rounded">
+      <h2 class="text-lg font-bold mb-2">Setup</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="text-sm text-gray-300">Moralis API Key</label>
+          <input id="moralisKey" class="w-full p-2 rounded text-black" placeholder="Paste Moralis API key here (required)"/>
+          <p class="text-xs text-gray-400 mt-1">Get one at <a href="https://admin.moralis.io" target="_blank" class="underline">Moralis</a></p>
+        </div>
 
-    <!-- Transparency -->
-    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h2 class="text-xl font-semibold mb-4">Transparency</h2>
-      <div class="grid grid-cols-2 gap-4 text-sm">
-        <div>Total Staked NFTs: <span class="font-bold" id="totalStakedNFTs">0</span></div>
-        <div>Base Reward Rate: <span class="font-bold" id="baseRewardRate">0</span></div>
-        <div>Treasury Balance: <span class="font-bold" id="treasuryBalance">0</span></div>
-        <div>Top Collections Count: <span class="font-bold" id="topCollectionsCount">0</span></div>
+        <div>
+          <label class="text-sm text-gray-300">Filter: only registered collections</label>
+          <div class="mt-2">
+            <label class="inline-flex items-center"><input id="onlyRegistered" type="checkbox" checked class="mr-2"/> Show only registered</label>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm text-gray-300">Scan chain selection (auto-detected)</label>
+          <div class="mt-2 text-sm text-gray-400">The DApp auto-detects network on connect</div>
+        </div>
       </div>
     </section>
 
-    <!-- Collection Registration -->
-    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h2 class="text-xl font-semibold mb-4">Register Collection</h2>
-      <input type="text" id="collectionAddress" placeholder="Collection Address" class="w-full p-2 text-black rounded mb-2">
-      <input type="number" id="declaredSupply" placeholder="Declared Max Supply" class="w-full p-2 text-black rounded mb-2">
-      <select id="collectionTier" class="w-full p-2 text-black rounded mb-2">
-        <option value="0">Unverified</option>
-        <option value="1">Verified</option>
-      </select>
-      <button id="registerCollection" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full">Register Collection</button>
-    </section>
+    <section class="bg-gray-800 p-4 rounded">
+      <h2 class="text-lg font-bold mb-2">Your Stakeable NFTs</h2>
+      <div class="mb-3 text-sm text-gray-300">Connect wallet, press "Scan My NFTs" to find NFTs in registered collections. Select NFTs and click a stake button.</div>
 
-    <!-- Key User Functions -->
-    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h2 class="text-xl font-semibold mb-4">Key User Functions</h2>
-      <div class="grid grid-cols-2 gap-4">
-        <button id="stakeTerm" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">Stake (Term)</button>
-        <button id="stakePermanent" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded">Stake (Permanent)</button>
-        <button id="batchStake" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded">Batch Stake</button>
-        <button id="batchUnstake" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">Batch Unstake</button>
-        <button id="harvestRewards" class="bg-teal-500 hover:bg-teal-600 px-4 py-2 rounded">Harvest Rewards</button>
+      <div class="flex gap-2 mb-3">
+        <button id="scanBtn" class="bg-emerald-500 px-4 py-2 rounded">Scan My NFTs</button>
+        <button id="selectAllBtn" class="bg-sky-500 px-4 py-2 rounded">Select All</button>
+        <button id="clearSelectionBtn" class="bg-gray-600 px-4 py-2 rounded">Clear</button>
+        <div class="ml-auto flex items-center gap-2">
+          <label class="text-sm text-gray-300">Stake Mode:</label>
+          <select id="stakeMode" class="text-black p-1 rounded">
+            <option value="term">Term</option>
+            <option value="permanent">Permanent</option>
+          </select>
+          <button id="stakeSelectedBtn" class="bg-yellow-500 px-4 py-2 rounded">Stake Selected</button>
+        </div>
       </div>
-    </section>
 
-    <!-- Collections Section -->
-    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h2 class="text-xl font-semibold mb-4">Collections</h2>
-      <div class="grid grid-cols-2 gap-8">
+      <div id="scanStatus" class="text-sm text-gray-300 mb-2">Idle</div>
 
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Verified -->
         <div>
-          <h3 class="text-lg font-bold mb-2">Verified Collections</h3>
-          <input type="text" id="searchVerified" placeholder="Search verified..." class="w-full p-2 text-black rounded mb-2">
-          <ul id="verifiedCollections" class="list-disc list-inside space-y-1"></ul>
+          <h3 class="font-semibold text-green-400 mb-2">Verified Collections</h3>
+          <div id="verifiedGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
         </div>
 
         <!-- Unverified -->
         <div>
-          <h3 class="text-lg font-bold mb-2">Unverified Collections</h3>
-          <input type="text" id="searchUnverified" placeholder="Search unverified..." class="w-full p-2 text-black rounded mb-2">
-          <ul id="unverifiedCollections" class="list-disc list-inside space-y-1"></ul>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Governance Section -->
-    <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h2 class="text-xl font-semibold mb-4">Governance</h2>
-      <div class="space-y-4">
-        <div>
-          <h3 class="font-bold">Propose</h3>
-          <input type="text" id="proposalTitle" placeholder="Proposal Title" class="w-full p-2 text-black rounded mb-2">
-          <input type="text" id="proposalDescription" placeholder="Proposal Description" class="w-full p-2 text-black rounded mb-2">
-          <input type="text" id="proposalParam" placeholder="Parameter Change" class="w-full p-2 text-black rounded mb-2">
-          <button id="createProposal" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded w-full">Create Proposal</button>
-        </div>
-        <div>
-          <h3 class="font-bold">Vote</h3>
-          <input type="number" id="proposalIdVote" placeholder="Proposal ID" class="w-full p-2 text-black rounded mb-2">
-          <button id="voteProposal" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full">Vote</button>
-        </div>
-        <div>
-          <h3 class="font-bold">Execute</h3>
-          <input type="number" id="proposalIdExecute" placeholder="Proposal ID" class="w-full p-2 text-black rounded mb-2">
-          <button id="executeProposal" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full">Execute</button>
+          <h3 class="font-semibold text-yellow-300 mb-2">Unverified Collections</h3>
+          <div id="unverifiedGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
         </div>
       </div>
     </section>
 
+    <section class="bg-gray-800 p-4 rounded">
+      <h2 class="text-lg font-bold mb-2">Diagnostics & Transparency</h2>
+      <div class="text-sm text-gray-300" id="diagnostics">—</div>
+    </section>
   </main>
 
   <script>
-    let provider, signer, cata, catalyst;
-    let verifiedList = [], unverifiedList = [];
+  // ------------------------------
+  // CONFIG - replace as needed
+  // ------------------------------
+  // IMPORTANT: Insert your Moralis API key here or paste it into the UI field after loading the page.
+  // You can also leave it blank and paste into the input before scanning.
+  const MORALIS_API_KEY_PLACEHOLDER = "YOUR_MORALIS_API_KEY";
 
-    const erc721Abi = [
-      "function ownerOf(uint256 tokenId) view returns (address)",
-      "function getApproved(uint256 tokenId) view returns (address)",
-      "function isApprovedForAll(address owner, address operator) view returns (bool)",
-      "function approve(address to, uint256 tokenId)",
-      "function setApprovalForAll(address operator, bool approved)"
-    ];
+  // Map chain IDs to moralis chain string & folder name (from deployment save)
+  const CHAIN_MAP = {
+    1: { moralis: "eth", folder: "mainnet" },
+    5: { moralis: "goerli", folder: "goerli" },
+    137: { moralis: "polygon", folder: "polygon" },
+    80001: { moralis: "mumbai", folder: "mumbai" }
+  };
 
-    const chainMap = {
-      1: "mainnet",
-      5: "goerli",
-      137: "polygon",
-      80001: "mumbai"
-    };
+  // Minimal Catalyst ABI (we only call these functions)
+  const CATALYST_ABI = [
+    "function getRegisteredCollections() view returns (address[])",
+    "function getRegisteredCount() view returns (uint256)",
+    "function getCollectionConfig(address) view returns (bool registered,bool verified,uint256 stakedCount,uint256 totalBurned,uint256 declaredSupply,uint256 surchargeEscrow)",
+    "function termStakeBatch(address, uint256[])",
+    "function permanentStakeBatch(address, uint256[])",
+    "function termStake(address, uint256)",
+    "function permanentStake(address, uint256)",
+    "function baseRewardRatePerDay() view returns (uint256)",
+    "function totalStakedNFTsCount() view returns (uint256)",
+    "function treasuryAddress() view returns (address)"
+  ];
 
-    document.getElementById("connectWallet").addEventListener("click", init);
-    document.getElementById("searchVerified").addEventListener("input", renderCollections);
-    document.getElementById("searchUnverified").addEventListener("input", renderCollections);
+  // ERC721 ABI subset
+  const ERC721_ABI = [
+    "function ownerOf(uint256 tokenId) view returns (address)",
+    "function isApprovedForAll(address owner, address operator) view returns (bool)",
+    "function setApprovalForAll(address operator, bool approved)",
+    "function getApproved(uint256 tokenId) view returns (address)",
+    "function approve(address to, uint256 tokenId)"
+  ];
 
-    async function init() {
+  // MAX_BATCH from contract (keep in sync) - we chunk client-side
+  const MAX_BATCH = 50;
+
+  // ------------------------------
+  // State
+  // ------------------------------
+  let provider, signer, userAddress, chainId, chainInfo;
+  let catalystContract;
+  let moralisApiKey = "";
+  let registeredCollections = []; // array of lowercase addresses
+  let registeredSet = new Set();
+
+  // Holds discovered NFTs that are stakeable: { collection, tokenId, image, name, verified }
+  let stakeableNFTs = [];
+
+  // ------------------------------
+  // DOM refs
+  // ------------------------------
+  const connectBtn = document.getElementById("connectBtn");
+  const scanBtn = document.getElementById("scanBtn");
+  const stakeSelectedBtn = document.getElementById("stakeSelectedBtn");
+  const selectAllBtn = document.getElementById("selectAllBtn");
+  const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+  const verifiedGrid = document.getElementById("verifiedGrid");
+  const unverifiedGrid = document.getElementById("unverifiedGrid");
+  const scanStatus = document.getElementById("scanStatus");
+  const diagnostics = document.getElementById("diagnostics");
+  const networkTag = document.getElementById("networkTag");
+  const onlyRegisteredCheckbox = document.getElementById("onlyRegistered");
+  const moralisKeyInput = document.getElementById("moralisKey");
+  moralisKeyInput.value = MORALIS_API_KEY_PLACEHOLDER === "YOUR_MORALIS_API_KEY" ? "" : MORALIS_API_KEY_PLACEHOLDER;
+
+  // ------------------------------
+  // Helpers
+  // ------------------------------
+  function shortAddr(a){ return a ? a.slice(0,6) + "..." + a.slice(-4) : ""; }
+
+  function setDiag(msg){
+    diagnostics.innerText = msg;
+  }
+
+  function setScanStatus(t){
+    scanStatus.innerText = t;
+  }
+
+  function uid(collection, tokenId){ return `${collection.toLowerCase()}|${String(tokenId)}`; }
+
+  // chunk array
+  function chunkArray(arr, size){
+    const out = [];
+    for (let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+    return out;
+  }
+
+  // ------------------------------
+  // Connect wallet and init contract
+  // ------------------------------
+  connectBtn.addEventListener("click", async () => {
+    try {
       if (!window.ethereum) return alert("MetaMask not detected");
       provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       signer = provider.getSigner();
-
-      const chainId = (await provider.getNetwork()).chainId;
-      const folder = chainMap[chainId];
-      if (!folder) {
-        document.getElementById("walletStatus").innerText = `Network ${chainId} not supported`;
+      userAddress = (await signer.getAddress()).toLowerCase();
+      const net = await provider.getNetwork();
+      chainId = net.chainId;
+      chainInfo = CHAIN_MAP[chainId];
+      if (!chainInfo) {
+        networkTag.innerText = `Chain ${chainId} not supported`;
         return;
       }
-
-      document.getElementById("walletStatus").innerText =
-        `Connected: ${await signer.getAddress()} (Chain: ${folder})`;
-
-      const cataData = await fetch(`contracts/${folder}/CATA.json`).then(res => res.json());
-      const catalystData = await fetch(`contracts/${folder}/CatalystNFTStaking.json`).then(res => res.json());
-
-      cata = new ethers.Contract(cataData.address, cataData.abi, signer);
-      catalyst = new ethers.Contract(catalystData.address, catalystData.abi, signer);
-
-      loadTransparency();
-      loadCollections();
-      hookButtons();
-    }
-
-    async function loadTransparency() {
-      const totalStaked = await catalyst.totalStakedNFTsCount();
-      const rewardRate = await catalyst.baseRewardRatePerDay();
-      const treasuryAddr = await catalyst.treasuryAddress();
-      const treasuryBal = await cata.balanceOf(treasuryAddr);
-      const collections = await catalyst.getRegisteredCount();
-
-      document.getElementById("totalStakedNFTs").innerText = totalStaked.toString();
-      document.getElementById("baseRewardRate").innerText = ethers.utils.formatEther(rewardRate);
-      document.getElementById("treasuryBalance").innerText = ethers.utils.formatEther(treasuryBal);
-      document.getElementById("topCollectionsCount").innerText = collections.toString();
-    }
-
-    async function loadCollections() {
-      const addresses = await catalyst.getRegisteredCollections();
-      verifiedList = [];
-      unverifiedList = [];
-
-      for (let addr of addresses) {
-        const config = await catalyst.getCollectionConfig(addr);
-        if (config.verified) verifiedList.push(addr);
-        else unverifiedList.push(addr);
+      networkTag.innerText = `Connected ${shortAddr(userAddress)} • ${chainInfo.folder}`;
+      // load catalyst ABI JSON saved by deployment script
+      // expects file at frontend/contracts/{folder}/CatalystNFTStaking.json
+      const resp = await fetch(`contracts/${chainInfo.folder}/CatalystNFTStaking.json`);
+      if (!resp.ok) {
+        setDiag(`Missing contracts/${chainInfo.folder}/CatalystNFTStaking.json — run deploy script`);
+        return;
       }
-      renderCollections();
+      const json = await resp.json();
+      catalystContract = new ethers.Contract(json.address, CATALYST_ABI, signer);
+
+      // fetch registered collections once now
+      setScanStatus("Loading registered collections...");
+      const addrs = await catalystContract.getRegisteredCollections();
+      registeredCollections = addrs.map(a => a.toLowerCase());
+      registeredSet = new Set(registeredCollections);
+      setDiag(`Loaded ${registeredCollections.length} registered collections`);
+      setScanStatus("Ready to scan your NFTs");
+      // optionally populate some transparency info
+      try {
+        const totalStaked = await catalystContract.totalStakedNFTsCount();
+        const baseRate = await catalystContract.baseRewardRatePerDay();
+        const treasury = await catalystContract.treasuryAddress();
+        setDiag(`Total staked: ${totalStaked.toString()}, baseRate: ${ethers.utils.formatEther(baseRate)} CATA, treasury: ${shortAddr(treasury)}`);
+      } catch(e) { /* ignore */ }
+    } catch (e) {
+      console.error(e);
+      alert("Connection or contract load failed: " + (e.message||e));
     }
+  });
 
-    function renderCollections() {
-      const searchV = document.getElementById("searchVerified").value.toLowerCase();
-      const searchU = document.getElementById("searchUnverified").value.toLowerCase();
+  // ------------------------------
+  // Scan NFTs using Moralis
+  // ------------------------------
+  scanBtn.addEventListener("click", async () => {
+    if (!catalystContract) return alert("Connect first");
+    moralisApiKey = moralisKeyInput.value.trim();
+    if (!moralisApiKey) return alert("Enter Moralis API key (or set MORALIS_API_KEY_PLACEHOLDER in the file)");
+    setScanStatus("Scanning NFTs via Moralis...");
+    verifiedGrid.innerHTML = "";
+    unverifiedGrid.innerHTML = "";
+    stakeableNFTs = [];
 
-      const vContainer = document.getElementById("verifiedCollections");
-      const uContainer = document.getElementById("unverifiedCollections");
-      vContainer.innerHTML = "";
-      uContainer.innerHTML = "";
+    try {
+      // call Moralis NFTs endpoint
+      const chain = chainInfo.moralis; // e.g. 'eth' or 'mumbai'
+      const limit = 100; // page size
+      let cursor = null;
+      let page = 0;
+      let totalFound = 0;
 
-      verifiedList.filter(a => a.toLowerCase().includes(searchV))
-        .forEach(a => { const li = document.createElement("li"); li.innerText = a; vContainer.appendChild(li); });
-      unverifiedList.filter(a => a.toLowerCase().includes(searchU))
-        .forEach(a => { const li = document.createElement("li"); li.innerText = a; uContainer.appendChild(li); });
-    }
-
-    async function validateAndStake(collection, tokenId, permanent = false) {
-      const config = await catalyst.getCollectionConfig(collection);
-      if (!config.registered) return alert("Collection not registered");
-
-      const nft = new ethers.Contract(collection, erc721Abi, signer);
-      const owner = await nft.ownerOf(tokenId);
-      if (owner.toLowerCase() !== (await signer.getAddress()).toLowerCase())
-        return alert(`You do not own token ID ${tokenId}`);
-
-      const approved = await nft.getApproved(tokenId);
-      if (approved.toLowerCase() !== catalyst.address.toLowerCase()) {
-        const txA = await nft.approve(catalyst.address, tokenId);
-        await txA.wait();
+      // We'll paginate until no results or a safety cap (to avoid huge scans)
+      while (page < 10) { // up to 1000 NFTs (safety)
+        let url = `https://deep-index.moralis.io/api/v2/${userAddress}/nft?chain=${chain}&format=decimal&limit=${limit}`;
+        if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+        const res = await fetch(url, { headers: { "X-API-Key": moralisApiKey } });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error("Moralis failed: " + text);
+        }
+        const data = await res.json();
+        if (!data || !data.result) break;
+        // iterate results
+        for (const nft of data.result) {
+          // normalize collection address
+          const collection = nft.token_address.toLowerCase();
+          // optionally only include registered collections
+          if (onlyRegisteredCheckbox.checked && !registeredSet.has(collection)) continue;
+          // only ERC-721 (Moralis may return ERC-1155 also). We'll accept if token_id present
+          if (!nft.token_id) continue;
+          // attempt to extract image and name from metadata
+          let image = null;
+          let name = nft.name || nft.metadata?.name || `${collection} #${nft.token_id}`;
+          if (nft.metadata) {
+            try {
+              const md = typeof nft.metadata === "string" ? JSON.parse(nft.metadata) : nft.metadata;
+              if (md && md.image) image = md.image;
+            } catch(e) { /* ignore parse errors */ }
+          }
+          // fallback token_uri
+          if (!image && nft.token_uri) image = nft.token_uri;
+          // push candidate
+          const verified = registeredSet.has(collection) ? (await fetchCollectionVerified(collection)) : false;
+          stakeableNFTs.push({
+            collection,
+            tokenId: nft.token_id,
+            image: image,
+            name: name,
+            verified
+          });
+          totalFound++;
+        }
+        // pagination
+        if (!data.cursor) break;
+        cursor = data.cursor;
+        page++;
       }
 
-      const tx = permanent
-        ? await catalyst.permanentStake(collection, tokenId)
-        : await catalyst.termStake(collection, tokenId);
-      await tx.wait();
-      alert(`Staked token ${tokenId}`);
+      setScanStatus(`Scan complete — found ${stakeableNFTs.length} stakeable NFTs (after filtering)`);
+      renderNFTs();
+    } catch (e) {
+      console.error(e);
+      setScanStatus("Scan failed: " + (e.message || e));
+      alert("NFT scan failed: " + (e.message||e));
+    }
+  });
+
+  // helper: fetch collection verified flag from contract (returns boolean)
+  async function fetchCollectionVerified(collection) {
+    try {
+      const cfg = await catalystContract.getCollectionConfig(collection);
+      // cfg is struct: (registered, verified, stakedCount, totalBurned, declaredSupply, surchargeEscrow)
+      return cfg.verified;
+    } catch(e) {
+      return false;
+    }
+  }
+
+  // ------------------------------
+  // Render NFTs into grids
+  // ------------------------------
+  function renderNFTs() {
+    verifiedGrid.innerHTML = "";
+    unverifiedGrid.innerHTML = "";
+    // group by collection for nicer UI
+    const grouped = {};
+    for (const nft of stakeableNFTs) {
+      const key = nft.collection;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(nft);
     }
 
-    async function validateAndBatchStake(collection, tokenIds, permanent = false) {
-      const config = await catalyst.getCollectionConfig(collection);
-      if (!config.registered) return alert("Collection not registered");
+    for (const [collection, arr] of Object.entries(grouped)) {
+      // determine verified status using first item
+      const verified = arr[0].verified;
+      const container = verified ? verifiedGrid : unverifiedGrid;
 
-      const nft = new ethers.Contract(collection, erc721Abi, signer);
-      const userAddr = (await signer.getAddress()).toLowerCase();
+      // collection header card
+      const card = document.createElement("div");
+      card.className = "nft-card p-3";
+      const header = document.createElement("div");
+      header.className = "flex items-center justify-between mb-2";
+      header.innerHTML = `<div><strong>${shortAddr(collection)}</strong> <div class="text-xs text-gray-400">(${arr.length} NFTs)</div></div>
+                          <div class="text-xs">${verified ? '<span class="text-green-400">Verified</span>' : '<span class="text-yellow-300">Unverified</span>'}</div>`;
+      card.appendChild(header);
 
-      for (let id of tokenIds) {
-        const owner = await nft.ownerOf(id);
-        if (owner.toLowerCase() !== userAddr)
-          return alert(`You do not own token ID ${id}`);
+      // grid of tokens
+      const grid = document.createElement("div");
+      grid.className = "grid grid-cols-1 gap-2";
+
+      arr.forEach(nft => {
+        const item = document.createElement("div");
+        item.className = "flex gap-2 items-start";
+
+        const img = document.createElement("img");
+        img.className = "nft-img w-28 h-20 shrink-0";
+        img.src = nft.image || "https://via.placeholder.com/300x200?text=No+Image";
+        img.alt = nft.name || `${nft.collection}#${nft.tokenId}`;
+
+        const meta = document.createElement("div");
+        meta.className = "flex-1";
+        meta.innerHTML = `<div class="text-sm font-semibold">${nft.name}</div>
+                          <div class="text-xs text-gray-400">Token ID: ${nft.tokenId}</div>
+                          <div class="text-xs text-gray-400">Collection: ${shortAddr(nft.collection)}</div>`;
+
+        const cbwrap = document.createElement("div");
+        cbwrap.className = "flex items-center";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.dataset.collection = nft.collection;
+        cb.dataset.tokenId = nft.tokenId;
+        cb.className = "h-4 w-4";
+        cbwrap.appendChild(cb);
+
+        item.appendChild(img);
+        item.appendChild(meta);
+        item.appendChild(cbwrap);
+        grid.appendChild(item);
+      });
+
+      card.appendChild(grid);
+      container.appendChild(card);
+    }
+  }
+
+  // ------------------------------
+  // Selection helpers
+  // ------------------------------
+  selectAllBtn.addEventListener("click", () => {
+    document.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = true);
+  });
+  clearSelectionBtn.addEventListener("click", () => {
+    document.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = false);
+  });
+
+  // ------------------------------
+  // Stake selected NFTs (batch)
+  // ------------------------------
+  stakeSelectedBtn.addEventListener("click", async () => {
+    if (!catalystContract) return alert("Connect first");
+    // collect checked boxes
+    const boxes = Array.from(document.querySelectorAll("input[type=checkbox]")).filter(cb => cb.checked);
+    if (boxes.length === 0) return alert("No NFTs selected");
+
+    // group by collection
+    const grouped = {};
+    for (const cb of boxes) {
+      const collection = cb.dataset.collection.toLowerCase();
+      const tokenId = cb.dataset.tokenId;
+      if (!grouped[collection]) grouped[collection] = [];
+      grouped[collection].push(tokenId);
+    }
+
+    const mode = document.getElementById("stakeMode").value; // term or permanent
+    setScanStatus(`Preparing to stake ${boxes.length} NFTs across ${Object.keys(grouped).length} collections...`);
+
+    try {
+      for (const [collection, tokenIds] of Object.entries(grouped)) {
+        // 1) ensure contract is registered if onlyRegistered is on
+        if (onlyRegisteredCheckbox.checked && !registeredSet.has(collection)) {
+          console.warn("Skipping unregistered:", collection);
+          continue;
+        }
+
+        // 2) check approvalForAll; if false, prompt setApprovalForAll
+        const nft = new ethers.Contract(collection, ERC721_ABI, signer);
+        const isApprovedAll = await nft.isApprovedForAll(userAddress, catalystContract.address);
+        if (!isApprovedAll) {
+          setScanStatus(`Approving collection ${shortAddr(collection)} for staking (will prompt)`);
+          const txApprove = await nft.setApprovalForAll(catalystContract.address, true);
+          await txApprove.wait();
+        }
+
+        // 3) chunk tokenIds by MAX_BATCH and call staking function
+        const chunks = chunkArray(tokenIds, MAX_BATCH);
+        for (const chunk of chunks) {
+          setScanStatus(`Staking ${chunk.length} NFTs from ${shortAddr(collection)} as ${mode}...`);
+          if (mode === "term") {
+            const tx = await catalystContract.termStakeBatch(collection, chunk);
+            await tx.wait();
+          } else {
+            const tx = await catalystContract.permanentStakeBatch(collection, chunk);
+            await tx.wait();
+          }
+          setScanStatus(`Chunk of ${chunk.length} staked from ${shortAddr(collection)}`);
+        }
       }
+      setScanStatus("All selected NFTs staked. Refreshing view...");
+      // small delay then refresh registered collections and diagnostics
+      setTimeout(() => { loadRegisteredInfo(); }, 1500);
+    } catch (e) {
+      console.error(e);
+      alert("Batch stake failed: " + (e.message || e));
+      setScanStatus("Batch stake failed");
+    }
+  });
 
-      const approvedAll = await nft.isApprovedForAll(userAddr, catalyst.address);
-      if (!approvedAll) {
-        const txA = await nft.setApprovalForAll(catalyst.address, true);
-        await txA.wait();
+  // helper to refresh some registered/diagnostics info after staking
+  async function loadRegisteredInfo(){
+    try {
+      const totalStaked = await catalystContract.totalStakedNFTsCount();
+      const baseRate = await catalystContract.baseRewardRatePerDay();
+      setDiag(`Total staked: ${totalStaked.toString()}, baseRate: ${ethers.utils.formatEther(baseRate)} CATA/day`);
+      // reload registered collections (in case staked counts changed)
+      const addrs = await catalystContract.getRegisteredCollections();
+      registeredCollections = addrs.map(a => a.toLowerCase());
+      registeredSet = new Set(registeredCollections);
+    } catch(e) {
+      console.warn("loadRegisteredInfo failed", e);
+    }
+  }
+
+  // ------------------------------
+  // On load: attach some small helpers
+  // ------------------------------
+  (function attachShortcuts(){
+    // pressing Enter in Moralis input will store key
+    moralisKeyInput.addEventListener("keyup", (ev) => {
+      if (ev.key === "Enter") {
+        moralisApiKey = moralisKeyInput.value.trim();
+        alert("Moralis key set (client-side)");
       }
+    });
+  })();
 
-      const tx = permanent
-        ? await catalyst.permanentStakeBatch(collection, tokenIds)
-        : await catalyst.termStakeBatch(collection, tokenIds);
-      await tx.wait();
-      alert(`Batch staked ${tokenIds.length} NFTs`);
-    }
-
-    function hookButtons() {
-      document.getElementById("stakeTerm").addEventListener("click", async () => {
-        const col = prompt("Collection Address:");
-        const id = prompt("Token ID:");
-        await validateAndStake(col, id, false);
-      });
-      document.getElementById("stakePermanent").addEventListener("click", async () => {
-        const col = prompt("Collection Address:");
-        const id = prompt("Token ID:");
-        await validateAndStake(col, id, true);
-      });
-      document.getElementById("batchStake").addEventListener("click", async () => {
-        const col = prompt("Collection Address:");
-        const ids = prompt("Token IDs (comma separated):").split(",").map(x => x.trim());
-        await validateAndBatchStake(col, ids, false);
-      });
-      document.getElementById("batchUnstake").addEventListener("click", async () => {
-        const col = prompt("Collection Address:");
-        const ids = prompt("Token IDs (comma separated):").split(",").map(x => x.trim());
-        const tx = await catalyst.unstakeBatch(col, ids);
-        await tx.wait();
-        alert(`Batch unstaked ${ids.length} NFTs`);
-      });
-      document.getElementById("harvestRewards").addEventListener("click", async () => {
-        alert("Harvest logic to be implemented based on contract function signature");
-      });
-    }
+  // ------------------------------
+  // END
+  // ------------------------------
   </script>
 </body>
 </html>
