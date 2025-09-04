@@ -2,43 +2,46 @@
 
 /*
 
-Catalyst NFT Staking V7 (based on V5, plus selected V6+/latest features)
+Catalyst NFT Staking V7 (immutable 90/9/1 split edition)
 
-What's new vs V5:
+Based on V5 + advanced features from later drafts, but with an immutable
 
-VERIFIED / UNVERIFIED collections with escrow surcharge & upgrade path
+fee split fixed to 90% burn / 9% treasury / 1% deployer (cannot be changed).
+
+Key features:
+
+Verified / Unverified collections with surcharge escrow & upgrade path
 
 
-Dynamic registration fee curves (small/medium/large supply) + unverified surcharge
+Dynamic registration fee curves (small/medium/large supply)
 
 
 Governance with quorum & weighted voting (per-collection caps, min stake age)
 
 
-Proposal types: BASE_REWARD, FEES, TREASURY_SPLIT, VOTING_PARAM, TIER_UPGRADE
+Proposal types (BASE_REWARD, HARVEST_FEE, UNSTAKE_FEE, REGISTRATION_FEE_FALLBACK,
 
 
-Burner bonus (top-1% cycle) with anti-whale protections; admin-driven rebuild list
+VOTING_PARAM, TIER_UPGRADE) — NOTE: TREASURY_SPLIT removed because split is immutable
+
+Burner bonus (top-1% cycle) with anti-whale protections
 
 
-20,000 stake cap per collection
+Per-collection stake cap 20,000 NFTs
 
 
-Dynamic permanent stake fee and dynamic harvest burn fee
-
-
-Notes:
-
-This contract mints/handles the ERC20 reward token (CATA) itself.
-
-
-Thorough testing + audit recommended before production. */
+Immutable fee split constants: 90/9/1 (burn/treasury/deployer) */
 
 
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol"; import "@openzeppelin/contracts/access/AccessControl.sol"; import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol"; import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; import "@openzeppelin/contracts/token/ERC721/IERC721.sol"; import "@openzeppelin/contracts/security/Pausable.sol"; import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract CatalystNFTStakingV7 is ERC20, AccessControl, IERC721Receiver, ReentrancyGuard, Pausable { // ---------- Roles ---------- bytes32 public constant CONTRACT_ADMIN_ROLE = keccak256("CONTRACT_ADMIN_ROLE");
+
+// ---------- Immutable Fee Split (basis points) ----------
+uint256 public constant BURN_BP = 9000;    // 90.00%
+uint256 public constant TREASURY_BP = 900; // 9.00%
+uint256 public constant DEPLOYER_BP = 100; // 1.00%
 
 // ---------- Constants ----------
 uint256 public constant WEIGHT_SCALE = 1e18;
@@ -52,7 +55,6 @@ enum ProposalType {
     HARVEST_FEE,
     UNSTAKE_FEE,
     REGISTRATION_FEE_FALLBACK,
-    TREASURY_SPLIT,
     VOTING_PARAM,
     TIER_UPGRADE
 }
@@ -113,7 +115,7 @@ mapping(address => uint256) public registeredIndex; // 1-based index; 0 => not r
 // ---------- Tokenomics params ----------
 uint256 public numberOfBlocksPerRewardUnit = 18782; // ~1 day on some chains (adjust via governance)
 uint256 public collectionRegistrationFee;           // fallback/base fee (governance adjustable)
-uint256 public unstakeBurnFee;                      // flat burn fee in CATA when unstaking
+uint256 public unstakeBurnFee;                      // flat burn fee in CATA when unstaking (in token units)
 address public treasuryAddress;
 uint256 public totalStakedNFTsCount;                // global NFT count staked
 uint256 public baseRewardRate;                      // global emission base (rises with more stakes)
@@ -175,7 +177,6 @@ uint256 public minBurnToEnterTopPercent = 10 * 10**18; // min burn to be in top-
 
 // governance / deployer
 address public immutable deployerAddress;
-uint256 public deployerFeeShareRate; // % of non-burn fees to deployer (0..100)
 
 // ---------- Events ----------
 event RewardsHarvested(address indexed owner, address indexed collection, uint256 payoutAmount, uint256 burnedAmount);
@@ -206,7 +207,6 @@ event BaseRewardRateUpdated(uint256 oldValue, uint256 newValue);
 event HarvestFeeUpdated(uint256 oldValue, uint256 newValue);
 event UnstakeFeeUpdated(uint256 oldValue, uint256 newValue);
 event RegistrationFeeUpdated(uint256 oldValue, uint256 newValue);
-event TreasurySplitUpdated(uint256 oldValue, uint256 newValue);
 event VotingParamUpdated(uint8 target, uint256 oldValue, uint256 newValue);
 
 // ---------- Constructor ----------
@@ -224,11 +224,9 @@ constructor(
     uint256 _unstakeBurnFee,
     uint256 _stakingCooldownBlocks,
     uint256 _harvestRateAdjustmentFactor,
-    uint256 _minBurnContributionForVote,
-    uint256 _initialDeployerSharePercent
+    uint256 _minBurnContributionForVote
 ) ERC20("Catalyst", "CATA") {
     require(_owner != address(0) && _treasury != address(0), "CATA: bad addr");
-    require(_initialDeployerSharePercent <= 100, "CATA: share >100");
 
     _mint(_owner, 25_185_000 * 10**18); // genesis supply to owner (adjust as desired)
 
@@ -250,8 +248,6 @@ constructor(
     stakingCooldownBlocks = _stakingCooldownBlocks;
     harvestRateAdjustmentFactor = _harvestRateAdjustmentFactor;
     minBurnContributionForVote = _minBurnContributionForVote;
-
-    deployerFeeShareRate = _initialDeployerSharePercent;
 }
 
 // ---------- Modifiers ----------
@@ -303,6 +299,39 @@ function _applyTierSurcharge(address collection, uint256 baseFee) internal view 
     surchargeAmount = (multBP > 10000) ? (total - baseFee) : 0;
 }
 
+// ---------- Immutable split helper (burn from payer + transfers)
+function _splitFeeFromSender(address payer, uint256 amount, address collection, bool attributeToUser) internal {
+    require(amount > 0, "CATA: zero fee");
+
+    uint256 burnAmt = (amount * BURN_BP) / 10000;
+    uint256 treasuryAmt = (amount * TREASURY_BP) / 10000;
+    uint256 deployerAmt = amount - burnAmt - treasuryAmt; // DEPLOYER_BP portion
+
+    // burn from payer
+    if (burnAmt > 0) {
+        _burn(payer, burnAmt);
+        burnedCatalystByCollection[collection] += burnAmt;
+        totalStakedNFTsCount; // no-op placeholder to avoid unused-warning
+        if (attributeToUser) {
+            // attribute burn to payer
+            // record per-user burn tracking
+            burnedCatalystByAddress[payer] += burnAmt;
+            lastBurnBlock[payer] = block.number;
+            if (!isParticipating[payer]) { isParticipating[payer] = true; participatingWallets.push(payer); }
+        }
+    }
+
+    // transfer deployer share
+    if (deployerAmt > 0) {
+        _transfer(payer, deployerAddress, deployerAmt);
+    }
+
+    // transfer treasury share to treasuryAddress
+    if (treasuryAmt > 0) {
+        _transfer(payer, treasuryAddress, treasuryAmt);
+    }
+}
+
 // ---------- Collection registration (admin-only) ----------
 function setCollectionConfig(address collection, uint256 declaredMaxSupply, CollectionTier tier) external onlyRole(CONTRACT_ADMIN_ROLE) nonReentrant whenNotPaused {
     require(collection != address(0), "CATA: bad addr");
@@ -313,23 +342,15 @@ function setCollectionConfig(address collection, uint256 declaredMaxSupply, Coll
     (uint256 totalFee, uint256 surcharge) = _applyTierSurcharge(collection, baseFee);
     require(balanceOf(_msgSender()) >= totalFee, "CATA: insufficient CATA");
 
-    // base fee burn + splits (burn 90%, split 10% to treasury/deployer)
-    uint256 baseBurn = (baseFee * 90) / 100;
-    _burn(_msgSender(), baseBurn);
-    burnedCatalystByCollection[collection] += baseBurn;
-    _recordUserBurn(_msgSender(), baseBurn);
+    // pull full fee from sender into contract? for efficiency we burn/transfer directly from payer
+    // use immutable split helper (attributes baseBurn to payer)
+    _splitFeeFromSender(_msgSender(), baseFee, collection, true);
 
-    uint256 baseRemainder = baseFee - baseBurn;
-    uint256 dep = (baseRemainder * deployerFeeShareRate) / 100;
-    uint256 tre = baseRemainder - dep;
-    _transfer(_msgSender(), deployerAddress, dep);
-    _transfer(_msgSender(), treasuryAddress, tre);
-
-    // surcharge escrow: move to contract (UNVERIFIED only)
     uint256 escrowAmt = 0;
     if (surcharge > 0) {
+        // move surcharge portion to contract as escrow
         _transfer(_msgSender(), address(this), surcharge);
-        escrowAmt = surcharge; // not burned yet
+        escrowAmt = surcharge;
     }
 
     // register enumerations
@@ -458,17 +479,8 @@ function permanentStake(address collection, uint256 tokenId) public nonReentrant
     StakeInfo storage info = stakeLog[collection][_msgSender()][tokenId];
     require(!info.currentlyStaked, "CATA: already staked");
 
-    uint256 burnAmt = (fee * 90) / 100;
-    _burn(_msgSender(), burnAmt);
-    burnedCatalystByCollection[collection] += burnAmt;
-    _recordUserBurn(_msgSender(), burnAmt);
-    _updateTopCollectionsOnBurn(collection);
-
-    uint256 rem = fee - burnAmt;
-    uint256 dep = (rem * deployerFeeShareRate) / 100;
-    uint256 tre = rem - dep;
-    _transfer(_msgSender(), deployerAddress, dep);
-    _transfer(_msgSender(), treasuryAddress, tre);
+    // use immutable split: burn 90% from payer, transfer 9% to treasury and 1% to deployer
+    _splitFeeFromSender(_msgSender(), fee, collection, true);
 
     info.stakeBlock = block.number;
     info.lastHarvestBlock = block.number;
@@ -501,8 +513,8 @@ function unstake(address collection, uint256 tokenId) public nonReentrant whenNo
 
     _harvest(collection, _msgSender(), tokenId);
     require(balanceOf(_msgSender()) >= unstakeBurnFee, "CATA: fee");
-    _burn(_msgSender(), unstakeBurnFee);
-    _recordUserBurn(_msgSender(), unstakeBurnFee);
+    // collect fee from payer and split immutably
+    _splitFeeFromSender(_msgSender(), unstakeBurnFee, collection, true);
 
     info.currentlyStaked = false;
 
@@ -538,12 +550,15 @@ function _harvest(address collection, address user, uint256 tokenId) internal {
     uint256 burnAmt = (reward * feeRate) / 100;
     uint256 payout = reward - burnAmt;
 
+    // mint reward to user (contract is ERC20 CATA itself)
     _mint(user, reward);
 
     if (burnAmt > 0) {
         _burn(user, burnAmt);
         burnedCatalystByCollection[collection] += burnAmt;
-        _recordUserBurn(user, burnAmt);
+        // protocol-attributed (not credited to user)
+        lastBurnBlock[user] = block.number;
+        burnedCatalystByAddress[user] += burnAmt; // still track for participation
         _updateTopCollectionsOnBurn(collection);
     }
     info.lastHarvestBlock = block.number;
@@ -650,12 +665,6 @@ function executeProposal(bytes32 id) external whenNotPaused nonReentrant {
         uint256 old = collectionRegistrationFee;
         collectionRegistrationFee = p.newValue;
         emit RegistrationFeeUpdated(old, p.newValue);
-        emit ProposalExecuted(id, p.newValue);
-    } else if (p.pType == ProposalType.TREASURY_SPLIT) {
-        require(p.newValue <= 100, "CATA: >100");
-        uint256 old = deployerFeeShareRate;
-        deployerFeeShareRate = p.newValue;
-        emit TreasurySplitUpdated(old, p.newValue);
         emit ProposalExecuted(id, p.newValue);
     } else if (p.pType == ProposalType.VOTING_PARAM) {
         uint8 t = p.paramTarget;
