@@ -56,6 +56,24 @@
     <h1>🚀 Catalyst Protocol </h1>
     <p>Universal NFT Staking & Governance</p>
   </header>  <main>
+
+<section>
+  <h2>Register Collection</h2>
+  <label>Collection Address:</label>
+  <input type="text" id="regCollection" placeholder="0x..." />
+
+  <label>Declared Supply:</label>
+  <input type="number" id="declaredSupply" placeholder="Max 20000" />
+
+  <label>Verified?</label>
+  <select id="isVerified">
+    <option value="false">Unverified</option>
+    <option value="true">Verified</option>
+  </select>
+
+  <button onclick="registerCollection()">Register Collection</button>
+</section>
+    
     <!-- Staking Section -->
     <section>
       <h2>Stake NFTs</h2>
@@ -157,6 +175,18 @@
     <p>© 2025 Catalyst Protocol V7 – Immutable 90/9/1</p>
   </footer>  <script>
     // Placeholder functions – connect with web3.js/ethers.js logic
+    async function registerCollection() {
+  const collection = document.getElementById("regCollection").value;
+  const supply = document.getElementById("declaredSupply").value;
+  const verified = document.getElementById("isVerified").value === "true";
+
+  // estimate dynamic fee from contract (optional helper view function)
+  const fee = await contract.getRegistrationFee(supply, verified);
+
+  const tx = await contract.registerCollection(collection, supply, verified, { value: fee });
+  await tx.wait();
+  alert("Collection registered successfully!");
+    }
     function stakeNFT() { alert("Stake NFT (Term) called"); }
     function permanentStakeNFT() { alert("Stake NFT (Permanent) called"); }
     function batchTermStakeNFTs() { alert("Batch Term Stake NFTs called"); }
