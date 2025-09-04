@@ -86,6 +86,23 @@
       </div>
     </section>
 
+    <!-- Collection Registration -->
+    <section class="bg-gray-800 p-6 rounded mb-6">
+      <h2 class="text-lg font-semibold mb-4">Register a Collection</h2>
+      <p class="text-sm text-gray-400 mb-3">Add a new NFT collection to enable staking (fee required, mostly burned).</p>
+      <div class="flex gap-2 mb-4">
+        <input id="collectionAddress" type="text" placeholder="Collection contract address"
+          class="flex-1 p-2 rounded bg-gray-700 text-gray-200 text-sm"/>
+        <button id="registerBtn" class="px-4 py-2 bg-indigo-600 rounded">Register</button>
+      </div>
+      <p id="regStatus" class="mb-4 text-xs text-gray-400"></p>
+
+      <h3 class="text-md font-semibold mb-2">Latest Registered Collections</h3>
+      <div id="latestCollections" class="space-y-2 max-h-40 overflow-auto">
+        <p class="text-sm text-gray-400">Loading...</p>
+      </div>
+    </section>
+
     <!-- Governance -->
     <section class="bg-gray-800 p-6 rounded">
       <h2 class="text-lg font-semibold mb-4">Governance Proposals</h2>
@@ -111,10 +128,12 @@
       signer = provider.getSigner();
       contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
       loadStats();
+      setInterval(loadStats, 30000); // auto-refresh every 30s
     }
 
     async function loadStats() {
       try {
+        // Global stats
         document.getElementById("totalStaked").innerText =
           (await contract.totalStakedNFTsCount()).toString();
         document.getElementById("totalStakers").innerText =
@@ -124,6 +143,7 @@
         document.getElementById("totalBurned").innerText =
           ethers.utils.formatEther(await contract.totalBurnedCATA());
 
+        // User stats
         const addr = await signer.getAddress();
         document.getElementById("pendingCata").innerText =
           ethers.utils.formatEther(await contract.pendingUserRewards(addr));
@@ -132,6 +152,7 @@
         document.getElementById("myStakedCount").innerText =
           (await contract.getUserStakedCount(addr)).toString();
 
+        // Top burners
         const burners = await contract.getTopBurners();
         const list = document.getElementById("burnerList");
         list.innerHTML = "";
@@ -142,18 +163,48 @@
           list.appendChild(item);
         });
 
-        // Protocol Health
-        document.getElementById("registeredCollections").innerText =
-          (await contract.getRegisteredCollections()).length;
+        // Protocol health
+        const collections = await contract.getRegisteredCollections();
+        document.getElementById("registeredCollections").innerText = collections.length;
         document.getElementById("bonusPoolPercent").innerText =
           (await contract.bonusPoolPercentPerCycleBP()) / 100 + "%";
         document.getElementById("nextDistribution").innerText =
           new Date((await contract.lastBonusDistribution()).toNumber() * 1000).toLocaleString();
 
+        // Latest collections
+        const latestList = document.getElementById("latestCollections");
+        latestList.innerHTML = "";
+        collections.slice(-5).reverse().forEach((c, i) => {
+          const item = document.createElement("div");
+          item.className = "p-2 bg-gray-700 rounded text-xs";
+          item.innerHTML = `${c.substring(0,6)}...${c.substring(c.length-4)}`;
+          latestList.appendChild(item);
+        });
+
       } catch (err) {
         console.error(err);
       }
     }
+
+    // Collection registration
+    document.getElementById("registerBtn").onclick = async () => {
+      try {
+        const addr = document.getElementById("collectionAddress").value.trim();
+        if (!ethers.utils.isAddress(addr)) {
+          alert("Invalid address");
+          return;
+        }
+        const fee = await contract.collectionRegistrationFee();
+        const tx = await contract.setCollectionConfig(addr, { value: fee });
+        document.getElementById("regStatus").innerText = "Transaction sent...";
+        await tx.wait();
+        document.getElementById("regStatus").innerText = "Collection registered successfully!";
+        loadStats();
+      } catch (err) {
+        console.error(err);
+        document.getElementById("regStatus").innerText = "Registration failed.";
+      }
+    };
 
     document.getElementById("connectBtn").onclick = connectWallet;
   </script>
