@@ -5,6 +5,7 @@ pragma solidity ^0.8.20;
 Catalyst NFT Staking — Final (Merged)
 
 This contract merges:
+- ERC20 (CATA) + NFT staking + internal treasury vault
 - Permissionless collection registration (registerCollection)
 - Immutable 90/9/1 fee split (burn / treasury / deployer)
 - Surcharge escrow for UNVERIFIED collections (refund / forfeit)
@@ -203,6 +204,10 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     event RegistrationFeeUpdated(uint256 oldValue, uint256 newValue);
     event VotingParamUpdated(uint8 target, uint256 oldValue, uint256 newValue);
 
+    // Treasury events
+    event TreasuryDeposit(address indexed from, uint256 amount);
+    event TreasuryWithdrawal(address indexed to, uint256 amount);
+
     // ---------- Constructor ----------
     constructor(
         address _owner,
@@ -227,7 +232,8 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         _setupRole(DEFAULT_ADMIN_ROLE, _owner);
         _setupRole(CONTRACT_ADMIN_ROLE, _owner);
 
-        treasuryAddress = _treasury;
+        // set treasuryAddress to contract itself to act as internal vault (compat)
+        treasuryAddress = address(this);
         deployerAddress = _owner;
 
         initialCollectionFee = _initialCollectionFee;
@@ -327,9 +333,11 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             _transfer(payer, deployerAddress, deployerAmt);
         }
 
-        // transfer treasury share
+        // transfer treasury share INTO contract and account for it in the internal vault
         if (treasuryAmt > 0) {
-            _transfer(payer, treasuryAddress, treasuryAmt);
+            _transfer(payer, address(this), treasuryAmt);
+            treasuryBalance += treasuryAmt;
+            emit TreasuryDeposit(payer, treasuryAmt);
         }
     }
 
@@ -501,7 +509,9 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         uint256 toBurn = amt / 2;
         uint256 toTreasury = amt - toBurn;
         _burn(address(this), toBurn);
-        _transfer(address(this), treasuryAddress, toTreasury);
+        // escrow already in contract; move to internal treasury accounting (no external transfer)
+        treasuryBalance += toTreasury;
+        emit TreasuryDeposit(address(this), toTreasury);
         m.surchargeEscrow = 0;
 
         emit EscrowForfeited(collection, toTreasury, toBurn);
@@ -968,7 +978,8 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
         require(topBurners.length >= topCount, "CATA: topBurners too small");
 
-        uint256 treasuryBal = balanceOf(treasuryAddress);
+        // Use internal treasuryBalance as source
+        uint256 treasuryBal = treasuryBalance;
         require(treasuryBal > 0, "CATA: empty treasury");
         uint256 pool = (treasuryBal * bonusPoolPercentPerCycleBP) / 10000;
         require(pool > 0, "CATA: pool zero");
@@ -987,10 +998,13 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         }
 
         require(filled > 0, "CATA: no eligible top burners");
+        // decrement treasuryBalance for the pool upfront
+        treasuryBalance -= pool;
+
         for (uint256 j = 0; j < filled; j++) {
             address r = recipients[j];
             uint256 share = (pool * burnedCatalystByAddress[r]) / totalBurnTop;
-            if (share > 0) _transfer(treasuryAddress, r, share);
+            if (share > 0) _transfer(address(this), r, share);
         }
 
         lastBonusCycleBlock = block.number;
@@ -1040,6 +1054,17 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     }
     function rescueERC721(address token, uint256 tokenId, address to) external onlyRole(CONTRACT_ADMIN_ROLE) {
         require(to != address(0), "CATA: bad to"); IERC721(token).safeTransferFrom(address(this), to, tokenId);
+    }
+
+    // ---------- Withdraw treasury (admin) ----------
+    function withdrawTreasury(address to, uint256 amount) external onlyRole(CONTRACT_ADMIN_ROLE) nonReentrant whenNotPaused {
+        require(to != address(0), "CATA: invalid to");
+        require(amount > 0, "CATA: zero amount");
+        require(amount <= treasuryBalance, "CATA: insufficient treasury");
+
+        treasuryBalance -= amount;
+        _transfer(address(this), to, amount);
+        emit TreasuryWithdrawal(to, amount);
     }
 
     // ---------- Helpers & math ----------
