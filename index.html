@@ -44,6 +44,13 @@
   </div>
 
   <div class="panel">
+    <h2>Collection Registration</h2>
+    <p>Collection Address: <input id="regCollection" placeholder="0x..."/></p>
+    <p>Declared Supply: <input id="regSupply" placeholder="e.g. 10000"/></p>
+    <button onclick="registerCollection()">Register Collection</button>
+  </div>
+
+  <div class="panel">
     <h2>Collections</h2>
     <input id="collectionSearch" placeholder="Search by contract address..." oninput="filterCollections()" />
     <h3>Verified</h3>
@@ -53,7 +60,16 @@
   </div>
 
   <div class="panel">
-    <h2>Stake / Unstake</h2>
+    <h2>Stake / Unstake (Single NFT)</h2>
+    <p>Collection: <input id="stakeCollectionSingle" placeholder="Collection address"/></p>
+    <p>Token ID: <input id="stakeTokenId" placeholder="e.g. 1"/></p>
+    <button onclick="stakeSingle(false)">Term Stake</button>
+    <button onclick="stakeSingle(true)">Permanent Stake</button>
+    <button onclick="unstakeSingle()">Unstake</button>
+  </div>
+
+  <div class="panel">
+    <h2>Stake / Unstake (Batch)</h2>
     <p>Collection: <input id="stakeCollection" placeholder="Collection address"/></p>
     <p>Token IDs (comma-separated): <input id="stakeTokenIds" placeholder="e.g. 1,2,3"/></p>
     <button onclick="batchStake(false)">Batch Term Stake</button>
@@ -89,17 +105,14 @@ async function connectWallet(){
 
 async function refreshData(){
   if(!contract) return;
-  // Protocol health
   document.getElementById("totalStaked").innerText = (await contract.totalStakedNFTsCount()).toString();
   document.getElementById("totalBurned").innerText = (await contract.totalBurnedCATA()).toString();
   document.getElementById("treasuryCap").innerText = (await contract.treasuryBonusCapBP()).toString() / 100;
 
-  // My stats
   const user = await signer.getAddress();
   let myBurned = await contract.burnedCatalystByAddress(user);
   document.getElementById("myBurned").innerText = myBurned.toString();
 
-  // Compute pending by iterating my staked NFTs
   let totalPending = ethers.BigNumber.from(0);
   let totalStakedCount = 0;
   let cols = await contract.getRegisteredCollections();
@@ -114,7 +127,6 @@ async function refreshData(){
   document.getElementById("myStaked").innerText = totalStakedCount;
   document.getElementById("myPending").innerText = totalPending.toString();
 
-  // Collections
   document.getElementById("verifiedTable").innerHTML = "<tr><th>Collection</th><th>Staked</th><th>Burned</th></tr>";
   document.getElementById("unverifiedTable").innerHTML = "<tr><th>Collection</th><th>Staked</th><th>Burned</th></tr>";
   for(let addr of cols){
@@ -124,7 +136,6 @@ async function refreshData(){
     else { document.getElementById("unverifiedTable").innerHTML += row; }
   }
 
-  // Proposals
   let rows = "<tr><th>ID</th><th>Title</th><th>For</th><th>Against</th><th>Status</th></tr>";
   let pCount = await contract.proposalCount();
   for(let i=0;i<pCount;i++){
@@ -134,16 +145,32 @@ async function refreshData(){
   document.getElementById("proposalTable").innerHTML = rows;
 }
 
+// Collection registration
+async function registerCollection(){
+  let coll = document.getElementById("regCollection").value;
+  let supply = parseInt(document.getElementById("regSupply").value);
+  await contract.registerCollection(coll, supply);
+}
+
+// Single stake/unstake
+async function stakeSingle(permanent){
+  let coll = document.getElementById("stakeCollectionSingle").value;
+  let id = parseInt(document.getElementById("stakeTokenId").value);
+  if(permanent){ await contract.permanentStake(coll, id); }
+  else { await contract.termStake(coll, id); }
+}
+async function unstakeSingle(){
+  let coll = document.getElementById("stakeCollectionSingle").value;
+  let id = parseInt(document.getElementById("stakeTokenId").value);
+  await contract.unstake(coll, id);
+}
+
 // Batch stake/unstake
 async function batchStake(permanent){
   let coll = document.getElementById("stakeCollection").value;
   let ids = document.getElementById("stakeTokenIds").value.split(",").map(x=>x.trim()).filter(x=>x).map(x=>parseInt(x));
-  if(ids.length==0){ alert("Enter token IDs"); return; }
-  if(permanent){
-    await contract.permanentStakeBatch(coll, ids);
-  } else {
-    await contract.termStakeBatch(coll, ids);
-  }
+  if(permanent){ await contract.permanentStakeBatch(coll, ids); }
+  else { await contract.termStakeBatch(coll, ids); }
 }
 async function batchUnstake(){
   let coll = document.getElementById("stakeCollection").value;
