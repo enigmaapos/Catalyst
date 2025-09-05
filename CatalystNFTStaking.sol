@@ -260,18 +260,26 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     }
 
     // batch helpers
-    function batchTermStake(address collection, uint256[] calldata tokenIds) external {
-        require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
-        for (uint256 i = 0; i < tokenIds.length; i++) termStake(collection, tokenIds[i]);
+function batchTermStake(address collection, uint256[] calldata tokenIds) external {
+    require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+        this.termStake(collection, tokenIds[i]); // safer external call
     }
-    function batchPermanentStake(address collection, uint256[] calldata tokenIds) external {
-        require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
-        for (uint256 i = 0; i < tokenIds.length; i++) permanentStake(collection, tokenIds[i]);
+}
+
+function batchPermanentStake(address collection, uint256[] calldata tokenIds) external {
+    require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+        this.permanentStake(collection, tokenIds[i]); // safer external call
     }
-    function batchUnstake(address collection, uint256[] calldata tokenIds) external {
-        require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
-        for (uint256 i = 0; i < tokenIds.length; i++) unstake(collection, tokenIds[i]);
+}
+
+function batchUnstake(address collection, uint256[] calldata tokenIds) external {
+    require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+        this.unstake(collection, tokenIds[i]); // safer external call
     }
+}
 
     // harvest single token
     function harvest(address collection, uint256 tokenId) external nonReentrant whenNotPaused {
