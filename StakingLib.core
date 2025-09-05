@@ -1,0 +1,321 @@
+// SPDX-License-Identifier: MIT
+ pragma solidity ^0.8.20;
+
+ import "./ConfigRegistryLib.sol";
+
+ library StakingLib {
+     // constants
+     uint256 internal constant WEIGHT_SCALE = 1e18;
+     uint256 internal constant MAX_BATCH = 50;
+
+     // Stake info
+     struct StakeInfo {
+         uint256 stakeBlock;
+         uint256 lastHarvestBlock;
+         bool currentlyStaked;
+         bool isPermanent;
+         uint256 unstakeDeadlineBlock;
+     }
+
+     // Collection tier reused from ConfigRegistry
+     // Collection config & meta
+     struct CollectionConfig {
+         uint256 totalStaked;
+         uint256 totalStakers;
+         bool registered;
+         uint256 declaredSupply;
+     }
+
+     struct CollectionMeta {
+         ConfigRegistryLib.CollectionTier tier;
+         address registrant;
+         uint256 surchargeEscrow;
+         uint256 registeredAtBlock;
+         uint256 lastTierProposalBlock;
+     }
+
+     // Main storage for staking module
+     struct Storage {
+         // mappings (collection => config/meta)
+         mapping(address => CollectionConfig) collectionConfigs;
+         mapping(address => CollectionMeta) collectionMeta;
+
+         // mapping collection => user => tokenId => StakeInfo
+         mapping(address => mapping(address => mapping(uint256 => StakeInfo))) stakeLog;
+
+         // portfolio: collection => user => tokenIds
+         mapping(address => mapping(address => uint256[])) stakePortfolioByUser;
+
+         // tokenId => index in portfolio (per collection)
+         mapping(address => mapping(uint256 => uint256)) indexOfTokenInPortfolio;
+
+         // burned tracking
+         mapping(address => uint256) burnedCatalystByCollection;
+         // user burns & participating wallet arrays
+         mapping(address => uint256) burnedCatalystByAddress;
+         mapping(address => uint256) lastBurnBlock;
+         address[] participatingWallets;
+         mapping(address => bool) isParticipating;
+
+         // top collections ranking
+         address[] topCollections;
+         uint256 topPercent;
+
+         // global counts
+         uint256 totalStakedNFTsCount;
+         uint256 baseRewardRate;
+
+         // registration enumeration
+         address[] registeredCollections;
+         mapping(address => uint256) registeredIndex;
+     }
+
+     // ---------- registration helpers ----------
+     function _isRegistered(Storage storage s, address collection) internal view returns (bool) {
+         return s.registeredIndex[collection] != 0;
+     }
+
+     function _registerCollection(
+         Storage storage s,
+         address collection,
+         uint256 declaredMaxSupply,
+         ConfigRegistryLib.CollectionTier tier,
+         address registrant,
+         uint256 escrowAmt
+     ) internal {
+         require(collection != address(0), "bad coll");
+         require(!_isRegistered(s, collection), "already reg");
+         s.registeredCollections.push(collection);
+         s.registeredIndex[collection] = s.registeredCollections.length;
+         s.collectionConfigs[collection] = CollectionConfig({
+             totalStaked: 0,
+             totalStakers: 0,
+             registered: true,
+             declaredSupply: declaredMaxSupply
+         });
+         s.collectionMeta[collection] = CollectionMeta({
+             tier: tier,
+             registrant: registrant,
+             surchargeEscrow: escrowAmt,
+             registeredAtBlock: block.number,
+             lastTierProposalBlock: 0
+         });
+     }
+
+     function _removeCollection(Storage storage s, address collection) internal {
+         require(s.collectionConfigs[collection].registered, "not reg");
+         s.collectionConfigs[collection].registered = false;
+         uint256 idx = s.registeredIndex[collection];
+         if (idx != 0) {
+             uint256 i = idx - 1;
+             uint256 last = s.registeredCollections.length - 1;
+             if (i != last) {
+                 address lastAddr = s.registeredCollections[last];
+                 s.registeredCollections[i] = lastAddr;
+                 s.registeredIndex[lastAddr] = i + 1;
+             }
+             s.registeredCollections.pop();
+             s.registeredIndex[collection] = 0;
+         }
+         // remove from topCollections if present
+         for (uint256 t = 0; t < s.topCollections.length; t++) {
+             if (s.topCollections[t] == collection) {
+                 for (uint256 j = t; j + 1 < s.topCollections.length; j++) s.topCollections[j] = s.topCollections[j + 1];
+                 s.topCollections.pop();
+                 break;
+             }
+         }
+     }
+
+     // ---------- stake/unstake bookkeeping ----------
+     function _recordTermStake(
+         Storage storage s,
+         address collection,
+         address user,
+         uint256 tokenId,
+         ConfigRegistryLib.ConfigStorage storage cfg
+     ) internal {
+         require(s.collectionConfigs[collection].registered, "not reg");
+         require(s.collectionConfigs[collection].totalStaked < cfg.MAX_STAKE_PER_COLLECTION, "cap");
+         StakeInfo storage info = s.stakeLog[collection][user][tokenId];
+         require(!info.currentlyStaked, "already staked");
+         info.stakeBlock = block.number;
+         info.lastHarvestBlock = block.number;
+         info.currentlyStaked = true;
+         info.isPermanent = false;
+         info.unstakeDeadlineBlock = block.number + cfg.termDurationBlocks;
+
+         uint256[] storage port = s.stakePortfolioByUser[collection][user];
+         if (port.length == 0) s.collectionConfigs[collection].totalStakers += 1;
+         s.collectionConfigs[collection].totalStaked += 1;
+         s.totalStakedNFTsCount += 1;
+         s.baseRewardRate += cfg.rewardRateIncrementPerNFT;
+
+         port.push(tokenId);
+         s.indexOfTokenInPortfolio[collection][tokenId] = port.length - 1;
+     }
+
+     function _recordPermanentStake(
+         Storage storage s,
+         address collection,
+         address user,
+         uint256 tokenId,
+         ConfigRegistryLib.ConfigStorage storage cfg
+     ) internal {
+         require(s.collectionConfigs[collection].registered, "not reg");
+         require(s.collectionConfigs[collection].totalStaked < cfg.MAX_STAKE_PER_COLLECTION, "cap");
+         StakeInfo storage info = s.stakeLog[collection][user][tokenId];
+         require(!info.currentlyStaked, "already staked");
+         info.stakeBlock = block.number;
+         info.lastHarvestBlock = block.number;
+         info.currentlyStaked = true;
+         info.isPermanent = true;
+         info.unstakeDeadlineBlock = 0;
+
+         uint256[] storage port = s.stakePortfolioByUser[collection][user];
+         if (port.length == 0) s.collectionConfigs[collection].totalStakers += 1;
+         s.collectionConfigs[collection].totalStaked += 1;
+         s.totalStakedNFTsCount += 1;
+         s.baseRewardRate += cfg.rewardRateIncrementPerNFT;
+
+         port.push(tokenId);
+         s.indexOfTokenInPortfolio[collection][tokenId] = port.length - 1;
+     }
+
+     // returns the unstake fee (so core can collect)
+     function _recordUnstake(
+         Storage storage s,
+         address collection,
+         address user,
+         uint256 tokenId,
+         ConfigRegistryLib.ConfigStorage storage cfg
+     ) internal returns (uint256) {
+         StakeInfo storage info = s.stakeLog[collection][user][tokenId];
+         require(info.currentlyStaked, "not staked");
+         if (!info.isPermanent) require(block.number >= info.unstakeDeadlineBlock, "term active");
+         // harvest is separate; caller should harvest first
+         info.currentlyStaked = false;
+
+         // remove token from portfolio
+         uint256[] storage port = s.stakePortfolioByUser[collection][user];
+         uint256 idx = s.indexOfTokenInPortfolio[collection][tokenId];
+         uint256 last = port.length - 1;
+         if (idx != last) {
+             uint256 lastToken = port[last];
+             port[idx] = lastToken;
+             s.indexOfTokenInPortfolio[collection][lastToken] = idx;
+         }
+         port.pop();
+         delete s.indexOfTokenInPortfolio[collection][tokenId];
+
+         // update collection counters
+         if (port.length == 0) s.collectionConfigs[collection].totalStakers -= 1;
+         s.collectionConfigs[collection].totalStaked -= 1;
+         if (s.baseRewardRate >= cfg.rewardRateIncrementPerNFT) s.baseRewardRate -= cfg.rewardRateIncrementPerNFT;
+         return cfg.unstakeBurnFee;
+     }
+
+     // compute pending rewards
+     function pendingRewards(
+         Storage storage s,
+         address collection,
+         address owner,
+         uint256 tokenId,
+         ConfigRegistryLib.ConfigStorage storage cfg
+     ) internal view returns (uint256) {
+         StakeInfo memory info = s.stakeLog[collection][owner][tokenId];
+         if (!info.currentlyStaked || s.baseRewardRate == 0 || s.totalStakedNFTsCount == 0) return 0;
+         if (!info.isPermanent && block.number >= info.unstakeDeadlineBlock) return 0;
+         uint256 blocksPassed = block.number - info.lastHarvestBlock;
+         uint256 numerator = blocksPassed * s.baseRewardRate;
+         uint256 rewardAmount = (numerator / cfg.numberOfBlocksPerRewardUnit) / s.totalStakedNFTsCount;
+         return rewardAmount;
+     }
+
+     // harvest helper: compute reward + burn portion and update lastHarvestBlock
+     function _harvestAndCompute(
+         Storage storage s,
+         address collection,
+         address user,
+         uint256 tokenId,
+         ConfigRegistryLib.ConfigStorage storage cfg
+     ) internal returns (uint256 reward, uint256 burnAmt) {
+         reward = pendingRewards(s, collection, user, tokenId, cfg);
+         if (reward == 0) return (0, 0);
+         uint256 feeRate = cfg.getDynamicHarvestBurnFeeRate(s.baseRewardRate);
+         burnAmt = (reward * feeRate) / 100;
+         // update lastHarvest
+         StakeInfo storage info = s.stakeLog[collection][user][tokenId];
+         info.lastHarvestBlock = block.number;
+         return (reward, burnAmt);
+     }
+
+     // record a user burn (used when core burns)
+     function _recordUserBurn(Storage storage s, address user, uint256 amount) internal {
+         if (amount == 0) return;
+         s.burnedCatalystByAddress[user] += amount;
+         s.lastBurnBlock[user] = block.number;
+         if (!s.isParticipating[user]) {
+             s.isParticipating[user] = true;
+             s.participatingWallets.push(user);
+         }
+     }
+
+     // top collections maintenance (simplified)
+     function _updateTopCollectionsOnBurn(Storage storage s, address collection) internal {
+         if (s.registeredIndex[collection] == 0) return; // not registered
+         uint256 burned = s.burnedCatalystByCollection[collection];
+         // remove existing if present
+         for (uint i = 0; i < s.topCollections.length; i++) {
+             if (s.topCollections[i] == collection) {
+                 for (uint j = i; j + 1 < s.topCollections.length; j++) s.topCollections[j] = s.topCollections[j + 1];
+                 s.topCollections.pop();
+                 break;
+             }
+         }
+         // insert ordered by burnt amount (descending)
+         bool inserted = false;
+         for (uint i = 0; i < s.topCollections.length; i++) {
+             if (burned > s.burnedCatalystByCollection[s.topCollections[i]]) {
+                 s.topCollections.push(s.topCollections[s.topCollections.length - 1]);
+                 for (uint j = s.topCollections.length - 1; j > i; j--) s.topCollections[j] = s.topCollections[j - 1];
+                 s.topCollections[i] = collection;
+                 inserted = true;
+                 break;
+             }
+         }
+         if (!inserted) s.topCollections.push(collection);
+         // cap length to topPercent of registered collections
+         uint256 ec = (s.registeredCollections.length * s.topPercent) / 100;
+         if (ec == 0 && s.registeredCollections.length > 0) ec = 1;
+         while (s.topCollections.length > ec) s.topCollections.pop();
+     }
+
+     function _maybeRebuildTopCollections(Storage storage s) internal {
+         uint256 ec = (s.registeredCollections.length * s.topPercent) / 100;
+         if (ec == 0 && s.registeredCollections.length > 0) ec = 1;
+         if (ec > s.topCollections.length) _rebuildTopCollections(s);
+         else if (s.topCollections.length == 0 && s.registeredCollections.length > 0) _rebuildTopCollections(s);
+     }
+
+     function _rebuildTopCollections(Storage storage s) internal {
+         delete s.topCollections;
+         uint256 total = s.registeredCollections.length;
+         if (total == 0) return;
+         uint256 ec = (total * s.topPercent) / 100;
+         if (ec == 0) ec = 1;
+         bool[] memory picked = new bool[](total);
+         for (uint k = 0; k < ec; k++) {
+             uint256 maxB = 0;
+             uint256 maxIdx = 0;
+             bool found = false;
+             for (uint i = 0; i < total; i++) {
+                 if (picked[i]) continue;
+                 address cand = s.registeredCollections[i];
+                 uint256 bb = s.burnedCatalystByCollection[cand];
+                 if (!found || bb > maxB) { maxB = bb; maxIdx = i; found = true; }
+             }
+             if (found) { picked[maxIdx] = true; s.topCollections.push(s.registeredCollections[maxIdx]); }
+         }
+     }
+ }
