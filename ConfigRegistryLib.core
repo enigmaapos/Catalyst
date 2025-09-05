@@ -1,0 +1,104 @@
+// SPDX-License-Identifier: MIT
+ pragma solidity ^0.8.20;
+
+ library ConfigRegistryLib {
+     enum CollectionTier { UNVERIFIED, VERIFIED }
+
+     struct ConfigStorage {
+         // fee-related
+         uint256 collectionRegistrationFee;
+         uint256 unstakeFee;
+         uint256 initialCollectionFee;
+         uint256 feeMultiplier;
+         uint256 initialHarvestBurnFeeRate;
+         uint256 harvestRateAdjustmentFactor;
+
+         // staking params
+         uint256 termDurationBlocks;
+         uint256 stakingCooldownBlocks;
+         uint256 rewardRateIncrementPerNFT;
+         uint256 welcomeBonusBaseRate;
+         uint256 welcomeBonusIncrementPerNFT;
+
+         // registration fee brackets
+         uint256 SMALL_MIN_FEE;
+         uint256 SMALL_MAX_FEE;
+         uint256 MED_MIN_FEE;
+         uint256 MED_MAX_FEE;
+         uint256 LARGE_MIN_FEE;
+         uint256 LARGE_MAX_FEE_CAP;
+
+         uint256 unverifiedSurchargeBP;
+
+         // tier & governance thresholds
+         uint256 tierUpgradeMinAgeBlocks;
+         uint256 tierUpgradeMinBurn;
+         uint256 tierUpgradeMinStakers;
+         uint256 tierProposalCooldownBlocks;
+         uint256 surchargeForfeitBlocks;
+
+         uint256 numberOfBlocksPerRewardUnit;
+         uint256 minBurnContributionForVote;
+
+         uint256 MAX_STAKE_PER_COLLECTION;
+     }
+
+     // helper: compute registration base fee based on declared supply
+     function _calculateRegistrationBaseFee(ConfigStorage storage cfg, uint256 declaredSupply) internal view returns (uint256) {
+         require(declaredSupply >= 1, "declared>=1");
+         if (declaredSupply <= 5000) {
+             uint256 numerator = declaredSupply * (cfg.SMALL_MAX_FEE - cfg.SMALL_MIN_FEE);
+             return cfg.SMALL_MIN_FEE + (numerator / 5000);
+         } else if (declaredSupply <= 10000) {
+             uint256 numerator = (declaredSupply - 5000) * (cfg.MED_MAX_FEE - cfg.MED_MIN_FEE);
+             return cfg.MED_MIN_FEE + (numerator / 5000);
+         } else {
+             uint256 extra = declaredSupply - 10000;
+             uint256 range = 10000;
+             if (extra >= range) return cfg.LARGE_MAX_FEE_CAP;
+             uint256 numerator = extra * (cfg.LARGE_MAX_FEE_CAP - cfg.LARGE_MIN_FEE);
+             return cfg.LARGE_MIN_FEE + (numerator / range);
+         }
+     }
+
+     // compute total fee & surcharge given a desired tier
+     function _computeRegistrationFees(
+         ConfigStorage storage cfg,
+         uint256 declaredSupply,
+         CollectionTier tier
+     ) internal view returns (uint256 baseFee, uint256 surcharge) {
+         baseFee = _calculateRegistrationBaseFee(cfg, declaredSupply);
+         uint256 multBP = (tier == CollectionTier.UNVERIFIED) ? cfg.unverifiedSurchargeBP : 10000;
+         uint256 total = (baseFee * multBP) / 10000;
+         surcharge = (multBP > 10000) ? (total - baseFee) : 0;
+         return (baseFee, surcharge);
+     }
+
+     // dynamic permanent stake fee (sqrt based)
+     function getDynamicPermanentStakeFee(ConfigStorage storage cfg, uint256 totalStakedNFTsCount) internal view returns (uint256) {
+         uint256 sqrtVal = _sqrt(totalStakedNFTsCount);
+         return cfg.initialCollectionFee + (sqrtVal * cfg.feeMultiplier);
+     }
+
+     // dynamic harvest burn fee
+     function getDynamicHarvestBurnFeeRate(ConfigStorage storage cfg, uint256 baseRewardRate) internal view returns (uint256) {
+         if (cfg.harvestRateAdjustmentFactor == 0) return cfg.initialHarvestBurnFeeRate;
+         uint256 rate = cfg.initialHarvestBurnFeeRate + (baseRewardRate / cfg.harvestRateAdjustmentFactor);
+         if (rate > 90) return 90;
+         return rate;
+     }
+
+     // simple sqrt (uint)
+     function _sqrt(uint256 y) internal pure returns (uint256 z) {
+         if (y > 3) {
+             z = y;
+             uint256 x = y / 2 + 1;
+             while (x < z) {
+                 z = x;
+                 x = (y / x + x) / 2;
+             }
+         } else if (y != 0) {
+             z = 1;
+         }
+     }
+ }
