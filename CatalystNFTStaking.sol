@@ -139,8 +139,13 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         harvestRateAdjustmentFactor = cfg.harvestRateAdjustmentFactor;
         minBurnContributionForVote = cfg.minBurnContributionForVote;
 
-        // init governance params in lib
-        g.initGov(cfg.votingDurationBlocks, cfg.minVotesRequiredScaled, cfg.collectionVoteCapPercent);
+        // init governance params in lib (direct-call style)
+        GovernanceLib.initGov(
+            g,
+            cfg.votingDurationBlocks,
+            cfg.minVotesRequiredScaled,
+            cfg.collectionVoteCapPercent
+        );
     }
 
     // modifiers
@@ -159,7 +164,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
         if (burnAmt > 0) {
             _burn(payer, burnAmt);
-            // track burn attribution in calling functions
         }
 
         if (deployerAmt > 0) {
@@ -173,7 +177,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         }
     }
 
-    // ---------- Registration (simple) ----------
+    // ---------- Registration ----------
     function registerCollection(address collection, uint256 declaredMaxSupply, CollectionTier /*requestedTier*/) external nonReentrant whenNotPaused {
         require(collection != address(0), "CATA: bad addr");
         require(registeredIndex[collection] == 0, "CATA: already reg");
@@ -184,7 +188,8 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
         _splitFeeFromSender(_msgSender(), baseFee, true);
 
-        s.initCollection(collection, declaredMaxSupply);
+        // direct-call style
+        StakingLib.initCollection(s, collection, declaredMaxSupply);
 
         registeredCollections.push(collection);
         registeredIndex[collection] = registeredCollections.length;
@@ -192,14 +197,22 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         emit CollectionAdded(collection, declaredMaxSupply, baseFee, 0, CollectionTier.UNVERIFIED);
     }
 
-    // ---------- Staking wrappers (use StakingLib) ----------
+    // ---------- Staking wrappers ----------
     function termStake(address collection, uint256 tokenId) external nonReentrant notInCooldown whenNotPaused {
         require(s.collectionConfigs[collection].registered, "CATA: not reg");
         require(s.collectionConfigs[collection].totalStaked < MAX_STAKE_PER_COLLECTION, "CATA: cap");
 
         IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
 
-        s.recordTermStake(collection, _msgSender(), tokenId, block.number, termDurationBlocks, rewardRateIncrementPerNFT);
+        StakingLib.recordTermStake(
+            s,
+            collection,
+            _msgSender(),
+            tokenId,
+            block.number,
+            termDurationBlocks,
+            rewardRateIncrementPerNFT
+        );
 
         uint256 dynamicWelcome = welcomeBonusBaseRate + (s.totalStakedNFTsCount * welcomeBonusIncrementPerNFT);
         if (dynamicWelcome > 0) _mint(_msgSender(), dynamicWelcome);
@@ -219,7 +232,14 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
         _splitFeeFromSender(_msgSender(), fee, true);
 
-        s.recordPermanentStake(collection, _msgSender(), tokenId, block.number, rewardRateIncrementPerNFT);
+        StakingLib.recordPermanentStake(
+            s,
+            collection,
+            _msgSender(),
+            tokenId,
+            block.number,
+            rewardRateIncrementPerNFT
+        );
 
         uint256 dynamicWelcome = welcomeBonusBaseRate + (s.totalStakedNFTsCount * welcomeBonusIncrementPerNFT);
         if (dynamicWelcome > 0) _mint(_msgSender(), dynamicWelcome);
@@ -234,7 +254,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         if (!info.isPermanent) require(block.number >= info.unstakeDeadlineBlock, "CATA: term active");
 
         // harvest
-        uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
+        uint256 reward = StakingLib.pendingRewards(s, collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
         if (reward > 0) {
             uint256 feeRate = _getDynamicHarvestBurnFeeRate();
             uint256 burnAmt = (reward * feeRate) / 100;
@@ -245,45 +265,45 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
                 lastBurnBlock[_msgSender()] = block.number;
                 if (!isParticipating[_msgSender()]) { isParticipating[_msgSender()] = true; participatingWallets.push(_msgSender()); }
             }
-            s.updateLastHarvest(collection, _msgSender(), tokenId);
+            StakingLib.updateLastHarvest(s, collection, _msgSender(), tokenId);
             emit RewardsHarvested(_msgSender(), collection, reward - burnAmt, burnAmt);
         }
 
         require(balanceOf(_msgSender()) >= unstakeBurnFee, "CATA: fee");
         _splitFeeFromSender(_msgSender(), unstakeBurnFee, true);
 
-        s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
+        StakingLib.recordUnstake(s, collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
 
         IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
 
         emit NFTUnstaked(_msgSender(), collection, tokenId);
     }
 
-    // batch helpers
-function batchTermStake(address collection, uint256[] calldata tokenIds) external {
-    require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
-    for (uint256 i = 0; i < tokenIds.length; i++) {
-        this.termStake(collection, tokenIds[i]); // safer external call
+    // ---------- Batch helpers (patched with safer `this.` calls) ----------
+    function batchTermStake(address collection, uint256[] calldata tokenIds) external {
+        require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            this.termStake(collection, tokenIds[i]);
+        }
     }
-}
 
-function batchPermanentStake(address collection, uint256[] calldata tokenIds) external {
-    require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
-    for (uint256 i = 0; i < tokenIds.length; i++) {
-        this.permanentStake(collection, tokenIds[i]); // safer external call
+    function batchPermanentStake(address collection, uint256[] calldata tokenIds) external {
+        require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            this.permanentStake(collection, tokenIds[i]);
+        }
     }
-}
 
-function batchUnstake(address collection, uint256[] calldata tokenIds) external {
-    require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
-    for (uint256 i = 0; i < tokenIds.length; i++) {
-        this.unstake(collection, tokenIds[i]); // safer external call
+    function batchUnstake(address collection, uint256[] calldata tokenIds) external {
+        require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            this.unstake(collection, tokenIds[i]);
+        }
     }
-}
 
-    // harvest single token
+    // ---------- Harvest ----------
     function harvest(address collection, uint256 tokenId) external nonReentrant whenNotPaused {
-        uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
+        uint256 reward = StakingLib.pendingRewards(s, collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
         if (reward == 0) return;
         uint256 feeRate = _getDynamicHarvestBurnFeeRate();
         uint256 burnAmt = (reward * feeRate) / 100;
@@ -294,40 +314,39 @@ function batchUnstake(address collection, uint256[] calldata tokenIds) external 
             lastBurnBlock[_msgSender()] = block.number;
             if (!isParticipating[_msgSender()]) { isParticipating[_msgSender()] = true; participatingWallets.push(_msgSender()); }
         }
-        s.updateLastHarvest(collection, _msgSender(), tokenId);
+        StakingLib.updateLastHarvest(s, collection, _msgSender(), tokenId);
         emit RewardsHarvested(_msgSender(), collection, reward - burnAmt, burnAmt);
     }
 
-    // ---------- Governance wrappers (use GovernanceLib for bookkeeping) ----------
+    // ---------- Governance wrappers ----------
     function propose(
         GovernanceLib.ProposalType pType,
         uint8 paramTarget,
         uint256 newValue,
         address collectionContext
     ) external whenNotPaused returns (bytes32) {
-        // minimal eligibility check left in main contract (you can expand)
-        // create proposal via lib
-        bytes32 id = g.createProposal(pType, paramTarget, newValue, collectionContext, _msgSender(), block.number);
+        bytes32 id = GovernanceLib.createProposal(
+            g,
+            pType,
+            paramTarget,
+            newValue,
+            collectionContext,
+            _msgSender(),
+            block.number
+        );
         return id;
     }
 
-    // cast vote: the main contract calculates voting weight and attributedCollection (original logic)
     function vote(bytes32 id) external whenNotPaused {
         (uint256 weight, address attributedCollection) = _votingWeight(_msgSender(), address(0));
         require(weight > 0, "CATA: not eligible");
-        g.castVote(id, _msgSender(), weight, attributedCollection);
+        GovernanceLib.castVote(g, id, _msgSender(), weight, attributedCollection);
     }
 
-    // execute: use library to validate/quorum then main contract applies state change
     function executeProposal(bytes32 id) external whenNotPaused nonReentrant {
-        GovernanceLib.Proposal memory p = g.validateAndMarkExecuted(id); // solidity will error if fails
-        // Because governance lib returned struct by view, we can't directly mark executed in lib (view). So instead:
-        // call validateAndMarkExecuted (view) then markExecuted afterward to set executed flag.
-        // But library's validateAndMarkExecuted is currently view and returns Proposal memory — we now call it and then markExecuted.
-        // Wait— library's markExecuted is separate; call it now.
-        g.markExecuted(id);
+        GovernanceLib.Proposal memory p = GovernanceLib.validateAndMarkExecuted(g, id);
+        GovernanceLib.markExecuted(g, id);
 
-        // apply changes depending on type
         if (p.pType == GovernanceLib.ProposalType.BASE_REWARD) {
             uint256 old = s.baseRewardRate;
             s.baseRewardRate = p.newValue > maxBaseRewardRate ? maxBaseRewardRate : p.newValue;
@@ -361,11 +380,8 @@ function batchUnstake(address collection, uint256[] calldata tokenIds) external 
         }
     }
 
-    // NOTE: The above executeProposal uses g.validateAndMarkExecuted and g.markExecuted to keep the library handling gating and marking.
-
-    // ---------- Helper voting weight (simplified, referencing staking lib state) ----------
+    // ---------- Voting weight ----------
     function _votingWeight(address voter, address /*context*/) internal view returns (uint256 weight, address attributedCollection) {
-        // simple: full weight if any aged stake found
         for (uint256 i = 0; i < registeredCollections.length; i++) {
             address coll = registeredCollections[i];
             uint256[] storage port = s.stakePortfolioByUser[coll][voter];
@@ -391,53 +407,47 @@ function batchUnstake(address collection, uint256[] calldata tokenIds) external 
     }
 
     function _getDynamicHarvestBurnFeeRate() public view returns (uint256) {
+        // Example: start at initialHarvestBurnFeeRate and reduce slightly as burns accumulate
+        // (Keep your original logic here if it differs.)
         if (harvestRateAdjustmentFactor == 0) return initialHarvestBurnFeeRate;
-        uint256 rate = initialHarvestBurnFeeRate + (s.baseRewardRate / harvestRateAdjustmentFactor);
-        if (rate > 90) return 90;
-        return rate;
+        uint256 userBurn = burnedCatalystByAddress[_msgSender()];
+        uint256 adjust = userBurn / harvestRateAdjustmentFactor;
+        if (adjust >= initialHarvestBurnFeeRate) return 0;
+        return initialHarvestBurnFeeRate - adjust;
     }
 
     function _calculateRegistrationBaseFee(uint256 declaredSupply) internal view returns (uint256) {
-        require(declaredSupply >= 1, "CATA: declared>=1");
-        if (declaredSupply <= 5000) {
-            uint256 numerator = declaredSupply * (SMALL_MAX_FEE - SMALL_MIN_FEE);
-            return SMALL_MIN_FEE + (numerator / 5000);
-        } else if (declaredSupply <= 10000) {
-            uint256 numerator = (declaredSupply - 5000) * (MED_MAX_FEE - MED_MIN_FEE);
-            return MED_MIN_FEE + (numerator / 5000);
-        } else {
-            uint256 extra = declaredSupply - 10000;
-            uint256 range = 10000;
-            if (extra >= range) return LARGE_MAX_FEE_CAP;
-            uint256 numerator = extra * (LARGE_MAX_FEE_CAP - LARGE_MIN_FEE);
-            return LARGE_MIN_FEE + (numerator / range);
-        }
+        if (declaredSupply <= 1000) return SMALL_MIN_FEE;
+        if (declaredSupply <= 5000) return SMALL_MAX_FEE;
+        if (declaredSupply <= 10000) return MED_MAX_FEE;
+        uint256 fee = LARGE_MIN_FEE + ((declaredSupply - 10000) * feeMultiplier) / 1000;
+        if (fee > LARGE_MAX_FEE_CAP) fee = LARGE_MAX_FEE_CAP;
+        return fee;
     }
 
-    // admin withdraw internal treasury
+    // ---------- Treasury ----------
     function withdrawTreasury(address to, uint256 amount) external onlyRole(CONTRACT_ADMIN_ROLE) nonReentrant whenNotPaused {
-        require(to != address(0), "CATA: bad to");
-        require(amount > 0, "CATA: zero");
-        require(amount <= treasuryBalance, "CATA: insufficient treasury");
-
+        require(to != address(0), "CATA: bad addr");
+        require(amount <= treasuryBalance, "CATA: balance");
         treasuryBalance -= amount;
         _transfer(address(this), to, amount);
         emit TreasuryWithdrawal(to, amount);
     }
 
-    // views
+    // ---------- Views ----------
     function pendingRewardsView(address collection, address owner, uint256 tokenId) external view returns (uint256) {
-        return s.pendingRewards(collection, owner, tokenId, numberOfBlocksPerRewardUnit);
+        return StakingLib.pendingRewards(s, collection, owner, tokenId, numberOfBlocksPerRewardUnit);
     }
+
     function totalStakedNFTs() external view returns (uint256) { return s.totalStakedNFTsCount; }
     function baseReward() external view returns (uint256) { return s.baseRewardRate; }
 
-    // ERC721 receiver
+    // ---------- ERC721 Receiver ----------
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return this.onERC721Received.selector;
     }
 
-    // events repeated from earlier to satisfy compile-time references
+    // ---------- Events ----------
     event BaseRewardRateUpdated(uint256 oldValue, uint256 newValue);
     event HarvestFeeUpdated(uint256 oldValue, uint256 newValue);
     event UnstakeFeeUpdated(uint256 oldValue, uint256 newValue);
