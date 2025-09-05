@@ -27,12 +27,6 @@ contract CatalystNFTStakingUpgradeable is
     PausableUpgradeable,
     UUPSUpgradeable
 {
-    using StakingLib for StakingLib.Storage;
-    using GovernanceLib for GovernanceLib.Storage;
-    using ConfigLib for ConfigLib.Storage;
-    using FeeLib for FeeLib.Storage;
-    using TreasuryLib for TreasuryLib.Storage;
-
     // === Roles ===
     bytes32 public constant CONTRACT_ADMIN_ROLE = keccak256("CONTRACT_ADMIN_ROLE");
 
@@ -87,73 +81,73 @@ contract CatalystNFTStakingUpgradeable is
         _mint(deployer_, initialSupply);
 
         // Init fee splits
-        f.init(burnBP_, treasuryBP_, deployerBP_);
+        FeeLib.init(f, burnBP_, treasuryBP_, deployerBP_);
 
         // Init governance parameters
-        g.init(votingDurationBlocks, minVotes, collectionVoteCap);
+        GovernanceLib.init(g, votingDurationBlocks, minVotes, collectionVoteCap);
     }
 
     // === Staking ===
     function stakeNFT(address collection, uint256 tokenId) external nonReentrant whenNotPaused {
-        s.stakeNFT(_msgSender(), collection, tokenId, address(this));
+        StakingLib.stakeNFT(s, _msgSender(), collection, tokenId, address(this));
         emit NFTStaked(_msgSender(), collection, tokenId);
     }
 
     function unstakeNFT(address collection, uint256 tokenId) external nonReentrant {
-        s.unstakeNFT(_msgSender(), collection, tokenId, address(this));
+        StakingLib.unstakeNFT(s, _msgSender(), collection, tokenId, address(this));
         emit NFTUnstaked(_msgSender(), collection, tokenId);
     }
 
     // === Rewards ===
     function harvestRewards() external nonReentrant {
-        uint256 reward = s.harvestRewards(_msgSender(), address(this));
+        uint256 reward = StakingLib.harvestRewards(s, _msgSender(), address(this));
         emit RewardHarvested(_msgSender(), reward);
     }
 
     // === Governance ===
     function createProposal(GovernanceLib.Proposal memory p) external whenNotPaused {
-        bytes32 id = g.createProposal(_msgSender(), p);
+        bytes32 id = GovernanceLib.createProposal(g, _msgSender(), p);
         emit ProposalCreated(id, p.pType, p.newValue);
     }
 
     function vote(bytes32 proposalId, bool support) external whenNotPaused {
-        g.vote(_msgSender(), proposalId, support, s);
+        GovernanceLib.vote(g, _msgSender(), proposalId, support, s);
     }
 
     function executeProposal(bytes32 proposalId) external whenNotPaused {
         GovernanceLib.Proposal memory p = GovernanceLib.validateForExecution(g, proposalId);
         ProposalExecLib.applyProposal(g, s, c, proposalId, p);
-        g.markExecuted(proposalId);
+        GovernanceLib.markExecuted(g, proposalId);
         emit ProposalExecuted(proposalId);
     }
 
     // === Config Management ===
     function updateConfig(uint8 paramId, uint256 newValue) external onlyRole(CONTRACT_ADMIN_ROLE) {
-        c.setUint(paramId, newValue);
+        ConfigLib.setUint(c, paramId, newValue);
     }
 
     function getConfig(uint8 paramId) external view returns (uint256) {
-        return c.getUint(paramId);
+        return ConfigLib.getUint(c, paramId);
     }
 
     // === Fee Handling ===
     function handleFeeFromSender(address from, uint256 amount) external nonReentrant {
-        (uint256 burnAmt, uint256 treasuryAmt, uint256 deployerAmt) = f.computeSplits(amount);
+        (uint256 burnAmt, uint256 treasuryAmt, uint256 deployerAmt) = FeeLib.computeSplits(f, amount);
         if (burnAmt > 0) _burn(from, burnAmt);
         if (treasuryAmt > 0) {
             _transfer(from, address(this), treasuryAmt);
-            t.recordDeposit(from, treasuryAmt);
+            TreasuryLib.recordDeposit(t, from, treasuryAmt);
         }
         if (deployerAmt > 0) _transfer(from, deployer, deployerAmt);
     }
 
     // === Treasury ===
     function treasuryBalance() external view returns (uint256) {
-        return t.balanceOf();
+        return TreasuryLib.balanceOf(t);
     }
 
     function withdrawTreasury(address to, uint256 amount) external onlyRole(CONTRACT_ADMIN_ROLE) {
-        t.recordWithdrawal(to, amount);
+        TreasuryLib.recordWithdrawal(t, to, amount);
         _transfer(address(this), to, amount);
     }
 
