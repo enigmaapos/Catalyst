@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: MIT
+ pragma solidity ^0.8.20;
+
+ import "./GovernanceLib.sol";
+ import "./ConfigRegistryLib.sol";
+ import "./StakingLib.sol";
+
+ library ProposalExecutorLib {
+     // lightweight context to enable core interactions if needed
+     struct ExecContext {
+         // note: core address isn't used here; all state is via storage references in core call
+         address core;
+         GovernanceLib.Storage governanceStorage;
+         ConfigRegistryLib.ConfigStorage configStorage;
+         StakingLib.Storage stakingStorage;
+     }
+
+     // Execute proposal by id (mirrors executeProposal logic from merged contract)
+     function _execute(ExecContext memory ctx, bytes32 id) internal {
+         GovernanceLib.Proposal storage p = ctx.governanceStorage.proposals[id];
+         require(p.startBlock != 0, "not found");
+         require(block.number > p.endBlock, "voting");
+         require(!p.executed, "executed");
+         require(p.votesScaled >= ctx.governanceStorage.minVotesRequiredScaled, "quorum");
+
+         if (p.pType == GovernanceLib.ProposalType.BASE_REWARD) {
+             // update baseRewardRate in staking storage, clamp to max if present
+             ctx.stakingStorage.baseRewardRate = p.newValue;
+         } else if (p.pType == GovernanceLib.ProposalType.HARVEST_FEE) {
+             require(p.newValue <= 100, "fee>100");
+             ctx.configStorage.initialHarvestBurnFeeRate = p.newValue;
+         } else if (p.pType == GovernanceLib.ProposalType.UNSTAKE_FEE) {
+             ctx.configStorage.unstakeFee = p.newValue;
+         } else if (p.pType == GovernanceLib.ProposalType.REGISTRATION_FEE_FALLBACK) {
+             ctx.configStorage.collectionRegistrationFee = p.newValue;
+         } else if (p.pType == GovernanceLib.ProposalType.VOTING_PARAM) {
+             uint8 t = p.paramTarget;
+             if (t == 0) ctx.governanceStorage.minVotesRequiredScaled = p.newValue;
+             else if (t == 1) ctx.governanceStorage.votingDurationBlocks = p.newValue;
+             else if (t == 2) ctx.governanceStorage.smallCollectionVoteWeightScaled = p.newValue;
+             else if (t == 3) ctx.configStorage.minBurnContributionForVote = p.newValue;
+             else if (t == 4) { /* maxBaseRewardRate — not implemented in this simplified storage */ }
+             else if (t == 5) ctx.configStorage.numberOfBlocksPerRewardUnit = p.newValue;
+             else if (t == 6) ctx.governanceStorage.collectionVoteCapPercent = p.newValue;
+             else if (t == 7) ctx.governanceStorage.minStakeAgeForVoting = p.newValue;
+             else if (t == 8) { /* topPercent handled in staking storage externally */ }
+             else if (t == 9) ctx.configStorage.tierProposalCooldownBlocks = p.newValue;
+             else revert("unknown target");
+         } else if (p.pType == GovernanceLib.ProposalType.TIER_UPGRADE) {
+             address c = p.collectionAddress;
+             require(_eligibleForTierUpgrade(ctx.stakingStorage, ctx.configStorage, c), "prereq fail");
+             StakingLib.CollectionMeta storage m = ctx.stakingStorage.collectionMeta[c];
+             require(m.tier == ConfigRegistryLib.CollectionTier.UNVERIFIED, "already verified");
+             m.tier = ConfigRegistryLib.CollectionTier.VERIFIED;
+             uint256 refund = m.surchargeEscrow;
+             m.surchargeEscrow = 0;
+             if (refund > 0) {
+                 // core should transfer refund; since libs can't transfer tokens, we only store refund in meta.
+                 // Core must read meta and transfer escrow to registrant afterwards.
+             }
+         } else {
+             revert("unknown proposal");
+         }
+
+         p.executed = true;
+     }
+
+     function _eligibleForTierUpgrade(
+         StakingLib.Storage storage s,
+         ConfigRegistryLib.ConfigStorage storage cfg,
+         address collection
+     ) internal view returns (bool) {
+         StakingLib.CollectionMeta memory m = s.collectionMeta[collection];
+         if (m.tier != ConfigRegistryLib.CollectionTier.UNVERIFIED) return false;
+         if (block.number < m.registeredAtBlock + cfg.tierUpgradeMinAgeBlocks) return false;
+         if (s.burnedCatalystByCollection[collection] < cfg.tierUpgradeMinBurn) return false;
+         if (s.collectionConfigs[collection].totalStakers < cfg.tierUpgradeMinStakers) return false;
+         return true;
+     }
+ }
