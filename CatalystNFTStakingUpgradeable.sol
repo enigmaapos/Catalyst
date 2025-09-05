@@ -4,11 +4,13 @@ pragma solidity ^0.8.20;
 // ==== OpenZeppelin Upgradeable ====
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+// ==== OpenZeppelin (non-upgradeable interfaces) ====
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 // ==== Internal Modular Libs ====
 import "./StakingLib.sol";
