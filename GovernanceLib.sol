@@ -33,11 +33,25 @@ library GovernanceLib {
         uint256 collectionVoteCapPercent;
     }
 
-    event ProposalCreated(bytes32 indexed id, ProposalType pType, uint8 paramTarget, address indexed collection, address indexed proposer, uint256 newValue, uint256 startBlock, uint256 endBlock);
+    event ProposalCreated(
+        bytes32 indexed id,
+        ProposalType pType,
+        uint8 paramTarget,
+        address indexed collection,
+        address indexed proposer,
+        uint256 newValue,
+        uint256 startBlock,
+        uint256 endBlock
+    );
     event VoteCast(bytes32 indexed id, address indexed voter, uint256 weightScaled, address attributedCollection);
     event ProposalMarkedExecuted(bytes32 indexed id);
 
-    function initGov(Storage storage g, uint256 votingDurationBlocks_, uint256 minVotesRequiredScaled_, uint256 collectionVoteCapPercent_) internal {
+    function initGov(
+        Storage storage g,
+        uint256 votingDurationBlocks_,
+        uint256 minVotesRequiredScaled_,
+        uint256 collectionVoteCapPercent_
+    ) internal {
         g.votingDurationBlocks = votingDurationBlocks_;
         g.minVotesRequiredScaled = minVotesRequiredScaled_;
         g.collectionVoteCapPercent = collectionVoteCapPercent_;
@@ -52,7 +66,9 @@ library GovernanceLib {
         address proposer,
         uint256 currentBlock
     ) internal returns (bytes32) {
-        bytes32 id = keccak256(abi.encodePacked(uint256(pType), paramTarget, newValue, collection, currentBlock, proposer));
+        bytes32 id = keccak256(
+            abi.encodePacked(uint256(pType), paramTarget, newValue, collection, currentBlock, proposer)
+        );
         Proposal storage p = g.proposals[id];
         require(p.startBlock == 0, "GovernanceLib: exists");
 
@@ -70,7 +86,13 @@ library GovernanceLib {
         return id;
     }
 
-    function castVote(Storage storage g, bytes32 id, address voter, uint256 weightScaled, address attributedCollection) internal {
+    function castVote(
+        Storage storage g,
+        bytes32 id,
+        address voter,
+        uint256 weightScaled,
+        address attributedCollection
+    ) internal {
         Proposal storage p = g.proposals[id];
         require(p.startBlock != 0, "GovernanceLib: not found");
         require(block.number >= p.startBlock && block.number <= p.endBlock, "GovernanceLib: closed");
@@ -88,8 +110,8 @@ library GovernanceLib {
         emit VoteCast(id, voter, weightScaled, attributedCollection);
     }
 
-    /// @notice Validate execution conditions; mark executed and return struct values
-    function validateAndMarkExecuted(Storage storage g, bytes32 id) internal view returns (Proposal memory) {
+    /// @notice Validate execution conditions; does not mark executed
+    function validateForExecution(Storage storage g, bytes32 id) internal view returns (Proposal memory) {
         Proposal memory p = g.proposals[id];
         require(p.startBlock != 0, "GovernanceLib: not found");
         require(block.number > p.endBlock, "GovernanceLib: voting");
@@ -98,7 +120,7 @@ library GovernanceLib {
         return p;
     }
 
-    /// @notice Mark executed (separate to avoid modifying in validate view)
+    /// @notice Mark executed separately
     function markExecuted(Storage storage g, bytes32 id) internal {
         g.proposals[id].executed = true;
         emit ProposalMarkedExecuted(id);
