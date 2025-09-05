@@ -157,7 +157,7 @@
      function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external {
          require(tokenIds.length > 0 && tokenIds.length <= StakingLib.MAX_BATCH, "bad batch");
          for (uint i = 0; i < tokenIds.length; i++) {
-             stake(collection, tokenIds[i], permanent);
+             _stake(collection, tokenIds[i], permanent);
          }
      }
 
@@ -198,7 +198,7 @@
      function harvestBatch(address collection, uint256[] calldata tokenIds) external nonReentrant whenNotPaused {
          require(tokenIds.length > 0 && tokenIds.length <= StakingLib.MAX_BATCH, "bad batch");
          for (uint i = 0; i < tokenIds.length; i++) {
-             harvest(collection, tokenIds[i]);
+             _harvest(collection, tokenIds[i]);
          }
      }
 
