@@ -1,0 +1,112 @@
+⚡ Catalyst Modular Architecture
+
++---------------------------------------------------+
+|              CatalystNFTStaking (Core)            |
+|---------------------------------------------------|
+| - Entry point for users                           |
+| - Handles staking/unstaking requests              |
+| - Routes to libraries & modules                   |
+| - Minimal storage: references modules             |
++---------------------------------------------------+
+        |                  |                  |
+        v                  v                  v
++----------------+  +----------------+  +----------------+
+|  StakingLib    |  | GovernanceLib  |  | ConfigRegistry |
+|----------------|  |----------------|  |----------------|
+| - NFT stake    |  | - Proposals    |  | - Fee brackets |
+| - Harvest math |  | - Voting logic |  | - Tier params  |
+| - Bookkeeping  |  | - Quorum check |  | - Cooldowns    |
++----------------+  +----------------+  +----------------+
+
+        |                  |                  
+        v                  v                  
++----------------+   +----------------+        
+|   FeeManager   |   |  ProposalExec  |        
+|----------------|   |----------------|        
+| - Split fees   |   | - Executes     |        
+|   burn/treasury|   |   proposal types|        
+| - Updatable %  |   | - Updates core |        
++----------------+   +----------------+        
+
+        |
+        v
++----------------+
+|   Treasury     |
+|----------------|
+| - Holds funds  |
+| - Deposit log  |
+| - Withdrawals  |
++----------------+
+
+
+---
+
+🔑 Breakdown
+
+1. Core (CatalystNFTStaking)
+
+Only user-facing functions: stake, unstake, harvest, propose, vote.
+
+No heavy logic inside — just routing to libs/modules.
+
+
+2. StakingLib
+
+Already lightweight. Keeps bookkeeping (stakeLog, portfolio, counters).
+
+Core just calls StakingLib.recordTermStake etc.
+
+
+3. GovernanceLib
+
+Already modular for proposals/voting.
+
+Core just passes proposals & votes in.
+
+
+4. ConfigRegistry (new)
+
+Stores parameters like fees, cooldowns, tier rules.
+
+Governance can update values here instead of redeploying main contract.
+
+Core queries values when needed.
+
+
+5. FeeManager (new)
+
+Handles _splitFeeFromSender logic.
+
+Core just says: FeeManager.split(payer, amount).
+
+Makes fee distribution upgradeable & transparent.
+
+
+6. ProposalExecutor (optional)
+
+Moves the heavy executeProposal if-else ladder outside main contract.
+
+Core only does ProposalExecutor.execute(id).
+
+
+7. Treasury (new)
+
+A dedicated contract that receives fees.
+
+Handles withdrawals with role-based access.
+
+Cuts down bookkeeping in main contract.
+
+
+
+---
+
+📉 Benefits
+
+Lower deployment size → Main contract shrinks drastically.
+
+Upgradeable modules → Replace just FeeManager or Treasury without touching staking.
+
+Cleaner separation of concerns → Each contract has one job.
+
+Future flexibility → Governance can approve upgrades to Config, Fee rules, etc.
