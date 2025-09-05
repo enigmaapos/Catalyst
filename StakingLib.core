@@ -241,11 +241,16 @@ library StakingLib {
     ) internal returns (uint256 reward, uint256 burnAmt) {
         reward = pendingRewards(s, collection, user, tokenId, cfg);
         if (reward == 0) return (0, 0);
-        uint256 feeRate = cfg.getDynamicHarvestBurnFeeRate(s.baseRewardRate);
+
+        // ✅ FIXED: call library function properly
+        uint256 feeRate = ConfigRegistryLib.getDynamicHarvestBurnFeeRate(cfg, s.baseRewardRate);
+
         burnAmt = (reward * feeRate) / 100;
+
         // update lastHarvest
         StakeInfo storage info = s.stakeLog[collection][user][tokenId];
         info.lastHarvestBlock = block.number;
+
         return (reward, burnAmt);
     }
 
