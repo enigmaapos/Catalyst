@@ -344,7 +344,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     }
 
     function executeProposal(bytes32 id) external whenNotPaused nonReentrant {
-        GovernanceLib.Proposal memory p = GovernanceLib.validateAndMarkExecuted(g, id);
+        GovernanceLib.Proposal memory p = GovernanceLib.validateForExecution(g, id);
         GovernanceLib.markExecuted(g, id);
 
         if (p.pType == GovernanceLib.ProposalType.BASE_REWARD) {
