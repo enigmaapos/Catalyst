@@ -1,60 +1,72 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "./GovernanceLib.sol";
 import "./ConfigRegistryLib.sol";
 import "./StakingLib.sol";
 
 library ProposalExecutorLib {
-    /// @notice Execution context stored in main contract storage
-    struct ExecContext {
-        // proposals and their status
-        mapping(bytes32 => bool) executed;
-        mapping(bytes32 => address) targets;
-        mapping(bytes32 => bytes) payloads;
-        mapping(bytes32 => uint256) values;
-    }
-
-    /// @notice Execute a governance proposal
-    /// @dev Uses `storage` instead of `memory` because mappings cannot exist in memory
+    /// @notice Execute a governance proposal using storage references
     function _execute(
-        ExecContext storage ctx,
+        address /* _coreAddr */, // kept for future use, silences unused warning
+        GovernanceLib.Storage storage governance,
+        ConfigRegistryLib.ConfigStorage storage config,
+        StakingLib.Storage storage staking,
         bytes32 id
     ) internal {
-        require(!ctx.executed[id], "already executed");
+        GovernanceLib.Proposal storage p = governance.proposals[id];
+        require(p.startBlock != 0, "not found");
+        require(block.number > p.endBlock, "voting");
+        require(!p.executed, "executed");
+        require(p.votesScaled >= governance.minVotesRequiredScaled, "quorum");
 
-        address target = ctx.targets[id];
-        bytes memory payload = ctx.payloads[id];
-        uint256 value = ctx.values[id];
+        if (p.pType == GovernanceLib.ProposalType.BASE_REWARD) {
+            staking.baseRewardRate = p.newValue;
+        } else if (p.pType == GovernanceLib.ProposalType.HARVEST_FEE) {
+            require(p.newValue <= 100, "fee>100");
+            config.initialHarvestBurnFeeRate = p.newValue;
+        } else if (p.pType == GovernanceLib.ProposalType.UNSTAKE_FEE) {
+            config.unstakeFee = p.newValue;
+        } else if (p.pType == GovernanceLib.ProposalType.REGISTRATION_FEE_FALLBACK) {
+            config.collectionRegistrationFee = p.newValue;
+        } else if (p.pType == GovernanceLib.ProposalType.VOTING_PARAM) {
+            uint8 t = p.paramTarget;
+            if (t == 0) governance.minVotesRequiredScaled = p.newValue;
+            else if (t == 1) governance.votingDurationBlocks = p.newValue;
+            else if (t == 2) governance.smallCollectionVoteWeightScaled = p.newValue;
+            else if (t == 3) config.minBurnContributionForVote = p.newValue;
+            else if (t == 5) config.numberOfBlocksPerRewardUnit = p.newValue;
+            else if (t == 6) governance.collectionVoteCapPercent = p.newValue;
+            else if (t == 7) governance.minStakeAgeForVoting = p.newValue;
+            else if (t == 9) config.tierProposalCooldownBlocks = p.newValue;
+            else revert("unknown target");
+        } else if (p.pType == GovernanceLib.ProposalType.TIER_UPGRADE) {
+            address c = p.collectionAddress;
+            require(_eligibleForTierUpgrade(staking, config, c), "prereq fail");
+            StakingLib.CollectionMeta storage m = staking.collectionMeta[c];
+            require(m.tier == ConfigRegistryLib.CollectionTier.UNVERIFIED, "already verified");
+            m.tier = ConfigRegistryLib.CollectionTier.VERIFIED;
 
-        require(target != address(0), "no target");
+            // Optional: handle escrow refund externally in core
+            // uint256 refund = m.surchargeEscrow; 
+            m.surchargeEscrow = 0;
+        } else {
+            revert("unknown proposal");
+        }
 
-        // mark as executed
-        ctx.executed[id] = true;
-
-        // perform call
-        (bool ok, bytes memory res) = target.call{value: value}(payload);
-        require(ok, string(res));
+        p.executed = true;
     }
 
-    /// @notice Store a proposal execution plan
-    function _storeProposal(
-        ExecContext storage ctx,
-        bytes32 id,
-        address target,
-        bytes memory payload,
-        uint256 value
-    ) internal {
-        require(ctx.targets[id] == address(0), "proposal exists");
-        ctx.targets[id] = target;
-        ctx.payloads[id] = payload;
-        ctx.values[id] = value;
-    }
-
-    /// @notice Check if a proposal has been executed
-    function _isExecuted(
-        ExecContext storage ctx,
-        bytes32 id
+    function _eligibleForTierUpgrade(
+        StakingLib.Storage storage s,
+        ConfigRegistryLib.ConfigStorage storage cfg,
+        address collection
     ) internal view returns (bool) {
-        return ctx.executed[id];
+        StakingLib.CollectionMeta memory m = s.collectionMeta[collection];
+        if (m.tier != ConfigRegistryLib.CollectionTier.UNVERIFIED) return false;
+        if (block.number < m.registeredAtBlock + cfg.tierUpgradeMinAgeBlocks) return false;
+        if (s.burnedCatalystByCollection[collection] < cfg.tierUpgradeMinBurn) return false;
+        if (s.collectionConfigs[collection].totalStakers < cfg.tierUpgradeMinStakers) return false;
+        return true;
     }
 }
