@@ -18,13 +18,13 @@ NOTES:
 - The contract assumes CATA is the ERC20 token represented by this ERC20 contract (the contract is its own token).
 */
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC20/ERC20.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/access/AccessControl.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC721/IERC721Receiver.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/security/ReentrancyGuard.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC721/IERC721.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/security/Pausable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC20/IERC20.sol";
 
 interface IOwnable {
     function owner() external view returns (address);
@@ -41,9 +41,6 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
    // ---------- Internal Treasury Vault ----------
     uint256 public treasuryBalance; // tracks total treasury funds held by this contract
-
-    event TreasuryDeposit(address indexed from, uint256 amount);
-    event TreasuryWithdrawal(address indexed to, uint256 amount);
 
     // ---------- Constants ----------
     uint256 public constant WEIGHT_SCALE = 1e18;
@@ -201,8 +198,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
     event AdminAdded(address indexed admin);
     event AdminRemoved(address indexed admin);
-    event Paused(address indexed account);
-    event Unpaused(address indexed account);
+    
 
     event BaseRewardRateUpdated(uint256 oldValue, uint256 newValue);
     event HarvestFeeUpdated(uint256 oldValue, uint256 newValue);
