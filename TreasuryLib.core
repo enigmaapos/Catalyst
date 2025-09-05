@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: MIT
+ pragma solidity ^0.8.20;
+
+ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+ library TreasuryLib {
+     event TreasuryDeposit(address indexed from, uint256 amount);
+     event TreasuryWithdrawal(address indexed to, uint256 amount);
+
+     struct TreasuryState {
+         uint256 balance;
+     }
+
+     // deposit adds to internal accounting; token transfers should be performed by core
+     function _deposit(TreasuryState storage t, uint256 amount) internal {
+         require(amount > 0, "zero");
+         t.balance += amount;
+         emit TreasuryDeposit(address(this), amount);
+     }
+
+     // withdraw performs accounting & calls token.transfer (Core should call this wrapper)
+     function _withdraw(TreasuryState storage t, address to, uint256 amount, IERC20 token) internal {
+         require(amount > 0, "zero");
+         require(amount <= t.balance, "insuff");
+         t.balance -= amount;
+         require(token.transfer(to, amount), "transfer fail");
+         emit TreasuryWithdrawal(to, amount);
+     }
+ }
