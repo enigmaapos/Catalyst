@@ -243,7 +243,7 @@ library StakingLib {
         if (reward == 0) return (0, 0);
 
         // ✅ FIXED: call library function properly
-        uint256 feeRate = ConfigRegistryLib.getDynamicHarvestBurnFeeRate(cfg, s.baseRewardRate);
+		uint256 feeRate = ConfigRegistryLib.getDynamicHarvestBurnFeeRate(cfg, s.baseRewardRate);
 
         burnAmt = (reward * feeRate) / 100;
 
