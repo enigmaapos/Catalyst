@@ -1,35 +1,38 @@
 // SPDX-License-Identifier: MIT
- pragma solidity ^0.8.20;
+pragma solidity ^0.8.20;
 
- library FeeManagerLib {
-     struct FeeState {
-         uint256 treasuryBalance; // tracked in the FeeManager; core may also track in TreasuryLib
-         address deployer;
-     }
+library FeeManagerLib {
+    struct FeeState {
+        uint256 treasuryBalance;
+        address deployer;
+    }
 
-     // NOTE: This library only computes distribution amounts and updates the FeeState.treasuryBalance local accounting.
-     // Actual token burns and transfers must be performed by Core using the returned values.
+    struct SplitResult {
+        uint256 burnAmount;
+        uint256 treasuryAmount;
+        uint256 deployerAmount;
+    }
 
-     struct SplitResult {
-         uint256 burnAmount;
-         uint256 treasuryAmount;
-         uint256 deployerAmount;
-     }
+    // compute immutable split and update treasury accounting
+    function computeSplit(FeeState storage fs, uint256 amount) internal returns (SplitResult memory) {
+        require(amount > 0, "zero amt");
+        uint256 burnAmt = (amount * 9000) / 10000;
+        uint256 treasuryAmt = (amount * 900) / 10000;
+        uint256 deployerAmt = amount - burnAmt - treasuryAmt;
 
-     // compute immutable split and update treasury accounting
-     function computeSplit(FeeState storage fs, uint256 amount) internal returns (SplitResult memory) {
-         require(amount > 0, "zero amt");
-         uint256 burnAmt = (amount * 9000) / 10000;
-         uint256 treasuryAmt = (amount * 900) / 10000;
-         uint256 deployerAmt = amount - burnAmt - treasuryAmt;
-         fs.treasuryBalance += treasuryAmt;
-         return SplitResult({ burnAmount: burnAmt, treasuryAmount: treasuryAmt, deployerAmount: deployerAmt });
-     }
+        fs.treasuryBalance += treasuryAmt;
 
-     // convenience that returns components but does not do token transfers
-     function calcSplit(FeeState storage fs, uint256 amount) internal view returns (uint256 burnAmt, uint256 treasuryAmt, uint256 deployerAmt) {
-         burnAmt = (amount * 9000) / 10000;
-         treasuryAmt = (amount * 900) / 10000;
-         deployerAmt = amount - burnAmt - treasuryAmt;
-     }
- }
+        return SplitResult({
+            burnAmount: burnAmt,
+            treasuryAmount: treasuryAmt,
+            deployerAmount: deployerAmt
+        });
+    }
+
+    // pure helper – no storage access
+    function calcSplit(uint256 amount) internal pure returns (uint256 burnAmt, uint256 treasuryAmt, uint256 deployerAmt) {
+        burnAmt = (amount * 9000) / 10000;
+        treasuryAmt = (amount * 900) / 10000;
+        deployerAmt = amount - burnAmt - treasuryAmt;
+    }
+}
