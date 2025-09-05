@@ -5,8 +5,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -23,15 +23,14 @@ contract CatalystNFTStakingCore is
     ERC20Upgradeable,
     AccessControlUpgradeable,
     UUPSUpgradeable,
-    ReentrancyGuard,
-    Pausable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
     IERC721Receiver
 {
     using StakingLib for StakingLib.Storage;
     using GovernanceLib for GovernanceLib.Storage;
     using ConfigRegistryLib for ConfigRegistryLib.ConfigStorage;
     using FeeManagerLib for FeeManagerLib.FeeState;
-    using ProposalExecutorLib for ProposalExecutorLib.ExecContext;
     using TreasuryLib for TreasuryLib.TreasuryState;
 
     // roles
@@ -78,6 +77,8 @@ contract CatalystNFTStakingCore is
         __ERC20_init("Catalyst", "CATA");
         __AccessControl_init();
         __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
+        __Pausable_init();
 
         // initial mint to owner (same as merged)
         _mint(cfg.owner, 25_185_000 * 10**18);
@@ -96,7 +97,6 @@ contract CatalystNFTStakingCore is
         config.initialHarvestBurnFeeRate = cfg.initialHarvestBurnFeeRate;
         config.termDurationBlocks = cfg.termDurationBlocks;
         config.collectionRegistrationFee = cfg.collectionRegistrationFeeFallback;
-        // <-- fix: match ConfigRegistry field name
         config.unstakeFee = cfg.unstakeBurnFee;
         config.stakingCooldownBlocks = cfg.stakingCooldownBlocks;
         config.harvestRateAdjustmentFactor = cfg.harvestRateAdjustmentFactor;
@@ -293,17 +293,9 @@ contract CatalystNFTStakingCore is
         emit VoteCast(id, _msgSender(), weight, attributedCollection);
     }
 
+    // executeProposal now passes storage refs into ProposalExecutorLib
     function executeProposal(bytes32 id) external whenNotPaused nonReentrant {
-        // Note: ProposalExecutorLib's signature must match; if it expects a storage ExecContext,
-        // we will need to create and store an ExecContext in storage and pass it here.
-        // For now we try to call with minimal context (library implementation must be aligned).
-        ProposalExecutorLib.ExecContext memory ctx = ProposalExecutorLib.ExecContext({
-            core: address(this),
-            governanceStorage: governance,
-            configStorage: config,
-            stakingStorage: staking
-        });
-        ProposalExecutorLib._execute(ctx, id);
+        ProposalExecutorLib._execute(address(this), governance, config, staking, id);
         emit ProposalExecuted(id, 1);
     }
 
