@@ -39,6 +39,12 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     uint256 public constant TREASURY_BP = 900; // 9.00%
     uint256 public constant DEPLOYER_BP = 100; // 1.00%
 
+   // ---------- Internal Treasury Vault ----------
+    uint256 public treasuryBalance; // tracks total treasury funds held by this contract
+
+    event TreasuryDeposit(address indexed from, uint256 amount);
+    event TreasuryWithdrawal(address indexed to, uint256 amount);
+
     // ---------- Constants ----------
     uint256 public constant WEIGHT_SCALE = 1e18;
     uint256 public constant MAX_HARVEST_BATCH = 50;
