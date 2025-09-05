@@ -1,0 +1,171 @@
+// SPDX-License-Identifier: MIT
+ pragma solidity ^0.8.20;
+
+ import "./ConfigRegistryLib.sol";
+ import "./StakingLib.sol";
+
+ library GovernanceLib {
+     enum ProposalType {
+         BASE_REWARD,
+         HARVEST_FEE,
+         UNSTAKE_FEE,
+         REGISTRATION_FEE_FALLBACK,
+         VOTING_PARAM,
+         TIER_UPGRADE
+     }
+
+     struct Proposal {
+         ProposalType pType;
+         uint8 paramTarget;
+         uint256 newValue;
+         address collectionAddress;
+         address proposer;
+         uint256 startBlock;
+         uint256 endBlock;
+         uint256 votesScaled;
+         bool executed;
+     }
+
+     struct Storage {
+         mapping(bytes32 => Proposal) proposals;
+         mapping(bytes32 => mapping(address => bool)) hasVoted;
+         mapping(bytes32 => mapping(address => uint256)) proposalCollectionVotesScaled;
+         uint256 votingDurationBlocks;
+         uint256 minVotesRequiredScaled;
+         uint256 smallCollectionVoteWeightScaled;
+         uint256 collectionVoteCapPercent;
+         uint256 minStakeAgeForVoting;
+     }
+
+     // create proposal
+     function _createProposal(
+         Storage storage g,
+         ProposalType pType,
+         uint8 paramTarget,
+         uint256 newValue,
+         address collectionContext,
+         address proposer,
+         ConfigRegistryLib.ConfigStorage storage cfg,
+         StakingLib.Storage storage staking
+     ) internal returns (bytes32) {
+         // eligibility check — reuse logic like merged contract's _isEligibleProposer
+         require(_isEligibleProposer(g, proposer, collectionContext, staking, cfg), "not eligible proposer");
+
+         if (pType == ProposalType.TIER_UPGRADE) {
+             require(collectionContext != address(0), "collection req");
+             StakingLib.CollectionMeta storage m = staking.collectionMeta[collectionContext];
+             require(block.number >= m.lastTierProposalBlock + cfg.tierProposalCooldownBlocks, "tier cooldown");
+             m.lastTierProposalBlock = block.number;
+         }
+
+         bytes32 id = keccak256(abi.encodePacked(uint256(pType), paramTarget, newValue, collectionContext, block.number, proposer));
+         Proposal storage p = g.proposals[id];
+         require(p.startBlock == 0, "exists");
+         p.pType = pType;
+         p.paramTarget = paramTarget;
+         p.newValue = newValue;
+         p.collectionAddress = collectionContext;
+         p.proposer = proposer;
+         p.startBlock = block.number;
+         p.endBlock = block.number + g.votingDurationBlocks;
+         p.votesScaled = 0;
+         p.executed = false;
+         return id;
+     }
+
+     // cast vote
+     // returns (weight, attributedCollection)
+     function _castVote(
+         Storage storage g,
+         bytes32 id,
+         address voter,
+         StakingLib.Storage storage staking,
+         ConfigRegistryLib.ConfigStorage storage cfg
+     ) internal returns (uint256, address) {
+         Proposal storage p = g.proposals[id];
+         require(p.startBlock != 0, "not found");
+         require(block.number >= p.startBlock && block.number <= p.endBlock, "closed");
+         require(!p.executed, "executed");
+         require(!g.hasVoted[id][voter], "voted");
+
+         // compute weight using same scheme as merged contract
+         (uint256 weight, address attributed) = _votingWeight(g, voter, p.collectionAddress, staking, cfg);
+         require(weight > 0, "not eligible to vote");
+
+         // enforce collection cap
+         uint256 cap = (g.minVotesRequiredScaled * g.collectionVoteCapPercent) / 100;
+         uint256 cur = g.proposalCollectionVotesScaled[id][attributed];
+         require(cur + weight <= cap, "collection cap");
+
+         g.hasVoted[id][voter] = true;
+         p.votesScaled += weight;
+         g.proposalCollectionVotesScaled[id][attributed] = cur + weight;
+
+         return (weight, attributed);
+     }
+
+     // is eligible proposer (uses staking-based checks)
+     function _isEligibleProposer(
+         Storage storage g,
+         address user,
+         address collectionContext,
+         StakingLib.Storage storage staking,
+         ConfigRegistryLib.ConfigStorage storage cfg
+     ) internal view returns (bool) {
+         // check topCollections
+         for (uint i = 0; i < staking.topCollections.length; i++) {
+             address coll = staking.topCollections[i];
+             uint256[] storage port = staking.stakePortfolioByUser[coll][user];
+             if (port.length == 0) continue;
+             for (uint j = 0; j < port.length; j++) {
+                 StakingLib.StakeInfo storage si = staking.stakeLog[coll][user][port[j]];
+                 if (si.currentlyStaked && block.number >= si.stakeBlock + g.minStakeAgeForVoting) return true;
+             }
+         }
+         if (collectionContext != address(0) && staking.burnedCatalystByCollection[collectionContext] >= cfg.minBurnContributionForVote) {
+             uint256[] storage p = staking.stakePortfolioByUser[collectionContext][user];
+             if (p.length > 0) {
+                 for (uint k = 0; k < p.length; k++) {
+                     StakingLib.StakeInfo storage si2 = staking.stakeLog[collectionContext][user][p[k]];
+                     if (si2.currentlyStaked && block.number >= si2.stakeBlock + g.minStakeAgeForVoting) return true;
+                 }
+             }
+         }
+         return false;
+     }
+
+     // compute voting weight & attributed collection (same logic as merged)
+     function _votingWeight(
+         Storage storage g,
+         address voter,
+         address context,
+         StakingLib.Storage storage staking,
+         ConfigRegistryLib.ConfigStorage storage cfg
+     ) internal view returns (uint256 weight, address attributed) {
+         // full weight if voter has an aged stake in any top collection
+         for (uint i = 0; i < staking.topCollections.length; i++) {
+             address coll = staking.topCollections[i];
+             uint256[] storage port = staking.stakePortfolioByUser[coll][voter];
+             if (port.length == 0) continue;
+             bool oldStake = false;
+             for (uint j = 0; j < port.length; j++) {
+                 StakingLib.StakeInfo storage si = staking.stakeLog[coll][voter][port[j]];
+                 if (si.currentlyStaked && block.number >= si.stakeBlock + g.minStakeAgeForVoting) { oldStake = true; break; }
+             }
+             if (oldStake) return (1e18, coll);
+         }
+         // small weight if context has enough burn and voter has aged stake there
+         if (context != address(0) && staking.burnedCatalystByCollection[context] >= cfg.minBurnContributionForVote) {
+             uint256[] storage p = staking.stakePortfolioByUser[context][voter];
+             if (p.length > 0) {
+                 bool ok = false;
+                 for (uint k = 0; k < p.length; k++) {
+                     StakingLib.StakeInfo storage si2 = staking.stakeLog[context][voter][p[k]];
+                     if (si2.currentlyStaked && block.number >= si2.stakeBlock + g.minStakeAgeForVoting) { ok = true; break; }
+                 }
+                 if (ok) return (g.smallCollectionVoteWeightScaled, context);
+             }
+         }
+         return (0, address(0));
+     }
+ }
