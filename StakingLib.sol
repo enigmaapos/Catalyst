@@ -3,6 +3,11 @@ pragma solidity ^0.8.20;
 
 /// @notice Lightweight staking library (bookkeeping only).
 library StakingLib {
+    // Staking caps declared at the library level
+    uint256 public constant GLOBAL_CAP = 1_000_000_000;
+    uint256 public constant TERM_CAP   = 750_000_000;
+    uint256 public constant PERM_CAP   = 250_000_000;
+
     struct StakeInfo {
         uint256 stakeBlock;
         uint256 lastHarvestBlock;
@@ -19,14 +24,10 @@ library StakingLib {
     }
 
     struct Storage {
-        // Staking caps and counters
-        uint256 public constant GLOBAL_CAP = 1_000_000_000;
-        uint256 public constant TERM_CAP   = 750_000_000;
-        uint256 public constant PERM_CAP   = 250_000_000;
-        
-        uint256 public totalStakedAll;
-        uint256 public totalStakedTerm;
-        uint256 public totalStakedPermanent;
+        // Counters for staked NFTs
+        uint256 totalStakedAll;
+        uint256 totalStakedTerm;
+        uint256 totalStakedPermanent;
 
         mapping(address => CollectionConfig) collectionConfigs;
         mapping(address => mapping(address => mapping(uint256 => StakeInfo))) stakeLog;
@@ -56,9 +57,9 @@ library StakingLib {
         uint256 termDurationBlocks,
         uint256 rewardRateIncrementPerNFT
     ) internal {
-        // Cap checks for term staking
-        require(s.totalStakedAll + 1 <= s.GLOBAL_CAP, "CATA: global cap reached");
-        require(s.totalStakedTerm + 1 <= s.TERM_CAP, "CATA: term cap reached");
+        // Cap checks for term staking using the constants
+        require(s.totalStakedAll + 1 <= GLOBAL_CAP, "CATA: global cap reached");
+        require(s.totalStakedTerm + 1 <= TERM_CAP, "CATA: term cap reached");
 
         CollectionConfig storage cfg = s.collectionConfigs[collection];
         require(cfg.registered, "StakingLib: not reg");
@@ -96,9 +97,9 @@ library StakingLib {
         uint256 currentBlock,
         uint256 rewardRateIncrementPerNFT
     ) internal {
-        // Cap checks for permanent staking
-        require(s.totalStakedAll + 1 <= s.GLOBAL_CAP, "CATA: global cap reached");
-        require(s.totalStakedPermanent + 1 <= s.PERM_CAP, "CATA: perm cap reached");
+        // Cap checks for permanent staking using the constants
+        require(s.totalStakedAll + 1 <= GLOBAL_CAP, "CATA: global cap reached");
+        require(s.totalStakedPermanent + 1 <= PERM_CAP, "CATA: perm cap reached");
 
         CollectionConfig storage cfg = s.collectionConfigs[collection];
         require(cfg.registered, "StakingLib: not reg");
