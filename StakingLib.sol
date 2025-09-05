@@ -19,6 +19,15 @@ library StakingLib {
     }
 
     struct Storage {
+        // Staking caps and counters
+        uint256 public constant GLOBAL_CAP = 1_000_000_000;
+        uint256 public constant TERM_CAP   = 750_000_000;
+        uint256 public constant PERM_CAP   = 250_000_000;
+        
+        uint256 public totalStakedAll;
+        uint256 public totalStakedTerm;
+        uint256 public totalStakedPermanent;
+
         mapping(address => CollectionConfig) collectionConfigs;
         mapping(address => mapping(address => mapping(uint256 => StakeInfo))) stakeLog;
         mapping(address => mapping(address => uint256[])) stakePortfolioByUser;
@@ -47,6 +56,10 @@ library StakingLib {
         uint256 termDurationBlocks,
         uint256 rewardRateIncrementPerNFT
     ) internal {
+        // Cap checks for term staking
+        require(s.totalStakedAll + 1 <= s.GLOBAL_CAP, "CATA: global cap reached");
+        require(s.totalStakedTerm + 1 <= s.TERM_CAP, "CATA: term cap reached");
+
         CollectionConfig storage cfg = s.collectionConfigs[collection];
         require(cfg.registered, "StakingLib: not reg");
 
@@ -68,6 +81,10 @@ library StakingLib {
         s.stakePortfolioByUser[collection][staker].push(tokenId);
         s.indexOfTokenIdInStakePortfolio[collection][tokenId] = s.stakePortfolioByUser[collection][staker].length - 1;
 
+        // Increment global counters
+        s.totalStakedAll += 1;
+        s.totalStakedTerm += 1;
+
         emit InternalStakeRecorded(staker, collection, tokenId);
     }
 
@@ -79,6 +96,10 @@ library StakingLib {
         uint256 currentBlock,
         uint256 rewardRateIncrementPerNFT
     ) internal {
+        // Cap checks for permanent staking
+        require(s.totalStakedAll + 1 <= s.GLOBAL_CAP, "CATA: global cap reached");
+        require(s.totalStakedPermanent + 1 <= s.PERM_CAP, "CATA: perm cap reached");
+
         CollectionConfig storage cfg = s.collectionConfigs[collection];
         require(cfg.registered, "StakingLib: not reg");
 
@@ -99,6 +120,10 @@ library StakingLib {
 
         s.stakePortfolioByUser[collection][staker].push(tokenId);
         s.indexOfTokenIdInStakePortfolio[collection][tokenId] = s.stakePortfolioByUser[collection][staker].length - 1;
+
+        // Increment global counters
+        s.totalStakedAll += 1;
+        s.totalStakedPermanent += 1;
 
         emit InternalStakeRecorded(staker, collection, tokenId);
     }
@@ -132,6 +157,14 @@ library StakingLib {
 
         if (s.baseRewardRate >= rewardRateIncrementPerNFT) s.baseRewardRate -= rewardRateIncrementPerNFT;
         if (s.totalStakedNFTsCount > 0) s.totalStakedNFTsCount -= 1;
+
+        // Decrement global counters based on stake type
+        s.totalStakedAll -= 1;
+        if (info.isPermanent) {
+            s.totalStakedPermanent -= 1;
+        } else {
+            s.totalStakedTerm -= 1;
+        }
 
         emit InternalUnstakeRecorded(staker, collection, tokenId);
     }
