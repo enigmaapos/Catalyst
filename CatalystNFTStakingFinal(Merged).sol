@@ -210,50 +210,49 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     event TreasuryDeposit(address indexed from, uint256 amount);
     event TreasuryWithdrawal(address indexed to, uint256 amount);
 
-    // ---------- Constructor ----------
-    constructor(
-        address _owner,
-        address _treasury,
-        uint256 _initialCollectionFee,
-        uint256 _feeMultiplier,
-        uint256 _rewardRateIncrementPerNFT,
-        uint256 _welcomeBonusBaseRate,
-        uint256 _welcomeBonusIncrementPerNFT,
-        uint256 _initialHarvestBurnFeeRate,
-        uint256 _termDurationBlocks,
-        uint256 _collectionRegistrationFeeFallback,
-        uint256 _unstakeBurnFee,
-        uint256 _stakingCooldownBlocks,
-        uint256 _harvestRateAdjustmentFactor,
-        uint256 _minBurnContributionForVote
-    ) ERC20("Catalyst", "CATA") {
-        require(_owner != address(0) && _treasury != address(0), "CATA: bad addr");
+  // ---------- Constructor Config Struct ----------
+struct InitConfig {
+    address owner;
+    address treasury;
+    uint256 initialCollectionFee;
+    uint256 feeMultiplier;
+    uint256 rewardRateIncrementPerNFT;
+    uint256 welcomeBonusBaseRate;
+    uint256 welcomeBonusIncrementPerNFT;
+    uint256 initialHarvestBurnFeeRate;
+    uint256 termDurationBlocks;
+    uint256 collectionRegistrationFeeFallback;
+    uint256 unstakeBurnFee;
+    uint256 stakingCooldownBlocks;
+    uint256 harvestRateAdjustmentFactor;
+    uint256 minBurnContributionForVote;
+}
 
-        _mint(_owner, 25_185_000 * 10**18); // genesis supply to owner (adjust as desired)
+constructor(InitConfig memory cfg) ERC20("Catalyst", "CATA") {
+    require(cfg.owner != address(0) && cfg.treasury != address(0), "CATA: bad addr");
 
-        _setupRole(DEFAULT_ADMIN_ROLE, _owner);
-        _setupRole(CONTRACT_ADMIN_ROLE, _owner);
+    _mint(cfg.owner, 25_185_000 * 10**18);
 
-        // set treasuryAddress to contract itself to act as internal vault (compat)
-        treasuryAddress = address(this);
-        deployerAddress = _owner;
+    _grantRole(DEFAULT_ADMIN_ROLE, cfg.owner);
+    _grantRole(CONTRACT_ADMIN_ROLE, cfg.owner);
 
-        initialCollectionFee = _initialCollectionFee;
-        feeMultiplier = _feeMultiplier;
-        rewardRateIncrementPerNFT = _rewardRateIncrementPerNFT;
-        welcomeBonusBaseRate = _welcomeBonusBaseRate;
-        welcomeBonusIncrementPerNFT = _welcomeBonusIncrementPerNFT;
-        initialHarvestBurnFeeRate = _initialHarvestBurnFeeRate;
-        termDurationBlocks = _termDurationBlocks;
-        collectionRegistrationFee = _collectionRegistrationFeeFallback;
-        unstakeBurnFee = _unstakeBurnFee;
-        stakingCooldownBlocks = _stakingCooldownBlocks;
-        harvestRateAdjustmentFactor = _harvestRateAdjustmentFactor;
-        minBurnContributionForVote = _minBurnContributionForVote;
+    treasuryAddress = address(this);
+    deployerAddress = cfg.owner;
 
-        deployerAddress = _owner;
-    }
-
+    initialCollectionFee = cfg.initialCollectionFee;
+    feeMultiplier = cfg.feeMultiplier;
+    rewardRateIncrementPerNFT = cfg.rewardRateIncrementPerNFT;
+    welcomeBonusBaseRate = cfg.welcomeBonusBaseRate;
+    welcomeBonusIncrementPerNFT = cfg.welcomeBonusIncrementPerNFT;
+    initialHarvestBurnFeeRate = cfg.initialHarvestBurnFeeRate;
+    termDurationBlocks = cfg.termDurationBlocks;
+    collectionRegistrationFee = cfg.collectionRegistrationFeeFallback;
+    unstakeBurnFee = cfg.unstakeBurnFee;
+    stakingCooldownBlocks = cfg.stakingCooldownBlocks;
+    harvestRateAdjustmentFactor = cfg.harvestRateAdjustmentFactor;
+    minBurnContributionForVote = cfg.minBurnContributionForVote;
+}
+    
     // ---------- Modifiers ----------
     modifier notInCooldown() {
         require(block.number >= lastStakingBlock[_msgSender()] + stakingCooldownBlocks, "CATA: cooldown");
