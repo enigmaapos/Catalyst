@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+/// @notice CatalystNFTStakingUpgradeable: lean + GCSS (Deployer 7:4) + AGC (Admin 5:3)
+/// @dev Assumes StakingLib and GovernanceLib are available with the expected API.
 import "./StakingLib.sol";
 import "./GovernanceLib.sol";
 
@@ -14,7 +16,6 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-/// @title CatalystNFTStakingUpgradeable (condensed, guardian councils + AGC)
 contract CatalystNFTStakingUpgradeable is
     Initializable,
     UUPSUpgradeable,
@@ -26,29 +27,40 @@ contract CatalystNFTStakingUpgradeable is
 {
     using StakingLib for StakingLib.Storage;
 
-    // -------- Custom errors (compact) --------
-    error ZeroAddr();
-    error InsufficientBalance();
+    // ----------------------------
+    // Custom errors (compact)
+    // ----------------------------
+    error ZeroAddress();
+    error Insufficient();
     error NotRegistered();
     error AlreadyStaked();
     error NotStaked();
-    error TermActive();
+    error TermNotExpired();
     error CooldownActive();
-    error BatchSize();
+    error BadBatch();
     error Ineligible();
-    error AlreadyVoted();
+    error AlreadyApproved();
     error NoActiveRequest();
     error RequestExpired();
     error ThresholdNotMet();
     error Unauthorized();
-    error TransferFailed();
+    error TransferFail();
     error FeeTooHigh();
     error ExceedsCap();
 
-    // -------- Roles --------
+    // ----------------------------
+    // Roles
+    // ----------------------------
     bytes32 public constant CONTRACT_ADMIN_ROLE = keccak256("CONTRACT_ADMIN_ROLE");
 
-    // -------- Constants --------
+    // ----------------------------
+    // Tiers (local enum)
+    // ----------------------------
+    enum CollectionTier { UNVERIFIED, VERIFIED }
+
+    // ----------------------------
+    // Fee split & constants
+    // ----------------------------
     uint256 public constant BURN_BP = 9000;
     uint256 public constant TREASURY_BP = 900;
     uint256 public constant DEPLOYER_BP = 100;
@@ -57,18 +69,20 @@ contract CatalystNFTStakingUpgradeable is
     uint256 public constant MAX_HARVEST_BATCH = 50;
     uint256 public constant MAX_STAKE_PER_COLLECTION = 20000;
 
-    // Guardian sizes & thresholds
-    uint8 public constant DEPLOYER_GUARDIANS_COUNT = 7;
-    uint8 public constant DEPLOYER_RECOVERY_THRESHOLD = 4; // 4-of-7
+    // Staking caps (must match StakingLib constants)
+    uint256 public constant GLOBAL_CAP = 1_000_000_000;
+    uint256 public constant TERM_CAP   = 750_000_000;
+    uint256 public constant PERM_CAP   = 250_000_000;
 
-    uint8 public constant ADMIN_GUARDIANS_COUNT = 5;
-    uint8 public constant ADMIN_RECOVERY_THRESHOLD = 3; // 3-of-5 (AGC)
-
-    // -------- Storage (libs) --------
+    // ----------------------------
+    // Libraries' storage
+    // ----------------------------
     StakingLib.Storage internal s;
     GovernanceLib.Storage internal g;
 
-    // -------- Params (condensed) --------
+    // ----------------------------
+    // Protocol params (condensed)
+    // ----------------------------
     uint256 public numberOfBlocksPerRewardUnit;
     uint256 public collectionRegistrationFee;
     uint256 public unstakeBurnFee;
@@ -85,15 +99,16 @@ contract CatalystNFTStakingUpgradeable is
     uint256 public welcomeBonusBaseRate;
     uint256 public welcomeBonusIncrementPerNFT;
 
-    // registration fee brackets (kept as public for frontend)
+    // registration fee brackets (kept public)
     uint256 public SMALL_MIN_FEE;
     uint256 public SMALL_MAX_FEE;
     uint256 public MED_MIN_FEE;
     uint256 public MED_MAX_FEE;
     uint256 public LARGE_MIN_FEE;
     uint256 public LARGE_MAX_FEE_CAP;
+    uint256 public unverifiedSurchargeBP;
 
-    // other config
+    // governance state helpers
     uint256 public minStakeAgeForVoting;
     uint256 public maxBaseRewardRate;
 
@@ -107,57 +122,73 @@ contract CatalystNFTStakingUpgradeable is
     mapping(address => bool) public isParticipating;
     address[] public participatingWallets;
 
-    // internal treasury accounting
+    // treasury accounting
     uint256 public treasuryBalance;
 
     // staking cooldown
     mapping(address => uint256) public lastStakingBlock;
 
-    // deployer address (receives deployer BP)
-    address public deployerAddress;
+    // ----------------------------
+    // Deployer & Admin addresses
+    // ----------------------------
+    address public deployerAddress; // receives deployer BP
 
-    // -------- Guardian Councils --------
-    // Deployer guardians (fixed-size array of 7)
-    address[DEPLOYER_GUARDIANS_COUNT] public deployerGuardians;
+    // ----------------------------
+    // Guardian Councils
+    // ----------------------------
+    uint8 public constant DEPLOYER_GCOUNT = 7;
+    uint8 public constant DEPLOYER_THRESHOLD = 4; // 4-of-7
+
+    uint8 public constant ADMIN_GCOUNT = 5;
+    uint8 public constant ADMIN_THRESHOLD = 3; // 3-of-5 (AGC)
+
+    // deployer guardians (fixed-length array)
+    address[DEPLOYER_GCOUNT] public deployerGuardians;
     mapping(address => bool) public isDeployerGuardian;
 
-    // Admin Guardian Council (AGC) - fixed-size array of 5
-    address[ADMIN_GUARDIANS_COUNT] public adminGuardians;
+    // admin guardians (AGC)
+    address[ADMIN_GCOUNT] public adminGuardians;
     mapping(address => bool) public isAdminGuardian;
 
-    // Single active recovery request per type (simple, auditable)
+    // Recovery request structures (single active request per type)
     struct RecoveryRequest {
-        address proposed;   // proposed new address (deployer or admin)
+        address proposed;
         uint8 approvals;
-        uint256 deadline;   // timestamp expiry
+        uint256 deadline;
         bool executed;
     }
 
-    RecoveryRequest public activeDeployerRecovery;
-    mapping(address => bool) public hasApprovedDeployer;
+    RecoveryRequest public deployerRecovery;
+    mapping(address => bool) public deployerHasApproved;
 
-    RecoveryRequest public activeAdminRecovery;
-    mapping(address => bool) public hasApprovedAdmin;
+    RecoveryRequest public adminRecovery;
+    mapping(address => bool) public adminHasApproved;
 
     uint256 public constant RECOVERY_WINDOW = 3 days;
 
-    // -------- Events --------
+    // ----------------------------
+    // Events
+    // ----------------------------
+    event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 baseFee, uint256 surcharge, CollectionTier tier);
     event NFTStaked(address indexed owner, address indexed collection, uint256 indexed tokenId, bool permanent);
     event NFTUnstaked(address indexed owner, address indexed collection, uint256 indexed tokenId);
     event RewardsHarvested(address indexed owner, address indexed collection, uint256 payout, uint256 burned);
-    event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 baseFee, uint256 surcharge, ConfigRegistryLib.CollectionTier tier);
+    event TreasuryDeposit(address indexed from, uint256 amount);
+    event TreasuryWithdrawal(address indexed to, uint256 amount);
 
-    event DeployerRecoveryProposed(address indexed proposer, address proposed, uint256 deadline);
+    event DeployerRecoveryProposed(address indexed guardian, address proposed, uint256 deadline);
     event DeployerRecoveryApproved(address indexed guardian, uint8 approvals);
     event DeployerRecovered(address indexed oldDeployer, address indexed newDeployer);
 
-    event AdminRecoveryProposed(address indexed proposer, address proposed, uint256 deadline);
+    event AdminRecoveryProposed(address indexed guardian, address proposed, uint256 deadline);
     event AdminRecoveryApproved(address indexed guardian, uint8 approvals);
-    event AdminRecovered(address indexed oldAdmin, address indexed newAdmin);
+    event AdminRecovered(address indexed newAdmin);
 
     event GuardianSet(bytes32 indexed council, uint8 index, address guardian);
 
-    // -------- Initializer --------
+    // ----------------------------
+    // Initializer
+    // ----------------------------
     struct InitConfig {
         address owner;
         uint256 initialCollectionFee;
@@ -175,13 +206,12 @@ contract CatalystNFTStakingUpgradeable is
         uint256 votingDurationBlocks;
         uint256 minVotesRequiredScaled;
         uint256 collectionVoteCapPercent;
-        // guardians
-        address[DEPLOYER_GUARDIANS_COUNT] deployerGuardians;
-        address[ADMIN_GUARDIANS_COUNT] adminGuardians;
+        address[DEPLOYER_GCOUNT] deployerGuardians;
+        address[ADMIN_GCOUNT] adminGuardians;
     }
 
     function initialize(InitConfig calldata cfg) public initializer {
-        if (cfg.owner == address(0)) revert ZeroAddr();
+        if (cfg.owner == address(0)) revert ZeroAddress();
 
         __ERC20_init("Catalyst", "CATA");
         __AccessControl_init();
@@ -195,8 +225,8 @@ contract CatalystNFTStakingUpgradeable is
         _grantRole(CONTRACT_ADMIN_ROLE, cfg.owner);
 
         // params
-        treasuryAddress = address(this);
         deployerAddress = cfg.owner;
+        treasuryAddress = address(this);
 
         initialCollectionFee = cfg.initialCollectionFee;
         feeMultiplier = cfg.feeMultiplier;
@@ -212,10 +242,11 @@ contract CatalystNFTStakingUpgradeable is
         minBurnContributionForVote = cfg.minBurnContributionForVote;
 
         numberOfBlocksPerRewardUnit = 18782;
+
         SMALL_MIN_FEE = 1000 * 10**18;
         SMALL_MAX_FEE = 5000 * 10**18;
-        MED_MIN_FEE = 5000 * 10**18;
-        MED_MAX_FEE = 10000 * 10**18;
+        MED_MIN_FEE   = 5000 * 10**18;
+        MED_MAX_FEE   = 10000 * 10**18;
         LARGE_MIN_FEE = 10000 * 10**18;
         LARGE_MAX_FEE_CAP = 20000 * 10**18;
         unverifiedSurchargeBP = 20000;
@@ -223,18 +254,17 @@ contract CatalystNFTStakingUpgradeable is
         minStakeAgeForVoting = 100;
         maxBaseRewardRate = type(uint256).max;
 
-        // governance lib init
         GovernanceLib.initGov(g, cfg.votingDurationBlocks, cfg.minVotesRequiredScaled, cfg.collectionVoteCapPercent);
 
         // seed deployer guardians
-        for (uint8 i = 0; i < DEPLOYER_GUARDIANS_COUNT; ++i) {
+        for (uint8 i = 0; i < DEPLOYER_GCOUNT; ++i) {
             address a = cfg.deployerGuardians[i];
             deployerGuardians[i] = a;
             if (a != address(0)) isDeployerGuardian[a] = true;
             emit GuardianSet(keccak256("DEPLOYER"), i, a);
         }
-        // seed admin guardians (AGC)
-        for (uint8 j = 0; j < ADMIN_GUARDIANS_COUNT; ++j) {
+        // seed admin guardians
+        for (uint8 j = 0; j < ADMIN_GCOUNT; ++j) {
             address a = cfg.adminGuardians[j];
             adminGuardians[j] = a;
             if (a != address(0)) isAdminGuardian[a] = true;
@@ -242,9 +272,11 @@ contract CatalystNFTStakingUpgradeable is
         }
     }
 
-    // -------- Guardian setters (admin only) --------
+    // ----------------------------
+    // Guardian management (admin-only setters)
+    // ----------------------------
     function setDeployerGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (idx >= DEPLOYER_GUARDIANS_COUNT) revert ZeroAddr();
+        if (idx >= DEPLOYER_GCOUNT) revert Unauthorized();
         address old = deployerGuardians[idx];
         if (old != address(0)) isDeployerGuardian[old] = false;
         deployerGuardians[idx] = guardian;
@@ -253,7 +285,7 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     function setAdminGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (idx >= ADMIN_GUARDIANS_COUNT) revert ZeroAddr();
+        if (idx >= ADMIN_GCOUNT) revert Unauthorized();
         address old = adminGuardians[idx];
         if (old != address(0)) isAdminGuardian[old] = false;
         adminGuardians[idx] = guardian;
@@ -261,49 +293,50 @@ contract CatalystNFTStakingUpgradeable is
         emit GuardianSet(keccak256("ADMIN"), idx, guardian);
     }
 
-    // -------- Recovery flows (deployer) --------
+    // ----------------------------
+    // Deployer recovery (7 guardians, 4 approvals)
+    // ----------------------------
     function proposeDeployerRecovery(address newDeployer) external whenNotPaused {
         if (!isDeployerGuardian[_msgSender()]) revert Unauthorized();
-        if (newDeployer == address(0)) revert ZeroAddr();
+        if (newDeployer == address(0)) revert ZeroAddress();
 
-        activeDeployerRecovery = RecoveryRequest({ proposed: newDeployer, approvals: 0, deadline: block.timestamp + RECOVERY_WINDOW, executed: false });
+        // reset + create new request
+        deployerRecovery = RecoveryRequest({ proposed: newDeployer, approvals: 0, deadline: block.timestamp + RECOVERY_WINDOW, executed: false });
 
-        // reset approvals mapping (iterate guardians to clear flags) - small loop
-        for (uint8 i = 0; i < DEPLOYER_GUARDIANS_COUNT; ++i) {
+        // clear approvals
+        for (uint8 i = 0; i < DEPLOYER_GCOUNT; ++i) {
             address gaddr = deployerGuardians[i];
-            if (gaddr != address(0)) hasApprovedDeployer[gaddr] = false;
+            if (gaddr != address(0)) deployerHasApproved[gaddr] = false;
         }
 
-        emit DeployerRecoveryProposed(_msgSender(), newDeployer, activeDeployerRecovery.deadline);
+        emit DeployerRecoveryProposed(_msgSender(), newDeployer, deployerRecovery.deadline);
     }
 
     function approveDeployerRecovery() external whenNotPaused {
         if (!isDeployerGuardian[_msgSender()]) revert Unauthorized();
-        if (activeDeployerRecovery.proposed == address(0)) revert NoActiveRequest();
-        if (activeDeployerRecovery.executed) revert AlreadyVoted();
-        if (block.timestamp > activeDeployerRecovery.deadline) revert RequestExpired();
-        if (hasApprovedDeployer[_msgSender()]) revert AlreadyVoted();
+        if (deployerRecovery.proposed == address(0)) revert NoActiveRequest();
+        if (deployerRecovery.executed) revert AlreadyApproved();
+        if (block.timestamp > deployerRecovery.deadline) revert RequestExpired();
+        if (deployerHasApproved[_msgSender()]) revert AlreadyApproved();
 
-        hasApprovedDeployer[_msgSender()] = true;
-        activeDeployerRecovery.approvals += 1;
-
-        emit DeployerRecoveryApproved(_msgSender(), activeDeployerRecovery.approvals);
+        deployerHasApproved[_msgSender()] = true;
+        deployerRecovery.approvals += 1;
+        emit DeployerRecoveryApproved(_msgSender(), deployerRecovery.approvals);
     }
 
     function executeDeployerRecovery() external whenNotPaused {
-        if (activeDeployerRecovery.proposed == address(0)) revert NoActiveRequest();
-        if (activeDeployerRecovery.executed) revert AlreadyVoted();
-        if (block.timestamp > activeDeployerRecovery.deadline) revert RequestExpired();
-        if (activeDeployerRecovery.approvals < DEPLOYER_RECOVERY_THRESHOLD) revert ThresholdNotMet();
+        if (deployerRecovery.proposed == address(0)) revert NoActiveRequest();
+        if (deployerRecovery.executed) revert AlreadyApproved();
+        if (block.timestamp > deployerRecovery.deadline) revert RequestExpired();
+        if (deployerRecovery.approvals < DEPLOYER_THRESHOLD) revert ThresholdNotMet();
 
         address old = deployerAddress;
-        deployerAddress = activeDeployerRecovery.proposed;
-        activeDeployerRecovery.executed = true;
+        deployerAddress = deployerRecovery.proposed;
+        deployerRecovery.executed = true;
 
-        // optionally remove old deployer if it was guardian
+        // remove old from guardians if present (optional safety)
         if (isDeployerGuardian[old]) {
-            // remove from array
-            for (uint8 i = 0; i < DEPLOYER_GUARDIANS_COUNT; ++i) {
+            for (uint8 i = 0; i < DEPLOYER_GCOUNT; ++i) {
                 if (deployerGuardians[i] == old) {
                     isDeployerGuardian[old] = false;
                     deployerGuardians[i] = address(0);
@@ -316,62 +349,65 @@ contract CatalystNFTStakingUpgradeable is
         emit DeployerRecovered(old, deployerAddress);
     }
 
-    // -------- Recovery flows (admin / AGC) --------
-    // AGC can propose to transfer DEFAULT_ADMIN_ROLE to a new address (protects upgrade & role management)
+    // ----------------------------
+    // Admin recovery (AGC 5 guardians, 3 approvals)
+    // ----------------------------
     function proposeAdminRecovery(address newAdmin) external whenNotPaused {
         if (!isAdminGuardian[_msgSender()]) revert Unauthorized();
-        if (newAdmin == address(0)) revert ZeroAddr();
+        if (newAdmin == address(0)) revert ZeroAddress();
 
-        activeAdminRecovery = RecoveryRequest({ proposed: newAdmin, approvals: 0, deadline: block.timestamp + RECOVERY_WINDOW, executed: false });
+        adminRecovery = RecoveryRequest({ proposed: newAdmin, approvals: 0, deadline: block.timestamp + RECOVERY_WINDOW, executed: false });
 
-        for (uint8 i = 0; i < ADMIN_GUARDIANS_COUNT; ++i) {
+        for (uint8 i = 0; i < ADMIN_GCOUNT; ++i) {
             address gaddr = adminGuardians[i];
-            if (gaddr != address(0)) hasApprovedAdmin[gaddr] = false;
+            if (gaddr != address(0)) adminHasApproved[gaddr] = false;
         }
 
-        emit AdminRecoveryProposed(_msgSender(), newAdmin, activeAdminRecovery.deadline);
+        emit AdminRecoveryProposed(_msgSender(), newAdmin, adminRecovery.deadline);
     }
 
     function approveAdminRecovery() external whenNotPaused {
         if (!isAdminGuardian[_msgSender()]) revert Unauthorized();
-        if (activeAdminRecovery.proposed == address(0)) revert NoActiveRequest();
-        if (activeAdminRecovery.executed) revert AlreadyVoted();
-        if (block.timestamp > activeAdminRecovery.deadline) revert RequestExpired();
-        if (hasApprovedAdmin[_msgSender()]) revert AlreadyVoted();
+        if (adminRecovery.proposed == address(0)) revert NoActiveRequest();
+        if (adminRecovery.executed) revert AlreadyApproved();
+        if (block.timestamp > adminRecovery.deadline) revert RequestExpired();
+        if (adminHasApproved[_msgSender()]) revert AlreadyApproved();
 
-        hasApprovedAdmin[_msgSender()] = true;
-        activeAdminRecovery.approvals += 1;
-
-        emit AdminRecoveryApproved(_msgSender(), activeAdminRecovery.approvals);
+        adminHasApproved[_msgSender()] = true;
+        adminRecovery.approvals += 1;
+        emit AdminRecoveryApproved(_msgSender(), adminRecovery.approvals);
     }
 
     function executeAdminRecovery() external whenNotPaused {
-        if (activeAdminRecovery.proposed == address(0)) revert NoActiveRequest();
-        if (activeAdminRecovery.executed) revert AlreadyVoted();
-        if (block.timestamp > activeAdminRecovery.deadline) revert RequestExpired();
-        if (activeAdminRecovery.approvals < ADMIN_RECOVERY_THRESHOLD) revert ThresholdNotMet();
+        if (adminRecovery.proposed == address(0)) revert NoActiveRequest();
+        if (adminRecovery.executed) revert AlreadyApproved();
+        if (block.timestamp > adminRecovery.deadline) revert RequestExpired();
+        if (adminRecovery.approvals < ADMIN_THRESHOLD) revert ThresholdNotMet();
 
-        // change DEFAULT_ADMIN_ROLE: grant to new, then revoke from old admin(s)
-        address newAdmin = activeAdminRecovery.proposed;
+        // grant DEFAULT_ADMIN_ROLE to proposed address
+        _grantRole(DEFAULT_ADMIN_ROLE, adminRecovery.proposed);
+        adminRecovery.executed = true;
 
-        // fetch current admin members (we can't enumerate easily without extension, but we can revoke role from caller if needed)
-        // We'll grant role to newAdmin and rely on existing admin holder(s) to revoke themselves or the contract owner to revoke old ones.
-        _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
-
-        activeAdminRecovery.executed = true;
-
-        emit AdminRecovered(newAdmin, newAdmin);
+        emit AdminRecovered(adminRecovery.proposed);
     }
 
-    // -------- Staking wrappers (lean) --------
-    function stake(address collection, uint256 tokenId, bool permanent) external nonReentrant whenNotPaused {
-        if (collection == address(0)) revert ZeroAddr();
+    // ----------------------------
+    // Staking (lean wrappers)
+    // ----------------------------
+    modifier notInCooldown() {
+        if (block.number < lastStakingBlock[_msgSender()] + stakingCooldownBlocks) revert CooldownActive();
+        _;
+    }
+
+    function stake(address collection, uint256 tokenId, bool permanent) public nonReentrant whenNotPaused notInCooldown {
+        if (collection == address(0)) revert ZeroAddress();
+        // transfer NFT to this contract
         IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
 
         if (permanent) {
-            // fee collection for permanent stake (dynamic)
+            // compute dynamic permanent stake fee
             uint256 fee = initialCollectionFee + (StakingLib.sqrt(s.totalStakedNFTsCount) * feeMultiplier);
-            if (balanceOf(_msgSender()) < fee) revert InsufficientBalance();
+            if (balanceOf(_msgSender()) < fee) revert Insufficient();
             _splitFeeFromSender(_msgSender(), fee);
             s.recordPermanentStake(collection, _msgSender(), tokenId, block.number, rewardRateIncrementPerNFT);
             emit NFTStaked(_msgSender(), collection, tokenId, true);
@@ -379,27 +415,26 @@ contract CatalystNFTStakingUpgradeable is
             s.recordTermStake(collection, _msgSender(), tokenId, block.number, termDurationBlocks, rewardRateIncrementPerNFT);
             emit NFTStaked(_msgSender(), collection, tokenId, false);
         }
-        // welcome bonus
-        uint256 dynamicWelcome = welcomeBonusBaseRate + (s.totalStakedNFTsCount * welcomeBonusIncrementPerNFT);
-        if (dynamicWelcome > 0) _mint(_msgSender(), dynamicWelcome);
+
+        // welcome bonus mint
+        uint256 welcome = welcomeBonusBaseRate + (s.totalStakedNFTsCount * welcomeBonusIncrementPerNFT);
+        if (welcome > 0) _mint(_msgSender(), welcome);
+
         lastStakingBlock[_msgSender()] = block.number;
     }
 
-    function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external nonReentrant whenNotPaused {
+    function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external {
         uint256 n = tokenIds.length;
-        if (n == 0 || n > MAX_HARVEST_BATCH) revert BatchSize();
-        for (uint256 i; i < n; ) {
-            stake(collection, tokenIds[i], permanent);
-            unchecked { ++i; }
-        }
+        if (n == 0 || n > MAX_HARVEST_BATCH) revert BadBatch();
+        for (uint256 i = 0; i < n; ++i) stake(collection, tokenIds[i], permanent);
     }
 
     function unstake(address collection, uint256 tokenId) external nonReentrant whenNotPaused {
         StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
         if (!info.currentlyStaked) revert NotStaked();
-        if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermActive();
+        if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
 
-        // harvest first
+        // harvest
         uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
         if (reward > 0) {
             uint256 feeRate = initialHarvestBurnFeeRate;
@@ -415,7 +450,7 @@ contract CatalystNFTStakingUpgradeable is
             emit RewardsHarvested(_msgSender(), collection, reward - burnAmt, burnAmt);
         }
 
-        if (balanceOf(_msgSender()) < unstakeBurnFee) revert InsufficientBalance();
+        if (balanceOf(_msgSender()) < unstakeBurnFee) revert Insufficient();
         _splitFeeFromSender(_msgSender(), unstakeBurnFee);
 
         s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
@@ -440,23 +475,31 @@ contract CatalystNFTStakingUpgradeable is
         emit RewardsHarvested(_msgSender(), collection, reward - burnAmt, burnAmt);
     }
 
-    // -------- Registration (condensed) --------
-    function registerCollection(address collection, uint256 declaredMaxSupply, ConfigRegistryLib.CollectionTier /*tier*/) external nonReentrant whenNotPaused {
-        if (collection == address(0)) revert ZeroAddr();
+    // ----------------------------
+    // Registration (simple)
+    // ----------------------------
+    function registerCollection(address collection, uint256 declaredMaxSupply, CollectionTier /*tier*/) external nonReentrant whenNotPaused {
+        if (collection == address(0)) revert ZeroAddress();
         if (registeredIndex[collection] != 0) revert AlreadyStaked();
-        uint256 baseFee = initialCollectionFee; // simplified: compute with your fee brackets if needed
-        if (balanceOf(_msgSender()) < baseFee) revert InsufficientBalance();
+        if (declaredMaxSupply < 1 || declaredMaxSupply > MAX_STAKE_PER_COLLECTION) revert Unauthorized();
+
+        // compute baseFee simplified (you can call your Config math here)
+        uint256 baseFee = initialCollectionFee;
+        if (balanceOf(_msgSender()) < baseFee) revert Insufficient();
         _splitFeeFromSender(_msgSender(), baseFee);
 
         s.initCollection(collection, declaredMaxSupply);
         registeredCollections.push(collection);
         registeredIndex[collection] = registeredCollections.length;
-        emit CollectionAdded(collection, declaredMaxSupply, baseFee, 0, ConfigRegistryLib.CollectionTier.UNVERIFIED);
+
+        emit CollectionAdded(collection, declaredMaxSupply, baseFee, 0, CollectionTier.UNVERIFIED);
     }
 
-    // -------- Fee split helper (immutable 90/9/1) --------
+    // ----------------------------
+    // Fee split (90/9/1) & treasury deposits
+    // ----------------------------
     function _splitFeeFromSender(address payer, uint256 amount) internal {
-        if (amount == 0) revert ZeroAddr();
+        if (amount == 0) revert ZeroAddress();
         uint256 burnAmt = (amount * BURN_BP) / 10000;
         uint256 treasuryAmt = (amount * TREASURY_BP) / 10000;
         uint256 deployerAmt = amount - burnAmt - treasuryAmt;
@@ -470,16 +513,20 @@ contract CatalystNFTStakingUpgradeable is
         }
     }
 
-    // -------- Treasury withdraw --------
+    // ----------------------------
+    // Treasury withdraw
+    // ----------------------------
     function withdrawTreasury(address to, uint256 amount) external onlyRole(CONTRACT_ADMIN_ROLE) nonReentrant whenNotPaused {
-        if (to == address(0)) revert ZeroAddr();
-        if (amount > treasuryBalance) revert InsufficientBalance();
+        if (to == address(0)) revert ZeroAddress();
+        if (amount > treasuryBalance) revert Insufficient();
         treasuryBalance -= amount;
         _transfer(address(this), to, amount);
         emit TreasuryWithdrawal(to, amount);
     }
 
-    // -------- Views (staking stats + helpers) --------
+    // ----------------------------
+    // Views: stakingStats + wrappers
+    // ----------------------------
     function stakingStats() external view returns (
         uint256 totalAll,
         uint256 totalTerm,
@@ -492,42 +539,29 @@ contract CatalystNFTStakingUpgradeable is
         totalTerm = s.totalStakedTerm;
         totalPermanent = s.totalStakedPermanent;
 
-        // read caps from library constants
-        uint256 globalCap = StakingLib.GLOBAL_CAP();
-        uint256 termCap = StakingLib.TERM_CAP();
-        uint256 permCap = StakingLib.PERM_CAP();
-
-        remainingGlobal = (globalCap > totalAll) ? (globalCap - totalAll) : 0;
-        remainingTerm = (termCap > totalTerm) ? (termCap - totalTerm) : 0;
-        remainingPermanent = (permCap > totalPermanent) ? (permCap - totalPermanent) : 0;
+        remainingGlobal = (GLOBAL_CAP > totalAll) ? (GLOBAL_CAP - totalAll) : 0;
+        remainingTerm = (TERM_CAP > totalTerm) ? (TERM_CAP - totalTerm) : 0;
+        remainingPermanent = (PERM_CAP > totalPermanent) ? (PERM_CAP - totalPermanent) : 0;
     }
 
     function totalStakedNFTs() external view returns (uint256) { return s.totalStakedNFTsCount; }
     function baseReward() external view returns (uint256) { return s.baseRewardRate; }
 
-    // pendingRewards view wrapper
     function pendingRewardsView(address collection, address owner, uint256 tokenId) external view returns (uint256) {
         return s.pendingRewards(collection, owner, tokenId, numberOfBlocksPerRewardUnit);
     }
 
-    // -------- ERC721 receiver --------
-    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
-        return this.onERC721Received.selector;
-    }
-
-    // -------- Pause / admin helpers --------
-    function pause() external onlyRole(CONTRACT_ADMIN_ROLE) { _pause(); }
-    function unpause() external onlyRole(CONTRACT_ADMIN_ROLE) { _unpause(); }
-
-    // -------- Governance wrappers (lean) --------
+    // ----------------------------
+    // Governance wrappers (lean)
+    // ----------------------------
     function propose(GovernanceLib.ProposalType pType, uint8 paramTarget, uint256 newValue, address collectionContext) external whenNotPaused returns (bytes32) {
         return GovernanceLib.createProposal(g, pType, paramTarget, newValue, collectionContext, _msgSender(), block.number);
     }
 
     function vote(bytes32 id) external whenNotPaused {
-        (uint256 weight, address attributed) = _votingWeight(_msgSender());
+        (uint256 weight, address attr) = _votingWeight(_msgSender());
         if (weight == 0) revert Ineligible();
-        GovernanceLib.castVote(g, id, _msgSender(), weight, attributed);
+        GovernanceLib.castVote(g, id, _msgSender(), weight, attr);
     }
 
     function executeProposal(bytes32 id) external whenNotPaused nonReentrant {
@@ -558,11 +592,11 @@ contract CatalystNFTStakingUpgradeable is
             else if (t == 2) { if (p.newValue > WEIGHT_SCALE) revert FeeTooHigh(); uint256 old = g.collectionVoteCapPercent; g.collectionVoteCapPercent = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
             else revert Unauthorized();
         } else revert Unauthorized();
+
         emit ProposalExecuted(id, p.newValue);
     }
 
     function _votingWeight(address voter) internal view returns (uint256 weight, address attributedCollection) {
-        // same basic scheme: aged stake in registered collections => full weight
         for (uint256 i = 0; i < registeredCollections.length; ++i) {
             address coll = registeredCollections[i];
             uint256[] storage port = s.stakePortfolioByUser[coll][voter];
@@ -575,19 +609,26 @@ contract CatalystNFTStakingUpgradeable is
         return (0, address(0));
     }
 
-    // -------- UUPS authorization --------
+    // ----------------------------
+    // ERC721 receiver & pause / UUPS
+    // ----------------------------
+    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
+    function pause() external onlyRole(CONTRACT_ADMIN_ROLE) { _pause(); }
+    function unpause() external onlyRole(CONTRACT_ADMIN_ROLE) { _unpause(); }
+
     function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
-    // -------- Events for governance changes (kept) --------
+    // governance events kept
     event BaseRewardRateUpdated(uint256 oldValue, uint256 newValue);
     event HarvestFeeUpdated(uint256 oldValue, uint256 newValue);
     event UnstakeFeeUpdated(uint256 oldValue, uint256 newValue);
     event RegistrationFeeUpdated(uint256 oldValue, uint256 newValue);
     event VotingParamUpdated(uint8 target, uint256 oldValue, uint256 newValue);
     event ProposalExecuted(bytes32 indexed id, uint256 appliedValue);
-    event TreasuryDeposit(address indexed from, uint256 amount);
-    event TreasuryWithdrawal(address indexed to, uint256 amount);
 
-    // storage gap for upgradeability
+    // storage gap for upgrades
     uint256[30] private __gap;
 }
