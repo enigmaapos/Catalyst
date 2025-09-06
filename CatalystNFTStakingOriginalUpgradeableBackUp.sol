@@ -4,46 +4,53 @@ pragma solidity ^0.8.20;
 import "./StakingLib.sol";
 import "./GovernanceLib.sol";
 
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC20/ERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/access/AccessControl.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC721/IERC721Receiver.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/security/ReentrancyGuard.sol";
+// OpenZeppelin (upgradeable)
+import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/release-v4.9/contracts/proxy/utils/Initializable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/release-v4.9/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/release-v4.9/contracts/token/ERC20/ERC20Upgradeable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/release-v4.9/contracts/access/AccessControlUpgradeable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/release-v4.9/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/release-v4.9/contracts/security/PausableUpgradeable.sol";
+
+// Interfaces (plain interfaces are fine)
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC721/IERC721.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/security/Pausable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC20/IERC20.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC721/IERC721Receiver.sol";
 
 interface IOwnable { function owner() external view returns (address); }
 
-contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, ReentrancyGuard, Pausable {
+contract CatalystNFTStakingUpgradeable is
+    Initializable,
+    UUPSUpgradeable,
+    ERC20Upgradeable,
+    AccessControlUpgradeable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
+    IERC721Receiver
+{
     using StakingLib for StakingLib.Storage;
 
-    // roles
+    // ---------------- Roles ----------------
     bytes32 public constant CONTRACT_ADMIN_ROLE = keccak256("CONTRACT_ADMIN_ROLE");
 
-    // fee split
+    // ---------------- Fee split ----------------
     uint256 public constant BURN_BP = 9000;
     uint256 public constant TREASURY_BP = 900;
     uint256 public constant DEPLOYER_BP = 100;
 
-    // internal treasury accounting
-    uint256 public treasuryBalance;
-
-    // constants
+    // ---------------- Constants ----------------
     uint256 public constant WEIGHT_SCALE = 1e18;
     uint256 public constant MAX_HARVEST_BATCH = 50;
     uint256 public constant MAX_STAKE_PER_COLLECTION = 20000;
 
-    // tiers
+    // ---------------- Tiers ----------------
     enum CollectionTier { UNVERIFIED, VERIFIED }
 
-    // staking lib storage
+    // ---------------- Storage (staking & governance libs) ----------------
     StakingLib.Storage internal s;
-
-    // governance lib storage
     GovernanceLib.Storage internal g;
 
-    // other params
-    uint256 public numberOfBlocksPerRewardUnit = 18782;
+    // ---------------- Parameters ----------------
+    uint256 public numberOfBlocksPerRewardUnit;
     uint256 public collectionRegistrationFee;
     uint256 public unstakeBurnFee;
     address public treasuryAddress;
@@ -60,19 +67,19 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     uint256 public welcomeBonusIncrementPerNFT;
 
     // registration fee brackets
-    uint256 public SMALL_MIN_FEE = 1000 * 10**18;
-    uint256 public SMALL_MAX_FEE = 5000 * 10**18;
-    uint256 public MED_MIN_FEE   = 5000 * 10**18;
-    uint256 public MED_MAX_FEE   = 10000 * 10**18;
-    uint256 public LARGE_MIN_FEE = 10000 * 10**18;
-    uint256 public LARGE_MAX_FEE_CAP = 20000 * 10**18;
+    uint256 public SMALL_MIN_FEE;
+    uint256 public SMALL_MAX_FEE;
+    uint256 public MED_MIN_FEE;
+    uint256 public MED_MAX_FEE;
+    uint256 public LARGE_MIN_FEE;
+    uint256 public LARGE_MAX_FEE_CAP;
 
-    uint256 public unverifiedSurchargeBP = 20000;
-    uint256 public tierUpgradeMinAgeBlocks = 200000;
-    uint256 public tierUpgradeMinBurn = 50_000 * 10**18;
-    uint256 public tierUpgradeMinStakers = 50;
-    uint256 public tierProposalCooldownBlocks = 30000;
-    uint256 public surchargeForfeitBlocks = 600000;
+    uint256 public unverifiedSurchargeBP;
+    uint256 public tierUpgradeMinAgeBlocks;
+    uint256 public tierUpgradeMinBurn;
+    uint256 public tierUpgradeMinStakers;
+    uint256 public tierProposalCooldownBlocks;
+    uint256 public surchargeForfeitBlocks;
 
     // minimal registration enumeration
     address[] public registeredCollections;
@@ -84,29 +91,57 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
     mapping(address => bool) public isParticipating;
     address[] public participatingWallets;
 
-    // ---------------- Deployer & Backup System ----------------
-    address public deployerAddress;
-    mapping(address => bool) public isBackupDeployer;
-    address[] private _backupList;
-    mapping(address => uint256) private _backupIndex;
+    // internal treasury accounting
+    uint256 public treasuryBalance;
 
-    // backup events
-    event BackupAdded(address indexed backup);
-    event BackupRemoved(address indexed backup);
-    event DeployerRecovered(address indexed oldDeployer, address indexed newDeployer, address indexed byBackup);
+    // staking cooldown
+    mapping(address => uint256) public lastStakingBlock;
 
-    // staking events
+    // voting weight
+    uint256 public minStakeAgeForVoting;
+    uint256 public maxBaseRewardRate;
+
+    // ---------------- Deployer & 3-of-5 Guardian Recovery ----------------
+    address public deployerAddress;                 // receives the 1% deployer fee
+    address[5] public backupGuardians;              // fixed slots, up to 5
+    mapping(address => bool) public isGuardian;     // quick membership check
+
+    // Simple single-active recovery request with voting
+    struct RecoveryRequest {
+        address proposedDeployer;
+        uint8 approvals;                // count of distinct guardian approvals
+        uint256 deadline;               // expiry (block timestamp)
+        bool executed;
+    }
+
+    uint256 public constant RECOVERY_THRESHOLD = 3; // 3-of-5
+    uint256 public constant RECOVERY_WINDOW = 3 days;
+    RecoveryRequest public activeRecovery;
+    mapping(address => bool) public hasApprovedActive; // guardian->approved?
+
+    // ---------------- Events ----------------
     event RewardsHarvested(address indexed owner, address indexed collection, uint256 payoutAmount, uint256 burnedAmount);
     event NFTStaked(address indexed owner, address indexed collection, uint256 indexed tokenId);
     event NFTUnstaked(address indexed owner, address indexed collection, uint256 indexed tokenId);
     event TreasuryDeposit(address indexed from, uint256 amount);
     event TreasuryWithdrawal(address indexed to, uint256 amount);
-    event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 baseFee, uint256 surchargeEscrow, CollectionTier tier);
 
-    // constructor config
+    event DeployerRecoveryProposed(address proposedDeployer, uint256 deadline);
+    event DeployerRecoveryApproved(address indexed guardian, uint8 approvals);
+    event DeployerRecovered(address indexed oldDeployer, address indexed newDeployer);
+    event GuardianSet(uint8 indexed index, address guardian);
+
+    event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 baseFee, uint256 surchargeEscrow, CollectionTier tier);
+    event BaseRewardRateUpdated(uint256 oldValue, uint256 newValue);
+    event HarvestFeeUpdated(uint256 oldValue, uint256 newValue);
+    event UnstakeFeeUpdated(uint256 oldValue, uint256 newValue);
+    event RegistrationFeeUpdated(uint256 oldValue, uint256 newValue);
+    event VotingParamUpdated(uint8 target, uint256 oldValue, uint256 newValue);
+    event ProposalExecuted(bytes32 indexed id, uint256 appliedValue);
+
+    // ---------------- Init struct ----------------
     struct InitConfig {
         address owner;
-        address treasury;
         uint256 initialCollectionFee;
         uint256 feeMultiplier;
         uint256 rewardRateIncrementPerNFT;
@@ -119,113 +154,162 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         uint256 stakingCooldownBlocks;
         uint256 harvestRateAdjustmentFactor;
         uint256 minBurnContributionForVote;
+
         uint256 votingDurationBlocks;
         uint256 minVotesRequiredScaled;
         uint256 collectionVoteCapPercent;
-        address[] backupDeployers; // NEW
+
+        // optional: initial guardians
+        address[5] guardians;
     }
 
-    constructor(InitConfig memory cfg) ERC20("Catalyst", "CATA") {
-        require(cfg.owner != address(0) && cfg.treasury != address(0), "CATA: bad addr");
+    // ---------------- Initializer ----------------
+    function initialize(InitConfig calldata cfg) public initializer {
+        require(cfg.owner != address(0), "CATA: bad owner");
+
+        __ERC20_init("Catalyst", "CATA");
+        __AccessControl_init();
+        __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
+        __Pausable_init();
 
         _mint(cfg.owner, 25_185_000 * 10**18);
 
         _grantRole(DEFAULT_ADMIN_ROLE, cfg.owner);
         _grantRole(CONTRACT_ADMIN_ROLE, cfg.owner);
 
+        // parameters
         treasuryAddress = address(this);
         deployerAddress = cfg.owner;
 
-        // seed backups
-        for (uint256 i = 0; i < cfg.backupDeployers.length; i++) {
-            address b = cfg.backupDeployers[i];
-            if (b != address(0) && !isBackupDeployer[b]) {
-                isBackupDeployer[b] = true;
-                _backupIndex[b] = _backupList.length + 1;
-                _backupList.push(b);
-                emit BackupAdded(b);
-            }
-        }
+        numberOfBlocksPerRewardUnit = 18782; // keep your default
+        collectionRegistrationFee = cfg.collectionRegistrationFeeFallback;
+        unstakeBurnFee = cfg.unstakeBurnFee;
+        initialHarvestBurnFeeRate = cfg.initialHarvestBurnFeeRate;
+        termDurationBlocks = cfg.termDurationBlocks;
+        stakingCooldownBlocks = cfg.stakingCooldownBlocks;
+        harvestRateAdjustmentFactor = cfg.harvestRateAdjustmentFactor;
+        minBurnContributionForVote = cfg.minBurnContributionForVote;
 
         initialCollectionFee = cfg.initialCollectionFee;
         feeMultiplier = cfg.feeMultiplier;
         rewardRateIncrementPerNFT = cfg.rewardRateIncrementPerNFT;
         welcomeBonusBaseRate = cfg.welcomeBonusBaseRate;
         welcomeBonusIncrementPerNFT = cfg.welcomeBonusIncrementPerNFT;
-        initialHarvestBurnFeeRate = cfg.initialHarvestBurnFeeRate;
-        termDurationBlocks = cfg.termDurationBlocks;
-        collectionRegistrationFee = cfg.collectionRegistrationFeeFallback;
-        unstakeBurnFee = cfg.unstakeBurnFee;
-        stakingCooldownBlocks = cfg.stakingCooldownBlocks;
-        harvestRateAdjustmentFactor = cfg.harvestRateAdjustmentFactor;
-        minBurnContributionForVote = cfg.minBurnContributionForVote;
 
+        SMALL_MIN_FEE = 1000 * 10**18;
+        SMALL_MAX_FEE = 5000 * 10**18;
+        MED_MIN_FEE   = 5000 * 10**18;
+        MED_MAX_FEE   = 10000 * 10**18;
+        LARGE_MIN_FEE = 10000 * 10**18;
+        LARGE_MAX_FEE_CAP = 20000 * 10**18;
+
+        unverifiedSurchargeBP = 20000;
+        tierUpgradeMinAgeBlocks = 200000;
+        tierUpgradeMinBurn = 50_000 * 10**18;
+        tierUpgradeMinStakers = 50;
+        tierProposalCooldownBlocks = 30000;
+        surchargeForfeitBlocks = 600000;
+
+        minStakeAgeForVoting = 100;
+        maxBaseRewardRate = type(uint256).max;
+
+        // governance (lib)
         GovernanceLib.initGov(
             g,
             cfg.votingDurationBlocks,
             cfg.minVotesRequiredScaled,
             cfg.collectionVoteCapPercent
         );
+
+        // seed guardians
+        for (uint8 i = 0; i < 5; i++) {
+            _setGuardian(i, cfg.guardians[i]);
+        }
     }
 
-    // ---------------- Backup-only recovery system ----------------
-    modifier onlyBackup() {
-        require(isBackupDeployer[_msgSender()], "CATA: not backup");
+    // ---------------- Guardian helpers ----------------
+    modifier onlyGuardian() {
+        require(isGuardian[_msgSender()], "CATA: not guardian");
         _;
     }
 
-    function getBackups() external view returns (address[] memory) {
-        return _backupList;
+    function _setGuardian(uint8 index, address guardian) internal {
+        require(index < 5, "CATA: idx");
+        address old = backupGuardians[index];
+        if (old != address(0)) isGuardian[old] = false;
+        backupGuardians[index] = guardian;
+        if (guardian != address(0)) isGuardian[guardian] = true;
+        emit GuardianSet(index, guardian);
     }
 
-    function addBackup(address newBackup) external onlyBackup {
-        require(newBackup != address(0), "CATA: zero");
-        require(!isBackupDeployer[newBackup], "CATA: exists");
-        isBackupDeployer[newBackup] = true;
-        _backupIndex[newBackup] = _backupList.length + 1;
-        _backupList.push(newBackup);
-        emit BackupAdded(newBackup);
-    }
-
-    function removeBackup(address backup) external {
-        require(_msgSender() == backup, "CATA: self-only");
-        require(isBackupDeployer[backup], "CATA: not backup");
-        isBackupDeployer[backup] = false;
-
-        uint256 idx1 = _backupIndex[backup];
-        if (idx1 != 0) {
-            uint256 i = idx1 - 1;
-            uint256 last = _backupList.length - 1;
-            if (i != last) {
-                address lastAddr = _backupList[last];
-                _backupList[i] = lastAddr;
-                _backupIndex[lastAddr] = i + 1;
-            }
-            _backupList.pop();
-            _backupIndex[backup] = 0;
+    // Admin may rotate guardians if needed (not via governance)
+    function setGuardians(address[5] calldata guardians) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        for (uint8 i = 0; i < 5; i++) {
+            _setGuardian(i, guardians[i]);
         }
-        emit BackupRemoved(backup);
     }
 
-    function recoverDeployer(address newDeployer) external onlyBackup {
+    // ---------------- Recovery flow (3-of-5) ----------------
+    function proposeDeployerRecovery(address newDeployer) external onlyGuardian whenNotPaused {
         require(newDeployer != address(0), "CATA: zero");
-        require(newDeployer != deployerAddress, "CATA: same");
+        // Reset active request
+        activeRecovery.proposedDeployer = newDeployer;
+        activeRecovery.approvals = 0;
+        activeRecovery.deadline = block.timestamp + RECOVERY_WINDOW;
+        activeRecovery.executed = false;
+
+        // clear approvals
+        for (uint8 i = 0; i < 5; i++) {
+            address gaddr = backupGuardians[i];
+            if (gaddr != address(0)) {
+                hasApprovedActive[gaddr] = false;
+            }
+        }
+
+        emit DeployerRecoveryProposed(newDeployer, activeRecovery.deadline);
+    }
+
+    function approveDeployerRecovery() external onlyGuardian whenNotPaused {
+        require(activeRecovery.proposedDeployer != address(0), "CATA: none");
+        require(!activeRecovery.executed, "CATA: executed");
+        require(block.timestamp <= activeRecovery.deadline, "CATA: expired");
+        require(!hasApprovedActive[_msgSender()], "CATA: voted");
+
+        hasApprovedActive[_msgSender()] = true;
+        activeRecovery.approvals += 1;
+
+        emit DeployerRecoveryApproved(_msgSender(), activeRecovery.approvals);
+    }
+
+    function executeDeployerRecovery() external whenNotPaused {
+        require(activeRecovery.proposedDeployer != address(0), "CATA: none");
+        require(!activeRecovery.executed, "CATA: executed");
+        require(block.timestamp <= activeRecovery.deadline, "CATA: expired");
+        require(activeRecovery.approvals >= RECOVERY_THRESHOLD, "CATA: <3");
 
         address old = deployerAddress;
-        deployerAddress = newDeployer;
-        emit DeployerRecovered(old, newDeployer, _msgSender());
+        deployerAddress = activeRecovery.proposedDeployer;
+        activeRecovery.executed = true;
+
+        // Optional: automatically remove the *old* deployer if it was a guardian (avoid stale risk)
+        for (uint8 i = 0; i < 5; i++) {
+            if (backupGuardians[i] == old) {
+                _setGuardian(i, address(0));
+            }
+        }
+
+        emit DeployerRecovered(old, deployerAddress);
     }
 
-
-    // ------------- modifiers -------------
-    mapping(address => uint256) public lastStakingBlock;
+    // ---------------- Modifiers ----------------
     modifier notInCooldown() {
         require(block.number >= lastStakingBlock[_msgSender()] + stakingCooldownBlocks, "CATA: cooldown");
         _;
     }
 
-    // ------------- Helpers -------------
-    function _splitFeeFromSender(address payer, uint256 amount, bool /*attributeToUser*/) internal {
+    // ---------------- Internal fee split ----------------
+    function _splitFeeFromSender(address payer, uint256 amount) internal {
         require(amount > 0, "CATA: zero fee");
         uint256 burnAmt = (amount * BURN_BP) / 10000;
         uint256 treasuryAmt = (amount * TREASURY_BP) / 10000;
@@ -234,11 +318,9 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         if (burnAmt > 0) {
             _burn(payer, burnAmt);
         }
-
         if (deployerAmt > 0) {
             _transfer(payer, deployerAddress, deployerAmt);
         }
-
         if (treasuryAmt > 0) {
             _transfer(payer, address(this), treasuryAmt);
             treasuryBalance += treasuryAmt;
@@ -246,18 +328,17 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         }
     }
 
-    // ------------- Registration -------------
+    // ---------------- Registration ----------------
     function registerCollection(address collection, uint256 declaredMaxSupply, CollectionTier /*requestedTier*/) external nonReentrant whenNotPaused {
         require(collection != address(0), "CATA: bad addr");
         require(registeredIndex[collection] == 0, "CATA: already reg");
-        require(declaredMaxSupply >= 1 && declaredMaxSupply <= MAX_STAKE_PER_COLLECTION, "CATA: supply range");
+        require(declaredMaxSupply >= 1 && declaredMaxSupply <= MAX_STAKE_PER_COLLECTION, "CATA: supply");
 
         uint256 baseFee = _calculateRegistrationBaseFee(declaredMaxSupply);
         require(balanceOf(_msgSender()) >= baseFee, "CATA: insufficient");
 
-        _splitFeeFromSender(_msgSender(), baseFee, true);
+        _splitFeeFromSender(_msgSender(), baseFee);
 
-        // direct-call style to lib
         StakingLib.initCollection(s, collection, declaredMaxSupply);
 
         registeredCollections.push(collection);
@@ -266,7 +347,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         emit CollectionAdded(collection, declaredMaxSupply, baseFee, 0, CollectionTier.UNVERIFIED);
     }
 
-    // ------------- Staking wrappers -------------
+    // ---------------- Staking ----------------
     function termStake(address collection, uint256 tokenId) external nonReentrant notInCooldown whenNotPaused {
         require(s.collectionConfigs[collection].registered, "CATA: not reg");
         require(s.collectionConfigs[collection].totalStaked < MAX_STAKE_PER_COLLECTION, "CATA: cap");
@@ -299,7 +380,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
 
         IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
 
-        _splitFeeFromSender(_msgSender(), fee, true);
+        _splitFeeFromSender(_msgSender(), fee);
 
         StakingLib.recordPermanentStake(
             s,
@@ -339,7 +420,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         }
 
         require(balanceOf(_msgSender()) >= unstakeBurnFee, "CATA: fee");
-        _splitFeeFromSender(_msgSender(), unstakeBurnFee, true);
+        _splitFeeFromSender(_msgSender(), unstakeBurnFee);
 
         StakingLib.recordUnstake(s, collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
 
@@ -348,7 +429,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         emit NFTUnstaked(_msgSender(), collection, tokenId);
     }
 
-    // ------------- Batch helpers (same behavior) -------------
+    // ---------------- Batch ----------------
     function batchTermStake(address collection, uint256[] calldata tokenIds) external {
         require(tokenIds.length > 0 && tokenIds.length <= MAX_HARVEST_BATCH, "CATA: batch");
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -370,7 +451,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         }
     }
 
-    // ------------- Harvest -------------
+    // ---------------- Harvest only ----------------
     function harvest(address collection, uint256 tokenId) external nonReentrant whenNotPaused {
         uint256 reward = StakingLib.pendingRewards(s, collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
         if (reward == 0) return;
@@ -387,14 +468,14 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         emit RewardsHarvested(_msgSender(), collection, reward - burnAmt, burnAmt);
     }
 
-    // ------------- Governance wrappers (same external API) -------------
+    // ---------------- Governance wrappers (same API) ----------------
     function propose(
         GovernanceLib.ProposalType pType,
         uint8 paramTarget,
         uint256 newValue,
         address collectionContext
     ) external whenNotPaused returns (bytes32) {
-        bytes32 id = GovernanceLib.createProposal(
+        return GovernanceLib.createProposal(
             g,
             pType,
             paramTarget,
@@ -403,11 +484,10 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
             _msgSender(),
             block.number
         );
-        return id;
     }
 
     function vote(bytes32 id) external whenNotPaused {
-        (uint256 weight, address attributedCollection) = _votingWeight(_msgSender(), address(0));
+        (uint256 weight, address attributedCollection) = _votingWeight(_msgSender());
         require(weight > 0, "CATA: not eligible");
         GovernanceLib.castVote(g, id, _msgSender(), weight, attributedCollection);
     }
@@ -461,8 +541,8 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         }
     }
 
-    // ------------- Voting weight -------------
-    function _votingWeight(address voter, address /*context*/) internal view returns (uint256 weight, address attributedCollection) {
+    // ---------------- Voting weight ----------------
+    function _votingWeight(address voter) internal view returns (uint256 weight, address attributedCollection) {
         for (uint256 i = 0; i < registeredCollections.length; i++) {
             address coll = registeredCollections[i];
             uint256[] storage port = s.stakePortfolioByUser[coll][voter];
@@ -477,7 +557,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         return (0, address(0));
     }
 
-    // ------------- math & helper views -------------
+    // ---------------- Math & views ----------------
     function _sqrt(uint256 y) internal pure returns (uint256 z) { return StakingLib.sqrt(y); }
 
     function _getDynamicPermanentStakeFee() public view returns (uint256) {
@@ -501,7 +581,7 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         return fee;
     }
 
-    // ------------- Treasury -------------
+    // ---------------- Treasury ----------------
     function withdrawTreasury(address to, uint256 amount) external onlyRole(CONTRACT_ADMIN_ROLE) nonReentrant whenNotPaused {
         require(to != address(0), "CATA: bad addr");
         require(amount <= treasuryBalance, "CATA: balance");
@@ -510,22 +590,18 @@ contract CatalystNFTStaking is ERC20, AccessControl, IERC721Receiver, Reentrancy
         emit TreasuryWithdrawal(to, amount);
     }
 
-    // ------------- Views -------------
-    function pendingRewardsView(address collection, address owner, uint256 tokenId) external view returns (uint256) {
-        return StakingLib.pendingRewards(s, collection, owner, tokenId, numberOfBlocksPerRewardUnit);
-    }
-
-    function totalStakedNFTs() external view returns (uint256) { return s.totalStakedNFTsCount; }
-    function baseReward() external view returns (uint256) { return s.baseRewardRate; }
-
-    // ------------- ERC721 Receiver -------------
+    // ---------------- ERC721 Receiver ----------------
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return this.onERC721Received.selector;
     }
 
-    // ------------- UUPS authorization -------------
+    // ---------------- Pause ----------------
+    function pause() external onlyRole(CONTRACT_ADMIN_ROLE) { _pause(); }
+    function unpause() external onlyRole(CONTRACT_ADMIN_ROLE) { _unpause(); }
+
+    // ---------------- UUPS authorization ----------------
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
-    // (optional) storage gap to allow future variable additions without shifting layout
-    uint256[45] private __gap; // adjust size if you later add vars above
+    // ---------------- Storage gap ----------------
+    uint256[45] private __gap;
 }
