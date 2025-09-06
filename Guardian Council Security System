@@ -121,3 +121,132 @@ It ensures that recovery power can never silently be hijacked by attackers.
 
 
 This system combines the best of multisig security, voting governance, and automatic detection, giving Catalyst protocol a strong, simple, and transparent layer of protection.
+
+
+
+
+🔑 Projects Using Guardian Systems
+
+1. Argent Wallet
+
+One of the first smart contract wallets.
+
+Uses “Guardians” (friends, hardware wallets, or trusted services) to:
+
+Approve recoveries if the main wallet is lost.
+
+Lock/unlock the wallet in emergencies.
+
+
+Very similar to what we’re designing → 3-of-N guardian approvals.
+
+
+
+2. Safe (formerly Gnosis Safe)
+
+Multisig wallet widely used by DAOs.
+
+Doesn’t call it “guardians,” but same principle: multiple owners/approvers.
+
+Used by Uniswap, Aave, and many top DeFi projects.
+
+
+
+3. ERC-4337 (Account Abstraction)
+
+Adds native support for guardians/recovery logic in smart accounts.
+
+Lets you set recovery policies like:
+
+2-of-3 guardians can recover.
+
+Time-locked recovery.
+
+Social recovery flows.
+
+
+
+
+4. zkSync Era & Starknet Wallets
+
+Smart contract wallets on L2s (like Argent X, Braavos).
+
+Use social recovery guardians.
+
+Example: If your seed phrase is lost, guardians can reassign ownership.
+
+
+
+
+
+---
+
+🔒 Why Guardians?
+
+Humans lose keys a lot (stats: ~20% of Bitcoin supply is lost forever).
+
+Guardians solve this by introducing a social backup.
+
+Instead of 1 person holding the “nuclear button,” trust is split across a group.
+
+
+
+---
+
+⚡ The difference with our design is:
+
+Guardians are not just for recovery → they are tied to deployer role & treasury safety.
+
+We even extend to “compromise detection” (4/5 votes = warning, 5/5 votes = lock).
+
+🔍 Guardian System Comparison
+
+Feature	Argent Wallet	Safe (Gnosis)	ERC-4337 Smart Accounts	Your Guardian Council
+
+Guardian concept	Yes (friends/devices as guardians)	Multisig owners, not called guardians	Yes, built-in recovery guardians	✅ Explicit “Guardian Council” of 5 fixed members
+Threshold recovery	2-of-3 or configurable	Configurable multisig (e.g., 3-of-5)	Yes, flexible	✅ Fixed 3-of-5 approvals required
+Deployer fee split link	❌ not applicable	❌ not applicable	❌ not tied to economics	✅ Guardians control recovery of deployer (who gets fee split)
+Compromise detection	❌	❌	❌	✅ Special rules: 4-of-5 = warning, 5-of-5 = lock-down
+Guardian rotation	Owner can add/remove guardians	Multisig owners can change members	Supported	✅ Automatic rotation after recovery (new deployer can add replacement)
+Failsafe if all compromised	Owner only	Owners only	Recovery policies vary	✅ Recovery lock, only valid deployer can reset council
+Upgrade security	No	Multisig approval required	Optional policies	(Optional) Can extend guardians to control upgrade approval
+Transparency	Guardians known only to owner	All owners visible on-chain	Configurable	✅ Entire guardian set visible on-chain
+Scope	Wallet recovery only	Treasury & governance via multisig	Wallet/account recovery	✅ Covers recovery, treasury safety, fee splits, and governance-like safety
+
+
+
+---
+
+⚡ Key Insights
+
+✅ Advanced:
+
+Your system adds compromise detection (4/5 warning, 5/5 lock), which no other guardian implementation has.
+
+Guardians tied directly to economic roles (deployer fees + treasury safety).
+
+Built-in rotation logic so the council always stays at 5 members.
+
+
+✅ Unique:
+
+Recovery affects the deployer address, not just wallet access.
+
+Hybrid of multisig + social recovery, but with layered states (normal → warning → lock).
+
+
+⚠️ Possible weaknesses:
+
+More complex rules → higher risk of bugs if not carefully audited.
+
+If guardians collude, they can still replace the deployer (though threshold mitigates it).
+
+Requires careful choice of guardians (trustworthy, diverse, not easily compromised).
+
+
+
+
+---
+
+📌 Conclusion:
+Your Guardian Council is more advanced than Argent and Safe in terms of security layers (compromise detection, auto-rotation, link to treasury/deployer). It’s not just a copy of existing systems — it’s a novel governance-security hybrid.
