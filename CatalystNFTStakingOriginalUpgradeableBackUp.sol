@@ -106,7 +106,6 @@ contract CatalystNFTStakingUpgradeable is
     address[5] public backupGuardians;              // fixed slots, up to 5
     mapping(address => bool) public isGuardian;     // quick membership check
 
-    // Simple single-active recovery request with voting
     struct RecoveryRequest {
         address proposedDeployer;
         uint8 approvals;                // count of distinct guardian approvals
@@ -118,6 +117,9 @@ contract CatalystNFTStakingUpgradeable is
     uint256 public constant RECOVERY_WINDOW = 3 days;
     RecoveryRequest public activeRecovery;
     mapping(address => bool) public hasApprovedActive; // guardian->approved?
+
+    // --- Compromise detection / lock ---
+    bool public recoveryLocked;
 
     // ---------------- Events ----------------
     event RewardsHarvested(address indexed owner, address indexed collection, uint256 payoutAmount, uint256 burnedAmount);
@@ -138,6 +140,11 @@ contract CatalystNFTStakingUpgradeable is
     event RegistrationFeeUpdated(uint256 oldValue, uint256 newValue);
     event VotingParamUpdated(uint8 target, uint256 oldValue, uint256 newValue);
     event ProposalExecuted(bytes32 indexed id, uint256 appliedValue);
+
+    // compromise signals
+    event CompromiseWarning(address proposedDeployer, uint256 approvals, uint256 blockNumber);
+    event CompromiseConfirmed(address proposedDeployer, uint256 approvals, uint256 blockNumber);
+    event RecoveryUnlocked(address indexed by, address[5] newGuardians);
 
     // ---------------- Init struct ----------------
     struct InitConfig {
@@ -250,10 +257,22 @@ contract CatalystNFTStakingUpgradeable is
         }
     }
 
+    // ---------------- Recovery lock/enable ----------------
+    modifier recoveryEnabled() {
+        require(!recoveryLocked, "CATA: recovery locked; reset guardians required");
+        _;
+    }
+
     // ---------------- Recovery flow (3-of-5) ----------------
-    function proposeDeployerRecovery(address newDeployer) external onlyGuardian whenNotPaused {
+    function proposeDeployerRecovery(address newDeployer)
+        external
+        onlyGuardian
+        whenNotPaused
+        recoveryEnabled
+    {
         require(newDeployer != address(0), "CATA: zero");
-        // Reset active request
+
+        // reset active request
         activeRecovery.proposedDeployer = newDeployer;
         activeRecovery.approvals = 0;
         activeRecovery.deadline = block.timestamp + RECOVERY_WINDOW;
@@ -270,7 +289,12 @@ contract CatalystNFTStakingUpgradeable is
         emit DeployerRecoveryProposed(newDeployer, activeRecovery.deadline);
     }
 
-    function approveDeployerRecovery() external onlyGuardian whenNotPaused {
+    function approveDeployerRecovery()
+        external
+        onlyGuardian
+        whenNotPaused
+        recoveryEnabled
+    {
         require(activeRecovery.proposedDeployer != address(0), "CATA: none");
         require(!activeRecovery.executed, "CATA: executed");
         require(block.timestamp <= activeRecovery.deadline, "CATA: expired");
@@ -282,7 +306,11 @@ contract CatalystNFTStakingUpgradeable is
         emit DeployerRecoveryApproved(_msgSender(), activeRecovery.approvals);
     }
 
-    function executeDeployerRecovery() external whenNotPaused {
+    function executeDeployerRecovery()
+        external
+        whenNotPaused
+        recoveryEnabled
+    {
         require(activeRecovery.proposedDeployer != address(0), "CATA: none");
         require(!activeRecovery.executed, "CATA: executed");
         require(block.timestamp <= activeRecovery.deadline, "CATA: expired");
@@ -292,14 +320,48 @@ contract CatalystNFTStakingUpgradeable is
         deployerAddress = activeRecovery.proposedDeployer;
         activeRecovery.executed = true;
 
-        // Optional: automatically remove the *old* deployer if it was a guardian (avoid stale risk)
+        // Optional: automatically remove the *old* deployer if it was a guardian
         for (uint8 i = 0; i < 5; i++) {
             if (backupGuardians[i] == old) {
                 _setGuardian(i, address(0));
             }
         }
 
+        // compromise signals & lock
+        if (activeRecovery.approvals >= 5) {
+            emit CompromiseConfirmed(activeRecovery.proposedDeployer, activeRecovery.approvals, block.number);
+            recoveryLocked = true; // freeze further recoveries until guardians are reset
+        } else if (activeRecovery.approvals == 4) {
+            emit CompromiseWarning(activeRecovery.proposedDeployer, activeRecovery.approvals, block.number);
+        }
+
         emit DeployerRecovered(old, deployerAddress);
+    }
+
+    /// @notice Unlock recovery after 5/5 lock by resetting guardians (only current deployer)
+    function resetGuardians(address[5] calldata newGuardians) external {
+        require(_msgSender() == deployerAddress, "CATA: only deployer");
+        require(recoveryLocked, "CATA: recovery not locked");
+
+        // wipe current guardians
+        for (uint8 i = 0; i < 5; i++) {
+            address oldG = backupGuardians[i];
+            if (oldG != address(0)) isGuardian[oldG] = false;
+            backupGuardians[i] = address(0);
+        }
+
+        // set new guardians
+        for (uint8 j = 0; j < 5; j++) {
+            address gaddr = newGuardians[j];
+            require(gaddr != address(0), "CATA: zero guardian");
+            require(!isGuardian[gaddr], "CATA: dup guardian");
+            backupGuardians[j] = gaddr;
+            isGuardian[gaddr] = true;
+            emit GuardianSet(j, gaddr);
+        }
+
+        recoveryLocked = false;
+        emit RecoveryUnlocked(_msgSender(), newGuardians);
     }
 
     // ---------------- Modifiers ----------------
