@@ -1,0 +1,123 @@
+Guardian Council Security System
+
+A Decentralized Recovery and Safety Layer for Catalyst Protocol
+
+1. Introduction
+
+In blockchain systems, private keys are everything. If the deployer’s wallet is lost or compromised, the whole protocol’s economics and fee flows can be at risk. Traditional single-owner control is too fragile, while full governance voting is too slow for emergency recovery.
+
+The Guardian Council Security System provides a middle ground:
+
+Fast recovery if the deployer loses access.
+
+Multi-party protection against hacks.
+
+Automatic compromise detection if too many guardians approve at once.
+
+
+
+---
+
+2. How It Works
+
+At deployment, 5 guardian addresses are chosen. These are trusted wallets, ideally controlled by different parties or devices.
+
+Deployer Address → receives the deployer’s share of fees (1%).
+
+Guardian Council (5) → act as “safety guardians” who can help recover or rotate the deployer if needed.
+
+
+A. Recovery Process
+
+1. If the deployer loses access, any guardian can propose a new deployer address.
+
+
+2. Other guardians then vote (approve) this proposal.
+
+
+3. If 3 of 5 guardians approve within 3 days, the recovery can be executed:
+
+The deployer role is transferred to the new address.
+
+The old deployer (if listed as guardian) is automatically removed.
+
+
+
+
+
+---
+
+3. Compromise Detection
+
+The system monitors the number of approvals:
+
+3 approvals → ✅ Recovery valid, new deployer confirmed.
+
+4 approvals → ⚠️ Warning: Council may be partially compromised.
+
+5 approvals → 🚨 Critical: Likely full compromise.
+
+In this case, the system automatically locks recovery to prevent attackers from seizing control.
+
+
+
+
+---
+
+4. Unlocking After Compromise
+
+When recovery is locked (5/5 compromise), only the current valid deployer can reset the guardian set:
+
+1. The deployer calls resetGuardians() with 5 new addresses.
+
+
+2. This wipes the old guardian set and installs the new council.
+
+
+3. Recovery is unlocked and returns to normal operation.
+
+
+
+This ensures that only the true owner, who has control of the valid deployer address, can bring the system back after a suspected compromise.
+
+
+---
+
+5. Benefits
+
+Resilient to key loss → Deployers can recover access via guardians.
+
+Hard to attack → An attacker would need to compromise 3 of 5 guardians simultaneously.
+
+Compromise warning → 4/5 or 5/5 approvals act as early signals of suspicious activity.
+
+Failsafe lock → In case of full compromise, the system locks itself until the real owner resets guardians.
+
+
+
+---
+
+6. Best Practices
+
+Guardians should be distributed across different people, devices, or even geographies.
+
+Guardians should not all be stored on the same hardware or controlled by one individual.
+
+Deployers should rotate guardians periodically to reduce long-term risk.
+
+
+
+---
+
+7. Summary
+
+The Guardian Council is like a board of safety officers for the protocol.
+
+It prevents catastrophic failure if one person loses keys.
+
+It warns the community if suspicious voting patterns emerge.
+
+It ensures that recovery power can never silently be hijacked by attackers.
+
+
+This system combines the best of multisig security, voting governance, and automatic detection, giving Catalyst protocol a strong, simple, and transparent layer of protection.
