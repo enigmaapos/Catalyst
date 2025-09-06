@@ -2,6 +2,9 @@ Guardian Council Security System
 
 A Decentralized Recovery and Safety Layer for Catalyst Protocol
 
+
+---
+
 1. Introduction
 
 In blockchain systems, private keys are everything. If the deployer’s wallet is lost or compromised, the whole protocol’s economics and fee flows can be at risk. Traditional single-owner control is too fragile, while full governance voting is too slow for emergency recovery.
@@ -13,6 +16,8 @@ Fast recovery if the deployer loses access.
 Multi-party protection against hacks.
 
 Automatic compromise detection if too many guardians approve at once.
+
+Failsafe reset ability for the “last honest guardian” to prevent full compromise.
 
 
 
@@ -26,6 +31,9 @@ Deployer Address → receives the deployer’s share of fees (1%).
 
 Guardian Council (5) → act as “safety guardians” who can help recover or rotate the deployer if needed.
 
+
+
+---
 
 A. Recovery Process
 
@@ -57,28 +65,28 @@ The system monitors the number of approvals:
 
 5 approvals → 🚨 Critical: Likely full compromise.
 
-In this case, the system automatically locks recovery to prevent attackers from seizing control.
 
-
+At 5 approvals, the system automatically locks recovery to prevent attackers from seizing control.
 
 
 ---
 
 4. Unlocking After Compromise
 
-When recovery is locked (5/5 compromise), only the current valid deployer can reset the guardian set:
+When recovery is locked (5/5 compromise), only the current valid deployer could previously reset the guardian set.
 
-1. The deployer calls resetGuardians() with 5 new addresses.
+But now, the system includes a Last Honest Guardian Reset:
+
+If 4 approvals exist, the only guardian who has not voted is flagged as the “last honest guardian.”
+
+This guardian gains a 48-hour special power to reset the guardian set.
+
+They can replace the 5 guardians with a fresh set, effectively breaking the attack before it reaches 5 approvals.
+
+If they don’t act, the process continues and may lock at 5/5 approvals.
 
 
-2. This wipes the old guardian set and installs the new council.
-
-
-3. Recovery is unlocked and returns to normal operation.
-
-
-
-This ensures that only the true owner, who has control of the valid deployer address, can bring the system back after a suspected compromise.
+This ensures that even if 4 guardians are compromised, the 5th can still protect the protocol.
 
 
 ---
@@ -87,11 +95,13 @@ This ensures that only the true owner, who has control of the valid deployer add
 
 Resilient to key loss → Deployers can recover access via guardians.
 
-Hard to attack → An attacker would need to compromise 3 of 5 guardians simultaneously.
+Hard to attack → An attacker must compromise at least 3 guardians, and in practice, almost all 5.
 
 Compromise warning → 4/5 or 5/5 approvals act as early signals of suspicious activity.
 
-Failsafe lock → In case of full compromise, the system locks itself until the real owner resets guardians.
+Failsafe lock → In case of full compromise, the system locks itself until reset.
+
+Last Honest Guardian Defense → Even under 4 compromised guardians, the final honest one can reset and restore safety.
 
 
 
@@ -104,6 +114,8 @@ Guardians should be distributed across different people, devices, or even geogra
 Guardians should not all be stored on the same hardware or controlled by one individual.
 
 Deployers should rotate guardians periodically to reduce long-term risk.
+
+The last guardian should be clearly informed of their responsibility in 4-approval scenarios.
 
 
 
@@ -119,9 +131,10 @@ It warns the community if suspicious voting patterns emerge.
 
 It ensures that recovery power can never silently be hijacked by attackers.
 
+It now gives the last honest guardian the ability to reset the council, adding a final protective layer against coordinated compromise.
 
-This system combines the best of multisig security, voting governance, and automatic detection, giving Catalyst protocol a strong, simple, and transparent layer of protection.
 
+This system combines the best of multisig security, voting governance, automatic detection, and guardian-of-last-resort recovery, giving Catalyst protocol a strong, simple, and transparent layer of protection.
 
 
 
