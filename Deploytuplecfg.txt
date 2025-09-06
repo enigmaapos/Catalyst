@@ -1,5 +1,6 @@
 format 
 
+Catalyst NFT Staking 
 [
   "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
   "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
@@ -18,4 +19,22 @@ format
   20000,
   "1000000000000000000",
   100
+]
+
+
+Catalyst NFT Staking Core
+[
+   "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+  "1000000000000000000000",
+  "1",
+  "100",
+  "50",
+  "5",
+  "10",
+  "50000",
+  "100000000000000000000",
+  "5",
+  "100",
+  "10",
+  "1000"
 ]
