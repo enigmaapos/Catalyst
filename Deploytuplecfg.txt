@@ -1,6 +1,6 @@
 format 
 
-Catalyst NFT Staking 
+Catalyst NFT Staking not upgradeable original lib sol
 [
   "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
   "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
@@ -37,4 +37,58 @@ Catalyst NFT Staking Core
   "100",
   "10",
   "1000"
+]
+
+Catalyst NFT Staking upgradeable guardian - with memo
+[
+  0x1234567890abcdef1234567890abcdef12345678, // owner
+  1000e18,   // initialCollectionFee
+  10e18,     // feeMultiplier
+  1e18,      // rewardRateIncrementPerNFT
+  100e18,    // welcomeBonusBaseRate
+  10e18,     // welcomeBonusIncrementPerNFT
+  5,         // initialHarvestBurnFeeRate (percent)
+  200000,    // termDurationBlocks
+  500e18,    // collectionRegistrationFeeFallback
+  50e18,     // unstakeBurnFee
+  1000,      // stakingCooldownBlocks
+  100,       // harvestRateAdjustmentFactor
+  100e18,    // minBurnContributionForVote
+  20000,     // votingDurationBlocks
+  1e18,      // minVotesRequiredScaled
+  5e17,      // collectionVoteCapPercent (50%)
+  [
+    0x1111111111111111111111111111111111111111,
+    0x2222222222222222222222222222222222222222,
+    0x3333333333333333333333333333333333333333,
+    0x4444444444444444444444444444444444444444,
+    0x5555555555555555555555555555555555555555
+  ] // guardians
+]
+
+Catalyst NFT Staking upgradeable guardian without memo 
+[
+  0x1234567890abcdef1234567890abcdef12345678, 
+  1000e18,   
+  10e18,     
+  1e18,      
+  100e18,    
+  10e18,     
+  5,         
+  200000,    
+  500e18,    
+  50e18,     
+  1000,      
+  100,       
+  100e18,   
+  20000,     
+  1e18,      
+  5e17,      
+  [
+    0x1111111111111111111111111111111111111111,
+    0x2222222222222222222222222222222222222222,
+    0x3333333333333333333333333333333333333333,
+    0x4444444444444444444444444444444444444444,
+    0x5555555555555555555555555555555555555555
+  ] 
 ]
