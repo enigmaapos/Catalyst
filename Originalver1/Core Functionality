@@ -1,0 +1,56 @@
+The Solidity smart contract provided, `CatalystNFTStakingUpgradeable.sol`, is a comprehensive system designed for **NFT staking** and **governance**. It allows users to stake NFTs from registered collections to earn a native token, "CATA," while also including features for managing the protocol's parameters and handling emergencies.
+
+---
+
+## Core Functionality
+
+### NFT Staking
+The contract supports two types of NFT staking: **term staking** and **permanent staking**.
+
+* **Term Staking:** NFTs are locked for a specific duration, defined by `termDurationBlocks`. At the end of the term, the owner can unstake the NFT and claim their rewards.
+* **Permanent Staking:** NFTs are locked indefinitely. This type of staking is likely to provide a higher reward rate or other benefits, as it contributes to the protocol's long-term liquidity. 
+* **Rewards:** Staked NFTs accrue "CATA" rewards based on a `rewardRateIncrementPerNFT` and the number of blocks that have passed. Rewards are calculated and minted when a user calls the `harvest` or `unstake` functions. A portion of these harvested rewards is burned as a fee.
+* **Fees:** The contract charges a flat `unstakeBurnFee` in "CATA" when an NFT is unstaked. This fee is split, with 90% burned, 9% sent to the treasury, and 1% to the deployer.
+
+### Blue-chip Staking (Non-Custodial)
+The contract also includes a mechanism for "blue-chip" collections, which allows for non-custodial staking.
+
+* Users must first **enroll** by paying a `collectionRegistrationFee`. This is a one-time, per-wallet fee.
+* Once enrolled, a user can `harvestBluechip` rewards for any collection that the contract's admin has flagged as "blue-chip," provided the user still holds at least one NFT from that collection.
+* The rewards are calculated differently, based on a `baseRewardRate` and the time elapsed, without the NFTs being transferred to the contract.
+
+---
+
+## Governance and Access Control
+
+### Roles
+The contract uses OpenZeppelin's `AccessControlUpgradeable` to manage permissions.
+
+* `DEFAULT_ADMIN_ROLE`: This role has the power to manage other roles, including the `CONTRACT_ADMIN_ROLE`. It also has the sole authority to authorize contract upgrades.
+* `CONTRACT_ADMIN_ROLE`: This role can pause/unpause the contract, set blue-chip collections, and withdraw funds from the treasury.
+
+### Guardian Councils
+The contract introduces a unique **multi-signature "guardian council"** system for high-level emergency actions, with a 7-out-of-7 council and a 5-out-of-7 approval threshold.
+
+* **Deployer Recovery:** A dedicated council of guardians can propose and approve a new `deployerAddress` in case the current one is compromised or unavailable.
+* **Admin Recovery:** A separate council can do the same to grant the `DEFAULT_ADMIN_ROLE` to a new address. This adds a crucial layer of security, as it prevents a single point of failure.
+
+### On-Chain Governance
+The contract allows stakers to vote on key protocol parameters.
+
+* **Voting Weight:** A user's voting weight (`WEIGHT_SCALE`) is determined by whether they have an active stake that has been locked for at least `minStakeAgeForVoting` or are an enrolled blue-chip wallet holding an NFT from a blue-chip collection.
+* **Proposals:** Eligible users can create proposals to update parameters like the `baseRewardRate`, `initialHarvestBurnFeeRate`, `unstakeBurnFee`, and `collectionRegistrationFee`.
+* **Execution:** Once a proposal receives enough votes (`minVotesRequiredScaled`), it can be executed, and the new parameter value is applied.
+
+---
+
+## Technical Details
+
+### Upgradeability
+The contract is built using the **UUPS (Universal Upgradeable Proxy Standard)** pattern from OpenZeppelin, which allows the contract logic to be upgraded in the future without changing the contract's address.
+
+### Custom Libraries
+The contract uses custom libraries (`StakingLib`, `GovernanceLib`, and `BluechipLib`) to organize its logic and separate concerns. This modular approach makes the code cleaner and more secure by encapsulating specific functionalities. The `__gap` variable is a standard practice in upgradeable contracts to prevent storage layout clashes in future upgrades.
+
+### Gas Optimization
+The contract uses "gas-cheap" error messages and state variable packing (e.g., using `bytes32` for roles and event signatures) to minimize transaction costs. Events are also used to keep a record of critical actions, which is more gas-efficient than storing the same information in state variables.
