@@ -267,44 +267,79 @@ A bonus system that rewards the most committed burners, strengthening the ecosys
 Catalyst is where NFT ecosystems converge — blue-chip and junk alike — into one unified, deflationary, community-governed protocol.
 
 
-📑 Technical Appendix — Catalyst Smart Contract Architecture
-
-1. Overview
-
-Catalyst is deployed as a modular, upgradeable protocol.
-The design separates user-facing functions from business logic modules (libraries) to ensure security, scalability, and long-term governance alignment.
-
-Upgradeable Core (CatalystNFTStakingCore): Manages state, ERC-20 mint/burn, NFT custody, and routes calls to libraries.
-
-Libraries: Encapsulate staking, governance, fee management, config registry, proposal execution, and treasury functions.
-
-Immutable Rules: The 90% burn, 9% treasury, 1% deployer distribution cannot be altered.
 
 
-This architecture is fully aligned with Catalyst’s whitepaper principles of deflationary economics, NFT-neutral utility, and governance fairness.
+Technical Appendix — Catalyst Smart Contract Architecture (Aligned with Current Implementation)
 
 
 ---
 
-2. Core Contract — CatalystNFTStakingCore.sol
+1. Overview
+
+Catalyst is deployed as a modular, upgradeable protocol.
+The design separates user-facing functions from business logic modules to ensure security, scalability, and sustainability.
+
+Core Upgradeable Contract: CatalystNFTStakingUpgradeable
+
+Libraries: StakingLib, GovernanceLib, BluechipLib
+
+Immutable Rules: 90% Burn, 9% Treasury, 1% Deployer
+
+
+Key upgrades we’ve integrated:
+
+Blue-chip non-custodial enrollment (per-wallet one-time fee).
+
+Verified/Unverified custodial staking (via StakingLib).
+
+Guardian Councils upgraded to 7 members, 5 approvals threshold.
+
+Custom errors instead of strings (deploy-size optimized).
+
+
+
+---
+
+2. Core Contract — CatalystNFTStakingUpgradeable.sol
+
+The upgradeable ERC-20 + NFT staking contract, serving as the protocol hub.
 
 Functions exposed to users:
-stake, unstake, harvest, propose, vote.
 
-Upgradeable (UUPS): Supports protocol upgrades via governance.
+Custodial staking: stake, batchStake, unstake, harvest.
 
-ERC-20 Logic: Handles minting, burning, and fee transfers.
+Blue-chip enrollment & rewards: enrollBluechip, harvestBluechip.
 
-Immutable Fee Rule: Hard-coded _splitFeeFromSender enforces the 90/9/1 split.
+Governance: propose, vote, executeProposal.
+
+Collection registration: registerCollection.
 
 
-Whitepaper Alignment:
+Immutable fee split (hard-coded):
 
-Implements the deflationary tokenomics (burn mechanics).
+90% Burn
 
-Enforces immutable 90/9/1 fee distribution.
+9% Treasury (governance-controlled)
 
-Provides a clean upgrade path for long-term sustainability.
+1% Deployer (creator address)
+
+
+Guardian Councils:
+
+Deployer Council (GCSS): 7 members, 5 approvals → can recover deployer.
+
+Admin Guardian Council (AGC): 7 members, 5 approvals → can recover admin role.
+
+
+Whitepaper alignment:
+
+Implements universal staking & earning (blue-chip, verified, unverified).
+
+Enforces immutable 90/9/1 distribution.
+
+Upgradeable via UUPS proxy pattern.
+
+Governance cannot override immutable economics.
 
 
 
@@ -312,193 +347,206 @@ Provides a clean upgrade path for long-term sustainability.
 
 3. Staking Library — StakingLib.sol
 
-Tracks stake/unstake bookkeeping.
+Custodial staking only (for verified & unverified collections).
 
-Supports term stakes (with cooldown) and permanent stakes (with upfront fee).
+Features:
 
-Calculates pending rewards based on base reward rate and stake age.
+Records term & permanent stakes.
 
-Maintains burn records, top collections, and participating wallets.
+Caps:
 
-Caps per-collection staking (20,000 NFTs) and global staking (1B NFTs).
+Global cap: 1,000,000,000 NFTs
 
+Term: 750M
 
-Whitepaper Alignment:
+Permanent: 250M
 
-Matches Tokenomics (Section 6): dynamic rewards, capped supply.
-
-Supports Verified/Unverified tiers (Section 7) by tracking surcharges and burns.
-
-Provides Top 1% Burner Bonus eligibility tracking.
+Per-collection cap: 20,000 NFTs
 
 
+Calculates pending rewards.
 
----
-
-4. Governance Library — GovernanceLib.sol
-
-Defines proposal lifecycle: create → vote → tally.
-
-Implements Burn-Weighted Collection Governance (BWCG):
-
-Full voting weight for top collections.
-
-Fractional weight for small collections meeting burn threshold.
-
-Stake-age requirement prevents flash-stake manipulation.
+Tracks stake portfolios per user.
 
 
-Enforces per-collection vote cap.
+Whitepaper alignment:
 
+Matches Section 6 (Tokenomics) with capped emissions.
 
-Whitepaper Alignment:
+Implements Verified/Unverified tier model.
 
-Matches Governance Model (Section 8): dynamic eligibility, vote caps, quorum rules.
-
-Protects against whale dominance and spam proposals.
-
-Ensures governance cannot override 90/9/1 rule.
+Proof-of-burn is enforced through fees + surcharges.
 
 
 
 ---
 
-5. Config Registry Library — ConfigRegistryLib.sol
+4. Bluechip Library — BluechipLib.sol
 
-Stores all dynamic parameters (fees, cooldowns, reward adjustments).
+Non-custodial staking for trusted collections.
 
-Governance proposals can update values safely.
+Features:
 
-Key dynamic values:
+One-time per-wallet enrollment fee (uniform, governance-adjustable).
 
-Harvest burn fee (adaptive).
+Enrolled wallets earn rewards by simply holding blue-chip NFTs (no custody).
 
-Unstake fee.
-
-Registration fees (scaled with declared supply).
-
-Stake limits per collection/global.
-
-Governance thresholds (quorum, vote weight).
+Rewards scale with time elapsed + base reward rate.
 
 
+Whitepaper alignment:
 
-Whitepaper Alignment:
+Matches Section 7 (Collection Tiers) → Verified = custodial staking, Blue-chip = optional non-custodial.
 
-Matches Transparency & Fairness (Section 5) by allowing governance to tune protocol parameters openly.
+Provides low-friction legitimacy for blue-chip holders.
 
-Ensures security & scalability (Section 9) by enforcing on-chain caps and cooldowns.
+Still respects the deflationary fee model.
 
 
 
 ---
 
-6. Fee Manager Library — FeeManagerLib.sol
+5. Governance Library — GovernanceLib.sol
 
-Splits protocol fees immutably: 90% Burn, 9% Treasury, 1% Deployer.
+Implements Burn-Weighted Collection Governance (BWCG).
 
-Core performs actual token burns & transfers, ensuring accounting accuracy.
+Features:
 
-Tracks treasury balance growth transparently.
+Proposal lifecycle: create → vote → execute.
 
+Weighted by:
 
-Whitepaper Alignment:
+Burns,
 
-Implements Deflationary Economics (Section 6).
+Stake-age,
 
-Matches Immutable Fee Distribution Rule (90/9/1) that governance cannot override.
-
-
-
----
-
-7. Proposal Executor Library — ProposalExecutorLib.sol
-
-Executes successful governance proposals.
-
-Updates values in ConfigRegistry and Governance parameters.
-
-Manages collection tier upgrades when criteria are met (burn threshold, age, stakers, governance approval).
-
-Prevents re-execution and enforces quorum.
+Verified blue-chip ownership.
 
 
-Whitepaper Alignment:
+Per-collection vote cap to prevent monopolization.
 
-Matches Proposal Lifecycle (Section 8).
+Quorum + time-based execution.
 
-Enforces Upgrade Path for Unverified → Verified collections (Section 7).
 
-Protects governance integrity by requiring quorum and cooldowns.
+Whitepaper alignment:
+
+Matches Section 8 (Governance Model).
+
+Enforces fairness: no single collection or whale dominance.
+
+Immutable safeguard: governance cannot change 90/9/1 rule.
 
 
 
 ---
 
-8. Treasury Library — TreasuryLib.sol
+6. Treasury Logic
 
-Tracks 9% protocol treasury balance.
+Treasury is part of the core contract, no separate lib.
 
-Allows withdrawals only via governance/admin role.
+Receives 9% of every fee.
 
-Treasury funds can be allocated for:
+Withdrawals only via governance/admin role.
 
-Burner bonus programs.
+Allocations:
 
-Ecosystem grants.
+Top 1% Burner Bonus.
 
-Future governance-approved initiatives.
+Grants, audits, integrations (governance-approved).
 
 
 
-Whitepaper Alignment:
+Whitepaper alignment:
 
-Matches Treasury Usage (Section 6).
+Matches Section 6 (Treasury Usage).
 
-Enables Top 1% Burner Bonus distribution.
-
-Supports community-driven ecosystem support.
+Enables bonus cycles, grants, and ecosystem support.
 
 
 
 ---
 
-9. Security & Upgradeability
+7. Immutable Economics (Deflationary)
 
-Upgradeable: Core contract uses OpenZeppelin UUPS proxy standard.
+Harvest burns: Dynamic % of every reward.
 
-Safe ERC-20/NFT handling: Uses OpenZeppelin ERC20 & ERC721 interfaces.
+Unstake burns: Flat CATA fee.
 
-Reentrancy Protection: NonReentrant modifier on state-changing functions.
+Registration fees: Required to onboard new collections.
 
-Pausable: Emergency circuit breaker to halt staking/unstaking if needed.
-
-Role-Based Access: DEFAULT_ADMIN_ROLE & CONTRACT_ADMIN_ROLE.
+Voluntary burns: Users may burn extra CATA (recorded for bonus eligibility).
 
 
-Whitepaper Alignment:
+Immutable fee distribution enforced in _splitFeeFromSender:
 
-Matches Security & Sustainability (Section 9) with proven libraries and immutable economics.
+90% burned,
 
-Provides scalable upgrade path while preserving rules that governance cannot break.
+9% treasury,
+
+1% deployer.
+
+
+Whitepaper alignment:
+
+Matches Section 5 & 6 (Deflationary Economics).
+
+Continuous burn ensures long-term scarcity.
 
 
 
 ---
 
-✅ Conclusion
+8. Security, Scalability, Upgradeability
 
-The Catalyst modular architecture ensures the protocol remains true to the whitepaper’s promises:
+Security:
 
-Universal Utility: Any ERC-721 can stake.
+OpenZeppelin contracts.
 
-Deflationary Tokenomics: Immutable 90/9/1 distribution.
+ReentrancyGuard.
 
-Burn-Weighted Governance: Fair governance via burns + stake-age.
-
-Scalability & Security: Capped staking, reentrancy protection, upgradeable design.
-
-Community Control: Treasury and parameters governed transparently.
+Pausable emergency halt.
 
 
-Catalyst is thus both a technical foundation and a vision-aligned protocol, bridging blue-chip legitimacy with junk NFT redemption into one unified ecosystem.
+Scalability:
+
+1B global NFT cap.
+
+20k per collection cap.
+
+
+Upgradeability:
+
+UUPS proxy.
+
+Admin recovery by AGC (7:5).
+
+Deployer recovery by GCSS (7:5).
+
+
+
+Whitepaper alignment:
+
+Matches Section 9 (Security, Scalability, Sustainability).
+
+Governance-approved upgrades preserve immutables.
+
+
+
+---
+
+✅ Final Alignment
+This updated whitepaper now directly matches the deployed CatalystNFTStakingUpgradeable architecture.
+
+Custodial = Verified/Unverified.
+
+Non-custodial = Blue-chip (per-wallet fee).
+
+Immutable 90/9/1 deflationary model.
+
+Burn-weighted governance with vote caps.
+
+Guardian recovery councils (7:5).
+
+Treasury bonus system.
+
+Upgradeable & scalable.
