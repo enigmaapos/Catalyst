@@ -1,0 +1,66 @@
+Right now you have:
+
+✅ StakingLib
+
+Term + Permanent staking.
+
+Unstake, harvest, pending rewards.
+
+Caps: global / term / permanent.
+
+
+✅ GovernanceLib
+
+Propose, vote, execute, cancel.
+
+Block-based lifecycles.
+
+Quorum check.
+
+
+✅ DRSLib
+
+Guardian councils (propose, approve, execute).
+
+Compromise detection.
+
+Last Honest Guardian reset.
+
+Owner reset.
+
+
+✅ CatalystNFTStakingUpgradeable
+
+Register collection.
+
+Stake / unstake / harvest NFTs.
+
+Simple reward minting.
+
+Deploy + admin guardian councils (GCSS + AGC).
+
+
+
+---
+
+Missing pieces (but planned to add):
+
+1. Fee logic (90% burn / 9% treasury / 1% deployer)
+→ needs a FeeManagerLib or direct handling in harvest/unstake/registration.
+
+
+2. Blue-chip wallet registration (non-custodial)
+→ instead of staking, register wallet for permanent earnings.
+
+
+3. Unverified/junk NFTs staking + proof-of-burn logic.
+
+
+4. Governance integrations
+→ adjust reward rates, fees, stake limits, etc.
+
+
+5. Treasury bonus flows (Top 1% burner bonus).
+
+
+6. More safety hooks (pausable, emergency stops).
