@@ -156,32 +156,46 @@ The bonus pool is capped (default: 5% of Treasury per cycle).
 
 ---
 
-7. Collection Tiers
+7. Collection Tiers 
 
-Verified (Blue-Chip / Curated)
+Verified (Standard)
 
-Normal dynamic registration fee (scaled with declared supply).
+Normal registration & staking fees.
 
-Full staking & governance rights.
+Full privileges: staking, governance, voting.
 
-Lower cost, higher legitimacy.
+Custodial staking inside the protocol.
 
 
 Unverified (Junk / Rug Survivors)
 
-Base fee + surcharge escrow (refunded on upgrade, forfeited otherwise).
+Must pay registration + surcharge escrow.
 
-Reduced voting weight unless burn threshold is met.
+Reduced governance rights until upgraded.
 
-Upgrade path: requires age, burn contribution, stakers, and governance approval.
+Upgrade path: burn contribution + stake age + stakers + governance approval.
+
+
+Blue-Chip (Curated / Trusted)
+
+Default assumption: already proven, not required to stake.
+
+Non-custodial model: wallets register directly.
+
+One-time fee per wallet for reward access if not staking.
+
+If they choose to stake instead → same as Verified path, free of the extra wallet fee.
+
+Benefit: avoids custody risks while still earning rewards.
+
 
 
 
 ---
 
-8. Governance Model
+8. Governance Model 
 
-Catalyst introduces Burn-Weighted Collection Governance (BWCG):
+Burn-Weighted Collection Governance (BWCG):
 
 Top collections by burned CATA get full voting rights.
 
@@ -189,53 +203,64 @@ Smaller collections participate with fractional weight once burn thresholds are 
 
 Stake-age requirement prevents flash-stake manipulation.
 
-Per-collection vote cap prevents whales from monopolizing votes.
-
-Proposal lifecycle: Propose → Vote → Execute (after quorum & time window).
+Per-collection vote cap prevents monopolies.
 
 
-Governable Parameters
+Blue-Chip wallets:
 
-Base reward rate.
+Gain full governance eligibility once the one-time wallet fee is paid or they participate via staking.
 
-Voting rules.
-
-Collection upgrades.
-
-Treasury usage.
-
-Bonus pool % allocation.
+No extra weighting beyond normal rules — ensures fairness.
 
 
-⚠️ Governance cannot change the 90/9/1 distribution rule.
+
+⚠️ Immutable: 90/9/1 split cannot be changed.
 
 
 ---
 
-9. Security, Scalability, Sustainability
+9. Guardian Council Security System (DRS) 
 
-Security: Built on audited OpenZeppelin libraries; reentrancy-protected; pausable; escrow mechanics protect against spam.
+The Decentralized Recovery System (DRS) uses guardian-based controls.
 
-Scalability: Per-collection staking capped at 20,000 NFTs; global staking capped at 1 billion NFTs.
+Deployer Guardian Council (GCSS): 7 guardians, 5 approvals required (7:5).
 
-Sustainability: Immutable 90% burn, continuous deflation, and capped Treasury bonuses maintain long-term balance.
+Admin Guardian Council (AGC): 7 guardians, 5 approvals required (7:5).
+
+Shared Guardian Council optional.
+
+
+Compromise Detection:
+
+5/7 approvals → Recovery valid.
+
+6/7 approvals → ⚠️ Warning, possible compromise.
+
+7/7 approvals → 🚨 Critical auto-lock.
+
+
+Last Honest Guardian Reset:
+
+If 6 of 7 approve, the 7th guardian gains temporary reset powers (48h) to prevent takeover.
 
 
 
 ---
 
-10. Competitive Edge
+10. Security, Scalability, Sustainability 
 
-First protocol to give junk NFTs real utility.
+Security: Guardian-based recovery (7:5 threshold), reentrancy protection, OpenZeppelin UUPS upgradeability.
 
-Blue-chip credibility by filtering junk through burn-based proof and governance.
+Scalability:
 
-Adaptive governance that scales with ecosystem growth.
+Custodial staking handled in StakingLib (lightweight, gas-efficient).
 
-Top 1% Burner Bonus – unique gamified incentive for holders.
+Blue-chip non-custodial rewards handled in core contract (no extra custody overhead).
 
-Universal NFT utility layer — Catalyst doesn’t replace marketplaces, it empowers them.
+Per-collection cap = 20,000 NFTs; global staking cap = 1B NFTs.
 
+
+Sustainability: Continuous burn, capped treasury, immutable 90/9/1 split.
 
 
 ---
@@ -251,22 +276,32 @@ Phase 5: Expansion of utility — cross-chain staking, DeFi integrations, NFT co
 
 ---
 
-12. Conclusion
 
-Catalyst is not just another NFT staking dApp. It is the foundation of a new model:
+12. Conclusion 
 
-A universal utility layer where every NFT, even “junk,” has on-chain value.
+Catalyst is both a universal NFT utility layer and a guardian-secured protocol.
 
-A governance system where legitimacy is proven through burn and participation.
+NFTs gain value: even junk NFTs.
 
-A deflationary economy designed for long-term sustainability.
+Governance is fair: burn-weighted and capped.
 
-A bonus system that rewards the most committed burners, strengthening the ecosystem further.
+Tokenomics are deflationary: immutable 90/9/1 split.
+
+Security is advanced: Guardian Councils with compromise detection and last-resort protection.
+
+📌 R&D-First Mission
+Catalyst begins as a research & development project, created to stress-test the security, scalability, and sustainability of NFT-integrated protocols. Its primary goal is to help improve the space by experimenting with staking, governance, and decentralized recovery.
+
+Catalyst is not launched as a commercial product — but it is community-governed, meaning the future is open:
+
+The community may choose to keep Catalyst as a pure R&D initiative.
+
+Or evolve it into a sustainable protocol that balances ecosystem growth with incentives for contributors and maintainers.
 
 
-Catalyst is where NFT ecosystems converge — blue-chip and junk alike — into one unified, deflationary, community-governed protocol.
+An immutable 1% deployer fee exists to ensure founder sustainability, but beyond that, any expansion, profit models, or treasury allocations are subject to governance.
 
-
+Catalyst = NFT-neutral utility + sustainable deflation + decentralized recovery.
 
 
 Technical Appendix — Catalyst Smart Contract Architecture (Aligned with Current Implementation)
