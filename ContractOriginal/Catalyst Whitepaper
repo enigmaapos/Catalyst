@@ -1,0 +1,259 @@
+---
+
+Catalyst + Decentralized Recovery System (DRS) Whitepaper
+
+Universal Utility & Governance for All NFTs, Secured by the Guardian Council Security System (GCSS)
+
+
+---
+
+1. Introduction
+
+The NFT space has rapidly evolved, but remains fragmented. Blue-chip collections dominate, while thousands of smaller or abandoned projects struggle for relevance. Holders of failed or “junk” NFTs are left with no utility, governance, or pathway back into the ecosystem.
+
+Catalyst changes this.
+
+Catalyst is the first NFT-neutral staking and governance protocol, designed to give universal utility to every ERC-721 token — whether blue-chip, indie, or abandoned.
+
+Catalyst is not a marketplace or speculative platform. It is an infrastructure layer: a deflationary staking protocol where all NFTs can earn, burn, and participate in governance — secured by a Guardian Council Security System (GCSS) that provides emergency recovery and compromise detection.
+
+
+---
+
+2. Vision
+
+> To become the universal utility layer of the NFT ecosystem, where every NFT has value and every collection can contribute to decentralized governance.
+
+
+
+
+---
+
+3. Mission
+
+Empower Holders – Give all NFT owners, from BAYC whales to rug-pull survivors, a way to extract real value.
+
+Balance Incentives – Reward credible collections while still including unverified ones via proof-of-burn.
+
+Deflationary Tokenomics – Sustain value through continuous burn mechanics and capped staking.
+
+Governance for All – Create an adaptive governance model balancing top collections with small contributors.
+
+Protocol Safety – Introduce DRS (GCSS) as a decentralized failsafe against lost keys or hacks.
+
+
+
+---
+
+4. Goals
+
+Establish CATA as the core utility token of NFT staking & governance.
+
+Build a dual-tier ecosystem:
+
+Verified collections with full privileges.
+
+Unverified collections with burn-based upgrade paths.
+
+
+Maintain a deflationary balance between minted rewards and burned supply.
+
+Provide transparent governance based on burns and stake-age.
+
+Secure the protocol with Guardian Councils for both deployer and admin roles.
+
+
+
+---
+
+5. Core Philosophy
+
+1. NFT-Neutral Utility – Every ERC-721 is unique on-chain, even if “junk.”
+
+
+2. Proof-of-Burn Legitimacy – Junk collections must burn extra CATA to join.
+
+
+3. Adaptive Governance – Voting eligibility scales with ecosystem growth.
+
+
+4. Immutable Deflation – 90/9/1 split: 90% burn, 9% treasury, 1% deployer.
+
+
+5. Guardian-Based Recovery – Protect against lost keys or compromised roles.
+
+
+
+
+---
+
+6. Tokenomics (CATA)
+
+Token Name: Catalyst (CATA)
+
+Type: ERC-20 Utility & Governance
+
+
+Deflationary Mechanics
+
+Harvest burn fee (dynamic).
+
+Unstake burn fee.
+
+Collection registration fees.
+
+Voluntary burns.
+
+
+Emission Mechanics
+
+Staking NFTs mints CATA.
+
+Rewards adjust dynamically with participation.
+
+Global staking cap: 1B NFTs (75% Term, 25% Permanent).
+
+
+Immutable Fee Split
+
+90% Burn (permanent reduction).
+
+9% Treasury (governance-controlled).
+
+1% Deployer (maintainer incentive).
+
+
+
+---
+
+7. Collection Tiers
+
+Verified: Normal fees, full privileges.
+
+Unverified: Higher fees, reduced rights until upgrade (age + burn + stakers + governance approval).
+
+
+
+---
+
+8. Governance Model
+
+Burn-Weighted Collection Governance (BWCG):
+
+Top collections by burned CATA get full voting weight.
+
+Smaller collections gain fractional weight after burn thresholds.
+
+Stake-age prevents flash-stake manipulation.
+
+Per-collection vote caps prevent monopolies.
+
+
+Governable Parameters: reward rate, fees, governance thresholds, treasury allocation.
+
+⚠️ Immutable: 90/9/1 split cannot be changed.
+
+
+---
+
+9. Guardian Council Security System (DRS)
+
+The Decentralized Recovery System (DRS) adds a guardian-based security layer on top of Catalyst.
+
+Deployer Guardian Council (GCSS): Protects the deployer role (receives 1% fees).
+
+Admin Guardian Council (AGC): Protects the DEFAULT_ADMIN_ROLE (upgrades & role management).
+
+Shared Guardian Council: Optional single council for both.
+
+
+Recovery Flow
+
+1. Guardian proposes new deployer/admin.
+
+
+2. Guardians approve (e.g., 5-of-7).
+
+
+3. If threshold met → recovery executed.
+
+
+4. Old deployer removed if guardian.
+
+
+
+Compromise Detection
+
+Threshold Met (e.g., 5/7): Recovery valid.
+
+6/7 approvals: ⚠️ Warning, possible compromise.
+
+7/7 approvals: 🚨 Critical → auto-lock.
+
+
+Last Honest Guardian Reset
+
+If 6 of 7 approve, the 7th (last honest) gains special reset powers for 48 hours.
+
+They can replace the council to stop a takeover.
+
+
+
+---
+
+10. Security, Scalability, Sustainability
+
+Security: Guardian-based recovery, reentrancy protection, OpenZeppelin UUPS upgradeability.
+
+Scalability: Per-collection caps, global NFT stake cap at 1B.
+
+Sustainability: Continuous burn, capped treasury, immutable 90/9/1 split.
+
+
+
+---
+
+11. Competitive Edge
+
+First universal NFT staking protocol (junk + blue-chip).
+
+Unique proof-of-burn legitimacy system.
+
+Top 1% Burner Bonus rewards most committed users.
+
+Guardian Council adds compromise detection + failsafe reset (not found in Safe/Argent).
+
+
+
+---
+
+12. Roadmap
+
+Phase 1: Core contract deployment.
+
+Phase 2: Frontend UI + dashboard.
+
+Phase 3: Governance bootstrapping.
+
+Phase 4: NFT marketplace integrations.
+
+Phase 5: Cross-chain staking + DeFi integrations.
+
+
+
+---
+
+13. Conclusion
+
+Catalyst is both a universal NFT utility layer and a guardian-secured protocol.
+
+NFTs gain value: even junk NFTs.
+
+Governance is fair: burn-weighted and capped.
+
+Tokenomics are deflationary: immutable 90/9/1 split.
+
+Security is advanced: Guardian Council ensures recovery, compromise detection, and last-resort protection.
+
+
+Catalyst = NFT-neutral utility + sustainable deflation + decentralized recovery.
