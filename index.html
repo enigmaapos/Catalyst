@@ -1334,6 +1334,92 @@ $("btnScanGuardians").onclick = async () => {
   })();
 };
 
+  <script>
+/** =========================
+ * AUTO-INIT (FAST UI FIRST)
+ * ======================= */
+
+// ⚡ Wire UI instantly on DOM ready
+document.addEventListener("DOMContentLoaded", () => {
+  // Tabs
+  document.querySelectorAll(".tabbar button").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const key = btn.dataset.tab;
+      document.querySelectorAll(".tab").forEach(t => t.style.display="none");
+      document.getElementById("tab-" + key).style.display = "block";
+    };
+  });
+
+  // Connect Wallet (always available)
+  document.getElementById("connectBtn").onclick = async () => {
+    try { await connectWallet(); }
+    catch(e){ log(e.message || e, "err"); }
+  };
+
+  // Contract + RPC save buttons
+  document.getElementById("saveContractBtn").onclick = () => {
+    try { saveContractAddress(document.getElementById("contractAddress").value.trim()); }
+    catch(e){ log(e.message || e, "err"); }
+  };
+  document.getElementById("saveRpc").onclick = async () => {
+    const url = document.getElementById("rpcUrl").value.trim();
+    localStorage.setItem("catalyst_rpc", url);
+    await setupReadProvider(url);
+    if (CONTRACT_ADDR) {
+      try { await initReadContract(); log("Re-initialized with new RPC ✅", "ok"); }
+      catch(e){ log(e.message || e, "err"); }
+    }
+  };
+
+  // Stats auto-refresh controls
+  document.getElementById("btnRefresh").onclick = refreshStats;
+  document.getElementById("autoRefresh").onchange = (e) => toggleAutoRefresh(e.target.checked);
+
+  log("UI wired instantly ⚡", "ok");
+});
+
+// 🐢 Background init (non-blocking)
+window.addEventListener("load", async () => {
+  try {
+    // Restore RPC
+    const savedRpc = localStorage.getItem("catalyst_rpc") || DEFAULT_RPC;
+    document.getElementById("rpcUrl").value = savedRpc;
+    await setupReadProvider(savedRpc);
+
+    // Restore contract
+    const savedAddr = localStorage.getItem("catalyst_contract") || DEFAULT_CONTRACT;
+    if (savedAddr) {
+      CONTRACT_ADDR = savedAddr;
+      document.getElementById("contractAddress").value = CONTRACT_ADDR;
+      await initReadContract(); // preload ABI + contract
+    }
+
+    // Try restoring wallet silently
+    if (window.ethereum) {
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      if (accounts.length > 0) {
+        WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
+        SIGNER = await WALLET_PROVIDER.getSigner();
+        USER_ADDR = accounts[0];
+        document.getElementById("acct").textContent = USER_ADDR;
+        log(`Restored wallet: ${USER_ADDR}`, "ok");
+      } else {
+        document.getElementById("acct").textContent = "Not connected";
+      }
+    }
+
+    // Initial stats
+    if (CONTRACT_ADDR) await refreshStats();
+
+    log("Background init complete ✅", "ok");
+  } catch (e) {
+    log(`Init error: ${e.message || e}`, "err");
+  }
+});
+</script>
+
 </script>
 </body>
 </html>
