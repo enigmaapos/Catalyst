@@ -894,6 +894,24 @@ window.addEventListener("load", async () => {
       };
     });
 
+    // Header buttons wiring (Connect / Save RPC / Save Contract)
+    $("connectBtn").onclick = async () => {
+      try { await connectWallet(); } catch (e) { log(e.message || e, "err"); }
+    };
+    $("saveRpc").onclick = async () => {
+      const url = $("rpcUrl").value.trim();
+      localStorage.setItem("catalyst_rpc", url);
+      await setupReadProvider(url);
+      if (CONTRACT_ADDR) {
+        try { await initReadContract(); log("Read contract re-initialized with new RPC", "ok"); }
+        catch(e){ log(e.message || e, "err"); }
+      }
+    };
+    $("saveContractBtn").onclick = () => {
+      try { saveContractAddress($("contractAddress").value.trim()); }
+      catch(e){ log(e.message || e, "err"); }
+    };
+
     // Auto-refresh stats once
     if (CONTRACT_ADDR) {
       await refreshStats();
