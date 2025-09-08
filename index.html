@@ -84,7 +84,6 @@
         <button data-tab="governance">Governance</button>
         <button data-tab="guardians">Guardians</button>
         <button data-tab="admin">Admin</button>
-        <button data-tab="info">Info</button>
         <button data-tab="views">Views</button>
       </div>
 
@@ -340,7 +339,6 @@
         </details>
       </div>
 
-
       <!-- Admin Tab -->
       <div class="tab" id="tab-admin" style="display:none">
         <h3 style="margin-top:0">Admin Controls</h3>
@@ -366,30 +364,6 @@
           <button id="btnWithdraw" class="primary">Withdraw Treasury</button>
         </div>
       </div>
-
-      <!-- Info Tab -->
-<div class="tab" id="tab-info" style="display:none">
-  <h3>User & Collection Info</h3>
-
-  <div class="row">
-    <div>
-      <div class="label">Collection Address</div>
-      <input id="infoCol" placeholder="0x…">
-    </div>
-    <div>
-      <div class="label">User Address</div>
-      <input id="infoUser" placeholder="0x… (leave blank for your wallet)">
-    </div>
-  </div>
-
-  <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
-    <button id="btnUserInfo">Get User Info</button>
-    <button id="btnColInfo">Get Collection Info</button>
-  </div>
-
-  <div class="hr"></div>
-  <div class="mono muted" id="infoOut">—</div>
-</div>
 
       <!-- Views Tab -->
       <div class="tab" id="tab-views" style="display:none">
@@ -479,8 +453,6 @@ let WRITE_CONTRACT = null; // Connected to signer
 let CONTRACT_ADDR = "";    // From input/localStorage
 
 let refreshTimer = null;
-
-let READ_CONTRACT;
 
 /** =========================
  * DOM SHORTCUTS & LOGGING
@@ -584,14 +556,6 @@ function parseIdsCSV(csv) {
     .filter(Boolean)
     .map(s => BigInt(s));
 }
-
-  function initReadContract() {
-  const addr = getContractAddress();
-  if (!addr) throw new Error("Contract address is empty");
-  if (!provider) provider = new ethers.BrowserProvider(window.ethereum);
-  READ_CONTRACT = new ethers.Contract(addr, ABI, provider);
-  return READ_CONTRACT;
-}  
 
 /** =========================
  * STATS (READ-ONLY)
@@ -925,45 +889,6 @@ $("btnWithdraw").onclick = async () => {
     const amt = parseUint($("amtTreasury").value);
     const tx = await WRITE_CONTRACT.withdrawTreasury(to, amt);
     log(`Withdraw: ${tx.hash}`); await tx.wait(); log("Treasury withdrawn ✅", "ok"); refreshStats();
-  } catch(e){ log(e.message || e, "err"); }
-};
-
-  // --- INFO TAB ---
-$("btnUserInfo").onclick = async () => {
-  try {
-    await initReadContract();
-    const col = $("infoCol").value.trim();
-    const usr = $("infoUser").value.trim() || USER_ADDR;
-    if (!ethers.isAddress(col)) throw new Error("Invalid collection");
-    if (!ethers.isAddress(usr)) throw new Error("Invalid user");
-
-    // Example: pending rewards for tokenId=0
-    const rewards = await READ_CONTRACT.pendingRewardsView(col, usr, 0);
-
-    $("infoOut").textContent =
-      `User ${usr}\n` +
-      `Collection: ${col}\n` +
-      `PendingRewards (tid=0): ${rewards}`;
-    
-    log("User info fetched ✅", "ok");
-  } catch(e){ log(e.message || e, "err"); }
-};
-
-$("btnColInfo").onclick = async () => {
-  try {
-    await initReadContract();
-    const col = $("infoCol").value.trim();
-    if (!ethers.isAddress(col)) throw new Error("Invalid collection");
-
-    const idx = await READ_CONTRACT.registeredIndex(col);
-    const blue = await READ_CONTRACT.isBluechipCollection(col);
-
-    $("infoOut").textContent =
-      `Collection ${col}\n` +
-      `RegisteredIndex: ${idx}\n` +
-      `Is Bluechip: ${blue}`;
-    
-    log("Collection info fetched ✅", "ok");
   } catch(e){ log(e.message || e, "err"); }
 };
 
