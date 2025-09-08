@@ -1,0 +1,627 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catalyst NFT Staking DApp</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #121212; color: #E0E0E0; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .tab-btn.active { background-color: #2D2D2D; color: #00A676; border-bottom: 2px solid #00A676; }
+    .card { background-color: #1E1E1E; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    input, select { background-color: #2D2D2D; border: 1px solid #444; color: #E0E0E0; border-radius: 8px; padding: 12px; }
+    button { background-color: #00A676; color: white; padding: 12px 24px; border-radius: 8px; transition: transform 0.1s; }
+    button:hover { transform: scale(1.02); background-color: #008C63; }
+    .btn-secondary { background-color: #444; }
+    .btn-secondary:hover { background-color: #555; }
+    .tooltip { position: relative; display: inline-block; }
+    .tooltip .tooltiptext { visibility: hidden; width: 200px; background-color: #555; color: #fff; text-align: left; border-radius: 6px; padding: 8px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; }
+    .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #00A676; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+    .muted { color: #aaa; }
+    .badge { padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
+    .badge-green { background: #003b2f; color: #1ee2a4; }
+    .badge-red { background: #3b0000; color: #ff6b6b; }
+  </style>
+</head>
+<body class="p-4 sm:p-8">
+  <!-- Loading Overlay -->
+  <div id="loading" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="loader"></div>
+  </div>  <div class="max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row gap-8">
+      <!-- Main Content Area -->
+      <div class="flex-1 w-full md:w-2/3">
+        <div class="bg-gray-800 rounded-xl shadow-lg p-6">
+          <div class="flex items-center justify-between">
+            <h1 class="text-3xl font-bold text-white mb-6">Catalyst NFT Staking DApp</h1>
+            <div class="flex items-center gap-2">
+              <span id="network-badge" class="badge badge-red">Not Connected</span>
+              <button id="connect-btn" class="btn-secondary">Connect Wallet</button>
+            </div>
+          </div><!-- Contract Controls -->
+      <div class="card mb-6 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Contract Address</label>
+            <input id="contract-address" placeholder="0x..." />
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">ERC721 Collection (for Approvals)</label>
+            <div class="flex gap-2">
+              <input id="erc721-address" class="flex-1" placeholder="0x..." />
+              <button id="approve-all-btn" class="btn-secondary">Approve All</button>
+            </div>
+            <p class="text-xs text-gray-400">Gives the staking contract permission to transfer your NFTs for custodial staking.</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button id="bind-contract-btn">Bind Contract</button>
+          <button id="refresh-stats-btn" class="btn-secondary">Refresh Stats</button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex justify-center border-b border-gray-700 mb-6 space-x-2 sm:space-x-4">
+        <button class="tab-btn px-4 py-2 sm:px-6 sm:py-3 rounded-t-lg font-medium transition-colors duration-200 active" data-tab="stake">Stake</button>
+        <button class="tab-btn px-4 py-2 sm:px-6 sm:py-3 rounded-t-lg font-medium transition-colors duration-200" data-tab="bluechip">Blue-Chip</button>
+        <button class="tab-btn px-4 py-2 sm:px-6 sm:py-3 rounded-t-lg font-medium transition-colors duration-200" data-tab="governance">Governance</button>
+        <button class="tab-btn px-4 py-2 sm:px-6 sm:py-3 rounded-t-lg font-medium transition-colors duration-200" data-tab="guardians">Guardians</button>
+        <button class="tab-btn px-4 py-2 sm:px-6 sm:py-3 rounded-t-lg font-medium transition-colors duration-200" data-tab="admin">Admin</button>
+      </div>
+
+      <!-- Stake Tab -->
+      <div id="stake" class="tab-content active space-y-6">
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Staking & Registration</h2>
+          <p class="text-gray-400">Stake your NFTs to earn rewards or register a new collection.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Collection Address</label>
+              <input type="text" id="stake-collection" placeholder="0x..." class="w-full" />
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Token ID</label>
+              <input type="text" id="stake-tokenId" placeholder="12345" class="w-full" />
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Declared Max Supply (for new collection)</label>
+              <input type="text" id="register-supply" placeholder="10000" class="w-full" />
+            </div>
+            <div class="flex items-center space-x-2 mt-2">
+              <input type="checkbox" id="stake-permanent" class="rounded text-green-500" />
+              <label for="stake-permanent" class="text-sm font-medium">Permanent Stake?</label>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+            <button onclick="handleTransaction('registerCollection')">Register Collection</button>
+            <button onclick="handleTransaction('stake')">Stake</button>
+            <button onclick="handleTransaction('harvest')">Harvest</button>
+            <button onclick="handleTransaction('unstake')">Unstake</button>
+          </div>
+          <div class="flex flex-col space-y-2 mt-4">
+            <label class="text-sm font-medium">Batch Stake (comma-separated Token IDs)</label>
+            <input type="text" id="batch-stake-ids" placeholder="1,2,3,4,5" class="w-full" />
+            <button onclick="handleTransaction('batchStake')" class="w-full">Batch Stake</button>
+          </div>
+        </div>
+
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Pending Rewards</h2>
+          <p class="text-gray-400">Check the pending rewards for a specific NFT.</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Collection Address</label>
+              <input type="text" id="pending-collection" placeholder="0x..." class="w-full" />
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Owner Address</label>
+              <input type="text" id="pending-owner" placeholder="0x..." class="w-full" />
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Token ID</label>
+              <input type="text" id="pending-tokenId" placeholder="12345" class="w-full" />
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <button onclick="handleTransaction('pendingRewardsView')">Check Rewards</button>
+            <p id="pending-rewards-display" class="text-lg font-bold text-yellow-300"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blue-Chip Tab -->
+      <div id="bluechip" class="tab-content space-y-6">
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Blue-Chip Non-Custodial Staking</h2>
+          <p class="text-gray-400">Enroll your wallet to earn rewards on any blue-chip collection you own, without staking your NFTs.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button onclick="handleTransaction('enrollBluechip')">Enroll Wallet</button>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Collection Address</label>
+              <input type="text" id="bluechip-harvest-collection" placeholder="0x..." class="w-full" />
+              <button onclick="handleTransaction('harvestBluechip')">Harvest</button>
+            </div>
+          </div>
+        </div>
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Admin: Set Blue-Chip Collection</h2>
+          <p class="text-gray-400">Only for Admin to set a collection as a blue-chip.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Collection Address</label>
+              <input type="text" id="set-bluechip-collection" placeholder="0x..." class="w-full" />
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Is Blue-Chip?</label>
+              <select id="set-bluechip-status" class="w-full">
+                <option value="true">True</option>
+                <option value="false">False</option>
+              </select>
+            </div>
+          </div>
+          <button onclick="handleTransaction('setBluechipCollection')">Set Blue-Chip Status</button>
+        </div>
+      </div>
+
+      <!-- Governance Tab -->
+      <div id="governance" class="tab-content space-y-6">
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Proposals</h2>
+          <p class="text-gray-400">Propose a new governance change to be voted on.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Proposal Type</label>
+              <select id="propose-type" class="w-full">
+                <option value="0">BASE_REWARD</option>
+                <option value="1">HARVEST_FEE</option>
+                <option value="2">UNSTAKE_FEE</option>
+                <option value="3">REGISTRATION_FEE_FALLBACK</option>
+                <option value="4">VOTING_PARAM</option>
+                <option value="5">TIER_UPGRADE</option>
+              </select>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">New Value</label>
+              <input type="text" id="propose-value" placeholder="e.g., 1000000000000000000" class="w-full" />
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Param Target (for VOTING_PARAM)</label>
+              <select id="propose-param-target" class="w-full">
+                <option value="0">minVotesRequiredScaled</option>
+                <option value="1">votingDurationBlocks</option>
+                <option value="2">collectionVoteCapPercent</option>
+              </select>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Collection Context (optional)</label>
+              <input type="text" id="propose-collection" placeholder="0x..." class="w-full" />
+            </div>
+          </div>
+          <button onclick="handleTransaction('propose')">Propose</button>
+        </div>
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Vote & Execute</h2>
+          <p class="text-gray-400">Vote on or execute a proposal using its ID.</p>
+          <div class="flex flex-col space-y-2">
+            <label class="text-sm font-medium">Proposal ID (bytes32)</label>
+            <input type="text" id="proposal-id" placeholder="0x..." class="w-full" />
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <button onclick="handleTransaction('vote')">Vote</button>
+            <button onclick="handleTransaction('executeProposal')">Execute</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guardians Tab -->
+      <div id="guardians" class="tab-content space-y-6">
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Guardian Council Management</h2>
+          <p class="text-gray-400">As a DEFAULT_ADMIN_ROLE, set new guardians for the councils.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Guardian Index (0-6)</label>
+              <input type="number" id="guardian-index" placeholder="0" class="w-full" />
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">Guardian Address</label>
+              <input type="text" id="guardian-address" placeholder="0x..." class="w-full" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <button onclick="handleTransaction('setDeployerGuardian')">Set Deployer Guardian</button>
+            <button onclick="handleTransaction('setAdminGuardian')">Set Admin Guardian</button>
+          </div>
+        </div>
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Guardian-Led Recovery</h2>
+          <p class="text-gray-400">Initiate and approve recovery of the Deployer or Admin roles.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">New Deployer Address (for proposal)</label>
+              <input type="text" id="new-deployer" placeholder="0x..." class="w-full" />
+            </div>
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium">New Admin Address (for proposal)</label>
+              <input type="text" id="new-admin" placeholder="0x..." class="w-full" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            <button onclick="handleTransaction('proposeDeployerRecovery')">Propose Deployer Recovery</button>
+            <button onclick="handleTransaction('approveDeployerRecovery')">Approve Deployer Recovery</button>
+            <button onclick="handleTransaction('executeDeployerRecovery')">Execute Deployer Recovery</button>
+            <button onclick="handleTransaction('proposeAdminRecovery')">Propose Admin Recovery</button>
+            <button onclick="handleTransaction('approveAdminRecovery')">Approve Admin Recovery</button>
+            <button onclick="handleTransaction('executeAdminRecovery')">Execute Admin Recovery</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tab -->
+      <div id="admin" class="tab-content space-y-6">
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Admin Functions</h2>
+          <p class="text-gray-400">Callable by accounts with the CONTRACT_ADMIN_ROLE.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button onclick="handleTransaction('pause')">Pause</button>
+            <button onclick="handleTransaction('unpause')">Unpause</button>
+          </div>
+        </div>
+        <div class="card space-y-4">
+          <h2 class="text-xl font-semibold">Treasury Management</h2>
+          <p class="text-gray-400">Withdraw funds from the contract treasury.</p>
+          <div class="flex flex-col space-y-2">
+            <label class="text-sm font-medium">Recipient Address</label>
+            <input type="text" id="withdraw-to" placeholder="0x..." class="w-full" />
+          </div>
+          <div class="flex flex-col space-y-2">
+            <label class="text-sm font-medium">Amount (token wei)</label>
+            <input type="text" id="withdraw-amount" placeholder="1000000000000000000" class="w-full" />
+          </div>
+          <button onclick="handleTransaction('withdrawTreasury')">Withdraw</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar: Live Stats -->
+  <aside class="w-full md:w-1/3 space-y-6">
+    <div class="card space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-semibold">Protocol Stats</h3>
+        <button class="btn-secondary text-sm" id="mini-refresh">Refresh</button>
+      </div>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <div class="muted">Total Staked (All)</div>
+          <div id="stat-totalAll" class="font-semibold">—</div>
+        </div>
+        <div>
+          <div class="muted">Total Term</div>
+          <div id="stat-totalTerm" class="font-semibold">—</div>
+        </div>
+        <div>
+          <div class="muted">Total Permanent</div>
+          <div id="stat-totalPerm" class="font-semibold">—</div>
+        </div>
+        <div>
+          <div class="muted">Remaining Global</div>
+          <div id="stat-remGlobal" class="font-semibold">—</div>
+        </div>
+        <div>
+          <div class="muted">Remaining Term</div>
+          <div id="stat-remTerm" class="font-semibold">—</div>
+        </div>
+        <div>
+          <div class="muted">Remaining Permanent</div>
+          <div id="stat-remPerm" class="font-semibold">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card space-y-3">
+      <h3 class="text-xl font-semibold">Contract Info</h3>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <div class="muted">Deployer Address</div>
+          <div id="info-deployer" class="font-semibold break-all">—</div>
+        </div>
+        <div>
+          <div class="muted">Treasury Balance</div>
+          <div id="info-treasury" class="font-semibold">—</div>
+        </div>
+        <div>
+          <div class="muted">Paused?</div>
+          <div id="info-paused" class="font-semibold">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card space-y-2">
+      <h3 class="text-xl font-semibold">Notifications</h3>
+      <div id="log" class="text-sm space-y-1 max-h-64 overflow-y-auto"></div>
+    </div>
+  </aside>
+</div>
+
+  </div>  <script>
+    // ======= Global Ethers Handles =======
+    let provider, signer, account, contract, readContract;
+
+    // ======= ABI (minimal) =======
+    const ABI = [
+      // Admin / Pause
+      "function pause()",
+      "function unpause()",
+      // Registration
+      "function registerCollection(address collection, uint256 declaredMaxSupply)",
+      // Custodial staking
+      "function stake(address collection, uint256 tokenId, bool permanent)",
+      "function batchStake(address collection, uint256[] tokenIds, bool permanent)",
+      "function harvest(address collection, uint256 tokenId)",
+      "function unstake(address collection, uint256 tokenId)",
+      // Blue-chip
+      "function setBluechipCollection(address collection, bool isBluechip)",
+      "function enrollBluechip()",
+      "function harvestBluechip(address collection)",
+      // Governance
+      "function propose(uint8 pType, uint8 paramTarget, uint256 newValue, address collectionContext) returns (bytes32)",
+      "function vote(bytes32 id)",
+      "function executeProposal(bytes32 id)",
+      // Guardians
+      "function setDeployerGuardian(uint8 idx, address guardian)",
+      "function setAdminGuardian(uint8 idx, address guardian)",
+      "function proposeDeployerRecovery(address newDeployer)",
+      "function approveDeployerRecovery()",
+      "function executeDeployerRecovery()",
+      "function proposeAdminRecovery(address newAdmin)",
+      "function approveAdminRecovery()",
+      "function executeAdminRecovery()",
+      // Treasury
+      "function withdrawTreasury(address to, uint256 amount)",
+      // Views
+      "function stakingStats() view returns (uint256 totalAll, uint256 totalTerm, uint256 totalPermanent, uint256 remainingGlobal, uint256 remainingTerm, uint256 remainingPermanent)",
+      "function pendingRewardsView(address collection, address owner, uint256 tokenId) view returns (uint256)",
+      "function treasuryBalance() view returns (uint256)",
+      "function deployerAddress() view returns (address)",
+      "function paused() view returns (bool)"
+    ];
+
+    const ERC721_ABI = [
+      "function setApprovalForAll(address operator, bool approved)",
+      "function isApprovedForAll(address owner, address operator) view returns (bool)",
+      "function balanceOf(address owner) view returns (uint256)"
+    ];
+
+    // ======= Helpers =======
+    const $ = (id) => document.getElementById(id);
+    const showLoading = (yes) => { $("loading").classList.toggle("hidden", !yes); };
+    const log = (msg) => {
+      const row = document.createElement('div');
+      row.textContent = new Date().toLocaleTimeString() + ' • ' + msg;
+      $("log").prepend(row);
+    };
+    const setBadge = (ok, textOk = 'Connected', textNo = 'Not Connected') => {
+      const b = $("network-badge");
+      b.className = `badge ${ok ? 'badge-green' : 'badge-red'}`;
+      b.textContent = ok ? textOk : textNo;
+    };
+
+    function requireContract() {
+      if (!contract) throw new Error('Bind the contract first.');
+    }
+
+    // ======= Wallet Connection =======
+    async function connectWallet() {
+      if (!window.ethereum) { alert('No wallet found. Please install MetaMask.'); return; }
+      provider = new ethers.BrowserProvider(window.ethereum);
+      const accs = await provider.send('eth_requestAccounts', []);
+      account = accs[0];
+      signer = await provider.getSigner();
+      setBadge(true, `Connected: ${account.slice(0,6)}…${account.slice(-4)}`);
+      log('Wallet connected');
+    }
+
+    async function bindContract() {
+      const addr = $("contract-address").value.trim();
+      if (!addr) { alert('Enter contract address'); return; }
+      if (!provider) provider = new ethers.BrowserProvider(window.ethereum);
+      readContract = new ethers.Contract(addr, ABI, await provider); // read-only
+      contract = signer ? new ethers.Contract(addr, ABI, signer) : null; // writes
+      log('Contract bound at ' + addr);
+      await refreshAll();
+    }
+
+    // ======= Stats =======
+    async function refreshAll() {
+      try {
+        requireContract();
+        showLoading(true);
+        const [stats, dep, tb, isPaused] = await Promise.all([
+          readContract.stakingStats(),
+          readContract.deployerAddress(),
+          readContract.treasuryBalance(),
+          readContract.paused()
+        ]);
+        $("stat-totalAll").textContent = stats.totalAll?.toString?.() || stats[0].toString();
+        $("stat-totalTerm").textContent = stats.totalTerm?.toString?.() || stats[1].toString();
+        $("stat-totalPerm").textContent = stats.totalPermanent?.toString?.() || stats[2].toString();
+        $("stat-remGlobal").textContent = stats.remainingGlobal?.toString?.() || stats[3].toString();
+        $("stat-remTerm").textContent = stats.remainingTerm?.toString?.() || stats[4].toString();
+        $("stat-remPerm").textContent = stats.remainingPermanent?.toString?.() || stats[5].toString();
+        $("info-deployer").textContent = dep;
+        $("info-treasury").textContent = ethers.formatUnits(tb || 0n, 18) + ' CATA';
+        $("info-paused").textContent = isPaused ? 'Yes' : 'No';
+        log('Stats refreshed');
+      } catch (err) {
+        console.error(err); log('Refresh failed: ' + (err?.shortMessage || err.message));
+      } finally { showLoading(false); }
+    }
+
+    // ======= ERC721 Approvals =======
+    async function approveAll() {
+      try {
+        requireContract();
+        if (!signer) throw new Error('Connect wallet first');
+        const collection = $("erc721-address").value.trim();
+        if (!collection) throw new Error('Enter ERC721 collection address');
+        showLoading(true);
+        const erc721 = new ethers.Contract(collection, ERC721_ABI, signer);
+        const already = await erc721.isApprovedForAll(account, readContract.target);
+        if (already) { log('Already approved for all'); return; }
+        const tx = await erc721.setApprovalForAll(readContract.target, true);
+        log('Approve tx sent: ' + tx.hash);
+        await tx.wait();
+        log('Approval confirmed');
+      } catch (e) { console.error(e); log('Approve failed: ' + (e?.shortMessage || e.message)); }
+      finally { showLoading(false); }
+    }
+
+    // ======= Transaction Router =======
+    async function handleTransaction(action) {
+      try {
+        requireContract();
+        if (!signer) throw new Error('Connect wallet first');
+        showLoading(true);
+        let tx, res;
+        const coll = $("stake-collection").value.trim();
+        const tokenId = BigInt($("stake-tokenId").value || '0');
+        const perm = $("stake-permanent").checked;
+        switch(action) {
+          // Registration
+          case 'registerCollection': {
+            const supply = BigInt($("register-supply").value || '0');
+            tx = await contract.registerCollection(coll, supply); break;
+          }
+          // Staking
+          case 'stake': { tx = await contract.stake(coll, tokenId, perm); break; }
+          case 'batchStake': {
+            const idStr = $("batch-stake-ids").value.trim();
+            const ids = idStr.split(',').map(s => s.trim()).filter(Boolean).map(s => BigInt(s));
+            tx = await contract.batchStake(coll, ids, perm); break;
+          }
+          case 'harvest': { tx = await contract.harvest(coll, tokenId); break; }
+          case 'unstake': { tx = await contract.unstake(coll, tokenId); break; }
+
+          // Views
+          case 'pendingRewardsView': {
+            const pc = $("pending-collection").value.trim();
+            const owner = $("pending-owner").value.trim();
+            const pt = BigInt($("pending-tokenId").value || '0');
+            res = await readContract.pendingRewardsView(pc, owner, pt);
+            $("pending-rewards-display").textContent = ethers.formatUnits(res, 18) + ' CATA';
+            showLoading(false);
+            return;
+          }
+
+          // Blue-chip
+          case 'enrollBluechip': { tx = await contract.enrollBluechip(); break; }
+          case 'harvestBluechip': {
+            const bc = $("bluechip-harvest-collection").value.trim();
+            tx = await contract.harvestBluechip(bc); break;
+          }
+          case 'setBluechipCollection': {
+            const sc = $("set-bluechip-collection").value.trim();
+            const isBlue = $("set-bluechip-status").value === 'true';
+            tx = await contract.setBluechipCollection(sc, isBlue); break;
+          }
+
+          // Governance
+          case 'propose': {
+            const pType = Number($("propose-type").value);
+            const target = Number($("propose-param-target").value);
+            const value = BigInt($("propose-value").value || '0');
+            const ctx = $("propose-collection").value.trim() || ethers.ZeroAddress;
+            res = await contract.propose(pType, target, value, ctx);
+            log('Proposal created. ID: ' + res);
+            showLoading(false);
+            return;
+          }
+          case 'vote': {
+            const id = $("proposal-id").value.trim();
+            tx = await contract.vote(id); break;
+          }
+          case 'executeProposal': {
+            const id = $("proposal-id").value.trim();
+            tx = await contract.executeProposal(id); break;
+          }
+
+          // Guardians
+          case 'setDeployerGuardian': {
+            const idx = Number($("guardian-index").value || '0');
+            const addr = $("guardian-address").value.trim();
+            tx = await contract.setDeployerGuardian(idx, addr); break;
+          }
+          case 'setAdminGuardian': {
+            const idx = Number($("guardian-index").value || '0');
+            const addr = $("guardian-address").value.trim();
+            tx = await contract.setAdminGuardian(idx, addr); break;
+          }
+          case 'proposeDeployerRecovery': { tx = await contract.proposeDeployerRecovery($("new-deployer").value.trim()); break; }
+          case 'approveDeployerRecovery': { tx = await contract.approveDeployerRecovery(); break; }
+          case 'executeDeployerRecovery': { tx = await contract.executeDeployerRecovery(); break; }
+          case 'proposeAdminRecovery': { tx = await contract.proposeAdminRecovery($("new-admin").value.trim()); break; }
+          case 'approveAdminRecovery': { tx = await contract.approveAdminRecovery(); break; }
+          case 'executeAdminRecovery': { tx = await contract.executeAdminRecovery(); break; }
+
+          // Admin
+          case 'pause': { tx = await contract.pause(); break; }
+          case 'unpause': { tx = await contract.unpause(); break; }
+
+          // Treasury
+          case 'withdrawTreasury': {
+            const to = $("withdraw-to").value.trim();
+            const amt = BigInt($("withdraw-amount").value || '0');
+            tx = await contract.withdrawTreasury(to, amt); break;
+          }
+
+          default: throw new Error('Unknown action: ' + action);
+        }
+
+        log(action + ' tx sent: ' + tx.hash);
+        const receipt = await tx.wait();
+        log(action + ' confirmed in block ' + receipt.blockNumber);
+        await refreshAll();
+      } catch (err) {
+        console.error(err);
+        log('Error: ' + (err?.shortMessage || err?.info?.error?.message || err.message));
+      } finally { showLoading(false); }
+    }
+
+    // ======= Tabs =======
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.getAttribute('data-tab');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(tab).classList.add('active');
+      });
+    });
+
+    // ======= DOM Bindings =======
+    $("connect-btn").addEventListener('click', connectWallet);
+    $("bind-contract-btn").addEventListener('click', bindContract);
+    $("refresh-stats-btn").addEventListener('click', refreshAll);
+    $("mini-refresh").addEventListener('click', refreshAll);
+    $("approve-all-btn").addEventListener('click', approveAll);
+
+    // Auto-detect wallet on load
+    (async function init() {
+      if (window.ethereum) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const net = await provider.getNetwork().catch(() => null);
+        if (net) setBadge(false, `Wallet Idle`);
+        window.ethereum.on?.('accountsChanged', () => location.reload());
+        window.ethereum.on?.('chainChanged', () => location.reload());
+      }
+      log('DApp ready. Connect wallet and bind contract to start.');
+    })();
+  </script></body>
+</html>
