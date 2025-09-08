@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Catalyst DApp — Detailed Dashboard (v7+)</title>
+<title>Catalyst DApp — Detailed Dashboard v3</title>
 
 <!-- Ethers v6 (UMD) -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
