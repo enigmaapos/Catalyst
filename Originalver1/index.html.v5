@@ -3,26 +3,35 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Catalyst DApp — Full Dashboard v5</title>
+<title>Catalyst DApp v5— Full Dashboard & Whitepaper Assistant</title>
 
 <!-- Ethers v6 (UMD) -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 
 <style>
-  :root { --bg:#0f1220; --card:#171a2b; --muted:#9aa3b2; --text:#e7ecf4; --acc:#6ee7ff; }
+  :root {
+    --bg:#0f1220;
+    --card:#171a2b;
+    --muted:#9aa3b2;
+    --text:#e7ecf4;
+    --accent:#6ee7ff;
+    --danger:#ff6b6b;
+    --ok:#86efac;
+  }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; background:var(--bg); color:var(--text); }
-  header { padding:16px 20px; border-bottom:1px solid #20243a; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-  header h1 { font-size:18px; margin:0; opacity:.95; }
+  body { margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+  header { padding:14px 18px; border-bottom:1px solid #20243a; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; opacity:.95; display:flex; gap:10px; align-items:center; }
   .pill { background:var(--card); padding:8px 10px; border-radius:10px; border:1px solid #232744; display:flex; gap:8px; align-items:center; }
   input, select, button, textarea { background:#0c0f1c; color:var(--text); border:1px solid #27304a; border-radius:10px; padding:10px 12px; outline:none; }
   input, select, textarea { width:100%; }
   button { cursor:pointer; font-weight:600; }
-  button.primary { background:#132a39; border-color:#1e3a53; }
-  button:disabled { opacity:.6; cursor:not-allowed; }
-  main { max-width:1200px; margin:20px auto; padding:0 16px 60px; }
+  button.primary { background:#132a39; border-color:#1e3a53; color:var(--text); padding:10px 14px; }
+  button.ghost { background:transparent; border:1px solid #27304a; color:var(--text); padding:8px 10px; }
+  button.small { padding:6px 8px; font-size:13px; }
+  main { max-width:1200px; margin:18px auto; padding:0 16px 80px; }
   .grid { display:grid; gap:16px; grid-template-columns:repeat(12,1fr); }
-  .card { grid-column:span 12; background:var(--card); border:1px solid #232744; border-radius:16px; padding:16px; }
+  .card { grid-column:span 12; background:var(--card); border:1px solid #232744; border-radius:14px; padding:16px; }
   @media(min-width:1000px){
     .span7 { grid-column:span 7; }
     .span5 { grid-column:span 5; }
@@ -35,19 +44,30 @@
   .muted { color:var(--muted); }
   .hr { height:1px; background:#232744; margin:14px 0; }
   details { border:1px dashed #2a3154; border-radius:12px; padding:10px 12px; }
-  summary { cursor:pointer; font-weight:600; }
+  summary { cursor:pointer; font-weight:700; }
   code.inline { background:#0c0f1c; padding:2px 6px; border-radius:6px; border:1px solid #27304a; }
   .tabbar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
-  .tabbar button { background:transparent; border:1px solid #27304a; padding:8px 10px; border-radius:10px; }
+  .tabbar button { background:transparent; border:1px solid #27304a; color:var(--text); padding:8px 10px; border-radius:8px; }
   .tabbar button.active { background:#132a39; border-color:#1e3a53; }
   .warn { color:#ffd166; }
-  .ok { color:#86efac; }
-  .err { color:#ff8a8a; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-  .kv { display:grid; grid-template-columns: 220px 1fr; gap:8px; }
+  .ok { color:var(--ok); }
+  .err { color:var(--danger); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; }
+  .kv { display:grid; grid-template-columns: 220px 1fr; gap:8px; margin-top:8px; }
   .flex { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  table { width:100%; border-collapse:collapse; }
-  th, td { padding:6px 8px; border-bottom:1px solid #22273a; }
+  .badge { background:#0b1620; padding:6px 8px; border-radius:8px; border:1px solid #223048; font-size:13px; }
+  .smallmuted { font-size:12px; color:var(--muted); }
+  .panel { background:#0e1522; border:1px solid #21283a; padding:12px; border-radius:10px; }
+  .learn { font-size:13px; color:var(--muted); line-height:1.4; }
+  .leftcol { min-width:240px; }
+  a.link { color:var(--accent); text-decoration:none; }
+  .grow { flex:1 1 auto; }
+  footer { text-align:center; color:var(--muted); padding:16px; }
+  /* responsive */
+  @media(max-width:900px){
+    .row, .row3 { grid-template-columns:1fr; }
+    .kv { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -55,20 +75,21 @@
   <h1>⚗️ Catalyst DApp</h1>
 
   <div class="pill">
-    <span class="muted">RPC (read)</span>
-    <input id="rpcUrl" placeholder="(optional) https://mainnet.infura.io/v3/..." style="min-width:320px" />
-    <button id="saveRpc" class="primary">Use RPC</button>
+    <span class="smallmuted">RPC (read-only)</span>
+    <input id="rpcUrl" placeholder="Optional RPC (e.g. https://mainnet.infura.io/v3/...)"
+           style="min-width:300px" />
+    <button id="saveRpc" class="ghost small">Use RPC</button>
   </div>
 
   <div class="pill">
-    <span class="muted">Contract</span>
-    <input id="contractAddress" placeholder="0x... (CatalystNFTStakingUpgradeable)" style="min-width:320px" />
-    <button class="primary" id="saveContractBtn">Save</button>
+    <span class="smallmuted">Contract</span>
+    <input id="contractAddress" placeholder="0x… (CatalystNFTStakingUpgradeable)" style="min-width:300px" />
+    <button class="primary small" id="saveContractBtn">Save</button>
   </div>
 
-  <div class="pill">
+  <div class="pill" style="margin-left:auto">
     <span id="acct" class="mono muted">Not connected</span>
-    <button id="walletBtn" class="primary">Connect</button>
+    <button id="walletBtn" class="primary small">Connect</button>
   </div>
 </header>
 
@@ -76,7 +97,8 @@
   <div class="grid">
     <section class="card span7">
       <div class="tabbar">
-        <button data-tab="stake" class="active">Stake</button>
+        <button data-tab="overview" class="active">Overview</button>
+        <button data-tab="stake">Stake</button>
         <button data-tab="bluechip">Blue-Chip</button>
         <button data-tab="governance">Governance</button>
         <button data-tab="guardians">Guardians</button>
@@ -85,20 +107,83 @@
         <button data-tab="info">Info</button>
       </div>
 
-      <!-- STAKE -->
-      <div class="tab" id="tab-stake" style="display:block">
-        <h3 style="margin-top:0">Custodial Staking</h3>
+      <!-- Overview Tab -->
+      <div class="tab" id="tab-overview" style="display:block">
+        <h2 style="margin:0 0 8px 0">Catalyst — At a Glance</h2>
+        <p class="learn">
+          Catalyst is a universal NFT staking and governance protocol. It gives every ERC-721 token on-chain
+          utility by allowing holders to stake tokens for CATA rewards, participate in governance, and contribute
+          to a deflationary token economy. The protocol is secured by a Guardian Council Security System (GCSS)
+          + Admin Guardian Council (AGC) and supports both verified "blue-chip" collections and unverified collections
+          (upgrade path via proof-of-burn).
+        </p>
+
+        <div class="hr"></div>
+
+        <div class="kv">
+          <div class="leftcol">Protocol Mission</div>
+          <div>
+            <strong>Non-profit R&amp;D</strong> — Catalyst is born as a research &amp; testbed (non-profit R&amp;D). The
+            protocol tests security, scalability, and sustainability of NFT-integrated mechanisms. Treasury funds
+            are governed by the community; fees are split immutably (90% burn / 9% treasury / 1% deployer).
+          </div>
+
+          <div class="leftcol">How to use this DApp</div>
+          <div>
+            <ol style="margin:0; padding-left:18px;">
+              <li>Enter your deployed proxy contract address and click Save.</li>
+              <li>Optionally set a read RPC to avoid rate limits (top-left).</li>
+              <li>Use read-only tabs without connecting a wallet. Connect wallet only to send transactions.</li>
+            </ol>
+          </div>
+
+          <div class="leftcol">Quick Links</div>
+          <div>
+            <div class="flex">
+              <span class="badge">Whitepaper</span>
+              <a class="link" href="#whitepaper" onclick="document.getElementById('tab-info').scrollIntoView()">Read More</a>
+            </div>
+            <div style="margin-top:8px;" class="smallmuted">
+              Use the <b>Views</b> and <b>Info</b> tabs to inspect registered collections, user pending rewards, and governance proposals.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stake Tab -->
+      <div class="tab" id="tab-stake" style="display:none">
+        <h2 style="margin:0 0 8px 0">Custodial Staking</h2>
+        <p class="learn">
+          Stake ERC-721 tokens into the protocol (custodial). Term staking has a fixed duration; permanent staking
+          is locked forever for higher rewards. Harvests mint CATA rewards; a portion is burnt to sustain deflation.
+        </p>
+
+        <details>
+          <summary class="smallmuted">📘 Learn more (from whitepaper)</summary>
+          <div style="margin-top:8px" class="muted">
+            <ul>
+              <li><b>Term stake:</b> rewards accrue until the term ends; unstaking before end is disallowed.</li>
+              <li><b>Permanent stake:</b> immediate lock, higher sustained reward rate.</li>
+              <li><b>Fees:</b> immutable 90/9/1 split applied to registration, harvest burns, and unstake fees.</li>
+              <li><b>Caps:</b> 20,000 NFTs per collection, 1B global stake cap (75% term, 25% permanent).</li>
+            </ul>
+          </div>
+        </details>
+
+        <div class="hr"></div>
+
         <div class="row">
           <div>
             <div class="label">Collection (ERC-721)</div>
-            <input id="colStake" placeholder="0x...">
+            <input id="colStake" placeholder="0xCollectionAddress" />
           </div>
           <div>
             <div class="label">Token ID</div>
-            <input id="tidStake" type="number" placeholder="e.g. 123">
+            <input id="tidStake" type="number" placeholder="e.g. 1234" />
           </div>
         </div>
-        <div class="row" style="margin-top:10px">
+
+        <div class="row" style="margin-top:8px">
           <div>
             <div class="label">Stake Type</div>
             <select id="permanent">
@@ -107,34 +192,40 @@
             </select>
           </div>
           <div>
-            <div class="label">Approve NFT (setApprovalForAll)</div>
-            <button id="btnApprove721">Approve</button>
+            <div class="label">NFT Approvals</div>
+            <div class="flex">
+              <button id="btnApprove721" class="ghost small">Approve (setApprovalForAll)</button>
+              <button id="btnApprove721Check" class="small">Check</button>
+            </div>
           </div>
         </div>
 
-        <div class="flex" style="margin-top:10px">
-          <button class="primary" id="btnStake">Stake</button>
+        <div class="flex" style="margin-top:12px">
+          <button id="btnStake" class="primary">Stake NFT</button>
           <button id="btnHarvestOne">Harvest</button>
           <button id="btnUnstake">Unstake</button>
-          <button id="btnViewPending">View Pending</button>
+          <button id="btnViewPending" class="ghost">View Pending</button>
           <span id="pendingView" class="mono muted">—</span>
         </div>
 
         <div class="hr"></div>
 
         <details>
-          <summary>Batch stake (≤50)</summary>
-          <div class="row" style="margin-top:10px">
+          <summary>Batch stake (≤ 50 tokens)</summary>
+          <div style="margin-top:8px" class="muted">
+            Use batch mode for efficiency. The contract enforces a per-batch limit to avoid heavy on-chain loops.
+          </div>
+          <div class="row" style="margin-top:8px">
             <div>
               <div class="label">Collection</div>
-              <input id="colBatch" placeholder="0x...">
+              <input id="colBatch" placeholder="0xCollectionAddress" />
             </div>
             <div>
-              <div class="label">Token IDs (comma-separated)</div>
-              <input id="tidsBatch" placeholder="1,2,3">
+              <div class="label">Token IDs (CSV)</div>
+              <input id="tidsBatch" placeholder="1,2,3,4" />
             </div>
           </div>
-          <div class="row" style="margin-top:10px">
+          <div class="row" style="margin-top:8px">
             <div>
               <div class="label">Stake Type</div>
               <select id="permanentBatch">
@@ -144,57 +235,72 @@
             </div>
             <div>
               <div class="label">Approve</div>
-              <button id="btnApprove721Batch">Approve Batch</button>
+              <button id="btnApprove721Batch" class="ghost small">Approve (Batch)</button>
             </div>
           </div>
           <div style="margin-top:10px">
-            <button class="primary" id="btnBatchStake">Batch Stake</button>
+            <button id="btnBatchStake" class="primary">Batch Stake</button>
           </div>
         </details>
 
         <div class="hr"></div>
 
-        <h3>Register Collection</h3>
+        <h3 style="margin:0 0 8px 0">Register a Collection</h3>
+        <p class="smallmuted">Permissionless registration. Unverified collections pay surcharges. Verified collections are typically the owner-registered ones.</p>
         <div class="row">
           <div>
             <div class="label">Collection</div>
-            <input id="colRegister" placeholder="0x...">
+            <input id="colRegister" placeholder="0xCollectionAddress" />
           </div>
           <div>
             <div class="label">Declared Max Supply (≤ 20,000)</div>
-            <input id="declaredSupply" type="number" placeholder="e.g. 10000">
+            <input id="declaredSupply" type="number" placeholder="e.g. 10000" />
           </div>
         </div>
         <div style="margin-top:10px">
-          <button id="btnRegister" class="primary">Register</button>
+          <button id="btnRegister" class="primary">Register Collection</button>
         </div>
       </div>
 
-      <!-- BLUECHIP -->
+      <!-- Bluechip Tab -->
       <div class="tab" id="tab-bluechip" style="display:none">
-        <h3 style="margin-top:0">Blue-Chip (Non-custodial)</h3>
+        <h2 style="margin:0 0 8px 0">Blue-Chip (Non-Custodial)</h2>
+        <p class="learn">Blue-chip model lets wallets earn rewards without transferring custody. Wallets enroll once (per-wallet fee) and can harvest for any flagged blue-chip collection they hold tokens of.</p>
+
+        <details>
+          <summary class="smallmuted">Why Blue-Chip?</summary>
+          <div class="muted" style="margin-top:8px">
+            Blue-chip collections are high-value and are often targeted by custodial risk. Non-custodial harvesting lets owners keep NFTs in their wallet while still participating in yields.
+          </div>
+        </details>
+
+        <div class="hr"></div>
+
         <div class="row">
           <div>
-            <div class="label">Enroll Blue-Chip (one-time per wallet)</div>
-            <button class="primary" id="btnEnrollBlue">Enroll</button>
+            <div class="label">Enroll Wallet (one-time per wallet)</div>
+            <button id="btnEnrollBlue" class="primary">Enroll Wallet</button>
           </div>
           <div>
-            <div class="label">Harvest Blue-Chip — Collection</div>
-            <input id="colBlueHarvest" placeholder="0x...">
+            <div class="label">Harvest — Blue-Chip Collection</div>
+            <input id="colBlueHarvest" placeholder="0xCollectionAddress" />
           </div>
         </div>
-        <div class="flex" style="margin-top:10px">
-          <button id="btnHarvestBlue">Harvest Blue-Chip</button>
+
+        <div style="margin-top:8px" class="flex">
+          <button id="btnHarvestBlue" class="primary">Harvest Blue-Chip</button>
+          <span class="smallmuted">Note: Wallet must own ≥1 token of the flagged collection to harvest.</span>
         </div>
 
         <div class="hr"></div>
 
         <details>
           <summary>Admin: Flag / Unflag Blue-Chip Collection</summary>
-          <div class="row" style="margin-top:10px">
+          <div style="margin-top:8px" class="muted">Only contract admins can flag/clear blue-chip status on a collection.</div>
+          <div class="row" style="margin-top:8px">
             <div>
               <div class="label">Collection</div>
-              <input id="colFlagBlue" placeholder="0x...">
+              <input id="colFlagBlue" placeholder="0xCollectionAddress" />
             </div>
             <div>
               <div class="label">Status</div>
@@ -210,9 +316,25 @@
         </details>
       </div>
 
-      <!-- GOVERNANCE -->
+      <!-- Governance Tab -->
       <div class="tab" id="tab-governance" style="display:none">
-        <h3 style="margin-top:0">Governance</h3>
+        <h2 style="margin:0 0 8px 0">Governance</h2>
+        <p class="learn">Burn-Weighted Collection Governance (BWCG): voting weight is tied to burned CATA and stake-age; proposals require quorum and are capped per collection to prevent monopolies. The immutable fee split (90/9/1) cannot be changed by governance.</p>
+
+        <details>
+          <summary class="smallmuted">Governance Rules (quick)</summary>
+          <div class="muted" style="margin-top:8px">
+            <ul>
+              <li>Proposal lifecycle: Create → Vote → Execute (after endBlock and quorum)</li>
+              <li>Vote weight: either active stake (older than minStakeAge) or enrolled blue-chip wallet holding tokens</li>
+              <li>Per-collection cap: prevents any single collection from dominating a proposal</li>
+            </ul>
+          </div>
+        </details>
+
+        <div class="hr"></div>
+
+        <h4>Create Proposal</h4>
         <div class="row">
           <div>
             <div class="label">Proposal Type</div>
@@ -227,136 +349,165 @@
           </div>
           <div>
             <div class="label">Param Target (for VOTING_PARAM)</div>
-            <input id="paramTarget" type="number" value="0">
+            <input id="paramTarget" type="number" value="0" />
           </div>
         </div>
-        <div class="row" style="margin-top:10px">
+
+        <div class="row" style="margin-top:8px">
           <div>
             <div class="label">New Value (uint256)</div>
-            <input id="newValue" type="number" placeholder="e.g. 1000">
+            <input id="newValue" type="number" placeholder="e.g. 1000" />
           </div>
           <div>
             <div class="label">Collection Context (optional)</div>
-            <input id="collCtx" placeholder="0x... or 0x0000...">
+            <input id="collCtx" placeholder="0x... or 0x0000..." />
           </div>
         </div>
+
         <div style="margin-top:10px">
-          <button class="primary" id="btnPropose">Create Proposal</button>
+          <button id="btnPropose" class="primary">Create Proposal</button>
         </div>
 
         <div class="hr"></div>
 
+        <h4>Vote / Execute</h4>
         <div class="row">
           <div>
             <div class="label">Proposal ID (bytes32)</div>
-            <input id="propId" placeholder="0x...">
+            <input id="propId" placeholder="0x..." />
           </div>
           <div>
             <div class="label">—</div>
-            <button id="btnVote">Vote</button>
+            <div class="flex">
+              <button id="btnVote" class="ghost">Vote</button>
+              <button id="btnExecute" class="primary">Execute</button>
+            </div>
           </div>
         </div>
-        <div style="margin-top:10px">
-          <button id="btnExecute">Execute</button>
-        </div>
-      </div>
-
-      <!-- GUARDIANS -->
-      <div class="tab" id="tab-guardians" style="display:none">
-        <h3 style="margin-top:0">Guardian Councils</h3>
-
-        <details open>
-          <summary><strong>Deployer Council (7:5)</strong></summary>
-          <div class="row" style="margin-top:10px">
-            <div>
-              <div class="label">Proposed New Deployer</div>
-              <input id="newDeployer" placeholder="0x...">
-            </div>
-            <div>
-              <div class="label">Actions</div>
-              <div class="flex">
-                <button class="primary" id="btnPropDep">Propose</button>
-                <button id="btnApproveDep">Approve</button>
-                <button id="btnExecDep">Execute</button>
-              </div>
-            </div>
-          </div>
-        </details>
-
-        <div class="hr"></div>
-
-        <details open>
-          <summary><strong>Admin Council (7:5)</strong></summary>
-          <div class="row" style="margin-top:10px">
-            <div>
-              <div class="label">Proposed New Admin</div>
-              <input id="newAdmin" placeholder="0x...">
-            </div>
-            <div>
-              <div class="label">Actions</div>
-              <div class="flex">
-                <button class="primary" id="btnPropAdm">Propose</button>
-                <button id="btnApproveAdm">Approve</button>
-                <button id="btnExecAdm">Execute</button>
-              </div>
-            </div>
-          </div>
-        </details>
 
         <div class="hr"></div>
 
         <details>
-          <summary>Advanced: Set/Replace Guardians (Admin)</summary>
-          <div class="row3" style="margin-top:10px">
+          <summary class="smallmuted">Proposal tips</summary>
+          <div class="muted" style="margin-top:8px">
+            Make sure your wallet has voting weight (active stake or enrolled blue-chip + holding). Use the Views tab to confirm proposal details and vote counts via explorer logs.
+          </div>
+        </details>
+      </div>
+
+      <!-- Guardians Tab -->
+      <div class="tab" id="tab-guardians" style="display:none">
+        <h2 style="margin:0 0 8px 0">Guardian Councils (DRS)</h2>
+        <p class="learn">DRS adds deployer and admin guardian councils (7 members, 5-of-7 approvals by default). Guardians can propose and approve recovery of the deployer/admin roles to quickly recover from loss or compromise. The system includes compromise detection and reset flows.</p>
+
+        <details>
+          <summary class="smallmuted">How recovery works</summary>
+          <div class="muted" style="margin-top:8px">
+            <ol>
+              <li>Guardian proposes a replacement (deployers/admins)</li>
+              <li>Other guardians approve</li>
+              <li>If approvals ≥ threshold (5), the recovery can be executed</li>
+              <li>Compromise detection: if 6/7 or 7/7 appear, special behaviors (warning/lock) may take place)</li>
+            </ol>
+          </div>
+        </details>
+
+        <div class="hr"></div>
+
+        <h4>Deployer Council (7:5)</h4>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <div class="label">Proposed New Deployer</div>
+            <input id="newDeployer" placeholder="0xNewDeployerAddress" />
+          </div>
+          <div>
+            <div class="label">Actions</div>
+            <div class="flex">
+              <button id="btnPropDep" class="primary">Propose</button>
+              <button id="btnApproveDep" class="ghost">Approve</button>
+              <button id="btnExecDep" class="primary">Execute</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <h4>Admin Council (7:5)</h4>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <div class="label">Proposed New Admin</div>
+            <input id="newAdmin" placeholder="0xNewAdminAddress" />
+          </div>
+          <div>
+            <div class="label">Actions</div>
+            <div class="flex">
+              <button id="btnPropAdm" class="primary">Propose</button>
+              <button id="btnApproveAdm" class="ghost">Approve</button>
+              <button id="btnExecAdm" class="primary">Execute</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <details>
+          <summary>Admin: set/replace guardians (DEFAULT_ADMIN_ROLE required)</summary>
+          <div class="muted" style="margin-top:8px">
+            Admins can update guardian slots. Use this panel to set deployer/admin guardian addresses by index.
+          </div>
+          <div class="row3" style="margin-top:8px">
             <div>
               <div class="label">Deployer idx (0–6)</div>
-              <input id="depIdx" type="number" placeholder="0">
+              <input id="depIdx" type="number" placeholder="0" />
             </div>
             <div>
               <div class="label">Guardian Address</div>
-              <input id="depGuardian" placeholder="0x...">
+              <input id="depGuardian" placeholder="0xGuardianAddress" />
             </div>
             <div>
-              <div class="label">—</div>
+              <div class="label">Action</div>
               <button id="btnSetDepGuardian" class="primary">Set Deployer Guardian</button>
             </div>
           </div>
-          <div class="row3" style="margin-top:10px">
+
+          <div class="row3" style="margin-top:8px">
             <div>
               <div class="label">Admin idx (0–6)</div>
-              <input id="admIdx" type="number" placeholder="0">
+              <input id="admIdx" type="number" placeholder="0" />
             </div>
             <div>
               <div class="label">Guardian Address</div>
-              <input id="admGuardian" placeholder="0x...">
+              <input id="admGuardian" placeholder="0xGuardianAddress" />
             </div>
             <div>
-              <div class="label">—</div>
+              <div class="label">Action</div>
               <button id="btnSetAdmGuardian" class="primary">Set Admin Guardian</button>
             </div>
           </div>
         </details>
       </div>
 
-      <!-- ADMIN -->
+      <!-- Admin Tab -->
       <div class="tab" id="tab-admin" style="display:none">
-        <h3 style="margin-top:0">Admin Controls</h3>
-        <div class="flex">
-          <button id="btnPause">Pause</button>
-          <button id="btnUnpause">Unpause</button>
+        <h2 style="margin:0 0 8px 0">Admin Controls</h2>
+        <p class="muted">Admin actions require the appropriate role. Use with caution — these are privileged operations.</p>
+
+        <div class="flex" style="margin-top:8px">
+          <button id="btnPause" class="ghost">Pause</button>
+          <button id="btnUnpause" class="primary">Unpause</button>
         </div>
 
         <div class="hr"></div>
 
-        <h4>Treasury</h4>
+        <h4>Treasury Withdraw</h4>
         <div class="row">
           <div>
             <div class="label">Withdraw → Address</div>
-            <input id="toTreasury" placeholder="0x...">
+            <input id="toTreasury" placeholder="0xRecipient" />
           </div>
           <div>
             <div class="label">Amount (wei)</div>
-            <input id="amtTreasury" type="number" placeholder="1000000000000000000">
+            <input id="amtTreasury" type="number" placeholder="e.g. 1000000000000000000" />
           </div>
         </div>
         <div style="margin-top:10px">
@@ -364,23 +515,28 @@
         </div>
       </div>
 
-      <!-- VIEWS -->
+      <!-- Views Tab -->
       <div class="tab" id="tab-views" style="display:none">
-        <h3 style="margin-top:0">Read-Only Helpers</h3>
+        <h2 style="margin:0 0 8px 0">Read-Only Helpers & Inspectors</h2>
+        <p class="smallmuted">These functions are read-only and do not require a wallet. Use them to inspect pending rewards, registered collections, and user burn bookkeeping.</p>
+
+        <div class="hr"></div>
+
+        <h4>Pending Rewards</h4>
         <div class="row">
           <div>
-            <div class="label">Pending Rewards: Collection</div>
-            <input id="vCol" placeholder="0x...">
+            <div class="label">Collection</div>
+            <input id="vCol" placeholder="0xCollection" />
           </div>
           <div>
-            <div class="label">Owner</div>
-            <input id="vOwner" placeholder="0x... (defaults to your address)">
+            <div class="label">Owner (defaults to connected wallet)</div>
+            <input id="vOwner" placeholder="0xOwner or leave blank" />
           </div>
         </div>
-        <div class="row" style="margin-top:10px">
+        <div class="row" style="margin-top:8px">
           <div>
             <div class="label">Token ID</div>
-            <input id="vTokenId" type="number" placeholder="123">
+            <input id="vTokenId" type="number" placeholder="e.g. 123" />
           </div>
           <div>
             <div class="label">—</div>
@@ -388,61 +544,102 @@
           </div>
         </div>
         <div style="margin-top:8px" class="mono muted" id="pendingOut">—</div>
-      </div>
 
-      <!-- INFO -->
-      <div class="tab" id="tab-info" style="display:none">
-        <h3 style="margin-top:0">User & Collection Info</h3>
+        <div class="hr"></div>
+
+        <h4>Registered Collections / Blue-chip / Counts</h4>
+        <div style="margin-top:8px" class="flex">
+          <button id="btnListCollections" class="primary">List Registered Collections</button>
+          <button id="btnListBlue" class="ghost">List Blue-Chips</button>
+        </div>
+        <div id="collectionsOut" class="mono muted" style="margin-top:8px">—</div>
+
+        <div class="hr"></div>
+
+        <h4>User Info & Burner Stats</h4>
         <div class="row">
           <div>
             <div class="label">User Address</div>
-            <input id="infoUser" placeholder="0x... (leave blank for your wallet)">
+            <input id="infoUser" placeholder="0xUser (leave blank for connected wallet)" />
           </div>
           <div>
-            <div class="label">Collection Address</div>
-            <input id="infoCol" placeholder="0x...">
+            <div class="label">Collection (optional)</div>
+            <input id="infoCol" placeholder="0xCollection" />
           </div>
         </div>
-
-        <div class="flex" style="margin-top:10px">
+        <div style="margin-top:8px" class="flex">
           <button id="btnUserInfo" class="primary">Get User Info</button>
-          <button id="btnColInfo">Get Collection Info</button>
-          <button id="btnListCollections">List Registered Collections</button>
+          <button id="btnColInfo" class="ghost">Get Collection Info</button>
         </div>
+        <div id="infoOut" class="mono muted" style="margin-top:8px">—</div>
+      </div>
 
-        <div class="hr"></div>
+      <!-- Info Tab (whitepaper & FAQ) -->
+      <div class="tab" id="tab-info" style="display:none">
+        <h2 id="whitepaper">Whitepaper Summary & FAQ</h2>
+        <p class="learn">
+          The full Catalyst whitepaper is integrated into the app. Below are key excerpts and an FAQ to help users understand the
+          protocol philosophy, tokenomics, and recovery model.
+        </p>
 
-        <div class="kv">
-          <div class="muted">User Address</div><div id="ui_address">—</div>
-          <div class="muted">Collection</div><div id="ui_collection">—</div>
-          <div class="muted">Pending Rewards (tid)</div><div id="ui_pending">—</div>
-          <div class="muted">Collection Index</div><div id="ci_index">—</div>
-          <div class="muted">Is Blue-Chip?</div><div id="ci_blue">—</div>
-          <div class="muted">Registered Collections (count)</div><div id="ci_count">—</div>
-        </div>
-
-        <div class="hr"></div>
-        <div>
-          <h4>Registered Collections</h4>
-          <div style="max-height:220px; overflow:auto">
-            <table id="registeredTable">
-              <thead><tr><th>#</th><th>Address</th></tr></thead>
-              <tbody></tbody>
-            </table>
+        <details open>
+          <summary class="smallmuted">1. Vision & Mission</summary>
+          <div style="margin-top:8px" class="muted">
+            Catalyst aims to be the universal utility layer for NFTs: every ERC-721 can stake, burn, and participate in governance.
+            The protocol balances incentives between blue-chip collections and unverified projects, using proof-of-burn for legitimacy.
           </div>
+        </details>
+
+        <details>
+          <summary class="smallmuted">2. Tokenomics (CATA)</summary>
+          <div style="margin-top:8px" class="muted">
+            <ul>
+              <li>Immutable fee split: 90% Burn / 9% Treasury / 1% Deployer.</li>
+              <li>Global stake cap: 1B NFTs (750M term, 250M permanent).</li>
+              <li>Per-collection cap: 20k NFTs.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary class="smallmuted">3. Governance</summary>
+          <div style="margin-top:8px" class="muted">
+            Burn-weighted collection governance (BWCG) with per-collection vote caps, stake-age requirements, and an immutable
+            rule that 90/9/1 distribution cannot be changed by governance.
+          </div>
+        </details>
+
+        <details>
+          <summary class="smallmuted">4. DRS — Guardian Councils</summary>
+          <div style="margin-top:8px" class="muted">
+            Deployer Guardian Council (GCSS) and Admin Guardian Council (AGC) protect the deployer and admin roles respectively.
+            Recovery proposals require guardian approvals (default 5-of-7). The system includes compromise detection and last-honest-guardian reset powers.
+          </div>
+        </details>
+
+        <div class="hr"></div>
+
+        <h3>FAQ</h3>
+        <div class="muted">
+          <strong>Q:</strong> Can anyone register a collection?<br/>
+          <strong>A:</strong> Yes — registration is permissionless, but unverified collections pay a surcharge and have reduced rights until upgrade conditions are met.
+        </div>
+        <div style="margin-top:8px" class="muted">
+          <strong>Q:</strong> What is "blue-chip enrollment"?<br/>
+          <strong>A:</strong> Blue-chip enrollment is a one-time per-wallet opt-in fee that allows non-custodial harvesting for wallet holders of flagged collections.
         </div>
       </div>
     </section>
 
     <!-- RIGHT: Stats + Console -->
     <section class="card span5">
-      <div class="flex" style="justify-content:space-between; align-items:center">
+      <div style="display:flex; justify-content:space-between; align-items:center">
         <h3 style="margin:0">Protocol Stats</h3>
         <div class="flex">
-          <button id="btnRefresh" class="primary">Refresh</button>
-          <label class="muted" style="display:flex; align-items:center; gap:6px">
+          <button id="btnRefresh" class="primary small">Refresh</button>
+          <label class="muted" style="display:flex; align-items:center; gap:6px; margin-left:6px;">
             <input type="checkbox" id="autoRefresh" />
-            Auto
+            <span class="smallmuted">Auto</span>
           </label>
         </div>
       </div>
@@ -463,19 +660,23 @@
 
       <div class="hr"></div>
 
-      <h3 style="margin:0 0 6px 0">Console</h3>
-      <div id="log" class="mono" style="font-size:12px; white-space:pre-wrap; min-height:220px"></div>
+      <h3 style="margin:0 0 6px 0">Console / Activity</h3>
+      <div id="log" class="mono" style="font-size:12px; white-space:pre-wrap; min-height:300px; margin-top:8px;"></div>
     </section>
   </div>
 </main>
 
+<footer>
+  Catalyst — Universal NFT Utility • Deflationary Tokenomics • Guardian Recovery System
+</footer>
+
 <script>
 /* =========================
-   CONFIG / STATE
+   CONFIG & STATE
    ========================= */
-const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json"; // adjust if needed
-const DEFAULT_CONTRACT = ""; // optional default address
-const DEFAULT_RPC = ""; // optional default RPC
+const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json"; // adjust path if needed
+const DEFAULT_CONTRACT = "";
+const DEFAULT_RPC = "";
 
 const ERC721_ABI = [
   "function setApprovalForAll(address operator, bool approved)",
@@ -483,7 +684,6 @@ const ERC721_ABI = [
   "function balanceOf(address owner) view returns (uint256)"
 ];
 
-// State
 let READ_PROVIDER = null;
 let WALLET_PROVIDER = null;
 let SIGNER = null;
@@ -496,76 +696,60 @@ let CONTRACT_ADDR = "";
 
 let refreshTimer = null;
 
-/* DOM helpers */
-const $ = id => document.getElementById(id);
-const log = (msg, cls="") => {
+/* ========== DOM HELPERS ========== */
+const $ = (id) => document.getElementById(id);
+function log(msg, cls="") {
   const el = $("log");
-  const d = document.createElement("div");
-  if (cls) d.className = cls;
-  d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-  el.prepend(d);
-};
-const formatAddr = a => (a ? (a.slice(0,6) + "…" + a.slice(-4)) : "—");
+  const div = document.createElement("div");
+  if (cls) div.className = cls;
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.prepend(div);
+}
 
-/* =========================
-   ABI LOADER
-   ========================= */
+/* ========== ABI LOADER ========== */
 async function loadABI() {
   if (ABI) return ABI;
-  const res = await fetch(ABI_URL, { cache: "no-store" });
+  const res = await fetch(ABI_URL, {cache:"no-store"});
   if (!res.ok) throw new Error(`Failed to load ABI from ${ABI_URL}`);
   const json = await res.json();
-  ABI = Array.isArray(json) ? json : (json.abi || json.ABI || json.default || json);
-  if (!Array.isArray(ABI)) throw new Error("ABI JSON not array");
+  ABI = Array.isArray(json) ? json : (json.abi || json);
+  if (!Array.isArray(ABI)) throw new Error("ABI not found in artifact");
   log(`ABI loaded (${ABI.length} entries)`, "ok");
   return ABI;
 }
 
-/* =========================
-   PROVIDERS
-   ========================= */
+/* ========== PROVIDERS ========== */
 async function setupReadProvider(customRpc) {
   try {
     READ_PROVIDER = customRpc ? new ethers.JsonRpcProvider(customRpc) : ethers.getDefaultProvider();
-    log(`Read provider ready${customRpc ? " (custom RPC)" : ""}`, "ok");
-  } catch (e) {
-    log(`Read provider error: ${e.message}`, "err");
+    log(`Read provider set${customRpc ? " (custom RPC)" : " (default)"}`, "ok");
+  } catch(e) {
+    log(`Failed to set read provider: ${e.message || e}`, "err");
     READ_PROVIDER = null;
   }
 }
 
 async function connectWallet() {
-  if (!window.ethereum) throw new Error("No injected wallet");
+  if (!window.ethereum) throw new Error("No injected wallet found");
   WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
   await WALLET_PROVIDER.send("eth_requestAccounts", []);
   SIGNER = await WALLET_PROVIDER.getSigner();
   USER_ADDR = await SIGNER.getAddress();
-  $("acct").textContent = formatAddr(USER_ADDR);
+  $("acct").textContent = USER_ADDR;
   $("walletBtn").textContent = "Disconnect";
   log(`Wallet connected: ${USER_ADDR}`, "ok");
 }
 
-/* Disconnect helper */
-function disconnectWallet() {
-  USER_ADDR = null;
-  SIGNER = null;
-  WRITE_CONTRACT = null;
-  $("acct").textContent = "Not connected";
-  $("walletBtn").textContent = "Connect";
-  log("Wallet disconnected", "warn");
-}
-
-/* =========================
-   CONTRACT INIT
-   ========================= */
+/* ========== CONTRACT INITS ========== */
 function saveContractAddress(addr) {
   localStorage.setItem("catalyst_contract", addr);
   $("contractAddress").value = addr;
   CONTRACT_ADDR = addr;
-  log(`Saved contract ${addr}`, "ok");
+  log(`Saved contract address: ${addr}`, "ok");
 }
-function getSavedAddress() { return localStorage.getItem("catalyst_contract") || DEFAULT_CONTRACT; }
-
+function getSavedAddress() {
+  return localStorage.getItem("catalyst_contract") || DEFAULT_CONTRACT;
+}
 async function initReadContract() {
   if (!CONTRACT_ADDR) throw new Error("Contract address empty");
   if (!READ_PROVIDER) await setupReadProvider(localStorage.getItem("catalyst_rpc") || DEFAULT_RPC);
@@ -573,45 +757,37 @@ async function initReadContract() {
   READ_CONTRACT = new ethers.Contract(CONTRACT_ADDR, abi, READ_PROVIDER);
   return READ_CONTRACT;
 }
-
 async function initWriteContract() {
-  if (!USER_ADDR || !SIGNER) await connectWallet();
+  if (!SIGNER) await connectWallet();
   if (!CONTRACT_ADDR) throw new Error("Contract address empty");
   const abi = await loadABI();
   WRITE_CONTRACT = new ethers.Contract(CONTRACT_ADDR, abi, SIGNER);
   return WRITE_CONTRACT;
 }
 
-/* =========================
-   UTIL PARSERS
-   ========================= */
-function parseAddress(val) {
-  const v = (val||"").trim();
-  if (!ethers.isAddress(v)) throw new Error("Invalid address");
-  return v;
+/* ========== UTIL PARSERS ========== */
+function parseAddress(v) {
+  const s = (v||"").trim();
+  if (!ethers.isAddress(s)) throw new Error("Invalid address");
+  return s;
 }
-function parseUint(val) {
-  const s = (val||"").toString().trim();
-  if (!s) return 0n;
+function parseUint(v, fallback=0n) {
+  const s = (v ?? "").toString().trim();
+  if (!s) return BigInt(fallback);
   return BigInt(s);
 }
-function parseIdsCSV(str) {
-  return (str||"").split(",").map(s=>s.trim()).filter(Boolean).map(s=>BigInt(s));
+function parseIdsCSV(csv) {
+  return (csv||"").split(",").map(s=>s.trim()).filter(Boolean).map(s=>BigInt(s));
 }
 
-/* =========================
-   Wallet guard for writes
-   ========================= */
+/* ========== REQUIRE WALLET GUARD ========== */
 function requireWallet() {
   if (!USER_ADDR || !SIGNER) throw new Error("Please connect wallet first");
 }
 
-/* =========================
-   Stats (read-only)
-   ========================= */
+/* ========== STATS (READ-ONLY) ========== */
 async function refreshStats() {
   try {
-    if (!CONTRACT_ADDR) throw new Error("Set contract address first");
     await initReadContract();
     const s = await READ_CONTRACT.stakingStats();
     $("st_totalAll").textContent = s.totalAll.toString();
@@ -620,26 +796,43 @@ async function refreshStats() {
     $("st_remainingGlobal").textContent = s.remainingGlobal.toString();
     $("st_remainingTerm").textContent = s.remainingTerm.toString();
     $("st_remainingPermanent").textContent = s.remainingPermanent.toString();
-    const tb = await READ_CONTRACT.treasuryBalance();
-    $("st_treasury").textContent = tb.toString();
-    const dep = await READ_CONTRACT.deployerAddress();
-    $("st_deployer").textContent = formatAddr(dep);
-    const paused = await READ_CONTRACT.paused();
-    $("st_paused").textContent = paused ? "true" : "false";
+
+    // read treasuryBalance variable (public)
+    try {
+      const tb = await READ_CONTRACT.treasuryBalance();
+      $("st_treasury").textContent = tb.toString();
+    } catch(e) {
+      $("st_treasury").textContent = "n/a";
+    }
+
+    try {
+      const dep = await READ_CONTRACT.deployerAddress();
+      $("st_deployer").textContent = dep;
+    } catch(e) {
+      $("st_deployer").textContent = "n/a";
+    }
+
+    try {
+      const paused = await READ_CONTRACT.paused();
+      $("st_paused").textContent = paused ? "true":"false";
+    } catch(e){
+      $("st_paused").textContent = "n/a";
+    }
+
     log("Stats refreshed", "ok");
-  } catch (e) {
-    log(`refreshStats error: ${e.message}`, "err");
+  } catch(e) {
+    log(`Stats error: ${e.message || e}`, "err");
   }
 }
+
 function toggleAutoRefresh(on) {
   if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
-  if (on) refreshTimer = setInterval(refreshStats, 8000);
+  if (on) { refreshTimer = setInterval(refreshStats, 8000); }
 }
 
-/* =========================
-   Fast UI wiring (immediate, non-blocking)
-   ========================= */
+/* ========== FAST UI WIRING (DOM READY) ========== */
 document.addEventListener("DOMContentLoaded", () => {
+  // tabs wiring (fast)
   document.querySelectorAll(".tabbar button").forEach(btn=>{
     btn.onclick = () => {
       document.querySelectorAll(".tabbar button").forEach(b=>b.classList.remove("active"));
@@ -651,36 +844,39 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   });
 
-  $("saveContractBtn").onclick = () => { try { saveContractAddress($("contractAddress").value.trim()); } catch(e){ log(e.message, "err"); } };
+  // header buttons
+  $("saveContractBtn").onclick = () => { try { saveContractAddress($("contractAddress").value.trim()); } catch(e){ log(e.message || e, "err"); } };
   $("saveRpc").onclick = async () => {
     const url = $("rpcUrl").value.trim();
     localStorage.setItem("catalyst_rpc", url);
     await setupReadProvider(url);
-    if (CONTRACT_ADDR) { try { await initReadContract(); log("Read contract re-init", "ok"); } catch(e){ log(e.message, "err"); } }
+    if (CONTRACT_ADDR) {
+      try { await initReadContract(); log("Read contract re-initialized", "ok"); } catch(e){ log(e.message || e, "err"); }
+    }
   };
-
   $("walletBtn").onclick = async () => {
     try {
       if (!USER_ADDR) {
         await connectWallet();
+        $("walletBtn").textContent = "Disconnect";
       } else {
-        disconnectWallet();
+        // disconnect locally (wallet remains available in browser)
+        USER_ADDR = null; SIGNER = null; WRITE_CONTRACT = null; WALLET_PROVIDER = null;
+        $("acct").textContent = "Not connected";
+        $("walletBtn").textContent = "Connect";
+        log("Wallet disconnected (local)", "warn");
       }
-      // update button state text
-      $("walletBtn").textContent = USER_ADDR ? "Disconnect" : "Connect";
-      $("acct").textContent = USER_ADDR ? formatAddr(USER_ADDR) : "Not connected";
-    } catch (e) { log(e.message || e, "err"); }
+    } catch(e) { log(e.message || e, "err"); }
   };
 
+  // stats controls
   $("btnRefresh").onclick = refreshStats;
-  $("autoRefresh").onchange = (e) => toggleAutoRefresh(e.target.checked);
+  $("autoRefresh").onchange = (e)=> toggleAutoRefresh(e.target.checked);
 
-  log("UI wired (fast)", "ok");
+  log("UI wired (fast) — ready for background init", "ok");
 });
 
-/* =========================
-   Background init (non-blocking)
-   ========================= */
+/* ========== BACKGROUND INIT (non-blocking) ========== */
 window.addEventListener("load", async () => {
   try {
     const savedRpc = localStorage.getItem("catalyst_rpc") || DEFAULT_RPC;
@@ -688,28 +884,38 @@ window.addEventListener("load", async () => {
     await setupReadProvider(savedRpc);
 
     const saved = getSavedAddress();
-    if (saved) { CONTRACT_ADDR = saved; $("contractAddress").value = saved; try { await initReadContract(); } catch(e){} }
-
-    // restore wallet silently if available
-    if (window.ethereum) {
-      const accounts = await window.ethereum.request({ method: "eth_accounts" });
-      if (accounts && accounts.length>0) {
-        WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
-        SIGNER = await WALLET_PROVIDER.getSigner();
-        USER_ADDR = accounts[0];
-        $("acct").textContent = formatAddr(USER_ADDR);
-        $("walletBtn").textContent = "Disconnect";
-        log(`Restored wallet: ${USER_ADDR}`, "ok");
-      }
+    if (saved) {
+      $("contractAddress").value = saved;
+      CONTRACT_ADDR = saved;
+      try { await initReadContract(); log("Read contract preloaded", "ok"); } catch(e){ log(e.message || e, "err"); }
     }
 
+    // restore wallet silently (if previously connected)
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_accounts" });
+        if (accounts && accounts.length > 0) {
+          WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
+          SIGNER = await WALLET_PROVIDER.getSigner();
+          USER_ADDR = accounts[0];
+          $("acct").textContent = USER_ADDR;
+          $("walletBtn").textContent = "Disconnect";
+          log(`Wallet restored: ${USER_ADDR}`, "ok");
+        }
+      } catch(e){ /* no action */ }
+    }
+
+    // initial stats
     if (CONTRACT_ADDR) await refreshStats();
+
     log("Background init complete", "ok");
-  } catch (e) { log(`Init error: ${e.message}`, "err"); }
+  } catch(e) {
+    log(`Init error: ${e.message || e}`, "err");
+  }
 });
 
 /* =========================
-   STAKE / BATCH / HARVEST
+   ACTIONS: STAKE
    ========================= */
 $("btnApprove721").onclick = async () => {
   try {
@@ -718,60 +924,89 @@ $("btnApprove721").onclick = async () => {
     const col = parseAddress($("colStake").value);
     const nft = new ethers.Contract(col, ERC721_ABI, SIGNER);
     const tx = await nft.setApprovalForAll(CONTRACT_ADDR, true);
-    log(`Approve tx: ${tx.hash}`); await tx.wait(); log("Approval confirmed", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    log(`Approval sent (tx: ${tx.hash})`, "ok");
+    await tx.wait();
+    log("Approval confirmed", "ok");
+  } catch(e) {
+    log(`Approve error: ${e.message || e}`, "err");
+  }
+};
+
+$("btnApprove721Check").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colStake").value);
+    const nft = new ethers.Contract(col, ERC721_ABI, SIGNER);
+    const res = await nft.isApprovedForAll(USER_ADDR, CONTRACT_ADDR);
+    log(`Approval status: ${res}`, res ? "ok" : "warn");
+  } catch(e) {
+    log(`Check error: ${e.message || e}`, "err");
+  }
 };
 
 $("btnStake").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const col = parseAddress($("colStake").value);
-    const id = parseUint($("tidStake").value);
+    const tid = parseUint($("tidStake").value);
     const permanent = $("permanent").value === "true";
-    const tx = await WRITE_CONTRACT.stake(col, id, permanent);
-    log(`Stake tx: ${tx.hash}`); await tx.wait(); log("Stake confirmed", "ok");
-    await refreshStats();
-  } catch (e) { log(e.message || e, "err"); }
+    const tx = await c.stake(col, tid, permanent);
+    log(`Stake tx sent: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Stake confirmed", "ok");
+  } catch(e) {
+    log(`Stake error: ${e.message || e}`, "err");
+  }
 };
 
 $("btnHarvestOne").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const col = parseAddress($("colStake").value);
-    const id = parseUint($("tidStake").value);
-    const tx = await WRITE_CONTRACT.harvest(col, id);
-    log(`Harvest tx: ${tx.hash}`); await tx.wait(); log("Harvest confirmed", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const tid = parseUint($("tidStake").value);
+    const tx = await c.harvestOne(col, tid);
+    log(`Harvest tx sent: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Harvest confirmed (burn applied, CATA minted)", "ok");
+  } catch(e) {
+    log(`Harvest error: ${e.message || e}`, "err");
+  }
 };
 
 $("btnUnstake").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const col = parseAddress($("colStake").value);
-    const id = parseUint($("tidStake").value);
-    const tx = await WRITE_CONTRACT.unstake(col, id);
-    log(`Unstake tx: ${tx.hash}`); await tx.wait(); log("Unstaked", "ok");
-    await refreshStats();
-  } catch (e) { log(e.message || e, "err"); }
+    const tid = parseUint($("tidStake").value);
+    const tx = await c.unstake(col, tid);
+    log(`Unstake tx sent: ${tx.hash}`, "warn");
+    await tx.wait();
+    log("Unstake confirmed (burn fee deducted)", "ok");
+  } catch(e) {
+    log(`Unstake error: ${e.message || e}`, "err");
+  }
 };
 
 $("btnViewPending").onclick = async () => {
   try {
-    if (!CONTRACT_ADDR) throw new Error("Set contract");
     await initReadContract();
     const col = parseAddress($("colStake").value);
-    let owner = USER_ADDR || "";
-    if (!owner) throw new Error("Connect wallet or provide owner in Views");
-    const id = parseUint($("tidStake").value);
-    const r = await READ_CONTRACT.pendingRewardsView(col, owner, id);
-    $("pendingView").textContent = r.toString();
-    log("Pending fetched", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const tid = parseUint($("tidStake").value);
+    const res = await READ_CONTRACT.pendingReward(col, tid);
+    $("pendingView").textContent = res.toString();
+    log(`Pending reward: ${res}`, "ok");
+  } catch(e) {
+    log(`Pending error: ${e.message || e}`, "err");
+  }
 };
 
+/* =========================
+   ACTIONS: BATCH STAKE
+   ========================= */
 $("btnApprove721Batch").onclick = async () => {
   try {
     requireWallet();
@@ -779,303 +1014,336 @@ $("btnApprove721Batch").onclick = async () => {
     const col = parseAddress($("colBatch").value);
     const nft = new ethers.Contract(col, ERC721_ABI, SIGNER);
     const tx = await nft.setApprovalForAll(CONTRACT_ADDR, true);
-    log(`Approve batch tx: ${tx.hash}`); await tx.wait(); log("Approved", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    log(`Batch approval sent: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Batch approval confirmed", "ok");
+  } catch(e) {
+    log(`Batch approve error: ${e.message || e}`, "err");
+  }
 };
 
 $("btnBatchStake").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const col = parseAddress($("colBatch").value);
     const ids = parseIdsCSV($("tidsBatch").value);
-    if (ids.length === 0) throw new Error("No token ids");
     const permanent = $("permanentBatch").value === "true";
-    const tx = await WRITE_CONTRACT.batchStake(col, ids, permanent);
-    log(`BatchStake tx: ${tx.hash}`); await tx.wait(); log("Batch stake confirmed", "ok");
-    await refreshStats();
-  } catch (e) { log(e.message || e, "err"); }
-};
-
-$("btnRegister").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-    const col = parseAddress($("colRegister").value);
-    const supply = parseUint($("declaredSupply").value);
-    const tx = await WRITE_CONTRACT.registerCollection(col, supply);
-    log(`Register tx: ${tx.hash}`); await tx.wait(); log("Collection registered", "ok");
-    await refreshStats();
-  } catch (e) { log(e.message || e, "err"); }
+    const tx = await c.stakeBatch(col, ids, permanent);
+    log(`Batch stake tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Batch stake confirmed", "ok");
+  } catch(e) {
+    log(`Batch stake error: ${e.message || e}`, "err");
+  }
 };
 
 /* =========================
-   BLUE-CHIP
+   ACTIONS: REGISTER COLLECTION
+   ========================= */
+$("btnRegister").onclick = async () => {
+  try {
+    requireWallet();
+    const c = await initWriteContract();
+    const col = parseAddress($("colRegister").value);
+    const supply = parseUint($("declaredSupply").value);
+    const tx = await c.registerCollection(col, supply);
+    log(`Register tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Collection registered", "ok");
+  } catch(e) {
+    log(`Register error: ${e.message || e}`, "err");
+  }
+};
+
+/* =========================
+   ACTIONS: BLUE-CHIP
    ========================= */
 $("btnEnrollBlue").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
-    const tx = await WRITE_CONTRACT.enrollBluechip();
-    log(`Enroll tx: ${tx.hash}`); await tx.wait(); log("Enrolled", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const c = await initWriteContract();
+    const tx = await c.enrollBluechip();
+    log(`Enroll tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Wallet enrolled for blue-chip rewards", "ok");
+  } catch(e) {
+    log(`Enroll error: ${e.message || e}`, "err");
+  }
 };
 
 $("btnHarvestBlue").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const col = parseAddress($("colBlueHarvest").value);
-    const tx = await WRITE_CONTRACT.harvestBluechip(col);
-    log(`Harvest blue tx: ${tx.hash}`); await tx.wait(); log("Blue-chip harvested", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const tx = await c.harvestBluechip(col);
+    log(`Harvest blue-chip tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Blue-chip harvest confirmed", "ok");
+  } catch(e) {
+    log(`Harvest blue error: ${e.message || e}`, "err");
+  }
 };
 
 $("btnSetBlue").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const col = parseAddress($("colFlagBlue").value);
-    const isBlue = $("isBlueFlag").value === "true";
-    const tx = await WRITE_CONTRACT.setBluechipCollection(col, isBlue);
-    log(`SetBlue tx: ${tx.hash}`); await tx.wait(); log("Blue-chip flag updated", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const flag = $("isBlueFlag").value === "true";
+    const tx = await c.setBluechipCollection(col, flag);
+    log(`Set blue-chip tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Blue-chip status updated", "ok");
+  } catch(e) {
+    log(`Set blue error: ${e.message || e}`, "err");
+  }
 };
 
-/* =========================
-   GOVERNANCE
+ /* =========================
+   ACTIONS: GOVERNANCE
    ========================= */
 $("btnPropose").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
-    const pType = Number($("pType").value);
-    const paramTarget = Number($("paramTarget").value || 0);
+    const c = await initWriteContract();
+    const pType = parseInt($("pType").value);
+    const paramTarget = parseUint($("paramTarget").value);
     const newValue = parseUint($("newValue").value);
-    const ctx = ($("collCtx").value.trim() || "0x0000000000000000000000000000000000000000");
-    const tx = await WRITE_CONTRACT.propose(pType, paramTarget, newValue, ctx);
-    log(`Propose tx: ${tx.hash}`); await tx.wait(); log("Proposal created", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const collCtx = $("collCtx").value.trim() || ethers.ZeroAddress;
+
+    const tx = await c.createProposal(pType, paramTarget, newValue, collCtx);
+    log(`Proposal created (tx: ${tx.hash})`, "ok");
+    await tx.wait();
+    log("Proposal confirmed", "ok");
+  } catch(e) {
+    log(`Proposal error: ${e.message || e}`, "err");
+  }
 };
 
 $("btnVote").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const id = $("propId").value.trim();
-    const tx = await WRITE_CONTRACT.vote(id);
-    log(`Vote tx: ${tx.hash}`); await tx.wait(); log("Voted", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const tx = await c.vote(id);
+    log(`Vote sent (tx: ${tx.hash})`, "ok");
+    await tx.wait();
+    log("Vote confirmed", "ok");
+  } catch(e) {
+    log(`Vote error: ${e.message || e}`, "err");
+  }
 };
 
 $("btnExecute").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const id = $("propId").value.trim();
-    const tx = await WRITE_CONTRACT.executeProposal(id);
-    log(`Execute tx: ${tx.hash}`); await tx.wait(); log("Executed", "ok");
-    await refreshStats();
-  } catch (e) { log(e.message || e, "err"); }
+    const tx = await c.executeProposal(id);
+    log(`Execute sent (tx: ${tx.hash})`, "ok");
+    await tx.wait();
+    log("Proposal executed", "ok");
+  } catch(e) {
+    log(`Execute error: ${e.message || e}`, "err");
+  }
 };
 
 /* =========================
-   GUARDIANS
+   ACTIONS: GUARDIANS
    ========================= */
+// Deployer council
 $("btnPropDep").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const addr = parseAddress($("newDeployer").value);
-    const tx = await WRITE_CONTRACT.proposeDeployerRecovery(addr);
-    log(`ProposeDeployer tx: ${tx.hash}`); await tx.wait(); log("Proposed", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const tx = await c.proposeNewDeployer(addr);
+    log(`Propose deployer tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("New deployer proposal created", "ok");
+  } catch(e) { log(`Guardian error: ${e.message||e}`, "err"); }
 };
 
 $("btnApproveDep").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
-    const tx = await WRITE_CONTRACT.approveDeployerRecovery();
-    log(`ApproveDeployer tx: ${tx.hash}`); await tx.wait(); log("Approved", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const c = await initWriteContract();
+    const addr = parseAddress($("newDeployer").value);
+    const tx = await c.approveNewDeployer(addr);
+    log(`Approve deployer tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Deployer proposal approved", "ok");
+  } catch(e) { log(`Guardian error: ${e.message||e}`, "err"); }
 };
 
 $("btnExecDep").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
-    const tx = await WRITE_CONTRACT.executeDeployerRecovery();
-    log(`ExecDeployer tx: ${tx.hash}`); await tx.wait(); log("Executed", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const c = await initWriteContract();
+    const addr = parseAddress($("newDeployer").value);
+    const tx = await c.executeNewDeployer(addr);
+    log(`Execute deployer tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Deployer updated", "ok");
+  } catch(e) { log(`Guardian error: ${e.message||e}`, "err"); }
 };
 
+// Admin council
 $("btnPropAdm").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const addr = parseAddress($("newAdmin").value);
-    const tx = await WRITE_CONTRACT.proposeAdminRecovery(addr);
-    log(`ProposeAdmin tx: ${tx.hash}`); await tx.wait(); log("Proposed", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const tx = await c.proposeNewAdmin(addr);
+    log(`Propose admin tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("New admin proposal created", "ok");
+  } catch(e) { log(`Guardian error: ${e.message||e}`, "err"); }
 };
 
 $("btnApproveAdm").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
-    const tx = await WRITE_CONTRACT.approveAdminRecovery();
-    log(`ApproveAdmin tx: ${tx.hash}`); await tx.wait(); log("Approved", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const c = await initWriteContract();
+    const addr = parseAddress($("newAdmin").value);
+    const tx = await c.approveNewAdmin(addr);
+    log(`Approve admin tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Admin proposal approved", "ok");
+  } catch(e) { log(`Guardian error: ${e.message||e}`, "err"); }
 };
 
 $("btnExecAdm").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
-    const tx = await WRITE_CONTRACT.executeAdminRecovery();
-    log(`ExecAdmin tx: ${tx.hash}`); await tx.wait(); log("Executed", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const c = await initWriteContract();
+    const addr = parseAddress($("newAdmin").value);
+    const tx = await c.executeNewAdmin(addr);
+    log(`Execute admin tx: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Admin updated", "ok");
+  } catch(e) { log(`Guardian error: ${e.message||e}`, "err"); }
 };
 
+// Replace guardians
 $("btnSetDepGuardian").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
-    const idx = Number($("depIdx").value || 0);
-    const gaddr = parseAddress($("depGuardian").value);
-    const tx = await WRITE_CONTRACT.setDeployerGuardian(idx, gaddr);
-    log(`SetDepGuardian tx: ${tx.hash}`); await tx.wait(); log("Guardian set", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const c = await initWriteContract();
+    const idx = parseInt($("depIdx").value);
+    const addr = parseAddress($("depGuardian").value);
+    const tx = await c.setDeployerGuardian(idx, addr);
+    log(`Deployer guardian set (tx: ${tx.hash})`, "ok");
+    await tx.wait();
+    log("Deployer guardian updated", "ok");
+  } catch(e) { log(`Guardian error: ${e.message||e}`, "err"); }
 };
 
 $("btnSetAdmGuardian").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
-    const idx = Number($("admIdx").value || 0);
-    const gaddr = parseAddress($("admGuardian").value);
-    const tx = await WRITE_CONTRACT.setAdminGuardian(idx, gaddr);
-    log(`SetAdmGuardian tx: ${tx.hash}`); await tx.wait(); log("Guardian set", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const c = await initWriteContract();
+    const idx = parseInt($("admIdx").value);
+    const addr = parseAddress($("admGuardian").value);
+    const tx = await c.setAdminGuardian(idx, addr);
+    log(`Admin guardian set (tx: ${tx.hash})`, "ok");
+    await tx.wait();
+    log("Admin guardian updated", "ok");
+  } catch(e) { log(`Guardian error: ${e.message||e}`, "err"); }
 };
 
 /* =========================
-   ADMIN
+   ACTIONS: ADMIN
    ========================= */
 $("btnPause").onclick = async () => {
-  try { requireWallet(); await initWriteContract(); const tx = await WRITE_CONTRACT.pause(); log(`Pause tx: ${tx.hash}`); await tx.wait(); log("Paused","ok"); await refreshStats(); } catch(e){ log(e.message || e, "err"); }
+  try {
+    requireWallet();
+    const c = await initWriteContract();
+    const tx = await c.pause();
+    log(`Pause sent: ${tx.hash}`, "warn");
+    await tx.wait();
+    log("Contract paused", "warn");
+  } catch(e) { log(`Pause error: ${e.message||e}`, "err"); }
 };
+
 $("btnUnpause").onclick = async () => {
-  try { requireWallet(); await initWriteContract(); const tx = await WRITE_CONTRACT.unpause(); log(`Unpause tx: ${tx.hash}`); await tx.wait(); log("Unpaused","ok"); await refreshStats(); } catch(e){ log(e.message || e, "err"); }
+  try {
+    requireWallet();
+    const c = await initWriteContract();
+    const tx = await c.unpause();
+    log(`Unpause sent: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Contract unpaused", "ok");
+  } catch(e) { log(`Unpause error: ${e.message||e}`, "err"); }
 };
+
 $("btnWithdraw").onclick = async () => {
   try {
     requireWallet();
-    await initWriteContract();
+    const c = await initWriteContract();
     const to = parseAddress($("toTreasury").value);
     const amt = parseUint($("amtTreasury").value);
-    const tx = await WRITE_CONTRACT.withdrawTreasury(to, amt);
-    log(`Withdraw tx: ${tx.hash}`); await tx.wait(); log("Withdrawn", "ok"); await refreshStats();
-  } catch (e) { log(e.message || e, "err"); }
+    const tx = await c.withdrawTreasury(to, amt);
+    log(`Withdraw sent: ${tx.hash}`, "ok");
+    await tx.wait();
+    log("Treasury withdrawn", "ok");
+  } catch(e) { log(`Withdraw error: ${e.message||e}`, "err"); }
 };
 
 /* =========================
-   VIEWS / INFO
+   ACTIONS: VIEWS
    ========================= */
 $("btnViewPending2").onclick = async () => {
   try {
-    if (!CONTRACT_ADDR) throw new Error("Set contract");
     await initReadContract();
     const col = parseAddress($("vCol").value);
-    let owner = ($("vOwner").value || "").trim();
-    if (!owner) {
-      if (!USER_ADDR) throw new Error("Connect wallet or fill owner");
-      owner = USER_ADDR;
-    }
+    const owner = $("vOwner").value.trim() || USER_ADDR || ethers.ZeroAddress;
     const tid = parseUint($("vTokenId").value);
-    const r = await READ_CONTRACT.pendingRewardsView(col, owner, tid);
-    $("pendingOut").textContent = r.toString();
-    log("Pending (views) fetched", "ok");
-  } catch (e) { log(e.message || e, "err"); }
-};
-
-$("btnUserInfo").onclick = async () => {
-  try {
-    if (!CONTRACT_ADDR) throw new Error("Set contract");
-    await initReadContract();
-    const user = ($("infoUser").value || "").trim() || USER_ADDR;
-    if (!user) throw new Error("Provide user or connect wallet");
-    const col = $("infoCol").value.trim();
-    $("ui_address").textContent = user;
-    if (col) {
-      $("ui_collection").textContent = col;
-      const idx = await READ_CONTRACT.registeredIndex(col);
-      const blue = await READ_CONTRACT.isBluechipCollection(col);
-      $("ci_index").textContent = idx.toString();
-      $("ci_blue").textContent = blue ? "true" : "false";
-      // pending rewards for tokenId 0 as sample
-      const r = await READ_CONTRACT.pendingRewardsView(col, user, 0n);
-      $("ui_pending").textContent = r.toString();
-    } else {
-      $("ui_collection").textContent = "—";
-      $("ci_index").textContent = "—";
-      $("ci_blue").textContent = "—";
-      $("ui_pending").textContent = "—";
-    }
-    log("User info fetched", "ok");
-  } catch (e) { log(e.message || e, "err"); }
-};
-
-$("btnColInfo").onclick = async () => {
-  try {
-    if (!CONTRACT_ADDR) throw new Error("Set contract");
-    await initReadContract();
-    const col = parseAddress($("infoCol").value);
-    const idx = await READ_CONTRACT.registeredIndex(col);
-    const blue = await READ_CONTRACT.isBluechipCollection(col);
-    $("ci_index").textContent = idx.toString();
-    $("ci_blue").textContent = blue ? "true" : "false";
-    log("Collection info fetched", "ok");
-  } catch (e) { log(e.message || e, "err"); }
+    const res = await READ_CONTRACT.pendingRewardOf(owner, col, tid);
+    $("pendingOut").textContent = res.toString();
+    log(`Pending reward (owner ${owner}, tid ${tid}): ${res}`, "ok");
+  } catch(e) { log(`View error: ${e.message||e}`, "err"); }
 };
 
 $("btnListCollections").onclick = async () => {
   try {
-    if (!CONTRACT_ADDR) throw new Error("Set contract");
     await initReadContract();
-    // There's no direct count; we iterate until revert or until a big cap.
-    // If your contract exposes registeredCollections(uint256) and registeredIndex, we can attempt to read indexes.
-    // We'll try reading index 0..9999 and stop when function returns zero-address or throws.
-    const tbody = $("registeredTable").querySelector("tbody");
-    tbody.innerHTML = "";
-    let count = 0;
-    for (let i=0; i<5000; ++i) {
-      try {
-        const addr = await READ_CONTRACT.registeredCollections(i);
-        if (!addr || addr === "0x0000000000000000000000000000000000000000") break;
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${i}</td><td>${addr}</td>`;
-        tbody.appendChild(row);
-        count++;
-      } catch (err) {
-        // likely out of range => stop
-        break;
-      }
-    }
-    $("ci_count").textContent = count.toString();
-    log(`Listed ${count} registered collections (attempted up to 5000)`, "ok");
-  } catch (e) {
-    log(e.message || e, "err");
-  }
+    const list = await READ_CONTRACT.allCollections();
+    $("collectionsOut").textContent = JSON.stringify(list, null, 2);
+    log(`Collections listed (${list.length})`, "ok");
+  } catch(e) { log(`List error: ${e.message||e}`, "err"); }
 };
 
-/* =========================
-   Auto cleanup on unload
-   ========================= */
-window.addEventListener("beforeunload", () => {
-  if (refreshTimer) clearInterval(refreshTimer);
-});
+$("btnListBlue").onclick = async () => {
+  try {
+    await initReadContract();
+    const list = await READ_CONTRACT.allBluechips();
+    $("collectionsOut").textContent = JSON.stringify(list, null, 2);
+    log(`Blue-chip list (${list.length})`, "ok");
+  } catch(e) { log(`Blue list error: ${e.message||e}`, "err"); }
+};
+
+$("btnUserInfo").onclick = async () => {
+  try {
+    await initReadContract();
+    const user = $("infoUser").value.trim() || USER_ADDR;
+    const info = await READ_CONTRACT.userInfo(user);
+    $("infoOut").textContent = JSON.stringify(info, null, 2);
+    log(`User info loaded`, "ok");
+  } catch(e) { log(`User info error: ${e.message||e}`, "err"); }
+};
+
+$("btnColInfo").onclick = async () => {
+  try {
+    await initReadContract();
+    const col = parseAddress($("infoCol").value);
+    const info = await READ_CONTRACT.collectionInfo(col);
+    $("infoOut").textContent = JSON.stringify(info, null, 2);
+    log(`Collection info loaded`, "ok");
+  } catch(e) { log(`Collection info error: ${e.message||e}`, "err"); }
+};
 </script>
 </body>
-</html>
+</html> 
