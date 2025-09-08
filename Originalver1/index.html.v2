@@ -76,10 +76,10 @@
     <button class="primary" id="saveContractBtn">Save</button>
   </div>
 
-<div class="pill">
-  <span id="acct" class="mono muted">Not connected</span>
-  <button id="walletBtn" class="primary">Connect</button>
-</div>
+  <div class="pill">
+    <span id="acct" class="mono muted">Not connected</span>
+    <button id="connectBtn" class="primary">Connect Wallet</button>
+  </div>
 </header>
 
 <main>
@@ -742,29 +742,16 @@ window.addEventListener("load", async () => {
     CONTRACT_ADDR = saved;
   }
 
-  // Tabs
   document.querySelectorAll(".tabbar button").forEach(btn=>{
     btn.onclick = () => {
       document.querySelectorAll(".tabbar button").forEach(b=>b.classList.remove("active"));
       btn.classList.add("active");
       const key = btn.dataset.tab;
       document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
-      $("tab-" + key).style.display="block";
+      $("tab-"+key).style.display="block";
     };
   });
 
-  // Check if wallet already connected
-  if (window.ethereum) {
-    const accounts = await window.ethereum.request({ method: "eth_accounts" });
-    if (accounts.length > 0) {
-      WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
-      SIGNER = await WALLET_PROVIDER.getSigner();
-      USER_ADDR = accounts[0];
-      log(`Restored wallet: ${USER_ADDR}`, "ok");
-    }
-  }
-
-  updateWalletButton(); // always sync button state
   log("Ready. Set RPC (optional), enter contract, and connect wallet for writes.");
 });
 
@@ -783,43 +770,8 @@ $("saveRpc").onclick = async () => {
   }
 };
 
-// --- Wallet helpers ---
-function updateWalletButton() {
-  if (USER_ADDR) {
-    $("walletBtn").textContent = "Disconnect";
-    $("acct").textContent = USER_ADDR;
-  } else {
-    $("walletBtn").textContent = "Connect";
-    $("acct").textContent = "Not connected";
-  }
-}
-
-async function connectWallet() {
-  if (!window.ethereum) throw new Error("No injected wallet found");
-  WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
-  await WALLET_PROVIDER.send("eth_requestAccounts", []);
-  SIGNER = await WALLET_PROVIDER.getSigner();
-  USER_ADDR = await SIGNER.getAddress();
-  log(`Wallet connected: ${USER_ADDR}`, "ok");
-  updateWalletButton();
-}
-
-$("walletBtn").onclick = async () => {
-  try {
-    if (!USER_ADDR) {
-      // CONNECT
-      await connectWallet();
-    } else {
-      // DISCONNECT
-      USER_ADDR = null;
-      SIGNER = null;
-      WRITE_CONTRACT = null;
-      log("Wallet disconnected", "warn");
-      updateWalletButton();
-    }
-  } catch (e) {
-    log(e.message || e, "err");
-  }
+$("connectBtn").onclick = async () => {
+  try { await connectWallet(); } catch (e) { log(e.message || e, "err"); }
 };
 
 /** ---- Stats panel ---- */
