@@ -393,28 +393,39 @@
       </div>
 
 <!-- Info Tab -->
-<div class="hr"></div>
+<div class="tab" id="tab-info" style="display:none">
+  <h3 style="margin-top:0">User & Collection Info</h3>
 
-<h4>User Info</h4>
-<div id="userInfo" class="kv mono muted">
-  <div>Address</div><div id="ui_addr">—</div>
-  <div>Collection</div><div id="ui_col">—</div>
-  <div>Pending Rewards</div><div id="ui_rewards">—</div>
+  <div class="row">
+    <div>
+      <div class="label">Collection Address</div>
+      <input id="infoCol" placeholder="0x…">
+    </div>
+    <div>
+      <div class="label">User Address</div>
+      <input id="infoUser" placeholder="0x… (leave blank for your wallet)">
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div>
+      <div class="label">Token ID</div>
+      <input id="infoTid" type="number" placeholder="e.g. 123">
+    </div>
+    <div>
+      <div class="label">—</div>
+      <button id="btnUserInfo" class="primary">Get User Info</button>
+    </div>
+  </div>
+
+  <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+    <button id="btnColInfo">Get Collection Info</button>
+    <button id="btnListCols" class="primary">List Collections</button> <!-- NEW -->
+  </div>
+
+  <div class="hr"></div>
+  <div id="infoOut" class="mono muted">—</div>
 </div>
-
-<div class="hr"></div>
-
-<h4>Collection Info</h4>
-<div id="colInfo" class="kv mono muted">
-  <div>Address</div><div id="ci_addr">—</div>
-  <div>Index</div><div id="ci_index">—</div>
-  <div>Blue-Chip?</div><div id="ci_blue">—</div>
-</div>
-
-<div class="hr"></div>
-
-<h4>Registered Collections</h4>
-<div id="colList" class="mono muted" style="white-space:pre-wrap; font-size:12px">—</div>
     </section>
 
     <!-- RIGHT: Stats + Console -->
@@ -941,16 +952,14 @@ $("btnUserInfo").onclick = async () => {
   try {
     await initReadContract();
     const col = parseAddress($("infoCol").value);
-    const usr = $("infoUser").value.trim() || USER_ADDR;
-    if (!usr) throw new Error("Enter a user or connect wallet");
+    let usr = $("infoUser").value.trim();
+    if (!usr) usr = USER_ADDR; // fallback to connected wallet
+    const tid = parseUint($("infoTid").value);
+    const rewards = await READ_CONTRACT.pendingRewardsView(col, usr, tid);
 
-    // For now, show pending rewards for Token ID = 0
-    const rewards = await READ_CONTRACT.pendingRewardsView(col, usr, 0);
-
-    $("ui_addr").textContent = usr;
-    $("ui_col").textContent = col;
-    $("ui_rewards").textContent = rewards.toString();
-    log("User info refreshed ✅","ok");
+    $("infoOut").textContent =
+      `User: ${usr}\nCollection: ${col}\nTokenID: ${tid}\nPending Rewards: ${rewards.toString()}`;
+    log("User info fetched ✅","ok");
   } catch(e){ log(e.message || e,"err"); }
 };
 
@@ -958,14 +967,11 @@ $("btnColInfo").onclick = async () => {
   try {
     await initReadContract();
     const col = parseAddress($("infoCol").value);
-
     const idx = await READ_CONTRACT.registeredIndex(col);
     const blue = await READ_CONTRACT.isBluechipCollection(col);
-
-    $("ci_addr").textContent = col;
-    $("ci_index").textContent = idx.toString();
-    $("ci_blue").textContent = blue ? "🌟 Yes" : "No";
-    log("Collection info refreshed ✅","ok");
+    $("infoOut").textContent =
+      `Collection: ${col}\nRegistered Index: ${idx.toString()}\nIs Bluechip: ${blue}`;
+    log("Collection info fetched ✅","ok");
   } catch(e){ log(e.message || e,"err"); }
 };
 
@@ -973,17 +979,19 @@ $("btnListCols").onclick = async () => {
   try {
     await initReadContract();
     let results = [];
+    // try first 200 slots max (to avoid infinite loops)
     for (let i = 0; i < 200; i++) {
       try {
         const col = await READ_CONTRACT.registeredCollections(i);
-        if (col === ethers.ZeroAddress) break;
-        const isBlue = await READ_CONTRACT.isBluechipCollection(col);
-        results.push(`${i}: ${col}  ${isBlue ? "🌟 Blue-Chip" : ""}`);
-      } catch { break; }
+        if (col === ethers.ZeroAddress) break; // optional if contract returns 0x0 when no more
+        results.push(`${i}: ${col}`);
+      } catch {
+        break; // stop when contract reverts
+      }
     }
-    $("colList").textContent = results.length
+    $("infoOut").textContent = results.length
       ? results.join("\n")
-      : "No registered collections.";
+      : "No registered collections found.";
     log(`Fetched ${results.length} collections ✅`, "ok");
   } catch(e){ log(e.message || e,"err"); }
 };
