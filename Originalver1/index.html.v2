@@ -753,7 +753,18 @@ window.addEventListener("load", async () => {
     };
   });
 
-  updateWalletButton(); // sync button on load
+  // Check if wallet already connected
+  if (window.ethereum) {
+    const accounts = await window.ethereum.request({ method: "eth_accounts" });
+    if (accounts.length > 0) {
+      WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
+      SIGNER = await WALLET_PROVIDER.getSigner();
+      USER_ADDR = accounts[0];
+      log(`Restored wallet: ${USER_ADDR}`, "ok");
+    }
+  }
+
+  updateWalletButton(); // always sync button state
   log("Ready. Set RPC (optional), enter contract, and connect wallet for writes.");
 });
 
