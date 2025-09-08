@@ -742,16 +742,18 @@ window.addEventListener("load", async () => {
     CONTRACT_ADDR = saved;
   }
 
+  // Tabs
   document.querySelectorAll(".tabbar button").forEach(btn=>{
     btn.onclick = () => {
       document.querySelectorAll(".tabbar button").forEach(b=>b.classList.remove("active"));
       btn.classList.add("active");
       const key = btn.dataset.tab;
       document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
-      $("tab-"+key).style.display="block";
+      $("tab-" + key).style.display="block";
     };
   });
 
+  updateWalletButton(); // sync button on load
   log("Ready. Set RPC (optional), enter contract, and connect wallet for writes.");
 });
 
@@ -770,20 +772,39 @@ $("saveRpc").onclick = async () => {
   }
 };
 
+// --- Wallet helpers ---
+function updateWalletButton() {
+  if (USER_ADDR) {
+    $("walletBtn").textContent = "Disconnect";
+    $("acct").textContent = USER_ADDR;
+  } else {
+    $("walletBtn").textContent = "Connect";
+    $("acct").textContent = "Not connected";
+  }
+}
+
+async function connectWallet() {
+  if (!window.ethereum) throw new Error("No injected wallet found");
+  WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
+  await WALLET_PROVIDER.send("eth_requestAccounts", []);
+  SIGNER = await WALLET_PROVIDER.getSigner();
+  USER_ADDR = await SIGNER.getAddress();
+  log(`Wallet connected: ${USER_ADDR}`, "ok");
+  updateWalletButton();
+}
+
 $("walletBtn").onclick = async () => {
   try {
     if (!USER_ADDR) {
-      // --- CONNECT ---
+      // CONNECT
       await connectWallet();
-      $("walletBtn").textContent = "Disconnect";
     } else {
-      // --- DISCONNECT ---
+      // DISCONNECT
       USER_ADDR = null;
       SIGNER = null;
       WRITE_CONTRACT = null;
-      $("acct").textContent = "Not connected";
-      $("walletBtn").textContent = "Connect";
       log("Wallet disconnected", "warn");
+      updateWalletButton();
     }
   } catch (e) {
     log(e.message || e, "err");
