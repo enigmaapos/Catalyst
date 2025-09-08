@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Catalyst DApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0d0d0d;
+      color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    button {
+      background: #1e88e5;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #1565c0;
+    }
+    .section {
+      margin-bottom: 30px;
+      padding: 15px;
+      border: 1px solid #333;
+      border-radius: 10px;
+      background: #1a1a1a;
+    }
+    input {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #222;
+      color: white;
+      margin: 5px 0;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔥 Catalyst NFT Staking DApp</h1>
+    <button id="connectButton">Connect Wallet</button>
+    <p id="walletAddress">Not connected</p>
+  </header>
+
+  <div class="section">
+    <h2>Staking</h2>
+    <label for="stakeCollection">Collection Address</label>
+    <input type="text" id="stakeCollection" placeholder="0x..." />
+    <label for="stakeTokenId">Token ID</label>
+    <input type="number" id="stakeTokenId" />
+    <label><input type="checkbox" id="permanentStake" /> Permanent Stake</label>
+    <button id="stakeButton">Stake NFT</button>
+  </div>
+
+  <div class="section">
+    <h2>Harvest Rewards</h2>
+    <label for="harvestCollection">Collection Address</label>
+    <input type="text" id="harvestCollection" placeholder="0x..." />
+    <label for="harvestTokenId">Token ID</label>
+    <input type="number" id="harvestTokenId" />
+    <button id="harvestButton">Harvest</button>
+  </div>
+
+  <div class="section">
+    <h2>Unstake</h2>
+    <label for="unstakeCollection">Collection Address</label>
+    <input type="text" id="unstakeCollection" placeholder="0x..." />
+    <label for="unstakeTokenId">Token ID</label>
+    <input type="number" id="unstakeTokenId" />
+    <button id="unstakeButton">Unstake NFT</button>
+  </div>
+
+  <div class="section">
+    <h2>Blue-Chip Enrollment</h2>
+    <button id="enrollBluechip">Enroll</button>
+    <label for="bluechipCollection">Collection Address</label>
+    <input type="text" id="bluechipCollection" placeholder="0x..." />
+    <button id="harvestBluechip">Harvest Bluechip</button>
+  </div>
+
+  <script type="module">
+    import ABI from "../abi/CatalystNFTStakingUpgradeable.json" assert { type: "json" };
+
+    let provider;
+    let signer;
+    let contract;
+
+    // Replace with your deployed contract address
+    const CONTRACT_ADDRESS = "0xYourDeployedContractAddress";
+
+    async function connectWallet() {
+      if (typeof window.ethereum === "undefined") {
+        alert("MetaMask not detected!");
+        return;
+      }
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      const address = await signer.getAddress();
+      document.getElementById("walletAddress").innerText = `Connected: ${address}`;
+      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+    }
+
+    async function stakeNFT() {
+      const collection = document.getElementById("stakeCollection").value;
+      const tokenId = document.getElementById("stakeTokenId").value;
+      const permanent = document.getElementById("permanentStake").checked;
+      try {
+        const tx = await contract.stake(collection, tokenId, permanent);
+        await tx.wait();
+        alert("NFT Staked!");
+      } catch (err) {
+        alert("Error staking NFT: " + err.message);
+      }
+    }
+
+    async function harvestRewards() {
+      const collection = document.getElementById("harvestCollection").value;
+      const tokenId = document.getElementById("harvestTokenId").value;
+      try {
+        const tx = await contract.harvest(collection, tokenId);
+        await tx.wait();
+        alert("Harvest successful!");
+      } catch (err) {
+        alert("Error harvesting: " + err.message);
+      }
+    }
+
+    async function unstakeNFT() {
+      const collection = document.getElementById("unstakeCollection").value;
+      const tokenId = document.getElementById("unstakeTokenId").value;
+      try {
+        const tx = await contract.unstake(collection, tokenId);
+        await tx.wait();
+        alert("NFT Unstaked!");
+      } catch (err) {
+        alert("Error unstaking: " + err.message);
+      }
+    }
+
+    async function enrollBluechip() {
+      try {
+        const tx = await contract.enrollBluechip();
+        await tx.wait();
+        alert("Enrolled as Bluechip!");
+      } catch (err) {
+        alert("Error enrolling: " + err.message);
+      }
+    }
+
+    async function harvestBluechip() {
+      const collection = document.getElementById("bluechipCollection").value;
+      try {
+        const tx = await contract.harvestBluechip(collection);
+        await tx.wait();
+        alert("Bluechip Harvest successful!");
+      } catch (err) {
+        alert("Error harvesting bluechip: " + err.message);
+      }
+    }
+
+    document.getElementById("connectButton").onclick = connectWallet;
+    document.getElementById("stakeButton").onclick = stakeNFT;
+    document.getElementById("harvestButton").onclick = harvestRewards;
+    document.getElementById("unstakeButton").onclick = unstakeNFT;
+    document.getElementById("enrollBluechip").onclick = enrollBluechip;
+    document.getElementById("harvestBluechip").onclick = harvestBluechip;
+  </script>
+</body>
+</html>
