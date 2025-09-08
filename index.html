@@ -39,13 +39,14 @@
       border-radius: 10px;
       background: #1a1a1a;
     }
-    input {
+    input, select {
       padding: 8px;
       border-radius: 6px;
       border: 1px solid #444;
       background: #222;
       color: white;
       margin: 5px 0;
+      width: 100%;
     }
     label {
       display: block;
@@ -96,15 +97,47 @@
     <button id="harvestBluechip">Harvest Bluechip</button>
   </div>
 
+  <div class="section">
+    <h2>Governance</h2>
+    <label for="proposalType">Proposal Type</label>
+    <select id="proposalType">
+      <option value="0">Base Reward</option>
+      <option value="1">Harvest Fee</option>
+      <option value="2">Unstake Fee</option>
+      <option value="3">Registration Fee Fallback</option>
+      <option value="4">Voting Param</option>
+      <option value="5">Tier Upgrade</option>
+    </select>
+
+    <label for="paramTarget">Param Target</label>
+    <input type="number" id="paramTarget" placeholder="e.g. 0" />
+
+    <label for="newValue">New Value</label>
+    <input type="number" id="newValue" placeholder="e.g. 1000" />
+
+    <label for="contextCollection">Context Collection (optional)</label>
+    <input type="text" id="contextCollection" placeholder="0x..." />
+
+    <button id="proposeButton">Propose</button>
+
+    <hr>
+
+    <label for="voteProposalId">Proposal ID</label>
+    <input type="text" id="voteProposalId" placeholder="0xProposalId" />
+    <button id="voteButton">Vote</button>
+
+    <button id="executeButton">Execute Proposal</button>
+  </div>
+
   <script type="module">
-    import ABI from "../abi/CatalystNFTStakingUpgradeable.json" assert { type: "json" };
+    import ABI from "./CatalystNFTStakingUpgradeable.json" assert { type: "json" };
 
     let provider;
     let signer;
     let contract;
 
     // Replace with your deployed contract address
-    const CONTRACT_ADDRESS = "0xYourDeployedContractAddress";
+    const CONTRACT_ADDRESS = "0x3d33C01bCC36ac6A8f872599A9c9351c11Ef07E7";
 
     async function connectWallet() {
       if (typeof window.ethereum === "undefined") {
@@ -177,12 +210,51 @@
       }
     }
 
+    async function propose() {
+      const type = parseInt(document.getElementById("proposalType").value);
+      const paramTarget = parseInt(document.getElementById("paramTarget").value);
+      const newValue = document.getElementById("newValue").value;
+      const collection = document.getElementById("contextCollection").value || ethers.constants.AddressZero;
+      try {
+        const tx = await contract.propose(type, paramTarget, newValue, collection);
+        const receipt = await tx.wait();
+        alert("Proposal created! Tx Hash: " + receipt.transactionHash);
+      } catch (err) {
+        alert("Error proposing: " + err.message);
+      }
+    }
+
+    async function vote() {
+      const proposalId = document.getElementById("voteProposalId").value;
+      try {
+        const tx = await contract.vote(proposalId);
+        await tx.wait();
+        alert("Voted successfully!");
+      } catch (err) {
+        alert("Error voting: " + err.message);
+      }
+    }
+
+    async function executeProposal() {
+      const proposalId = document.getElementById("voteProposalId").value;
+      try {
+        const tx = await contract.executeProposal(proposalId);
+        await tx.wait();
+        alert("Proposal executed!");
+      } catch (err) {
+        alert("Error executing proposal: " + err.message);
+      }
+    }
+
     document.getElementById("connectButton").onclick = connectWallet;
     document.getElementById("stakeButton").onclick = stakeNFT;
     document.getElementById("harvestButton").onclick = harvestRewards;
     document.getElementById("unstakeButton").onclick = unstakeNFT;
     document.getElementById("enrollBluechip").onclick = enrollBluechip;
     document.getElementById("harvestBluechip").onclick = harvestBluechip;
+    document.getElementById("proposeButton").onclick = propose;
+    document.getElementById("voteButton").onclick = vote;
+    document.getElementById("executeButton").onclick = executeProposal;
   </script>
 </body>
 </html>
