@@ -1,45 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Catalyst DApp v1 – Upgraded</title>
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
-<style>
-  :root { --bg:#0f1220; --card:#171a2b; --muted:#9aa3b2; --text:#e7ecf4; --acc:#6ee7ff; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; background:var(--bg); color:var(--text); }
-  header { padding:16px 20px; border-bottom:1px solid #20243a; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-  header h1 { font-size:18px; margin:0; opacity:.95; }
-  .pill { background:var(--card); padding:8px 10px; border-radius:10px; border:1px solid #232744; display:flex; gap:8px; align-items:center; }
-  input, select, button, textarea { background:#0c0f1c; color:var(--text); border:1px solid #27304a; border-radius:10px; padding:10px 12px; outline:none; }
-  button { cursor:pointer; font-weight:600; }
-  button.primary { background:#132a39; border-color:#1e3a53; }
-  button:disabled { opacity:.6; cursor:not-allowed; }
-  main { max-width:1100px; margin:20px auto; padding:0 16px 60px; }
-  .grid { display:grid; gap:16px; grid-template-columns:repeat(12,1fr); }
-  .card { grid-column:span 12; background:var(--card); border:1px solid #232744; border-radius:16px; padding:16px; }
-  @media(min-width:900px){ .span6 { grid-column:span 6; } }
-  .tabbar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
-  .tabbar button.active { background:#132a39; border-color:#1e3a53; }
-  .row { display:grid; gap:10px; grid-template-columns:1fr 1fr; }
-  .hr { height:1px; background:#232744; margin:14px 0; }
-  .muted { color:var(--muted); }
-  .mono { font-family: ui-monospace, monospace; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>⚗️ Catalyst DApp – Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <style>
+    :root { --bg:#0f1220; --card:#171a2b; --muted:#9aa3b2; --text:#e7ecf4; --acc:#6ee7ff; }
+    body { margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; background:var(--bg); color:var(--text); }
+    header { padding:14px 20px; border-bottom:1px solid #20243a; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    header h1 { font-size:18px; margin:0; opacity:.95; }
+    input, select, button { background:#0c0f1c; color:var(--text); border:1px solid #27304a; border-radius:10px; padding:8px 10px; }
+    button { cursor:pointer; font-weight:600; }
+    button.primary { background:#132a39; border-color:#1e3a53; }
+    main { max-width:1200px; margin:20px auto; padding:0 16px 60px; }
+    .grid { display:grid; gap:16px; grid-template-columns:repeat(12,1fr); }
+    .card { grid-column:span 12; background:var(--card); border:1px solid #232744; border-radius:16px; padding:16px; }
+    @media(min-width:900px){ .span6 { grid-column:span 6; } }
+    .tabbar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+    .tabbar button { background:transparent; border:1px solid #27304a; }
+    .tabbar button.active { background:#132a39; border-color:#1e3a53; }
+    .tab { display:none; }
+    .tab.active { display:block; }
+    .row { display:grid; gap:10px; grid-template-columns:1fr 1fr; }
+    .hr { height:1px; background:#232744; margin:14px 0; }
+    .mono { font-family: monospace; font-size:13px; }
+  </style>
 </head>
 <body>
 <header>
   <h1>⚗️ Catalyst DApp</h1>
-  <div class="pill" style="gap:6px">
-    <span class="muted">Contract</span>
-    <input id="contractAddress" placeholder="0x…" style="min-width:300px">
-    <button class="primary" id="saveContractBtn">Save</button>
-  </div>
-  <div class="pill">
-    <span id="acct" class="mono muted">Not connected</span>
-    <button id="connectBtn" class="primary">Connect Wallet</button>
-  </div>
+  <input id="contractAddress" placeholder="0x… CatalystNFTStakingUpgradeable" style="min-width:320px">
+  <button id="saveContractBtn" class="primary">Save</button>
+  <button id="connectBtn" class="primary">Connect Wallet</button>
+  <span id="acct" class="mono">Not connected</span>
 </header>
 
 <main>
@@ -53,132 +47,168 @@
         <button data-tab="admin">Admin</button>
       </div>
 
-      <!-- Tabs go here -->
-      <div id="tab-stake" class="tab" style="display:block">
-        <p>✅ Stake, harvest, unstake, and register collections</p>
-        <button id="btnStake">Stake</button>
+      <!-- Stake Tab -->
+      <div id="tab-stake" class="tab active">
+        <h3>Stake / Unstake</h3>
+        <input id="colStake" placeholder="Collection (0x…)" />
+        <input id="tidStake" type="number" placeholder="Token ID" />
+        <button id="btnStake" class="primary">Stake</button>
         <button id="btnHarvest">Harvest</button>
         <button id="btnUnstake">Unstake</button>
-        <button id="btnRegister">Register Collection</button>
       </div>
 
-      <div id="tab-bluechip" class="tab" style="display:none">
-        <p>🌐 Enroll & harvest blue-chip collections</p>
-        <button id="btnEnrollBlue">Enroll Blue-Chip</button>
+      <!-- Bluechip Tab -->
+      <div id="tab-bluechip" class="tab">
+        <h3>Blue-Chip</h3>
+        <button id="btnEnrollBlue" class="primary">Enroll Blue-Chip</button><br><br>
+        <input id="colBlueHarvest" placeholder="Collection (0x…)" />
         <button id="btnHarvestBlue">Harvest Blue-Chip</button>
-        <button id="btnSetBlue">Set Blue-Chip (Admin)</button>
       </div>
 
-      <div id="tab-governance" class="tab" style="display:none">
-        <p>📜 Propose, vote, execute governance</p>
-        <button id="btnPropose">Propose</button>
+      <!-- Governance Tab -->
+      <div id="tab-governance" class="tab">
+        <h3>Governance</h3>
+        <input id="propId" placeholder="Proposal ID (bytes32)" />
         <button id="btnVote">Vote</button>
         <button id="btnExecute">Execute</button>
       </div>
 
-      <div id="tab-guardians" class="tab" style="display:none">
-        <p>🛡️ Manage Guardian recovery</p>
-        <button id="btnPropDep">Propose Deployer Recovery</button>
-        <button id="btnApproveDep">Approve Deployer</button>
-        <button id="btnExecDep">Execute Deployer</button>
-        <button id="btnPropAdm">Propose Admin Recovery</button>
-        <button id="btnApproveAdm">Approve Admin</button>
-        <button id="btnExecAdm">Execute Admin</button>
+      <!-- Guardians Tab -->
+      <div id="tab-guardians" class="tab">
+        <h3>Guardians (7:5)</h3>
+        <input id="newDeployer" placeholder="New Deployer Address" />
+        <button id="btnPropDep">Propose</button>
+        <button id="btnApproveDep">Approve</button>
+        <button id="btnExecDep">Execute</button>
       </div>
 
-      <div id="tab-admin" class="tab" style="display:none">
-        <p>⚙️ Pause, unpause, and withdraw treasury</p>
+      <!-- Admin Tab -->
+      <div id="tab-admin" class="tab">
+        <h3>Admin Controls</h3>
         <button id="btnPause">Pause</button>
-        <button id="btnUnpause">Unpause</button>
+        <button id="btnUnpause">Unpause</button><br><br>
+        <input id="toTreasury" placeholder="Withdraw To (0x…)" />
+        <input id="amtTreasury" type="number" placeholder="Amount (wei)" />
         <button id="btnWithdraw">Withdraw Treasury</button>
       </div>
     </section>
 
+    <!-- Stats + Console -->
     <section class="card span6">
-      <h3>Protocol Stats</h3>
+      <h3>📊 Protocol Stats</h3>
       <button id="btnRefresh" class="primary">Refresh</button>
-      <div id="stats" class="mono muted">—</div>
+      <pre id="stats" class="mono">—</pre>
       <div class="hr"></div>
       <h3>Console</h3>
-      <div id="log" class="mono" style="font-size:12px; white-space:pre-wrap; min-height:180px"></div>
+      <div id="log" class="mono" style="white-space:pre-wrap; min-height:180px"></div>
     </section>
   </div>
 </main>
 
-<script>
-/*** ---- CONFIG ---- ***/
-const DEFAULT_CONTRACT = "";
+<script type="module">
 import ABI from "../abi/CatalystNFTStakingUpgradeable.json" assert { type: "json" };
-let provider, signer, user, contract;
+
+let provider, signer, user, contractRead, contractWrite;
 
 const $ = id => document.getElementById(id);
-const log = (msg, cls="") => { $("log").prepend(`[${new Date().toLocaleTimeString()}] ${msg}\n`); };
+const log = msg => { $("log").textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + $("log").textContent; };
 
-async function initContract() {
-  const addr = $("contractAddress").value.trim();
-  if (!addr) throw new Error("No contract address");
-  if (!signer) throw new Error("Wallet not connected");
-  contract = new ethers.Contract(addr, ABI, signer);
-  return contract;
+function saveContractAddress(addr){
+  localStorage.setItem("catalyst_contract", addr);
+  $("contractAddress").value = addr;
 }
+function getContractAddress(){ return $("contractAddress").value.trim(); }
 
 async function connect() {
+  if (!window.ethereum) return log("No wallet found");
   provider = new ethers.BrowserProvider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   signer = await provider.getSigner();
   user = await signer.getAddress();
   $("acct").textContent = user;
-  log(`Connected as ${user}`, "ok");
-  $("contractAddress").value = localStorage.getItem("catalyst_contract") || DEFAULT_CONTRACT;
+
+  const addr = getContractAddress();
+  contractRead  = new ethers.Contract(addr, ABI, provider);
+  contractWrite = new ethers.Contract(addr, ABI, signer);
+
+  log("Connected " + user);
+  await refreshStats();
 }
 
-/*** ---- UI EVENTS ---- ***/
-$("connectBtn").onclick = async ()=>{ try{ await connect(); }catch(e){ log(e.message,"err"); } };
-$("saveContractBtn").onclick = ()=> localStorage.setItem("catalyst_contract", $("contractAddress").value.trim());
-
+// Tabs
 document.querySelectorAll(".tabbar button").forEach(btn=>{
-  btn.onclick = () => {
+  btn.onclick=()=>{
     document.querySelectorAll(".tabbar button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
-    const key = btn.dataset.tab;
-    document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
-    $("tab-"+key).style.display="block";
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
   };
 });
 
-/*** ---- HOOK UP BUTTONS ---- ***/
-// Stake
-$("btnStake").onclick = async ()=>{ try{ await initContract(); let tx=await contract.stake("0x...",1,false); log(`Stake: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnHarvest").onclick = async ()=>{ try{ await initContract(); let tx=await contract.harvest("0x...",1); log(`Harvest: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnUnstake").onclick = async ()=>{ try{ await initContract(); let tx=await contract.unstake("0x...",1); log(`Unstake: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnRegister").onclick = async ()=>{ try{ await initContract(); let tx=await contract.registerCollection("0x...",1000); log(`Register: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
+// ---- Stake
+$("btnStake").onclick = async ()=>{
+  const col=$("colStake").value; const id=BigInt($("tidStake").value||"0");
+  const tx=await contractWrite.stake(col,id,true);
+  await tx.wait(); log("Staked ✅"); refreshStats();
+};
+$("btnUnstake").onclick = async ()=>{
+  const col=$("colStake").value; const id=BigInt($("tidStake").value||"0");
+  const tx=await contractWrite.unstake(col,id);
+  await tx.wait(); log("Unstaked ✅"); refreshStats();
+};
+$("btnHarvest").onclick = async ()=>{
+  const col=$("colStake").value; const id=BigInt($("tidStake").value||"0");
+  const tx=await contractWrite.harvest(col,id);
+  await tx.wait(); log("Harvested ✅");
+};
 
-// Bluechip
-$("btnEnrollBlue").onclick = async ()=>{ try{ await initContract(); let tx=await contract.enrollBluechip(); log(`Enroll: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnHarvestBlue").onclick = async ()=>{ try{ await initContract(); let tx=await contract.harvestBluechip("0x..."); log(`HarvestBlue: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnSetBlue").onclick = async ()=>{ try{ await initContract(); let tx=await contract.setBluechipCollection("0x...",true); log(`SetBlue: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
+// ---- Bluechip
+$("btnEnrollBlue").onclick = async ()=>{ const tx=await contractWrite.enrollBluechip(); await tx.wait(); log("Bluechip enrolled ✅"); };
+$("btnHarvestBlue").onclick = async ()=>{
+  const col=$("colBlueHarvest").value;
+  const tx=await contractWrite.harvestBluechip(col); await tx.wait(); log("Bluechip harvested ✅");
+};
 
-// Governance
-$("btnPropose").onclick = async ()=>{ try{ await initContract(); let tx=await contract.propose(0,0,123,"0x0000000000000000000000000000000000000000"); log(`Propose: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnVote").onclick = async ()=>{ try{ await initContract(); let tx=await contract.vote("0x123"); log(`Vote: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnExecute").onclick = async ()=>{ try{ await initContract(); let tx=await contract.executeProposal("0x123"); log(`Execute: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
+// ---- Governance
+$("btnVote").onclick = async ()=>{ const id=$("propId").value; const tx=await contractWrite.vote(id); await tx.wait(); log("Voted ✅"); };
+$("btnExecute").onclick = async ()=>{ const id=$("propId").value; const tx=await contractWrite.executeProposal(id); await tx.wait(); log("Proposal executed ✅"); };
 
-// Guardians
-$("btnPropDep").onclick = async ()=>{ try{ await initContract(); let tx=await contract.proposeDeployerRecovery("0x..."); log(`PropDep: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnApproveDep").onclick = async ()=>{ try{ await initContract(); let tx=await contract.approveDeployerRecovery(); log(`ApproveDep: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnExecDep").onclick = async ()=>{ try{ await initContract(); let tx=await contract.executeDeployerRecovery(); log(`ExecDep: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnPropAdm").onclick = async ()=>{ try{ await initContract(); let tx=await contract.proposeAdminRecovery("0x..."); log(`PropAdm: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnApproveAdm").onclick = async ()=>{ try{ await initContract(); let tx=await contract.approveAdminRecovery(); log(`ApproveAdm: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnExecAdm").onclick = async ()=>{ try{ await initContract(); let tx=await contract.executeAdminRecovery(); log(`ExecAdm: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
+// ---- Guardians
+$("btnPropDep").onclick = async ()=>{ const a=$("newDeployer").value; const tx=await contractWrite.proposeDeployerRecovery(a); await tx.wait(); log("Proposed ✅"); };
+$("btnApproveDep").onclick = async ()=>{ const tx=await contractWrite.approveDeployerRecovery(); await tx.wait(); log("Approved ✅"); };
+$("btnExecDep").onclick = async ()=>{ const tx=await contractWrite.executeDeployerRecovery(); await tx.wait(); log("Executed ✅"); };
 
-// Admin
-$("btnPause").onclick = async ()=>{ try{ await initContract(); let tx=await contract.pause(); log(`Pause: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnUnpause").onclick = async ()=>{ try{ await initContract(); let tx=await contract.unpause(); log(`Unpause: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
-$("btnWithdraw").onclick = async ()=>{ try{ await initContract(); let tx=await contract.withdrawTreasury(user, 1000); log(`Withdraw: ${tx.hash}`);}catch(e){ log(e.message,"err"); } };
+// ---- Admin
+$("btnPause").onclick = async ()=>{ const tx=await contractWrite.pause(); await tx.wait(); log("Paused ✅"); };
+$("btnUnpause").onclick = async ()=>{ const tx=await contractWrite.unpause(); await tx.wait(); log("Unpaused ✅"); };
+$("btnWithdraw").onclick = async ()=>{
+  const to=$("toTreasury").value; const amt=BigInt($("amtTreasury").value||"0");
+  const tx=await contractWrite.withdrawTreasury(to,amt); await tx.wait(); log("Withdrawn ✅"); refreshStats();
+};
 
-// Stats
-$("btnRefresh").onclick = async ()=>{ try{ await initContract(); let s=await contract.stakingStats(); $("stats").textContent=JSON.stringify(s,null,2);}catch(e){ log(e.message,"err"); } };
+// ---- Stats
+async function refreshStats(){
+  if(!contractRead) return;
+  const s=await contractRead.stakingStats();
+  const treasury=await contractRead.treasuryBalance();
+  $("stats").textContent=`
+totalAll:        ${s.totalAll}
+totalTerm:       ${s.totalTerm}
+totalPermanent:  ${s.totalPermanent}
+remainingGlobal: ${s.remainingGlobal}
+remainingTerm:   ${s.remainingTerm}
+remainingPerm:   ${s.remainingPermanent}
+treasuryBalance: ${treasury}
+  `.trim();
+}
 
+// Events
+$("connectBtn").onclick=connect;
+$("saveContractBtn").onclick=()=>saveContractAddress(getContractAddress());
+$("btnRefresh").onclick=refreshStats;
+
+// Auto-load saved address
+window.addEventListener("load",()=>{ $("contractAddress").value=localStorage.getItem("catalyst_contract")||""; log("Ready. Connect wallet."); });
 </script>
 </body>
 </html>
