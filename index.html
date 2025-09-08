@@ -852,49 +852,59 @@ async function listRegisteredCollections(limit=200) {
 }
 
 /** =========================
- * UI EVENT WIRING (HEADER)
+ * AUTO-RESTORE ON REFRESH
  * ======================= */
 window.addEventListener("load", async () => {
-  const savedRpc = localStorage.getItem("catalyst_rpc") || DEFAULT_RPC;
-  $("rpcUrl").value = savedRpc;
-  await setupReadProvider(savedRpc);
+  try {
+    // Restore RPC
+    const savedRpc = localStorage.getItem("catalyst_rpc") || DEFAULT_RPC;
+    $("rpcUrl").value = savedRpc;
+    await setupReadProvider(savedRpc);
 
-  const saved = getSavedAddress();
-  if (saved) { $("contractAddress").value = saved; CONTRACT_ADDR = saved; }
+    // Restore contract address
+    const savedAddr = localStorage.getItem("catalyst_contract") || DEFAULT_CONTRACT;
+    if (savedAddr) {
+      CONTRACT_ADDR = savedAddr;
+      $("contractAddress").value = CONTRACT_ADDR;
+      await initReadContract(); // preload ABI + read contract
+    }
 
-  // Tabs
-  document.querySelectorAll(".tabbar button").forEach(btn=>{
-    btn.onclick = () => {
-      document.querySelectorAll(".tabbar button").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      const key = btn.dataset.tab;
-      document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
-      $("tab-"+key).style.display="block";
-    };
-  });
+    // Try restoring wallet connection silently
+    if (window.ethereum) {
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      if (accounts.length > 0) {
+        WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
+        SIGNER = await WALLET_PROVIDER.getSigner();
+        USER_ADDR = accounts[0];
+        $("acct").textContent = USER_ADDR;
+        log(`Restored wallet: ${USER_ADDR}`, "ok");
+      } else {
+        $("acct").textContent = "Not connected";
+      }
+    }
 
-  log("Ready. Set RPC (optional), enter contract, connect wallet for transactions.", "muted");
-});
+    // Tabs switching
+    document.querySelectorAll(".tabbar button").forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const key = btn.dataset.tab;
+        document.querySelectorAll(".tab").forEach(t => t.style.display="none");
+        $("tab-" + key).style.display = "block";
+      };
+    });
 
-$("saveContractBtn").onclick = () => {
-  try { saveContractAddress($("contractAddress").value.trim()); }
-  catch(e){ log(e.message || e, "err"); }
-};
-$("saveRpc").onclick = async () => {
-  const url = $("rpcUrl").value.trim();
-  localStorage.setItem("catalyst_rpc", url);
-  await setupReadProvider(url);
-  if (CONTRACT_ADDR) {
-    try { await initReadContract(); log("Read contract re-initialized with new RPC", "ok"); }
-    catch(e){ log(e.message || e, "err"); }
+    // Auto-refresh stats once
+    if (CONTRACT_ADDR) {
+      await refreshStats();
+    }
+
+    log("DApp ready ✅ — restored state from last session", "ok");
+  } catch (e) {
+    log(`Init error: ${e.message || e}`, "err");
   }
-};
-$("connectBtn").onclick = async () => {
-  try { await connectWallet(); } catch (e) { log(e.message || e, "err"); }
-};
-$("btnRefresh").onclick = refreshStats;
-$("autoRefresh").onchange = (e) => toggleAutoRefresh(e.target.checked);
-
+});
+  
 /** =========================
  * STAKE TAB ACTIONS
  * ======================= */
