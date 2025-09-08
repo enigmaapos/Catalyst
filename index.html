@@ -85,6 +85,7 @@
         <button data-tab="guardians">Guardians</button>
         <button data-tab="admin">Admin</button>
         <button data-tab="views">Views</button>
+        <button data-tab="info">Info</button> <!-- NEW -->
       </div>
 
       <!-- Stake Tab -->
@@ -390,6 +391,41 @@
         </div>
         <div style="margin-top:8px" class="mono muted" id="pendingOut">—</div>
       </div>
+
+<!-- Info Tab -->
+<div class="tab" id="tab-info" style="display:none">
+  <h3 style="margin-top:0">User & Collection Info</h3>
+
+  <div class="row">
+    <div>
+      <div class="label">Collection Address</div>
+      <input id="infoCol" placeholder="0x…">
+    </div>
+    <div>
+      <div class="label">User Address</div>
+      <input id="infoUser" placeholder="0x… (leave blank for your wallet)">
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div>
+      <div class="label">Token ID</div>
+      <input id="infoTid" type="number" placeholder="e.g. 123">
+    </div>
+    <div>
+      <div class="label">—</div>
+      <button id="btnUserInfo" class="primary">Get User Info</button>
+    </div>
+  </div>
+
+  <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+    <button id="btnColInfo">Get Collection Info</button>
+    <button id="btnListCols" class="primary">List Collections</button> <!-- NEW -->
+  </div>
+
+  <div class="hr"></div>
+  <div id="infoOut" class="mono muted">—</div>
+</div>
     </section>
 
     <!-- RIGHT: Stats + Console -->
@@ -907,6 +943,57 @@ $("btnViewPending2").onclick = async () => {
     $("pendingOut").textContent = r.toString();
     log("Pending rewards (Views) fetched ✅","ok");
   } catch(e){ log(e.message || e, "err"); }
+};
+
+/** =========================
+ * INFO TAB
+ * ======================= */
+$("btnUserInfo").onclick = async () => {
+  try {
+    await initReadContract();
+    const col = parseAddress($("infoCol").value);
+    let usr = $("infoUser").value.trim();
+    if (!usr) usr = USER_ADDR; // fallback to connected wallet
+    const tid = parseUint($("infoTid").value);
+    const rewards = await READ_CONTRACT.pendingRewardsView(col, usr, tid);
+
+    $("infoOut").textContent =
+      `User: ${usr}\nCollection: ${col}\nTokenID: ${tid}\nPending Rewards: ${rewards.toString()}`;
+    log("User info fetched ✅","ok");
+  } catch(e){ log(e.message || e,"err"); }
+};
+
+$("btnColInfo").onclick = async () => {
+  try {
+    await initReadContract();
+    const col = parseAddress($("infoCol").value);
+    const idx = await READ_CONTRACT.registeredIndex(col);
+    const blue = await READ_CONTRACT.isBluechipCollection(col);
+    $("infoOut").textContent =
+      `Collection: ${col}\nRegistered Index: ${idx.toString()}\nIs Bluechip: ${blue}`;
+    log("Collection info fetched ✅","ok");
+  } catch(e){ log(e.message || e,"err"); }
+};
+
+$("btnListCols").onclick = async () => {
+  try {
+    await initReadContract();
+    let results = [];
+    for (let i = 0; i < 200; i++) {
+      try {
+        const col = await READ_CONTRACT.registeredCollections(i);
+        if (col === ethers.ZeroAddress) break; // optional: stop if contract returns 0x0
+        const isBlue = await READ_CONTRACT.isBluechipCollection(col);
+        results.push(`${i}: ${col}  ${isBlue ? "🌟 Blue-Chip" : ""}`);
+      } catch {
+        break; // stop loop if contract reverts
+      }
+    }
+    $("infoOut").textContent = results.length
+      ? results.join("\n")
+      : "No registered collections found.";
+    log(`Fetched ${results.length} collections ✅`, "ok");
+  } catch(e){ log(e.message || e,"err"); }
 };
 
 </script>
