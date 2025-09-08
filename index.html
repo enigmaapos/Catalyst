@@ -3,27 +3,31 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Catalyst DApp — Full Dashboard</title>
+<title>Catalyst DApp — Full Dashboard v7</title>
 
 <!-- Ethers v6 (UMD) -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 
 <style>
-  :root { --bg:#0f1220; --card:#171a2b; --muted:#9aa3b2; --text:#e7ecf4; --acc:#6ee7ff; }
+  :root { --bg:#0f1220; --card:#171a2b; --muted:#9aa3b2; --text:#e7ecf4; --acc:#6ee7ff; --line:#232744; }
   * { box-sizing:border-box; }
+  html,body { height:100%; }
   body { margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; background:var(--bg); color:var(--text); }
-  header { padding:16px 20px; border-bottom:1px solid #20243a; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header { padding:16px 20px; border-bottom:1px solid #20243a; display:flex; gap:12px; align-items:center; flex-wrap:wrap; position:sticky; top:0; background:linear-gradient(180deg, rgba(15,18,32,0.98), rgba(15,18,32,0.92)); backdrop-filter:saturate(120%) blur(6px); z-index:10; }
   header h1 { font-size:18px; margin:0; opacity:.95; }
-  .pill { background:var(--card); padding:8px 10px; border-radius:10px; border:1px solid #232744; display:flex; gap:8px; align-items:center; }
+  .pill { background:var(--card); padding:8px 10px; border-radius:10px; border:1px solid var(--line); display:flex; gap:8px; align-items:center; }
   input, select, button, textarea { background:#0c0f1c; color:var(--text); border:1px solid #27304a; border-radius:10px; padding:10px 12px; outline:none; }
   input, select, textarea { width:100%; }
   button { cursor:pointer; font-weight:600; }
   button.primary { background:#132a39; border-color:#1e3a53; }
+  button.ghost { background:transparent; border:1px dashed #2a3154; }
   button:disabled { opacity:.6; cursor:not-allowed; }
-  main { max-width:1200px; margin:20px auto; padding:0 16px 60px; }
-  .grid { display:grid; gap:16px; grid-template-columns:repeat(12,1fr); }
-  .card { grid-column:span 12; background:var(--card); border:1px solid #232744; border-radius:16px; padding:16px; }
-  @media(min-width:1000px){
+  main { max-width:1280px; margin:18px auto 80px; padding:0 16px; }
+  .hero { margin-bottom:14px; background:linear-gradient(180deg, rgba(19,42,57,0.35), transparent); border:1px solid var(--line); border-radius:16px; padding:14px 16px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .hero .msg { max-width:740px; font-size:14px; color:#cfe6ff; }
+  .grid { display:grid; gap:16px; grid-template-columns:repeat(12,1fr); align-items:start; }
+  .card { grid-column:span 12; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; }
+  @media(min-width:1100px){
     .span7 { grid-column:span 7; }
     .span5 { grid-column:span 5; }
     .span6 { grid-column:span 6; }
@@ -33,7 +37,7 @@
   .row3 { display:grid; gap:10px; grid-template-columns:1fr 1fr 1fr; }
   .label { font-size:12px; color:var(--muted); margin-bottom:6px; }
   .muted { color:var(--muted); }
-  .hr { height:1px; background:#232744; margin:14px 0; }
+  .hr { height:1px; background:var(--line); margin:14px 0; }
   details { border:1px dashed #2a3154; border-radius:12px; padding:10px 12px; }
   summary { cursor:pointer; font-weight:600; }
   code.inline { background:#0c0f1c; padding:2px 6px; border-radius:6px; border:1px solid #27304a; }
@@ -44,15 +48,21 @@
   .ok { color:#86efac; }
   .err { color:#ff8a8a; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-  .kv { display:grid; grid-template-columns: 220px 1fr; gap:8px; }
+  .kv { display:grid; grid-template-columns: 210px 1fr; gap:8px; }
   .flex { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .list { border:1px dashed var(--line); border-radius:12px; padding:10px 12px; max-height:280px; overflow:auto; }
+  .list .item { padding:6px 8px; border-bottom:1px dashed #2a3154; font-size:12px; }
+  .list .item:last-child { border-bottom:0; }
+  .badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 8px; border-radius:999px; background:#132a39; border:1px solid #1e3a53; }
+  .right-card h3 { margin:0 0 6px 0; }
+  .mini { font-size:12px; opacity:.9; }
+  .tooltip { text-decoration: underline dotted; cursor:help; }
 </style>
 </head>
 <body>
 <header>
   <h1>⚗️ Catalyst DApp</h1>
 
-  <!-- network / rpc -->
   <div class="pill">
     <span class="muted">RPC (read-only)</span>
     <input id="rpcUrl" placeholder="(optional) e.g. https://mainnet.infura.io/v3/…"
@@ -60,14 +70,12 @@
     <button id="saveRpc" class="primary">Use RPC</button>
   </div>
 
-  <!-- contract address -->
   <div class="pill">
     <span class="muted">Contract</span>
     <input id="contractAddress" placeholder="0x… (CatalystNFTStakingUpgradeable)" style="min-width:320px" />
     <button class="primary" id="saveContractBtn">Save</button>
   </div>
 
-  <!-- wallet -->
   <div class="pill">
     <span id="acct" class="mono muted">Not connected</span>
     <button id="connectBtn" class="primary">Connect Wallet</button>
@@ -75,6 +83,21 @@
 </header>
 
 <main>
+  <div class="hero">
+    <div class="msg">
+      <strong>Welcome to Catalyst.</strong> Stake ERC-721s (custodial or blue-chip non-custodial), harvest rewards, vote on parameters, and manage guardian councils.
+      Reads use your RPC (no wallet popups); writes require your wallet signature. Hover labels for quick tips.
+    </div>
+    <div class="flex">
+      <span class="badge" title="Reads = RPC, Writes = Wallet">
+        <span>Mode</span><span class="mono" id="modeBadge">read-only</span>
+      </span>
+      <span class="badge" title="Network from the connected wallet">
+        <span>Network</span><span class="mono" id="netBadge">—</span>
+      </span>
+    </div>
+  </div>
+
   <div class="grid">
     <!-- LEFT: Tabs -->
     <section class="card span7">
@@ -85,7 +108,6 @@
         <button data-tab="guardians">Guardians</button>
         <button data-tab="admin">Admin</button>
         <button data-tab="views">Views</button>
-        <button data-tab="info">Info</button> <!-- NEW -->
       </div>
 
       <!-- Stake Tab -->
@@ -93,24 +115,24 @@
         <h3 style="margin-top:0">Custodial Staking</h3>
         <div class="row">
           <div>
-            <div class="label">Collection (ERC-721)</div>
+            <div class="label tooltip" title="ERC-721 collection address">Collection (ERC-721)</div>
             <input id="colStake" placeholder="0x…">
           </div>
           <div>
-            <div class="label">Token ID</div>
+            <div class="label tooltip" title="NFT tokenId inside the collection">Token ID</div>
             <input id="tidStake" type="number" placeholder="e.g. 123">
           </div>
         </div>
         <div class="row" style="margin-top:10px">
           <div>
-            <div class="label">Stake Type</div>
+            <div class="label tooltip" title="Permanent stakes may have different fees/limits">Stake Type</div>
             <select id="permanent">
               <option value="false">Term</option>
               <option value="true">Permanent</option>
             </select>
           </div>
           <div>
-            <div class="label">Approve NFT (setApprovalForAll)</div>
+            <div class="label tooltip" title="Grant the staking contract permission to move your NFTs">Approve NFT (setApprovalForAll)</div>
             <button id="btnApprove721">Approve</button>
           </div>
         </div>
@@ -159,11 +181,11 @@
         <h3>Register Collection</h3>
         <div class="row">
           <div>
-            <div class="label">Collection</div>
+            <div class="label tooltip" title="Collections can self-register if allowed">Collection</div>
             <input id="colRegister" placeholder="0x…">
           </div>
           <div>
-            <div class="label">Declared Max Supply (≤ 20,000)</div>
+            <div class="label tooltip" title="Upper bound supply used for safety checks">Declared Max Supply (≤ 20,000)</div>
             <input id="declaredSupply" type="number" placeholder="e.g. 10000">
           </div>
         </div>
@@ -261,6 +283,27 @@
         <div style="margin-top:10px">
           <button id="btnExecute">Execute</button>
         </div>
+
+        <div class="hr"></div>
+
+        <details open>
+          <summary>Proposals (scan events)</summary>
+          <div class="row" style="margin-top:10px">
+            <div>
+              <div class="label">From Block</div>
+              <input id="fromBlock" type="number" placeholder="e.g. 0">
+            </div>
+            <div>
+              <div class="label">To Block (optional)</div>
+              <input id="toBlock" type="number" placeholder="latest">
+            </div>
+          </div>
+          <div class="flex" style="margin-top:10px">
+            <button class="ghost" id="btnScanProposals">Scan ProposalCreated</button>
+          </div>
+          <div id="proposalsList" class="list" style="margin-top:10px"></div>
+          <div class="mini muted">Notes: scans logs for <span class="mono">ProposalCreated</span>. If your ABI/event name differs, update <span class="mono">EVENTS.PROPOSAL_CREATED</span> below.</div>
+        </details>
       </div>
 
       <!-- Guardians Tab -->
@@ -338,6 +381,13 @@
             </div>
           </div>
         </details>
+
+        <div class="hr"></div>
+
+        <div class="flex">
+          <button id="btnListGuardians" class="ghost">List Guardians</button>
+        </div>
+        <div id="guardiansList" class="list" style="margin-top:10px"></div>
       </div>
 
       <!-- Admin Tab -->
@@ -391,47 +441,12 @@
         </div>
         <div style="margin-top:8px" class="mono muted" id="pendingOut">—</div>
       </div>
-
-<!-- Info Tab -->
-<div class="tab" id="tab-info" style="display:none">
-  <h3 style="margin-top:0">User & Collection Info</h3>
-
-  <div class="row">
-    <div>
-      <div class="label">Collection Address</div>
-      <input id="infoCol" placeholder="0x…">
-    </div>
-    <div>
-      <div class="label">User Address</div>
-      <input id="infoUser" placeholder="0x… (leave blank for your wallet)">
-    </div>
-  </div>
-
-  <div class="row" style="margin-top:10px">
-    <div>
-      <div class="label">Token ID</div>
-      <input id="infoTid" type="number" placeholder="e.g. 123">
-    </div>
-    <div>
-      <div class="label">—</div>
-      <button id="btnUserInfo" class="primary">Get User Info</button>
-    </div>
-  </div>
-
-  <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
-    <button id="btnColInfo">Get Collection Info</button>
-    <button id="btnListCols" class="primary">List Collections</button> <!-- NEW -->
-  </div>
-
-  <div class="hr"></div>
-  <div id="infoOut" class="mono muted">—</div>
-</div>
     </section>
 
-    <!-- RIGHT: Stats + Console -->
-    <section class="card span5">
+    <!-- RIGHT: Insights (Stats + User/Collection panels + Lists) -->
+    <section class="card span5 right-card">
       <div class="flex" style="justify-content:space-between; align-items:center">
-        <h3 style="margin:0">Protocol Stats</h3>
+        <h3>Protocol Stats</h3>
         <div class="flex">
           <button id="btnRefresh" class="primary">Refresh</button>
           <label class="muted" style="display:flex; align-items:center; gap:6px">
@@ -457,8 +472,71 @@
 
       <div class="hr"></div>
 
+      <h3>User Info</h3>
+      <div class="row">
+        <div>
+          <div class="label">User Address</div>
+          <input id="infoUser" placeholder="0x… (leave blank for your wallet)">
+        </div>
+        <div>
+          <div class="label">Collection</div>
+          <input id="infoCol" placeholder="0x…">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div>
+          <div class="label">Token ID</div>
+          <input id="infoToken" type="number" placeholder="e.g. 0">
+        </div>
+        <div>
+          <div class="label">—</div>
+          <button id="btnUserInfo" class="ghost">Get User Info</button>
+        </div>
+      </div>
+      <div class="kv mono" style="margin-top:8px">
+        <div>Address</div><div id="ui_addr">—</div>
+        <div>Collection</div><div id="ui_col">—</div>
+        <div>Pending Rewards</div><div id="ui_rewards">—</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <h3>Collection Info</h3>
+      <div class="row">
+        <div>
+          <div class="label">Collection</div>
+          <input id="ci_col" placeholder="0x…">
+        </div>
+        <div>
+          <div class="label">—</div>
+          <button id="btnColInfo" class="ghost">Get Collection Info</button>
+        </div>
+      </div>
+      <div class="kv mono" style="margin-top:8px">
+        <div>Address</div><div id="ci_addr">—</div>
+        <div>Index</div><div id="ci_idx">—</div>
+        <div>Blue-Chip?</div><div id="ci_blue">—</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <h3>Registered Collections</h3>
+      <div class="row">
+        <div>
+          <div class="label">Max Index to Scan</div>
+          <input id="scanMax" type="number" placeholder="e.g. 200">
+        </div>
+        <div>
+          <div class="label">—</div>
+          <button id="btnScanCollections" class="ghost">Scan</button>
+        </div>
+      </div>
+      <div id="collectionsList" class="list" style="margin-top:10px"></div>
+
+      <div class="hr"></div>
+
       <h3 style="margin:0 0 6px 0">Console</h3>
-      <div id="log" class="mono" style="font-size:12px; white-space:pre-wrap; min-height:220px"></div>
+      <div id="log" class="mono" style="font-size:12px; white-space:pre-wrap; min-height:160px"></div>
     </section>
   </div>
 </main>
@@ -467,9 +545,14 @@
 /** =========================
  * CONFIG & CONSTANTS
  * ======================= */
-const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json"; // <-- adjust if needed
-const DEFAULT_CONTRACT = ""; // optional
-const DEFAULT_RPC = ""; // optional — leave blank to use Ethers default provider
+const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json";
+const DEFAULT_CONTRACT = "";
+const DEFAULT_RPC = "";
+
+/** Events (update names/signatures to match your contract if needed) */
+const EVENTS = {
+  PROPOSAL_CREATED: "event ProposalCreated(bytes32 indexed id, uint8 pType, uint8 paramTarget, uint256 newValue, address collectionContext, address proposer)"
+};
 
 // Minimal ERC721 ABI for approvals
 const ERC721_ABI = [
@@ -477,16 +560,17 @@ const ERC721_ABI = [
   "function isApprovedForAll(address owner, address operator) view returns (bool)"
 ];
 
-// State
-let READ_PROVIDER = null;   // ethers.Provider (read-only)
-let WALLET_PROVIDER = null; // BrowserProvider (Metamask)
+/** State */
+let READ_PROVIDER = null;
+let WALLET_PROVIDER = null;
 let SIGNER = null;
 let USER_ADDR = null;
 
 let ABI = null;
-let READ_CONTRACT = null;  // Connected to read-provider
-let WRITE_CONTRACT = null; // Connected to signer
-let CONTRACT_ADDR = "";    // From input/localStorage
+let IFACE = null;
+let READ_CONTRACT = null;
+let WRITE_CONTRACT = null;
+let CONTRACT_ADDR = "";
 
 let refreshTimer = null;
 
@@ -510,9 +594,13 @@ async function loadABI() {
   const res = await fetch(ABI_URL, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load ABI JSON from ${ABI_URL}`);
   const json = await res.json();
-  // Truffle/Hardhat artifact: ABI may be in .abi
   ABI = Array.isArray(json) ? json : (json.abi || json.ABI || json.default || json);
   if (!Array.isArray(ABI)) throw new Error("ABI JSON not in expected format");
+  IFACE = new ethers.Interface([
+    ...ABI,
+    // Ensure events we want to decode exist (no-op if duplicates)
+    EVENTS.PROPOSAL_CREATED
+  ]);
   log(`ABI loaded (${ABI.length} entries)`, "ok");
   return ABI;
 }
@@ -524,7 +612,8 @@ async function setupReadProvider(customRpc) {
   try {
     READ_PROVIDER = customRpc
       ? new ethers.JsonRpcProvider(customRpc)
-      : ethers.getDefaultProvider(); // Etherscan-backed fallback (rate-limited)
+      : ethers.getDefaultProvider();
+    $("modeBadge").textContent = "read-only";
     log(`Read provider set${customRpc ? " (custom RPC)" : " (default)"}`, "ok");
   } catch (e) {
     log(`Failed to set read provider: ${e.message || e}`, "err");
@@ -539,6 +628,11 @@ async function connectWallet() {
   SIGNER = await WALLET_PROVIDER.getSigner();
   USER_ADDR = await SIGNER.getAddress();
   $("acct").textContent = USER_ADDR;
+  $("modeBadge").textContent = "read + write";
+  try {
+    const net = await WALLET_PROVIDER.getNetwork();
+    $("netBadge").textContent = net?.name || String(net?.chainId || "—");
+  } catch {}
   log(`Wallet connected: ${USER_ADDR}`, "ok");
 }
 
@@ -559,16 +653,16 @@ function getSavedAddress() {
 async function initReadContract() {
   if (!CONTRACT_ADDR) throw new Error("Contract address is empty");
   if (!READ_PROVIDER) await setupReadProvider(localStorage.getItem("catalyst_rpc") || DEFAULT_RPC);
-  const abi = await loadABI();
-  READ_CONTRACT = new ethers.Contract(CONTRACT_ADDR, abi, READ_PROVIDER);
+  await loadABI();
+  READ_CONTRACT = new ethers.Contract(CONTRACT_ADDR, ABI, READ_PROVIDER);
   return READ_CONTRACT;
 }
 
 async function initWriteContract() {
   if (!SIGNER) await connectWallet();
   if (!CONTRACT_ADDR) throw new Error("Contract address is empty");
-  const abi = await loadABI();
-  WRITE_CONTRACT = new ethers.Contract(CONTRACT_ADDR, abi, SIGNER);
+  await loadABI();
+  WRITE_CONTRACT = new ethers.Contract(CONTRACT_ADDR, ABI, SIGNER);
   return WRITE_CONTRACT;
 }
 
@@ -579,6 +673,10 @@ function parseAddress(v) {
   const s = (v || "").trim();
   if (!ethers.isAddress(s)) throw new Error("Invalid address");
   return s;
+}
+function parseMaybeAddress(v) {
+  const s = (v || "").trim();
+  return ethers.isAddress(s) ? s : null;
 }
 function parseUint(v, fallback=0n) {
   const s = (v ?? "").toString().trim();
@@ -600,22 +698,21 @@ async function refreshStats() {
   try {
     await initReadContract();
     const s = await READ_CONTRACT.stakingStats();
-    $("st_totalAll").textContent = s.totalAll.toString();
-    $("st_totalTerm").textContent = s.totalTerm.toString();
-    $("st_totalPermanent").textContent = s.totalPermanent.toString();
-    $("st_remainingGlobal").textContent = s.remainingGlobal.toString();
-    $("st_remainingTerm").textContent = s.remainingTerm.toString();
-    $("st_remainingPermanent").textContent = s.remainingPermanent.toString();
+    $("st_totalAll").textContent = s.totalAll?.toString?.() ?? s[0]?.toString?.() ?? "—";
+    $("st_totalTerm").textContent = s.totalTerm?.toString?.() ?? s[1]?.toString?.() ?? "—";
+    $("st_totalPermanent").textContent = s.totalPermanent?.toString?.() ?? s[2]?.toString?.() ?? "—";
+    $("st_remainingGlobal").textContent = s.remainingGlobal?.toString?.() ?? s[3]?.toString?.() ?? "—";
+    $("st_remainingTerm").textContent = s.remainingTerm?.toString?.() ?? s[4]?.toString?.() ?? "—";
+    $("st_remainingPermanent").textContent = s.remainingPermanent?.toString?.() ?? s[5]?.toString?.() ?? "—";
 
-    // Read treasuryBalance (public variable)
-    const tb = await READ_CONTRACT.treasuryBalance();
-    $("st_treasury").textContent = tb.toString();
+    const tb = await READ_CONTRACT.treasuryBalance?.().catch(()=>null);
+    $("st_treasury").textContent = tb!=null ? tb.toString() : "—";
 
-    // Read deployer & pause status
-    const dep = await READ_CONTRACT.deployerAddress();
-    $("st_deployer").textContent = dep;
-    const isPaused = await READ_CONTRACT.paused();
-    $("st_paused").textContent = isPaused ? "true" : "false";
+    const dep = await READ_CONTRACT.deployerAddress?.().catch(()=>null);
+    $("st_deployer").textContent = dep || "—";
+
+    const isPaused = await READ_CONTRACT.paused?.().catch(()=>null);
+    $("st_paused").textContent = (isPaused===true || isPaused===false) ? String(isPaused) : "—";
 
     log("Stats refreshed ✅", "ok");
   } catch (e) {
@@ -628,28 +725,23 @@ function toggleAutoRefresh(on) {
     clearInterval(refreshTimer);
     refreshTimer = null;
   }
-  if (on) {
-    refreshTimer = setInterval(refreshStats, 8000);
-  }
+  if (on) refreshTimer = setInterval(refreshStats, 8000);
 }
 
 /** =========================
- * UI EVENT WIRING
+ * STARTUP + HEADER
  * ======================= */
 window.addEventListener("load", async () => {
-  // Initialize read provider (from saved RPC or default)
   const savedRpc = localStorage.getItem("catalyst_rpc") || DEFAULT_RPC;
   $("rpcUrl").value = savedRpc;
   await setupReadProvider(savedRpc);
 
-  // Load saved contract
   const saved = getSavedAddress();
   if (saved) {
     $("contractAddress").value = saved;
     CONTRACT_ADDR = saved;
   }
 
-  // Tabs
   document.querySelectorAll(".tabbar button").forEach(btn=>{
     btn.onclick = () => {
       document.querySelectorAll(".tabbar button").forEach(b=>b.classList.remove("active"));
@@ -663,7 +755,6 @@ window.addEventListener("load", async () => {
   log("Ready. Set RPC (optional), enter contract, and connect wallet for writes.");
 });
 
-/** ---- Header controls ---- */
 $("saveContractBtn").onclick = () => {
   try { saveContractAddress($("contractAddress").value.trim()); }
   catch(e){ log(e.message || e, "err"); }
@@ -738,7 +829,7 @@ $("btnViewPending").onclick = async () => {
     await initReadContract();
     const col = parseAddress($("colStake").value);
     const id = parseUint($("tidStake").value);
-    const owner = USER_ADDR || $("acct").textContent; // if not connected, this may be "Not connected"
+    const owner = USER_ADDR || $("acct").textContent;
     const addr = ethers.isAddress(owner) ? owner : (()=>{ throw new Error("Connect wallet or enter owner (Views tab)"); })();
     const r = await READ_CONTRACT.pendingRewardsView(col, addr, id);
     $("pendingView").textContent = r.toString();
@@ -818,7 +909,7 @@ $("btnPropose").onclick = async () => {
     const ctx = ($("collCtx").value.trim() || "0x0000000000000000000000000000000000000000");
     const tx = await WRITE_CONTRACT.propose(pType, paramTarget, newValue, ctx);
     log(`Propose sent: ${tx.hash}`);
-    const rc = await tx.wait();
+    await tx.wait();
     log("Proposal created (check explorer logs) ✅", "ok");
   } catch(e){ log(e.message || e, "err"); }
 };
@@ -836,6 +927,51 @@ $("btnExecute").onclick = async () => {
     const id = $("propId").value.trim();
     const tx = await WRITE_CONTRACT.executeProposal(id);
     log(`Execute sent: ${tx.hash}`); await tx.wait(); log("Executed ✅", "ok");
+  } catch(e){ log(e.message || e, "err"); }
+};
+
+/** --- Proposal scanning (events) --- */
+$("btnScanProposals").onclick = async () => {
+  try{
+    await initReadContract();
+    const fromBlock = Number($("fromBlock").value || "0");
+    const toBlockRaw = $("toBlock").value.trim();
+    const toBlock = toBlockRaw ? Number(toBlockRaw) : "latest";
+
+    const eventFrag = IFACE.getEvent("ProposalCreated"); // throws if missing
+    const topic0 = IFACE.getEventTopic(eventFrag);
+
+    const filter = {
+      address: CONTRACT_ADDR,
+      topics: [ topic0 ],
+      fromBlock: isNaN(fromBlock) ? 0 : fromBlock,
+      toBlock
+    };
+    const logs = await READ_PROVIDER.getLogs(filter);
+    const out = $("proposalsList");
+    out.innerHTML = "";
+    if (!logs.length) {
+      out.innerHTML = `<div class="item">No ProposalCreated events in range.</div>`;
+      log("No proposals found in range.", "muted");
+      return;
+    }
+    logs.forEach(l=>{
+      let row = "";
+      try {
+        const parsed = IFACE.decodeEventLog(eventFrag, l.data, l.topics);
+        const id = parsed.id;
+        const pType = Number(parsed.pType);
+        const paramTarget = Number(parsed.paramTarget ?? 0);
+        const newValue = parsed.newValue?.toString?.() ?? "";
+        const ctx = parsed.collectionContext ?? "0x000...0";
+        const proposer = parsed.proposer ?? "0x";
+        row = `<div class="item"><div class="mono">${l.blockNumber} • id=${id}</div><div class="mini">type=${pType} target=${paramTarget} newValue=${newValue} ctx=${ctx} proposer=${proposer}</div></div>`;
+      } catch {
+        row = `<div class="item">Block ${l.blockNumber} — (unable to decode)</div>`;
+      }
+      out.insertAdjacentHTML("beforeend", row);
+    });
+    log(`Decoded ${logs.length} ProposalCreated logs ✅`, "ok");
   } catch(e){ log(e.message || e, "err"); }
 };
 
@@ -907,6 +1043,25 @@ $("btnSetAdmGuardian").onclick = async () => {
   } catch(e){ log(e.message || e, "err"); }
 };
 
+$("btnListGuardians").onclick = async () => {
+  try{
+    await initReadContract();
+    const out = $("guardiansList");
+    out.innerHTML = "";
+    const rows = [];
+    for (let i=0;i<7;i++){
+      const d = await READ_CONTRACT.deployerGuardians?.(i).catch(()=>null);
+      if (d) rows.push(`<div class="item">Deployer[${i}] → <span class="mono">${d}</span></div>`);
+    }
+    for (let i=0;i<7;i++){
+      const a = await READ_CONTRACT.adminGuardians?.(i).catch(()=>null);
+      if (a) rows.push(`<div class="item">Admin[${i}] → <span class="mono">${a}</span></div>`);
+    }
+    out.innerHTML = rows.length ? rows.join("") : `<div class="item">No guardian slots readable.</div>`;
+    log("Guardians listed ✅","ok");
+  } catch(e){ log(e.message || e, "err"); }
+};
+
 /** =========================
  * ADMIN TAB
  * ======================= */
@@ -946,56 +1101,57 @@ $("btnViewPending2").onclick = async () => {
 };
 
 /** =========================
- * INFO TAB
+ * RIGHT PANE: USER & COLLECTION INFO + REGISTERED COLLECTIONS
  * ======================= */
 $("btnUserInfo").onclick = async () => {
-  try {
+  try{
     await initReadContract();
-    const col = parseAddress($("infoCol").value);
     let usr = $("infoUser").value.trim();
-    if (!usr) usr = USER_ADDR; // fallback to connected wallet
-    const tid = parseUint($("infoTid").value);
-    const rewards = await READ_CONTRACT.pendingRewardsView(col, usr, tid);
-
-    $("infoOut").textContent =
-      `User: ${usr}\nCollection: ${col}\nTokenID: ${tid}\nPending Rewards: ${rewards.toString()}`;
+    if (!usr) usr = USER_ADDR || "";
+    const owner = parseAddress(usr);
+    const col = parseAddress($("infoCol").value);
+    const tid = parseUint($("infoToken").value || "0");
+    const rewards = await READ_CONTRACT.pendingRewardsView(col, owner, tid);
+    $("ui_addr").textContent = owner;
+    $("ui_col").textContent = col;
+    $("ui_rewards").textContent = rewards.toString();
     log("User info fetched ✅","ok");
-  } catch(e){ log(e.message || e,"err"); }
+  } catch(e){ log(e.message || e, "err"); }
 };
 
 $("btnColInfo").onclick = async () => {
-  try {
+  try{
     await initReadContract();
-    const col = parseAddress($("infoCol").value);
-    const idx = await READ_CONTRACT.registeredIndex(col);
-    const blue = await READ_CONTRACT.isBluechipCollection(col);
-    $("infoOut").textContent =
-      `Collection: ${col}\nRegistered Index: ${idx.toString()}\nIs Bluechip: ${blue}`;
+    const col = parseAddress($("ci_col").value);
+    const idx = await READ_CONTRACT.registeredIndex(col).catch(()=>null);
+    const blue = await READ_CONTRACT.isBluechipCollection(col).catch(()=>null);
+    $("ci_addr").textContent = col;
+    $("ci_idx").textContent = idx!=null ? idx.toString() : "—";
+    $("ci_blue").textContent = (blue===true || blue===false) ? String(blue) : "—";
     log("Collection info fetched ✅","ok");
-  } catch(e){ log(e.message || e,"err"); }
+  } catch(e){ log(e.message || e, "err"); }
 };
 
-$("btnListCols").onclick = async () => {
-  try {
+$("btnScanCollections").onclick = async () => {
+  try{
     await initReadContract();
-    let results = [];
-    // try first 200 slots max (to avoid infinite loops)
-    for (let i = 0; i < 200; i++) {
-      try {
-        const col = await READ_CONTRACT.registeredCollections(i);
-        if (col === ethers.ZeroAddress) break; // optional if contract returns 0x0 when no more
-        results.push(`${i}: ${col}`);
-      } catch {
-        break; // stop when contract reverts
-      }
+    const max = Number($("scanMax").value || "200");
+    const out = $("collectionsList");
+    out.innerHTML = "";
+    let found = 0;
+    for (let i=0;i<max;i++){
+      try{
+        const addr = await READ_CONTRACT.registeredCollections(i);
+        if (addr && addr !== ethers.ZeroAddress) {
+          found++;
+          out.insertAdjacentHTML("beforeend", `<div class="item">[${i}] <span class="mono">${addr}</span></div>`);
+        }
+      } catch { break; }
     }
-    $("infoOut").textContent = results.length
-      ? results.join("\n")
-      : "No registered collections found.";
-    log(`Fetched ${results.length} collections ✅`, "ok");
-  } catch(e){ log(e.message || e,"err"); }
+    if (!found) out.innerHTML = `<div class="item">No collections found up to index ${max-1}. Increase range if needed.</div>`;
+    log(`Scanned registeredCollections(0..${max-1}) → ${found} found ✅`, "ok");
+  } catch(e){ log(e.message || e, "err"); }
 };
-
 </script>
 </body>
 </html>
