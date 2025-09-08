@@ -1,0 +1,77 @@
+[
+  "0xYourDeployerOrDAOAddress",  // owner
+  1000000000000000000,           // rewardRateIncrementPerNFT (1e18 as baseline)
+  10,                            // initialHarvestBurnFeeRate (10%)
+  1000000000000000000,           // unstakeBurnFee (1 CATA)
+  6500,                          // termDurationBlocks (~1 day on Ethereum ~13s blocks)
+  100,                           // numberOfBlocksPerRewardUnit
+  1000000000000000000,           // collectionRegistrationFee (1 CATA)
+  50,                            // stakingCooldownBlocks
+  200,                           // votingDurationBlocks
+  500000000000000000,            // minVotesRequiredScaled (0.5 * WEIGHT_SCALE)
+  20,                            // collectionVoteCapPercent
+  1000,                          // minStakeAgeForVoting
+  100000000000000000000,         // maxBaseRewardRate
+  [                              // deployerGuardians
+    "0xGuardian1",
+    "0xGuardian2",
+    "0xGuardian3",
+    "0xGuardian4",
+    "0xGuardian5",
+    "0xGuardian6",
+    "0xGuardian7"
+  ],
+  [                              // adminGuardians
+    "0xGuardianA",
+    "0xGuardianB",
+    "0xGuardianC",
+    "0xGuardianD",
+    "0xGuardianE",
+    "0xGuardianF",
+    "0xGuardianG"
+  ],
+  1000000000000000000            // bluechipWalletFee (1 CATA)
+]
+
+
+
+[
+  "0x1111111111111111111111111111111111111111",
+  "1000000000000000000", 
+  "10",                   
+  "1000000000000000000",   
+  "6500",                  
+  "100",                   
+  "1000000000000000000",   
+  "50",                   
+
+  // ---- Governance ----
+  "200",                   
+  "500000000000000000",    
+  "20",                  
+  "1000",                  
+  "100000000000000000000", 
+
+  [
+    "0x2222222222222222222222222222222222222221",
+    "0x2222222222222222222222222222222222222222",
+    "0x2222222222222222222222222222222222222223",
+    "0x2222222222222222222222222222222222222224",
+    "0x2222222222222222222222222222222222222225",
+    "0x2222222222222222222222222222222222222226",
+    "0x2222222222222222222222222222222222222227"
+  ],
+
+  [
+    "0x3333333333333333333333333333333333333331",
+    "0x3333333333333333333333333333333333333332",
+    "0x3333333333333333333333333333333333333333",
+    "0x3333333333333333333333333333333333333334",
+    "0x3333333333333333333333333333333333333335",
+    "0x3333333333333333333333333333333333333336",
+    "0x3333333333333333333333333333333333333337"
+  ],
+
+
+  "1000000000000000000"    
+];
