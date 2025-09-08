@@ -585,7 +585,7 @@ function parseIdsCSV(csv) {
     .map(s => BigInt(s));
 }
 
-  async function initReadContract() {
+  function initReadContract() {
   const addr = getContractAddress();
   if (!addr) throw new Error("Contract address is empty");
   if (!provider) provider = new ethers.BrowserProvider(window.ethereum);
