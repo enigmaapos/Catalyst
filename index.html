@@ -71,10 +71,10 @@
   </div>
 
   <!-- Wallet -->
-  <div class="pill">
-    <span id="acct" class="mono muted">Not connected</span>
-    <button id="connectBtn" class="primary">Connect Wallet</button>
-  </div>
+<div class="pill">
+  <span id="acct" class="mono muted">Not connected</span>
+  <button id="walletBtn" class="primary">Connect</button>
+</div>
 </header>
 
 <main>
@@ -702,10 +702,25 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Connect Wallet
-  $("connectBtn").onclick = async () => {
-    try { await connectWallet(); }
-    catch(e){ log(e.message || e, "err"); }
-  };
+  $("walletBtn").onclick = async () => {
+  try {
+    if (!USER_ADDR) {
+      // --- CONNECT ---
+      await connectWallet();
+      $("walletBtn").textContent = "Disconnect";
+    } else {
+      // --- DISCONNECT ---
+      USER_ADDR = null;
+      SIGNER = null;
+      WRITE_CONTRACT = null;
+      $("acct").textContent = "Not connected";
+      $("walletBtn").textContent = "Connect";
+      log("Wallet disconnected", "warn");
+    }
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
   // Contract + RPC save buttons
   $("saveContractBtn").onclick = () => {
