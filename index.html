@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Catalyst DApp</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: #eee; margin: 0; }
+    header { background: #222; padding: 1rem; text-align: center; }
+    nav { display: flex; justify-content: center; background: #333; }
+    nav button { flex: 1; padding: 1rem; border: none; background: #333; color: #eee; cursor: pointer; }
+    nav button.active { background: #444; font-weight: bold; }
+    section { display: none; padding: 2rem; }
+    section.active { display: block; }
+    input, button { margin: 0.3rem; padding: 0.5rem; }
+    .log { background: #000; color: #0f0; padding: 1rem; margin-top: 1rem; height: 150px; overflow-y: auto; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚡ Catalyst DApp</h1>
+    <button id="connectWallet">🔗 Connect Wallet</button>
+    <p id="walletAddress">Not connected</p>
+  </header>
+
+  <nav>
+    <button data-tab="stake" class="active">Stake</button>
+    <button data-tab="bluechip">Blue-Chip</button>
+    <button data-tab="governance">Governance</button>
+    <button data-tab="guardians">Guardians</button>
+    <button data-tab="admin">Admin</button>
+  </nav>
+
+  <section id="stake" class="active">
+    <h2>Stake NFTs</h2>
+    <input id="stakeCollection" placeholder="Collection Address"/>
+    <input id="stakeTokenId" placeholder="Token ID"/>
+    <label><input type="checkbox" id="stakePermanent"/> Permanent</label>
+    <button id="stakeBtn">Stake</button>
+    <button id="unstakeBtn">Unstake</button>
+    <button id="harvestBtn">Harvest</button>
+  </section>
+
+  <section id="bluechip">
+    <h2>Blue-Chip</h2>
+    <button id="enrollBluechip">Enroll</button>
+    <input id="bluechipCollection" placeholder="Collection Address"/>
+    <button id="harvestBluechip">Harvest Bluechip</button>
+  </section>
+
+  <section id="governance">
+    <h2>Governance</h2>
+    <select id="proposalType">
+      <option value="0">Base Reward</option>
+      <option value="1">Harvest Fee</option>
+      <option value="2">Unstake Fee</option>
+      <option value="3">Registration Fee</option>
+      <option value="4">Voting Param</option>
+      <option value="5">Tier Upgrade</option>
+    </select>
+    <input id="paramTarget" placeholder="Param Target (uint8)"/>
+    <input id="newValue" placeholder="New Value (uint256)"/>
+    <input id="collectionCtx" placeholder="Collection (optional)"/>
+    <button id="proposeBtn">Propose</button>
+    <input id="proposalId" placeholder="Proposal ID"/>
+    <button id="voteBtn">Vote</button>
+    <button id="executeBtn">Execute</button>
+  </section>
+
+  <section id="guardians">
+    <h2>Guardian Recovery</h2>
+    <input id="newDeployer" placeholder="New Deployer"/>
+    <button id="proposeDeployer">Propose Deployer Recovery</button>
+    <button id="approveDeployer">Approve Deployer Recovery</button>
+    <button id="execDeployer">Execute Deployer Recovery</button>
+    <br/>
+    <input id="newAdmin" placeholder="New Admin"/>
+    <button id="proposeAdmin">Propose Admin Recovery</button>
+    <button id="approveAdmin">Approve Admin Recovery</button>
+    <button id="execAdmin">Execute Admin Recovery</button>
+  </section>
+
+  <section id="admin">
+    <h2>Admin</h2>
+    <button id="pauseBtn">Pause</button>
+    <button id="unpauseBtn">Unpause</button>
+    <input id="treasuryTo" placeholder="Treasury To"/>
+    <input id="treasuryAmt" placeholder="Amount"/>
+    <button id="withdrawTreasury">Withdraw Treasury</button>
+  </section>
+
+  <div class="log" id="log"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script>
+    const CONTRACT_ADDRESS = "0xYourDeployedContract"; // replace with deployed address
+    let provider, signer, contract, ABI;
+
+    // UI tab switching
+    document.querySelectorAll("nav button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    const logEl = document.getElementById("log");
+    function log(msg) {
+      logEl.innerHTML += msg + "<br/>";
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    async function loadContract() {
+      const res = await fetch("./abi/CatalystNFTStakingUpgradeable.json");
+      ABI = await res.json();
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      log("✅ ABI loaded and contract ready");
+    }
+
+    document.getElementById("connectWallet").onclick = async () => {
+      await provider.send("eth_requestAccounts", []);
+      const addr = await signer.getAddress();
+      document.getElementById("walletAddress").innerText = addr;
+      log("🔗 Connected: " + addr);
+    };
+
+    // Load ABI on page load
+    loadContract();
+
+    // ---- Staking ----
+    document.getElementById("stakeBtn").onclick = async () => {
+      const coll = document.getElementById("stakeCollection").value;
+      const id = document.getElementById("stakeTokenId").value;
+      const perm = document.getElementById("stakePermanent").checked;
+      await contract.stake(coll, id, perm);
+      log(`📥 Staked NFT ${id} from ${coll}`);
+    };
+
+    document.getElementById("unstakeBtn").onclick = async () => {
+      const coll = document.getElementById("stakeCollection").value;
+      const id = document.getElementById("stakeTokenId").value;
+      await contract.unstake(coll, id);
+      log(`📤 Unstaked NFT ${id} from ${coll}`);
+    };
+
+    document.getElementById("harvestBtn").onclick = async () => {
+      const coll = document.getElementById("stakeCollection").value;
+      const id = document.getElementById("stakeTokenId").value;
+      await contract.harvest(coll, id);
+      log(`💰 Harvested rewards from ${id}`);
+    };
+
+    // ---- Bluechip ----
+    document.getElementById("enrollBluechip").onclick = async () => {
+      await contract.enrollBluechip();
+      log("🔵 Enrolled in Bluechip");
+    };
+
+    document.getElementById("harvestBluechip").onclick = async () => {
+      const coll = document.getElementById("bluechipCollection").value;
+      await contract.harvestBluechip(coll);
+      log(`💎 Harvested Bluechip rewards from ${coll}`);
+    };
+
+    // ---- Governance ----
+    document.getElementById("proposeBtn").onclick = async () => {
+      const type = document.getElementById("proposalType").value;
+      const target = document.getElementById("paramTarget").value;
+      const val = document.getElementById("newValue").value;
+      const ctx = document.getElementById("collectionCtx").value || ethers.constants.AddressZero;
+      await contract.propose(type, target, val, ctx);
+      log(`📜 Proposal submitted`);
+    };
+
+    document.getElementById("voteBtn").onclick = async () => {
+      const id = document.getElementById("proposalId").value;
+      await contract.vote(id);
+      log(`🗳️ Voted on ${id}`);
+    };
+
+    document.getElementById("executeBtn").onclick = async () => {
+      const id = document.getElementById("proposalId").value;
+      await contract.executeProposal(id);
+      log(`✅ Executed proposal ${id}`);
+    };
+
+    // ---- Guardians ----
+    document.getElementById("proposeDeployer").onclick = async () => {
+      const addr = document.getElementById("newDeployer").value;
+      await contract.proposeDeployerRecovery(addr);
+      log(`🛡️ Proposed deployer recovery to ${addr}`);
+    };
+    document.getElementById("approveDeployer").onclick = async () => {
+      await contract.approveDeployerRecovery();
+      log(`👍 Approved deployer recovery`);
+    };
+    document.getElementById("execDeployer").onclick = async () => {
+      await contract.executeDeployerRecovery();
+      log(`✅ Executed deployer recovery`);
+    };
+
+    document.getElementById("proposeAdmin").onclick = async () => {
+      const addr = document.getElementById("newAdmin").value;
+      await contract.proposeAdminRecovery(addr);
+      log(`🛡️ Proposed admin recovery to ${addr}`);
+    };
+    document.getElementById("approveAdmin").onclick = async () => {
+      await contract.approveAdminRecovery();
+      log(`👍 Approved admin recovery`);
+    };
+    document.getElementById("execAdmin").onclick = async () => {
+      await contract.executeAdminRecovery();
+      log(`✅ Executed admin recovery`);
+    };
+
+    // ---- Admin ----
+    document.getElementById("pauseBtn").onclick = async () => {
+      await contract.pause();
+      log("⏸️ Paused");
+    };
+    document.getElementById("unpauseBtn").onclick = async () => {
+      await contract.unpause();
+      log("▶️ Unpaused");
+    };
+    document.getElementById("withdrawTreasury").onclick = async () => {
+      const to = document.getElementById("treasuryTo").value;
+      const amt = document.getElementById("treasuryAmt").value;
+      await contract.withdrawTreasury(to, amt);
+      log(`🏦 Withdrew ${amt} to ${to}`);
+    };
+  </script>
+</body>
+</html>
