@@ -1,0 +1,200 @@
+---
+
+🔹 Full Function Inventory (Grouped)
+
+From the Solidity contract you pasted, here are all callable functions:
+
+1. ERC20 / Upgradeable / Utility
+
+pause()
+
+unpause()
+
+_authorizeUpgrade(address) (internal only, ignore in DApp)
+
+onERC721Received(address,address,uint256,bytes) (auto for safeTransferFrom, no UI needed)
+
+
+
+---
+
+2. Guardian Council & Recovery
+
+setDeployerGuardian(uint8 idx, address guardian)
+
+setAdminGuardian(uint8 idx, address guardian)
+
+proposeDeployerRecovery(address newDeployer)
+
+approveDeployerRecovery()
+
+executeDeployerRecovery()
+
+proposeAdminRecovery(address newAdmin)
+
+approveAdminRecovery()
+
+executeAdminRecovery()
+
+
+
+---
+
+3. Registration
+
+registerCollection(address collection, uint256 declaredMaxSupply)
+
+setBluechipCollection(address collection, bool isBluechip)
+
+
+
+---
+
+4. Custodial Staking
+
+stake(address collection, uint256 tokenId, bool permanent)
+
+batchStake(address collection, uint256[] tokenIds, bool permanent)
+
+harvest(address collection, uint256 tokenId)
+
+unstake(address collection, uint256 tokenId)
+
+
+
+---
+
+5. Blue-Chip (Non-custodial)
+
+enrollBluechip()
+
+harvestBluechip(address collection)
+
+
+
+---
+
+6. Governance
+
+propose(uint8 pType, uint8 paramTarget, uint256 newValue, address collectionContext) returns (bytes32)
+
+vote(bytes32 id)
+
+executeProposal(bytes32 id)
+
+
+
+---
+
+7. Admin / Treasury
+
+withdrawTreasury(address to, uint256 amount)
+
+
+
+---
+
+8. Views / Getters
+
+stakingStats() returns (...)
+
+pendingRewardsView(address collection, address owner, uint256 tokenId) returns (uint256)
+
+treasuryBalance() returns (uint256)
+
+deployerAddress() returns (address)
+
+paused() returns (bool)
+
+
+
+---
+
+✅ That’s the full surface API for your contract.
+
+
+---
+
+🔹 DApp Wiring (Category → Tab)
+
+In the full DApp code I gave you (the long expanded v1 layout + v6 UX), here’s how these map:
+
+Stake Tab
+
+stake, batchStake, harvest, unstake
+
+registerCollection
+
+approve721 (ERC721 helper)
+
+pendingRewardsView (add optional UI panel)
+
+
+Blue-Chip Tab
+
+enrollBluechip
+
+harvestBluechip
+
+setBluechipCollection
+
+
+Governance Tab
+
+propose
+
+vote
+
+executeProposal
+
+
+Guardians Tab
+
+proposeDeployerRecovery, approveDeployerRecovery, executeDeployerRecovery
+
+proposeAdminRecovery, approveAdminRecovery, executeAdminRecovery
+
+setDeployerGuardian, setAdminGuardian (could add under advanced section)
+
+
+Admin Tab
+
+pause, unpause
+
+withdrawTreasury
+
+
+Stats Panel
+
+stakingStats
+
+treasuryBalance
+
+deployerAddress
+
+paused
+
+(optional: burnedCatalystByAddress, lastStakingBlock, etc. if you want)
+
+
+
+
+---
+
+🔹 Next Step
+
+I can update the full DApp code to include every function above, with clear grouping:
+
+Add missing setDeployerGuardian / setAdminGuardian under Guardians → “Council Management”
+
+Add pendingRewardsView read-only box under Stake
+
+Ensure all views (treasuryBalance, deployerAddress, paused, etc.) show in the live Stats panel
+
+Keep provider for reads / signer for writes
+
+
+
+---
+
+produce the final full index.html
