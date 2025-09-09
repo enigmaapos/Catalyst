@@ -3,275 +3,235 @@ pragma solidity ^0.8.20;
 
 /**
  * @title GuardianLib
- * @notice Guardian councils (Deployer/Admin), duplicate-proof setup, replacement, and 7-of-5 recovery.
- *         All heavy logic + guards live here to reduce main contract bytecode size.
- *
- * Councils:
- *  - COUNCIL_DEPLOYER: recovers `deployerAddress`
- *  - COUNCIL_ADMIN:    recovers DEFAULT_ADMIN_ROLE control (main contract grants the role)
- *
- * How to use (in your main contract):
- *  - keep your own `address deployerAddress;`
- *  - keep your own DEFAULT_ADMIN_ROLE via OZ
- *  - store a single GuardianLib.Storage `guard;`
- *  - delegate to the library for council management + recovery checks
- *
- * Gas/size notes:
- *  - We emit events *inside* the library where possible to reduce main bytecode.
- *  - The main contract only performs the final state mutation (set deployer/grant role).
+ * @notice Council + recovery logic extracted to a library to keep main contract lean.
+ *         All functions are `internal` and invoked as member-functions via:
+ *         `using GuardianLib for GuardianLib.Storage;`
  */
 library GuardianLib {
-    /*------------------------*
-     *          ERRORS        *
-     *------------------------*/
+    /* ========= Constants ========= */
+    uint8  internal constant DEPLOYER_GCOUNT    = 7;
+    uint8  internal constant DEPLOYER_THRESHOLD = 5;
+    uint8  internal constant ADMIN_GCOUNT       = 7;
+    uint8  internal constant ADMIN_THRESHOLD    = 5;
+    uint256 internal constant RECOVERY_WINDOW   = 3 days;
+
+    bytes32 internal constant COUNCIL_DEPLOYER = keccak256("DEPLOYER");
+    bytes32 internal constant COUNCIL_ADMIN    = keccak256("ADMIN");
+
+    /* ========= Errors ========= */
     error ZeroAddress();
     error BadParam();
+    error AlreadyExists();
     error Unauthorized();
     error NoRequest();
     error Expired();
     error AlreadyApproved();
     error Threshold();
-    error DuplicateGuardian();
 
-    /*------------------------*
-     *          EVENTS        *
-     *------------------------*/
-    event GuardianSet(bytes32 indexed council, uint8 idx, address guardian);
-    event RecoveryProposed(bytes32 indexed council, address indexed proposer, address proposed, uint256 deadline);
-    event RecoveryApproved(bytes32 indexed council, address indexed guardian, uint8 approvals);
+    /* ========= Events ========= */
+    event GuardianSet(bytes32 council, uint8 idx, address guardian);
 
-    /*------------------------*
-     *        CONSTANTS       *
-     *------------------------*/
-    bytes32 internal constant COUNCIL_DEPLOYER = keccak256("DEPLOYER");
-    bytes32 internal constant COUNCIL_ADMIN    = keccak256("ADMIN");
+    event DeployerRecoveryProposed(address indexed proposer, address proposed, uint256 deadline);
+    event DeployerRecoveryApproved(address indexed guardian, uint8 approvals);
+    event DeployerRecoveryExecuted(address indexed newDeployer);
 
-    /*------------------------*
-     *         STORAGE        *
-     *------------------------*/
+    event AdminRecoveryProposed(address indexed proposer, address proposed, uint256 deadline);
+    event AdminRecoveryApproved(address indexed guardian, uint8 approvals);
+    event AdminRecoveryExecuted(address indexed newAdmin);
+
+    /* ========= Storage ========= */
     struct RecoveryRequest {
         address proposed;
-        uint8 approvals;
-        uint64 deadline;   // enough for timestamps
-        bool executed;
-    }
-
-    struct Council {
-        address[] guardians;               // dynamic (7 expected)
-        mapping(address => bool) isGuardian;
-        mapping(address => bool) hasApproved;
-        uint8 threshold;                    // 5 expected
+        uint8   approvals;
+        uint64  deadline;
+        bool    executed;
     }
 
     struct Storage {
         // councils
-        Council deployerCouncil;
-        Council adminCouncil;
+        address[DEPLOYER_GCOUNT] deployerGuardians;
+        mapping(address => bool) isDeployerGuardian;
 
-        // pending recoveries
+        address[ADMIN_GCOUNT] adminGuardians;
+        mapping(address => bool) isAdminGuardian;
+
+        // recovery state
         RecoveryRequest deployerRecovery;
+        mapping(address => bool) deployerHasApproved;
+
         RecoveryRequest adminRecovery;
-
-        // recovery params
-        uint32 recoveryWindow; // seconds (3 days typical)
+        mapping(address => bool) adminHasApproved;
     }
 
-    /*------------------------*
-     *      INTERNAL HELP     *
-     *------------------------*/
-    function _council(Storage storage s, bytes32 councilId)
-        private
-        view
-        returns (Council storage c)
-    {
-        if (councilId == COUNCIL_DEPLOYER) return s.deployerCouncil;
-        if (councilId == COUNCIL_ADMIN)    return s.adminCouncil;
-        revert BadParam();
-    }
-
-    function _recovery(Storage storage s, bytes32 councilId)
-        private
-        view
-        returns (RecoveryRequest storage r)
-    {
-        if (councilId == COUNCIL_DEPLOYER) return s.deployerRecovery;
-        if (councilId == COUNCIL_ADMIN)    return s.adminRecovery;
-        revert BadParam();
-    }
-
-    /*------------------------*
-     *        INITIALIZE      *
-     *------------------------*/
-    /**
-     * @dev Initializes both councils with duplicate/zero checks and sets thresholds & recovery window.
-     *
-     * @param s                 Guardian storage slot
-     * @param deployerGuardians list of deployer guardians (length can be 0..N; usually 7)
-     * @param adminGuardians    list of admin guardians    (length can be 0..N; usually 7)
-     * @param deployerThreshold approvals required (e.g., 5)
-     * @param adminThreshold    approvals required (e.g., 5)
-     * @param recoveryWindow    seconds window (e.g., 3 days)
-     */
-    function init(
-        Storage storage s,
-        address[] memory deployerGuardians,
-        address[] memory adminGuardians,
-        uint8 deployerThreshold,
-        uint8 adminThreshold,
-        uint32 recoveryWindow
+    /* ========= Init ========= */
+    function initGuardians(
+        Storage storage gu,
+        address[] memory deployers,
+        address[] memory admins
     ) internal {
-        if (deployerThreshold == 0 || adminThreshold == 0) revert BadParam();
-        if (recoveryWindow == 0) revert BadParam();
+        if (deployers.length != DEPLOYER_GCOUNT) revert BadParam();
+        if (admins.length    != ADMIN_GCOUNT)    revert BadParam();
 
-        // Deployer council
-        _seedCouncil(s.deployerCouncil, COUNCIL_DEPLOYER, deployerGuardians, deployerThreshold);
+        // Set deployer council with uniqueness checks
+        unchecked {
+            for (uint8 i = 0; i < DEPLOYER_GCOUNT; ++i) {
+                address a = deployers[i];
+                if (a == address(0)) revert ZeroAddress();
+                if (gu.isDeployerGuardian[a]) revert AlreadyExists();
+                gu.deployerGuardians[i] = a;
+                gu.isDeployerGuardian[a] = true;
+                emit GuardianSet(COUNCIL_DEPLOYER, i, a);
 
-        // Admin council
-        _seedCouncil(s.adminCouncil, COUNCIL_ADMIN, adminGuardians, adminThreshold);
+                // pairwise uniqueness O(n^2) for tiny n
+                for (uint8 j = i + 1; j < DEPLOYER_GCOUNT; ++j) {
+                    if (deployers[j] == a) revert AlreadyExists();
+                }
+            }
+            for (uint8 i2 = 0; i2 < ADMIN_GCOUNT; ++i2) {
+                address a2 = admins[i2];
+                if (a2 == address(0)) revert ZeroAddress();
+                if (gu.isAdminGuardian[a2]) revert AlreadyExists();
+                gu.adminGuardians[i2] = a2;
+                gu.isAdminGuardian[a2] = true;
+                emit GuardianSet(COUNCIL_ADMIN, i2, a2);
 
-        s.recoveryWindow = recoveryWindow;
-    }
-
-    function _seedCouncil(
-        Council storage c,
-        bytes32 councilId,
-        address[] memory guardians,
-        uint8 threshold
-    ) private {
-        // duplicate and zero checks; push into dynamic array
-        uint256 n = guardians.length;
-        c.threshold = threshold;
-
-        for (uint256 i = 0; i < n; ++i) {
-            address g = guardians[i];
-            if (g == address(0)) revert ZeroAddress();
-            if (c.isGuardian[g]) revert DuplicateGuardian();
-            c.guardians.push(g);
-            c.isGuardian[g] = true;
-            emit GuardianSet(councilId, uint8(i), g);
+                for (uint8 j2 = i2 + 1; j2 < ADMIN_GCOUNT; ++j2) {
+                    if (admins[j2] == a2) revert AlreadyExists();
+                }
+            }
         }
-
-        // threshold must not exceed guardian count (and non-zero checked earlier)
-        if (threshold > n) revert BadParam();
     }
 
-    /*------------------------*
-     *     COUNCIL MGMT       *
-     *------------------------*/
-    /**
-     * @dev Replace or append a guardian at `idx` (append allowed when idx==length).
-     * Duplicate/zero guarded. Emits event.
-     */
-    function setGuardian(
-        Storage storage s,
-        bytes32 councilId,
-        uint8 idx,
-        address guardian
-    ) internal {
+    /* ========= Membership checks (optional wrappers) ========= */
+    function guardianOnlyDeployer(Storage storage gu, address who) internal view {
+        if (!gu.isDeployerGuardian[who]) revert Unauthorized();
+    }
+
+    function guardianOnlyAdmin(Storage storage gu, address who) internal view {
+        if (!gu.isAdminGuardian[who]) revert Unauthorized();
+    }
+
+    /* ========= Council rotation ========= */
+    function setDeployerGuardian(Storage storage gu, uint8 idx, address guardian) internal {
+        if (idx >= DEPLOYER_GCOUNT) revert BadParam();
         if (guardian == address(0)) revert ZeroAddress();
-        Council storage c = _council(s, councilId);
 
-        // duplicate guard
-        if (c.isGuardian[guardian]) revert DuplicateGuardian();
-
-        uint256 n = c.guardians.length;
-
-        if (idx > n) revert BadParam();
-
-        if (idx == n) {
-            // append
-            c.guardians.push(guardian);
-        } else {
-            // replace
-            address old = c.guardians[idx];
-            if (old != address(0)) c.isGuardian[old] = false;
-            c.guardians[idx] = guardian;
+        address old = gu.deployerGuardians[idx];
+        if (old != address(0)) {
+            gu.isDeployerGuardian[old] = false;
         }
-        c.isGuardian[guardian] = true;
+        if (gu.isDeployerGuardian[guardian]) revert AlreadyExists();
 
-        // keep threshold sane
-        if (c.threshold == 0 || c.threshold > c.guardians.length) revert BadParam();
-
-        emit GuardianSet(councilId, idx, guardian);
+        gu.deployerGuardians[idx] = guardian;
+        gu.isDeployerGuardian[guardian] = true;
+        emit GuardianSet(COUNCIL_DEPLOYER, idx, guardian);
     }
 
-    function isGuardian(Storage storage s, bytes32 councilId, address who) internal view returns (bool) {
-        return _council(s, councilId).isGuardian[who];
+    function setAdminGuardian(Storage storage gu, uint8 idx, address guardian) internal {
+        if (idx >= ADMIN_GCOUNT) revert BadParam();
+        if (guardian == address(0)) revert ZeroAddress();
+
+        address old = gu.adminGuardians[idx];
+        if (old != address(0)) {
+            gu.isAdminGuardian[old] = false;
+        }
+        if (gu.isAdminGuardian[guardian]) revert AlreadyExists();
+
+        gu.adminGuardians[idx] = guardian;
+        gu.isAdminGuardian[guardian] = true;
+        emit GuardianSet(COUNCIL_ADMIN, idx, guardian);
     }
 
-    /*------------------------*
-     *     RECOVERY FLOW      *
-     *------------------------*/
-    function proposeRecovery(
-        Storage storage s,
-        bytes32 councilId,
-        address proposer,
-        address proposed,
-        uint64 nowTs
-    ) internal {
-        if (!isGuardian(s, councilId, proposer)) revert Unauthorized();
-        if (proposed == address(0)) revert ZeroAddress();
+    /* ========= Deployer recovery (7:5) ========= */
+    function proposeDeployerRecovery(Storage storage gu, address newDeployer) internal {
+        if (newDeployer == address(0)) revert ZeroAddress();
 
-        RecoveryRequest storage r = _recovery(s, councilId);
+        gu.deployerRecovery = RecoveryRequest({
+            proposed: newDeployer,
+            approvals: 0,
+            deadline: uint64(block.timestamp + RECOVERY_WINDOW),
+            executed: false
+        });
 
-        r.proposed  = proposed;
-        r.approvals = 0;
-        r.deadline  = nowTs + s.recoveryWindow;
-        r.executed  = false;
-
-        // reset approvals for current guardians
-        Council storage c = _council(s, councilId);
-        uint256 n = c.guardians.length;
-        for (uint256 i = 0; i < n; ++i) {
-            address g = c.guardians[i];
-            if (g != address(0)) c.hasApproved[g] = false;
+        // reset approvals
+        unchecked {
+            for (uint8 i = 0; i < DEPLOYER_GCOUNT; ++i) {
+                address gaddr = gu.deployerGuardians[i];
+                if (gaddr != address(0)) gu.deployerHasApproved[gaddr] = false;
+            }
         }
 
-        emit RecoveryProposed(councilId, proposer, proposed, r.deadline);
+        emit DeployerRecoveryProposed(msg.sender, newDeployer, gu.deployerRecovery.deadline);
     }
 
-    function approveRecovery(
-        Storage storage s,
-        bytes32 councilId,
-        address approver,
-        uint64 nowTs
-    ) internal {
-        if (!isGuardian(s, councilId, approver)) revert Unauthorized();
-
-        RecoveryRequest storage r = _recovery(s, councilId);
+    function approveDeployerRecovery(Storage storage gu, address approver) internal {
+        if (!gu.isDeployerGuardian[approver]) revert Unauthorized();
+        RecoveryRequest storage r = gu.deployerRecovery;
         if (r.proposed == address(0)) revert NoRequest();
-        if (nowTs > r.deadline) revert Expired();
+        if (block.timestamp > r.deadline) revert Expired();
         if (r.executed) revert AlreadyApproved();
+        if (gu.deployerHasApproved[approver]) revert AlreadyApproved();
 
-        Council storage c = _council(s, councilId);
-        if (c.hasApproved[approver]) revert AlreadyApproved();
-
-        c.hasApproved[approver] = true;
-        r.approvals += 1;
-
-        emit RecoveryApproved(councilId, approver, r.approvals);
+        gu.deployerHasApproved[approver] = true;
+        unchecked { r.approvals += 1; }
+        emit DeployerRecoveryApproved(approver, r.approvals);
     }
 
-    /**
-     * @dev Validates the recovery for a council and marks it executed. Returns the proposed address.
-     * The caller (main contract) must then:
-     *  - For COUNCIL_DEPLOYER: set `deployerAddress` and emit its own event.
-     *  - For COUNCIL_ADMIN:    grant DEFAULT_ADMIN_ROLE and emit its own event.
-     */
-    function finalizeRecovery(
-        Storage storage s,
-        bytes32 councilId,
-        uint64 nowTs
-    ) internal returns (address proposed) {
-        RecoveryRequest storage r = _recovery(s, councilId);
-        Council storage c = _council(s, councilId);
-
+    function executeDeployerRecovery(Storage storage gu) internal returns (address newDeployer) {
+        RecoveryRequest storage r = gu.deployerRecovery;
         if (r.proposed == address(0)) revert NoRequest();
-        if (nowTs > r.deadline) revert Expired();
+        if (block.timestamp > r.deadline) revert Expired();
         if (r.executed) revert AlreadyApproved();
-        if (r.approvals < c.threshold) revert Threshold();
+        if (r.approvals < DEPLOYER_THRESHOLD) revert Threshold();
 
         r.executed = true;
-        proposed = r.proposed;
+        newDeployer = r.proposed;
+        emit DeployerRecoveryExecuted(newDeployer);
+    }
+
+    /* ========= Admin recovery (7:5) ========= */
+    function proposeAdminRecovery(Storage storage gu, address newAdmin) internal {
+        if (newAdmin == address(0)) revert ZeroAddress();
+
+        gu.adminRecovery = RecoveryRequest({
+            proposed: newAdmin,
+            approvals: 0,
+            deadline: uint64(block.timestamp + RECOVERY_WINDOW),
+            executed: false
+        });
+
+        unchecked {
+            for (uint8 i = 0; i < ADMIN_GCOUNT; ++i) {
+                address gaddr = gu.adminGuardians[i];
+                if (gaddr != address(0)) gu.adminHasApproved[gaddr] = false;
+            }
+        }
+
+        emit AdminRecoveryProposed(msg.sender, newAdmin, gu.adminRecovery.deadline);
+    }
+
+    function approveAdminRecovery(Storage storage gu, address approver) internal {
+        if (!gu.isAdminGuardian[approver]) revert Unauthorized();
+        RecoveryRequest storage r = gu.adminRecovery;
+        if (r.proposed == address(0)) revert NoRequest();
+        if (block.timestamp > r.deadline) revert Expired();
+        if (r.executed) revert AlreadyApproved();
+        if (gu.adminHasApproved[approver]) revert AlreadyApproved();
+
+        gu.adminHasApproved[approver] = true;
+        unchecked { r.approvals += 1; }
+        emit AdminRecoveryApproved(approver, r.approvals);
+    }
+
+    function executeAdminRecovery(Storage storage gu) internal returns (address newAdmin) {
+        RecoveryRequest storage r = gu.adminRecovery;
+        if (r.proposed == address(0)) revert NoRequest();
+        if (block.timestamp > r.deadline) revert Expired();
+        if (r.executed) revert AlreadyApproved();
+        if (r.approvals < ADMIN_THRESHOLD) revert Threshold();
+
+        r.executed = true;
+        newAdmin = r.proposed;
+        emit AdminRecoveryExecuted(newAdmin);
     }
 }
