@@ -26,7 +26,7 @@ library BluechipLib {
         function(address,uint256) internal _splitFeeFromSender
     ) internal {
         require(wallet != address(0), "BluechipLib: zero wallet");
-        WalletEnrollment storage we = b.bluechipWallets[address(0)][wallet]; // canonical global enrollment slot
+        WalletEnrollment storage we = b.bluechipWallets[wallet]; // canonical global enrollment slot
         require(!we.enrolled, "BluechipLib: already enrolled");
 
         // collect fee (caller must have minted / transferred CATA to payer)
