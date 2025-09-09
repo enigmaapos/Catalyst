@@ -1220,3 +1220,314 @@
         $("guardiansView").textContent = `Guardian[0]: ${g0}`;
       }catch(e){ log(e.message||e,"err"); }
     };
+
+/* ============================
+     * MODAL CONFIRMATION (REUSABLE)
+     * ============================ */
+    // Creates (once) and shows a confirmation modal with a message & details.
+    // Returns a Promise<boolean>.
+    function confirmAction(title, lines) {
+      return new Promise((resolve) => {
+        let modal = document.getElementById("confirmModal");
+        if (!modal) {
+          modal = document.createElement("div");
+          modal.id = "confirmModal";
+          modal.style.position = "fixed";
+          modal.style.inset = "0";
+          modal.style.background = "rgba(0,0,0,.5)";
+          modal.style.display = "none";
+          modal.style.zIndex = "9999";
+          modal.innerHTML = `
+            <div style="max-width:560px;margin:10vh auto;background:#0e1522;border:1px solid #21283a;border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.4)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <h3 style="margin:0;font-size:18px">${title || "Confirm"}</h3>
+                <button id="cfClose" class="ghost small">✕</button>
+              </div>
+              <div id="cfBody" class="mono muted" style="margin-top:10px;white-space:pre-wrap"></div>
+              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+                <button id="cfCancel" class="ghost">Cancel</button>
+                <button id="cfOk" class="primary">Confirm</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+        }
+        // set content
+        modal.querySelector("h3").textContent = title || "Confirm";
+        modal.querySelector("#cfBody").textContent =
+          Array.isArray(lines) ? lines.join("\n") : (lines || "");
+        // wire
+        const close = () => { modal.style.display = "none"; };
+        modal.querySelector("#cfClose").onclick = () => { close(); resolve(false); };
+        modal.querySelector("#cfCancel").onclick = () => { close(); resolve(false); };
+        modal.querySelector("#cfOk").onclick = () => { close(); resolve(true); };
+        // show
+        modal.style.display = "block";
+      });
+    }
+
+    /* ============================
+     * BLUE-CHIP (NON-CUSTODIAL)
+     * ============================ */
+    $("btnEnrollBlue").onclick = async ()=>{
+      try {
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.blueChipEnroll();
+        log(`Enroll sent: ${tx.hash}`);
+        await tx.wait();
+        log("Blue-chip enrollment confirmed ✅", "ok");
+      } catch(e){ log(e.message||e, "err"); }
+    };
+
+    $("btnHarvestBlue").onclick = async ()=>{
+      try {
+        requireWallet();
+        await initWriteContract();
+        const col = parseAddress($("colBlueHarvest").value);
+        const tx = await WRITE_CONTRACT.harvestBlue(col);
+        log(`Harvest (blue-chip) sent: ${tx.hash}`);
+        await tx.wait();
+        log("Harvest (blue-chip) confirmed ✅", "ok");
+      } catch(e){ log(e.message||e, "err"); }
+    };
+
+    // Admin: flag/unflag blue-chip
+    $("btnSetBlue").onclick = async ()=>{
+      try {
+        requireWallet();
+        await initWriteContract();
+        const col = parseAddress($("colFlagBlue").value);
+        const flag = $("isBlueFlag").value === "true";
+        const tx = await WRITE_CONTRACT.setBlueChip(col, flag);
+        log(`Set blue-chip sent: ${tx.hash}`);
+        await tx.wait();
+        log(`Blue-chip ${flag ? "flagged" : "cleared"} ✅`, "ok");
+      } catch(e){ log(e.message||e, "err"); }
+    };
+
+    /* ============================
+     * GOVERNANCE: PROPOSE / VOTE / EXECUTE
+     * ============================ */
+    $("btnPropose").onclick = async ()=>{
+      try {
+        requireWallet();
+        await initWriteContract();
+        const pType = parseUint($("pType").value);
+        const paramTarget = parseUint($("paramTarget").value || 0n);
+        const newValue = parseUint($("newValue").value);
+        const ctx = $("collCtx").value.trim() || ethers.ZeroAddress;
+        const tx = await WRITE_CONTRACT.propose(pType, paramTarget, newValue, ctx);
+        log(`Propose sent: ${tx.hash}`);
+        const rc = await tx.wait();
+        log("Proposal created ✅ (check logs for ID)", "ok");
+        // Optional: try to parse event for ID
+        try {
+          const ev = rc.logs?.find(l => (l.fragment && l.fragment.name === "ProposalCreated"));
+          if (ev) log(`Proposal ID: ${ev.args?.id}`, "ok");
+        } catch(_){}
+      } catch(e){ log(e.message||e, "err"); }
+    };
+
+    $("btnVote").onclick = async ()=>{
+      try {
+        requireWallet();
+        await initWriteContract();
+        const id = $("propId").value.trim();
+        if (!id) throw new Error("Proposal ID required");
+        const tx = await WRITE_CONTRACT.vote(id);
+        log(`Vote sent: ${tx.hash}`);
+        await tx.wait();
+        log("Vote confirmed ✅", "ok");
+      } catch(e){ log(e.message||e, "err"); }
+    };
+
+    $("btnExecute").onclick = async ()=>{
+      try {
+        requireWallet();
+        await initWriteContract();
+        const id = $("propId").value.trim();
+        if (!id) throw new Error("Proposal ID required");
+        const tx = await WRITE_CONTRACT.execute(id);
+        log(`Execute sent: ${tx.hash}`);
+        await tx.wait();
+        log("Proposal executed ✅", "ok");
+      } catch(e){ log(e.message||e, "err"); }
+    };
+
+    /* ============================
+     * GUARDIANS (DRS): DEPLOYER COUNCIL
+     * ============================ */
+    $("btnPropDep").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const addr = parseAddress($("newDeployer").value);
+        const tx = await WRITE_CONTRACT.proposeDeployer(addr);
+        log(`Propose new deployer sent: ${tx.hash}`);
+        await tx.wait();
+        log("New deployer proposed ✅", "ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnApproveDep").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const addr = parseAddress($("newDeployer").value);
+        const tx = await WRITE_CONTRACT.approveDeployer(addr);
+        log(`Approve new deployer sent: ${tx.hash}`);
+        await tx.wait();
+        log("Approval recorded ✅", "ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnExecDep").onclick = async ()=>{
+      try{
+        requireWallet();
+        const addr = parseAddress($("newDeployer").value);
+        const ok = await confirmAction("⚠️ Execute Deployer Recovery", [
+          "This will transfer the Deployer role.",
+          "Make sure approvals ≥ threshold.",
+          "",
+          `New Deployer: ${addr}`,
+          "",
+          "Proceed?"
+        ]);
+        if (!ok) return;
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.executeDeployer(addr);
+        log(`Execute deployer recovery sent: ${tx.hash}`);
+        await tx.wait();
+        log("Deployer recovery executed ✅", "ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * GUARDIANS (DRS): ADMIN COUNCIL
+     * ============================ */
+    $("btnPropAdm").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const addr = parseAddress($("newAdmin").value);
+        const tx = await WRITE_CONTRACT.proposeAdmin(addr);
+        log(`Propose new admin sent: ${tx.hash}`);
+        await tx.wait();
+        log("New admin proposed ✅", "ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnApproveAdm").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const addr = parseAddress($("newAdmin").value);
+        const tx = await WRITE_CONTRACT.approveAdmin(addr);
+        log(`Approve new admin sent: ${tx.hash}`);
+        await tx.wait();
+        log("Approval recorded ✅", "ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnExecAdm").onclick = async ()=>{
+      try{
+        requireWallet();
+        const addr = parseAddress($("newAdmin").value);
+        const ok = await confirmAction("⚠️ Execute Admin Recovery", [
+          "This will transfer the Admin role.",
+          "Make sure approvals ≥ threshold.",
+          "",
+          `New Admin: ${addr}`,
+          "",
+          "Proceed?"
+        ]);
+        if (!ok) return;
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.executeAdmin(addr);
+        log(`Execute admin recovery sent: ${tx.hash}`);
+        await tx.wait();
+        log("Admin recovery executed ✅", "ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * ADMIN: PAUSE / UNPAUSE / WITHDRAW
+     * ============================ */
+    $("btnPause").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.pause();
+        log(`Pause sent: ${tx.hash}`);
+        await tx.wait();
+        log("Contract paused ✅", "ok");
+        // refresh stat
+        try { $("st_paused").textContent = "true"; } catch(_){}
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnUnpause").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.unpause();
+        log(`Unpause sent: ${tx.hash}`);
+        await tx.wait();
+        log("Contract unpaused ✅", "ok");
+        try { $("st_paused").textContent = "false"; } catch(_){}
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnWithdraw").onclick = async ()=>{
+      try{
+        requireWallet();
+        const to = parseAddress($("toTreasury").value);
+        const amt = parseUint($("amtTreasury").value);
+        const ok = await confirmAction("⚠️ Treasury Withdraw", [
+          "Withdrawing from treasury is a privileged action.",
+          "Double-check the recipient and amount.",
+          "",
+          `Recipient: ${to}`,
+          `Amount (wei): ${amt}`,
+          "",
+          "Proceed?"
+        ]);
+        if (!ok) return;
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.withdrawTreasury(to, amt);
+        log(`Withdraw sent: ${tx.hash}`);
+        await tx.wait();
+        log("Treasury withdrawn ✅", "ok");
+        // stats refresh (treasury)
+        try { await refreshStats(); } catch(_){}
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * NICE LOGGING FOR NETWORK CHANGES
+     * ============================ */
+    if (window.ethereum) {
+      window.ethereum.on?.("accountsChanged", (accs)=>{
+        if (!accs || accs.length === 0) {
+          USER_ADDR = null; SIGNER = null; WRITE_CONTRACT = null;
+          $("acct").textContent = "Not connected";
+          $("walletBtn").textContent = "Connect";
+          log("Wallet disconnected (accountsChanged)", "warn");
+        } else {
+          USER_ADDR = accs[0];
+          $("acct").textContent = USER_ADDR;
+          $("walletBtn").textContent = "Disconnect";
+          log(`Account switched → ${USER_ADDR}`, "ok");
+        }
+      });
+      window.ethereum.on?.("chainChanged", ()=>{
+        // clear signer cache; require re-init write
+        WRITE_CONTRACT = null; SIGNER = null;
+        log("Chain changed — reinitializing signer on next write", "warn");
+      });
+    }
+
+    /* ============================
+     * FINAL TOUCHES
+     * ============================ */
+    log("Action wiring complete — DApp ready ✅", "ok");
