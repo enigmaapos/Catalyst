@@ -1531,3 +1531,235 @@
      * FINAL TOUCHES
      * ============================ */
     log("Action wiring complete — DApp ready ✅", "ok");
+
+/* ============================
+     * READ HELPERS (lists & info)
+     * ============================ */
+
+    // Pending (read tab; owner optional)
+    $("btnViewPending2").onclick = async ()=>{
+      try{
+        await initReadContract();
+        const col = parseAddress($("vCol").value);
+        const ownerRaw = ($("vOwner").value||"").trim();
+        const idStr = ($("vTokenId").value||"").trim();
+
+        let out = "";
+        if (idStr) {
+          const id = parseUint(idStr);
+          // preferred: pendingRewardOf(collection, tokenId)
+          try{
+            const v = await READ_CONTRACT.pendingRewardOf(col, id);
+            out += `pendingRewardOf(${col}, #${id}) = ${ethers.formatUnits(v,18)} CATA\n`;
+          }catch(e){
+            out += `pendingRewardOf not available (${e.message||e})\n`;
+          }
+        }
+
+        if (ownerRaw) {
+          const owner = parseAddress(ownerRaw);
+          // optional alt: pendingRewardOfOwner(collection, owner)
+          try{
+            const v2 = await READ_CONTRACT.pendingRewardOfOwner(col, owner);
+            out += `pendingRewardOfOwner(${col}, ${owner}) = ${ethers.formatUnits(v2,18)} CATA\n`;
+          }catch(e){
+            out += `pendingRewardOfOwner not available (${e.message||e})\n`;
+          }
+        }
+
+        if (!out) out = "Provide a token ID and/or Owner address.";
+        $("pendingOut").textContent = out.trim();
+      }catch(e){ log(e.message||e, "err"); }
+    };
+
+    // List registered collections (tries getRegisteredCollections(); falls back to count loop if available)
+    $("btnListCollections").onclick = async ()=>{
+      try{
+        await initReadContract();
+        let lines = [];
+        let listed = false;
+
+        // try direct getter
+        try{
+          const arr = await READ_CONTRACT.getRegisteredCollections();
+          arr.forEach((a,i)=>lines.push(`${i}. ${a}`));
+          listed = true;
+        }catch{}
+
+        if (!listed){
+          // try count + collectionAt(i)
+          try{
+            const n = await READ_CONTRACT.collectionCount();
+            lines.push(`count = ${n}`);
+            for (let i=0n; i<n && i<200n; i++){
+              try{
+                const a = await READ_CONTRACT.collectionAt(i);
+                lines.push(`${i}. ${a}`);
+              }catch{ break; }
+            }
+            listed = true;
+          }catch{}
+        }
+
+        $("collectionsOut").textContent = listed ? lines.join("\n") : "No listing method available on this ABI.";
+      }catch(e){ log(e.message||e, "err"); }
+    };
+
+    // List blue-chip collections (tries getBlueChips(); falls back to isBlueChip via collectionAt loop)
+    $("btnListBlue").onclick = async ()=>{
+      try{
+        await initReadContract();
+        let lines = [];
+        let listed = false;
+
+        try{
+          const arr = await READ_CONTRACT.getBlueChips();
+          arr.forEach((a,i)=>lines.push(`${i}. ${a}`));
+          listed = true;
+        }catch{}
+
+        if (!listed){
+          try{
+            const n = await READ_CONTRACT.collectionCount();
+            for (let i=0n; i<n && i<200n; i++){
+              try{
+                const a = await READ_CONTRACT.collectionAt(i);
+                const flag = await READ_CONTRACT.isBlueChip(a);
+                if (flag) lines.push(`${i}. ${a}`);
+              }catch{}
+            }
+            listed = true;
+          }catch{}
+        }
+
+        $("collectionsOut").textContent = listed ? (lines.length?lines.join("\n"):"(none flagged)") : "No blue-chip listing method available.";
+      }catch(e){ log(e.message||e, "err"); }
+    };
+
+    // User info (tries userInfo(address) / balances)
+    $("btnUserInfo").onclick = async ()=>{
+      try{
+        await initReadContract();
+        const who = ($("infoUser").value||"").trim() || USER_ADDR;
+        if (!who) throw new Error("Provide user or connect wallet");
+        const addr = parseAddress(who);
+
+        let out = [`User: ${addr}`];
+
+        // common views, guarded with try/catch so it works across ABI variants
+        try{
+          const bal = await READ_CONTRACT.balanceOf(addr);
+          out.push(`CATA balanceOf = ${ethers.formatUnits(bal,18)}`);
+        }catch{}
+        try{
+          const st = await READ_CONTRACT.userStakeCount(addr);
+          out.push(`userStakeCount = ${st}`);
+        }catch{}
+        try{
+          const en = await READ_CONTRACT.isBluechipEnrolled(addr);
+          out.push(`bluechip enrolled = ${en}`);
+        }catch{}
+
+        $("infoOut").textContent = out.join("\n");
+      }catch(e){ log(e.message||e, "err"); }
+    };
+
+    // Collection info (tries collectionInfo(struct) / isRegistered / caps)
+    $("btnColInfo").onclick = async ()=>{
+      try{
+        await initReadContract();
+        const col = parseAddress($("infoCol").value);
+        let out = [`Collection: ${col}`];
+
+        try{
+          const info = await READ_CONTRACT.collectionInfo(col);
+          // print best-effort keys / tuple
+          if (info.maxSupply) out.push(`maxSupply = ${info.maxSupply}`);
+          if (info.verified!==undefined) out.push(`verified = ${info.verified}`);
+          if (info.isBlue!==undefined) out.push(`bluechip = ${info.isBlue}`);
+        }catch{}
+
+        try{
+          const reg = await READ_CONTRACT.isCollectionRegistered(col);
+          out.push(`registered = ${reg}`);
+        }catch{}
+        try{
+          const bc = await READ_CONTRACT.isBlueChip(col);
+          out.push(`bluechip = ${bc}`);
+        }catch{}
+
+        $("infoOut").textContent = out.join("\n");
+      }catch(e){ log(e.message||e, "err"); }
+    };
+
+    /* ============================
+     * ADMIN (safe confirm wrappers)
+     * ============================ */
+
+    // Re-bind Pause with confirm (optional – comment out if you prefer no confirm)
+    $("btnPause").onclick = async ()=>{
+      try{
+        requireWallet();
+        const ok = await confirmModal({
+          title: "Pause Protocol?",
+          body: "Pausing blocks write paths (stake/harvest/register/governance). Continue?",
+          icon: "⏸️", danger: true
+        });
+        if (!ok) return;
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.pause();
+        log(`Pause sent: ${tx.hash}`);
+        await tx.wait();
+        log("Contract paused ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnUnpause").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.unpause();
+        log(`Unpause sent: ${tx.hash}`);
+        await tx.wait();
+        log("Contract unpaused ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    // Safe Treasury Withdraw (uses the visible ids from Admin tab)
+    $("btnWithdraw").onclick = async ()=>{
+      try{
+        requireWallet();
+        const to = parseAddress($("toTreasury").value);
+        const amt = parseUint($("amtTreasury").value);
+        const ok = await confirmModal({
+          title: "Withdraw from Treasury",
+          body: `This will transfer ${amt.toString()} wei to:\n${to}\n\nConfirm?`,
+          icon: "🏦", danger: true
+        });
+        if (!ok) { log("Withdraw cancelled", "warn"); return; }
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.withdrawTreasury(to, amt);
+        log(`Withdraw sent: ${tx.hash}`);
+        await tx.wait();
+        log("Withdraw confirmed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * HASH → TAB SYNC
+     * ============================ */
+    (function syncHash(){
+      const h = (location.hash||"").replace("#","");
+      if (h && document.getElementById(h)) {
+        // allow anchors like #tab-whitepaper
+        if (h.startsWith("tab-")) selectTab(h.substring(4));
+      }
+      window.addEventListener("hashchange", ()=> {
+        const hh = (location.hash||"").replace("#","");
+        if (hh.startsWith("tab-")) selectTab(hh.substring(4));
+      });
+    })();
+
+  </script>
+</body>
+</html>
