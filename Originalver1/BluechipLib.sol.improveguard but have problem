@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/// @notice Blue-chip staking helpers (wallet enrollment + per-collection bookkeeping).
+library BluechipLib {
+    struct WalletEnrollment {
+        bool enrolled;
+        uint256 enrolledBlock;
+    }
+
+    struct CollectionBlue {
+        mapping(address => WalletEnrollment) bluechipWallets;
+        mapping(address => bool) isBluechipCollection;
+        uint256 bluechipWalletFee;
+    }
+
+    event WalletEnrolled(address indexed wallet, uint256 blockNumber, uint256 feePaid);
+    event BluechipCollectionSet(address indexed collection, bool isBluechip);
+
+    function enroll(
+        CollectionBlue storage b,
+        address /*collection*/, // kept for compatibility (unused for global per-wallet)
+        address wallet,
+        uint256 currentBlock,
+        uint256 fee,
+        function(address,uint256) internal _splitFeeFromSender
+    ) internal {
+        require(wallet != address(0), "BluechipLib: zero wallet");
+        WalletEnrollment storage we = b.bluechipWallets[address(0)][wallet]; // canonical global enrollment slot
+        require(!we.enrolled, "BluechipLib: already enrolled");
+
+        // collect fee (caller must have minted / transferred CATA to payer)
+        if (fee > 0) {
+            _splitFeeFromSender(wallet, fee);
+        }
+        we.enrolled = true;
+        we.enrolledBlock = currentBlock;
+
+        emit WalletEnrolled(wallet, currentBlock, fee);
+    }
+
+    function harvest(
+        CollectionBlue storage b,
+        address collection,
+        address wallet,
+        uint256 currentBlock,
+        uint256 baseRewardRate,
+        uint256 numberOfBlocksPerRewardUnit,
+        function(address,uint256) internal _mintReward
+    ) internal {
+        // simplified: reward computed externally or by main contract calling this helper
+        require(b.isBluechipCollection[collection], "BluechipLib: not blue");
+        WalletEnrollment storage we = b.bluechipWallets[collection][wallet];
+        require(we.enrolled || b.bluechipWallets[address(0)][wallet].enrolled, "BluechipLib: not enrolled");
+        // main contract must ensure wallet owns tokens; here we just emit or call mint via _mintReward
+        // For simplicity we will call _mintReward externally in the main contract after computing rewards.
+        emit BluechipCollectionSet(collection, true);
+    }
+}
