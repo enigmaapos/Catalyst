@@ -507,7 +507,7 @@ function setBluechipCollection(address collection, bool isBluechip)
     onlyRegistered(collection)
 {
     b.isBluechipCollection[collection] = isBluechip;
-    emit BluechipCollectionSet(collection, isBluechip);
+    emit BluechipCollectionSet(collection, isBluechip); // ✅ now works
 }
 
     function enrollBluechip() external whenNotPaused nonReentrant {
