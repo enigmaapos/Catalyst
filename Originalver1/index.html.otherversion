@@ -1,0 +1,480 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalyst Protocol — Universal NFT Staking & Governance</title>
+  <meta name="description" content="Stake NFTs, enroll blue-chips non‑custodially, and participate in governance. Powered by Catalyst (CATA)." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2300e5a8'/%3E%3Cpath d='M30 60 L50 20 L70 60 Z' fill='%23001814'/%3E%3C/svg%3E" />  <!-- Tailwind CSS (CDN) -->  <script src="https://cdn.tailwindcss.com"></script>  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#00e5a8',
+              dark: '#00b384'
+            },
+            ink: '#0b0f14',
+            soft: '#121923',
+            line: '#1e2a39'
+          },
+          boxShadow: {
+            soft: '0 10px 30px rgba(0,0,0,0.25)'
+          }
+        }
+      }
+    }
+  </script>  <!-- Ethers v6 (CDN) -->  <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>  <!-- Inter font -->  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">  <style>
+    :root { color-scheme: dark; }
+    html, body { background:#0b0f14; color:#e8f0fb; font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; }
+    .glass { background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+    .btn { @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 font-semibold transition active:scale-[.98]; }
+    .btn-primary { @apply bg-brand text-ink hover:bg-brand-dark; }
+    .btn-ghost { @apply bg-transparent border border-line hover:border-brand text-white; }
+    .field { @apply w-full rounded-xl bg-soft border border-line px-4 py-3 outline-none focus:border-brand; }
+    .tag { @apply inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 text-xs; }
+    .card { @apply glass rounded-3xl p-6 shadow-soft; }
+    .pill { @apply rounded-full bg-soft/60 border border-line px-4 py-1 text-sm; }
+    .link { @apply underline decoration-dotted underline-offset-4 hover:text-brand; }
+    .kbd { @apply px-2 py-1 rounded-md border border-line bg-soft text-xs; }
+  </style></head>
+<body>
+  <!-- ====== NAVBAR ====== -->
+  <header class="sticky top-0 z-50 border-b border-line/60 bg-ink/80 backdrop-blur">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+      <div class="flex items-center gap-3">
+        <div class="h-8 w-8 rounded-lg" style="background:conic-gradient(from 180deg at 50% 50%, #00e5a8 0deg, #5eead4 120deg, #60a5fa 240deg, #00e5a8 360deg);"></div>
+        <span class="text-lg font-bold tracking-tight">Catalyst Protocol</span>
+      </div><div class="hidden items-center gap-6 md:flex">
+    <a href="#features" class="hover:text-brand">Features</a>
+    <a href="#dapp" class="hover:text-brand">App</a>
+    <a href="#docs" class="hover:text-brand">Docs</a>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <button id="networkBadge" class="pill">Network: <span class="ml-2 font-semibold" id="networkName">—</span></button>
+    <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
+  </div>
+</nav>
+
+  </header>  <!-- ====== HERO ====== -->  <section class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-0 opacity-30" style="background: radial-gradient(800px 400px at 10% 10%, rgba(0,229,168,.25), transparent), radial-gradient(800px 400px at 90% 20%, rgba(96,165,250,.25), transparent);"></div>
+    <div class="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 md:grid-cols-2 md:py-24">
+      <div>
+        <div class="tag mb-5">NFT‑Neutral Utility • Deflationary Tokenomics</div>
+        <h1 class="mb-4 text-4xl font-extrabold leading-tight md:text-5xl">Stake any ERC‑721. Earn CATA. <span class="text-brand">Govern together.</span></h1>
+        <p class="mb-8 max-w-xl text-white/80">Catalyst is an upgradeable, guardian‑secured protocol. Stake NFTs custodially or enroll blue‑chips non‑custodially, harvest rewards, and participate in burn‑weighted governance.</p>
+        <div class="flex flex-wrap gap-3">
+          <a href="#dapp" class="btn btn-primary">Launch App</a>
+          <a href="#features" class="btn btn-ghost">Explore Features</a>
+        </div>
+      </div>
+      <div class="card relative">
+        <div class="mb-4 flex items-center justify-between">
+          <div class="text-sm text-white/70">Quick Stats (local)</div>
+          <div class="flex items-center gap-2 text-sm"><span class="kbd">⌘</span><span class="kbd">K</span><span class="text-white/60">Command Palette</span></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div class="rounded-2xl border border-line p-4">
+            <div class="text-xs text-white/60">Wallet</div>
+            <div id="walletShort" class="truncate text-lg font-semibold">—</div>
+          </div>
+          <div class="rounded-2xl border border-line p-4">
+            <div class="text-xs text-white/60">CATA Balance</div>
+            <div id="cataBal" class="text-lg font-semibold">—</div>
+          </div>
+          <div class="rounded-2xl border border-line p-4">
+            <div class="text-xs text-white/60">Connected Chain</div>
+            <div id="chainId" class="text-lg font-semibold">—</div>
+          </div>
+        </div>
+        <div class="mt-4 text-xs text-white/50">* Balances refresh after each transaction.</div>
+      </div>
+    </div>
+  </section>  <!-- ====== FEATURES ====== -->  <section id="features" class="border-y border-line/60 bg-[radial-gradient(700px_300px_at_20%_0%,rgba(0,229,168,.08),transparent),radial-gradient(600px_250px_at_80%_0%,rgba(96,165,250,.08),transparent)]">
+    <div class="mx-auto max-w-7xl px-4 py-16 md:py-24">
+      <h2 class="mb-2 text-3xl font-extrabold">Why Catalyst</h2>
+      <p class="mb-10 max-w-2xl text-white/70">Deflationary 90/9/1 tokenomics. Guardian‑backed recovery. Blue‑chip non‑custodial rewards. Verified & unverified collection support.</p>
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div class="card">
+          <div class="mb-2 text-sm text-white/60">Blue‑Chip (Non‑Custodial)</div>
+          <div class="text-lg font-semibold">Enroll once per wallet → harvest by holding.</div>
+          <p class="mt-2 text-white/70">Low‑risk rewards for high‑value assets. No NFT transfers required. Harvest from any flagged blue‑chip collection you hold.</p>
+        </div>
+        <div class="card">
+          <div class="mb-2 text-sm text-white/60">Verified/Unverified (Custodial)</div>
+          <div class="text-lg font-semibold">Stake, batch stake, harvest, and unstake.</div>
+          <p class="mt-2 text-white/70">Support for all ERC‑721s. Unverified collections pay extra to align incentives and can upgrade via governance.</p>
+        </div>
+        <div class="card">
+          <div class="mb-2 text-sm text-white/60">Guardian Recovery</div>
+          <div class="text-lg font-semibold">7‑guardian councils with 5‑of‑7 threshold.</div>
+          <p class="mt-2 text-white/70">Defense‑in‑depth with approvals, deadlines, and explicit events for monitoring.</p>
+        </div>
+        <div class="card">
+          <div class="mb-2 text-sm text-white/60">Governance</div>
+          <div class="text-lg font-semibold">Burn‑weighted, stake‑age‑aware proposals.</div>
+          <p class="mt-2 text-white/70">Collections earn voting rights by burning CATA within caps to avoid monopolies.</p>
+        </div>
+        <div class="card">
+          <div class="mb-2 text-sm text-white/60">Deflationary Fees</div>
+          <div class="text-lg font-semibold">Immutable 90% burn • 9% treasury • 1% deployer.</div>
+          <p class="mt-2 text-white/70">Applied to registration, harvest, unstake, and voluntary burns.</p>
+        </div>
+        <div class="card">
+          <div class="mb-2 text-sm text-white/60">Upgradeable & Pausable</div>
+          <div class="text-lg font-semibold">UUPS proxy + safe pause coverage.</div>
+          <p class="mt-2 text-white/70">Modern patterns with clear safety levers for incident response.</p>
+        </div>
+      </div>
+    </div>
+  </section>  <!-- ====== APP ====== -->  <section id="dapp" class="relative">
+    <div class="pointer-events-none absolute inset-0 opacity-20" style="background: radial-gradient(800px 400px at 20% 80%, rgba(94,234,212,.22), transparent), radial-gradient(800px 400px at 80% 60%, rgba(99,102,241,.18), transparent);"></div>
+    <div class="mx-auto max-w-7xl px-4 py-16 md:py-24">
+      <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 class="text-3xl font-extrabold">App</h2>
+          <p class="text-white/70">Connect, configure contract, and interact with the protocol.</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <input id="contractAddress" class="field w-[22rem]" placeholder="Catalyst contract address (proxy)" />
+          <button id="saveContractBtn" class="btn btn-ghost">Save</button>
+        </div>
+      </div><div class="grid gap-6 lg:grid-cols-3">
+    <!-- Wallet / Config column -->
+    <div class="card lg:col-span-1">
+      <h3 class="mb-3 text-xl font-semibold">Wallet</h3>
+      <div class="space-y-3 text-sm">
+        <div class="flex items-center justify-between"><span class="text-white/60">Address</span><span id="walletAddress" class="font-mono">—</span></div>
+        <div class="flex items-center justify-between"><span class="text-white/60">Chain ID</span><span id="walletChain" class="font-mono">—</span></div>
+        <div class="flex items-center justify-between"><span class="text-white/60">CATA Balance</span><span id="walletCata" class="font-mono">—</span></div>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button id="refreshBtn" class="btn btn-ghost">Refresh</button>
+        <button id="switchNetworkBtn" class="btn btn-ghost">Switch Network</button>
+      </div>
+      <hr class="my-6 border-line/70" />
+      <h3 class="mb-3 text-xl font-semibold">Contract</h3>
+      <div class="text-sm">
+        <div class="flex items-center justify-between"><span class="text-white/60">Address</span><span id="activeContract" class="font-mono">—</span></div>
+      </div>
+      <div class="mt-3 text-xs text-white/60">TIP: Paste the proxy address here. We store it locally so your team can easily switch between testnet and mainnet during rollout.</div>
+    </div>
+
+    <!-- Actions column -->
+    <div class="space-y-6 lg:col-span-2">
+      <div class="card">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-xl font-semibold">Blue‑Chip Rewards</h3>
+          <span class="tag">Non‑custodial</span>
+        </div>
+        <div class="grid gap-3 md:grid-cols-[1fr_auto]">
+          <button id="btnEnrollBluechip" class="btn btn-primary md:justify-self-start">Enroll Wallet</button>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+            <input id="bcCollection" class="field" placeholder="Blue‑chip collection address" />
+            <button id="btnHarvestBluechip" class="btn btn-ghost">Harvest</button>
+          </div>
+        </div>
+        <p class="mt-3 text-sm text-white/60">Enroll once per wallet. Then harvest any supported blue‑chip collection you hold by entering its contract address.</p>
+      </div>
+
+      <div class="card">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-xl font-semibold">Stake NFTs (Verified / Unverified)</h3>
+          <span class="tag">Custodial</span>
+        </div>
+        <div class="grid gap-3 md:grid-cols-2">
+          <input id="stakeCollection" class="field" placeholder="Collection address" />
+          <input id="stakeTokenIds" class="field" placeholder="Token IDs (comma‑separated)" />
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+          <label class="inline-flex items-center gap-2 text-sm text-white/80"><input id="stakePermanent" type="checkbox" class="h-4 w-4 accent-brand" /> Permanent</label>
+          <button id="btnBatchStake" class="btn btn-primary">Batch Stake</button>
+          <button id="btnHarvest" class="btn btn-ghost">Harvest (single)</button>
+          <button id="btnUnstake" class="btn btn-ghost">Unstake (single)</button>
+        </div>
+        <div class="mt-3 grid gap-3 md:grid-cols-2">
+          <input id="harvestTokenId" class="field" placeholder="Token ID for harvest/unstake" />
+          <div class="text-sm text-white/60">Use batch stake for multiple NFTs. Single harvest/unstake acts on one token ID.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="mb-3 flex items-center justify-between">
+          <h3 class="text-xl font-semibold">Activity</h3>
+          <button id="clearLog" class="btn btn-ghost">Clear</button>
+        </div>
+        <div id="log" class="max-h-64 overflow-auto rounded-xl border border-line/60 bg-soft/60 p-3 text-sm font-mono"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </section>  <!-- ====== DOCS / FAQ ====== -->  <section id="docs" class="border-t border-line/60">
+    <div class="mx-auto max-w-7xl px-4 py-16 md:py-24">
+      <h2 class="mb-6 text-3xl font-extrabold">Docs (Quick)</h2>
+      <div class="grid gap-6 md:grid-cols-2">
+        <div class="card">
+          <h3 class="mb-2 text-xl font-semibold">Security</h3>
+          <ul class="list-disc space-y-2 pl-6 text-white/80">
+            <li>Guardian councils (7 members each) approve sensitive recoveries (5‑of‑7).</li>
+            <li>Upgradeable via UUPS; pausable for incident response.</li>
+            <li>Events emitted for monitoring: enrollments, harvests, proposals, recoveries.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="mb-2 text-xl font-semibold">Tokenomics</h3>
+          <ul class="list-disc space-y-2 pl-6 text-white/80">
+            <li>Immutable fee split: 90% burn • 9% treasury • 1% deployer.</li>
+            <li>Deflationary pressure on harvests, unstakes, registration, and burns.</li>
+            <li>Top burner bonus & governance control over treasury usage.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>  <!-- ====== FOOTER ====== -->  <footer class="border-t border-line/60">
+    <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 py-10 md:flex-row">
+      <div class="text-white/60">© <span id="year"></span> Catalyst Protocol. All rights reserved.</div>
+      <div class="flex items-center gap-4 text-sm text-white/60">
+        <a href="#" class="link">Whitepaper</a>
+        <a href="#" class="link">Audit (coming soon)</a>
+        <a href="#" class="link">GitHub</a>
+      </div>
+    </div>
+  </footer>  <!-- ====== ABI (minimal needed for this UI) ====== -->  <script type="application/json" id="catalyst-abi">
+  [
+    {"type":"function","stateMutability":"nonpayable","name":"enrollBluechip","inputs":[],"outputs":[]},
+    {"type":"function","stateMutability":"nonpayable","name":"harvestBluechip","inputs":[{"name":"collection","type":"address"}],"outputs":[]},
+    {"type":"function","stateMutability":"nonpayable","name":"batchStake","inputs":[{"name":"collection","type":"address"},{"name":"tokenIds","type":"uint256[]"},{"name":"permanent","type":"bool"}],"outputs":[]},
+    {"type":"function","stateMutability":"nonpayable","name":"harvest","inputs":[{"name":"collection","type":"address"},{"name":"tokenId","type":"uint256"}],"outputs":[]},
+    {"type":"function","stateMutability":"nonpayable","name":"unstake","inputs":[{"name":"collection","type":"address"},{"name":"tokenId","type":"uint256"}],"outputs":[]},
+    {"type":"function","stateMutability":"view","name":"balanceOf","inputs":[{"name":"","type":"address"}],"outputs":[{"type":"uint256"}]},
+    {"type":"function","stateMutability":"view","name":"name","inputs":[],"outputs":[{"type":"string"}]},
+    {"type":"function","stateMutability":"view","name":"symbol","inputs":[],"outputs":[{"type":"string"}]}
+  ]
+  </script>  <!-- ====== APP LOGIC ====== -->  <script>
+    const logEl = document.getElementById('log');
+    const connectBtn = document.getElementById('connectBtn');
+    const networkBadge = document.getElementById('networkBadge');
+    const networkNameEl = document.getElementById('networkName');
+    const walletShort = document.getElementById('walletShort');
+    const chainIdEl = document.getElementById('chainId');
+    const cataBalEl = document.getElementById('cataBal');
+
+    const walletAddressEl = document.getElementById('walletAddress');
+    const walletChainEl = document.getElementById('walletChain');
+    const walletCataEl = document.getElementById('walletCata');
+
+    const contractInput = document.getElementById('contractAddress');
+    const activeContractEl = document.getElementById('activeContract');
+
+    const yearEl = document.getElementById('year');
+    yearEl.textContent = new Date().getFullYear();
+
+    const ABI = JSON.parse(document.getElementById('catalyst-abi').textContent);
+
+    let provider, signer, account, contract;
+
+    const formatAddr = (addr) => addr ? `${addr.slice(0,6)}…${addr.slice(-4)}` : '—';
+
+    function log(msg, type='info') {
+      const time = new Date().toLocaleTimeString();
+      const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-emerald-400' : 'text-white/80';
+      const div = document.createElement('div');
+      div.className = `${color}`;
+      div.textContent = `[${time}] ${msg}`;
+      logEl.prepend(div);
+    }
+
+    function saveContract(addr) {
+      localStorage.setItem('catalyst:contract', addr);
+      activeContractEl.textContent = addr || '—';
+    }
+
+    function loadContract() {
+      const addr = localStorage.getItem('catalyst:contract') || '';
+      contractInput.value = addr;
+      activeContractEl.textContent = addr || '—';
+      if (addr && provider) {
+        contract = new ethers.Contract(addr, ABI, signer || provider);
+      }
+    }
+
+    async function ensureProvider() {
+      if (!window.ethereum) {
+        alert('No injected wallet found. Please install MetaMask or a compatible wallet.');
+        throw new Error('No wallet');
+      }
+      provider = new ethers.BrowserProvider(window.ethereum, 'any');
+      return provider;
+    }
+
+    async function connect() {
+      try {
+        await ensureProvider();
+        const accounts = await provider.send('eth_requestAccounts', []);
+        account = accounts[0];
+        signer = await provider.getSigner();
+        const net = await provider.getNetwork();
+        networkNameEl.textContent = net.name || `chain ${net.chainId}`;
+        walletShort.textContent = formatAddr(account);
+        walletAddressEl.textContent = account;
+        walletChainEl.textContent = String(net.chainId);
+        chainIdEl.textContent = String(net.chainId);
+        connectBtn.textContent = 'Connected';
+        connectBtn.disabled = true;
+
+        loadContract();
+        await refreshBalances();
+        log('Wallet connected', 'success');
+      } catch (err) {
+        console.error(err); log(err.message || String(err), 'error');
+      }
+    }
+
+    async function refreshBalances() {
+      try {
+        if (!account) return;
+        if (!contract) return;
+        const bal = await contract.balanceOf(account);
+        const pretty = ethers.formatUnits(bal, 18);
+        cataBalEl.textContent = pretty;
+        walletCataEl.textContent = pretty;
+      } catch (err) {
+        // balanceOf may revert until proper address is set; ignore softly
+        walletCataEl.textContent = '—';
+      }
+    }
+
+    // UI wiring
+    document.getElementById('saveContractBtn').addEventListener('click', () => {
+      const addr = contractInput.value.trim();
+      if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) { alert('Invalid contract address'); return; }
+      saveContract(addr);
+      if (provider) contract = new ethers.Contract(addr, ABI, signer || provider);
+      log('Contract address saved');
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', refreshBalances);
+
+    document.getElementById('switchNetworkBtn').addEventListener('click', async () => {
+      if (!window.ethereum) return;
+      try {
+        // Example: switch to Base mainnet (8453). Change as needed.
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+        log('Network switch requested');
+      } catch (err) {
+        if (err.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x2105',
+                chainName: 'Base',
+                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                rpcUrls: ['https://mainnet.base.org']
+              }]
+            });
+          } catch (addErr) { log(addErr.message || String(addErr), 'error'); }
+        } else { log(err.message || String(err), 'error'); }
+      }
+    });
+
+    connectBtn.addEventListener('click', connect);
+
+    // Blue‑chip actions
+    document.getElementById('btnEnrollBluechip').addEventListener('click', async () => {
+      try {
+        if (!contract) throw new Error('Set contract address first');
+        const tx = await contract.connect(signer).enrollBluechip();
+        log(`Enroll tx submitted: ${tx.hash}`);
+        await tx.wait();
+        log('Wallet enrolled for blue‑chip rewards', 'success');
+        await refreshBalances();
+      } catch (err) { log(err.shortMessage || err.message || String(err), 'error'); }
+    });
+
+    document.getElementById('btnHarvestBluechip').addEventListener('click', async () => {
+      try {
+        const collection = document.getElementById('bcCollection').value.trim();
+        if (!/^0x[a-fA-F0-9]{40}$/.test(collection)) throw new Error('Invalid collection address');
+        if (!contract) throw new Error('Set contract address first');
+        const tx = await contract.connect(signer).harvestBluechip(collection);
+        log(`Blue‑chip harvest tx: ${tx.hash}`);
+        await tx.wait();
+        log('Blue‑chip rewards harvested', 'success');
+        await refreshBalances();
+      } catch (err) { log(err.shortMessage || err.message || String(err), 'error'); }
+    });
+
+    // Custodial staking actions
+    document.getElementById('btnBatchStake').addEventListener('click', async () => {
+      try {
+        const collection = document.getElementById('stakeCollection').value.trim();
+        const tokensRaw = document.getElementById('stakeTokenIds').value.trim();
+        const permanent = document.getElementById('stakePermanent').checked;
+        if (!/^0x[a-fA-F0-9]{40}$/.test(collection)) throw new Error('Invalid collection address');
+        const tokenIds = tokensRaw.split(',').map(s => s.trim()).filter(Boolean).map(s => BigInt(s));
+        if (!tokenIds.length) throw new Error('Provide at least one token ID');
+        if (!contract) throw new Error('Set contract address first');
+        const tx = await contract.connect(signer).batchStake(collection, tokenIds, permanent);
+        log(`Batch stake tx: ${tx.hash}`);
+        await tx.wait();
+        log('Batch stake confirmed', 'success');
+      } catch (err) { log(err.shortMessage || err.message || String(err), 'error'); }
+    });
+
+    document.getElementById('btnHarvest').addEventListener('click', async () => {
+      try {
+        const collection = document.getElementById('stakeCollection').value.trim();
+        const tokenId = document.getElementById('harvestTokenId').value.trim();
+        if (!/^0x[a-fA-F0-9]{40}$/.test(collection)) throw new Error('Invalid collection address');
+        if (!tokenId) throw new Error('Provide a token ID');
+        if (!contract) throw new Error('Set contract address first');
+        const tx = await contract.connect(signer).harvest(collection, BigInt(tokenId));
+        log(`Harvest tx: ${tx.hash}`);
+        await tx.wait();
+        log('Harvest confirmed', 'success');
+        await refreshBalances();
+      } catch (err) { log(err.shortMessage || err.message || String(err), 'error'); }
+    });
+
+    document.getElementById('btnUnstake').addEventListener('click', async () => {
+      try {
+        const collection = document.getElementById('stakeCollection').value.trim();
+        const tokenId = document.getElementById('harvestTokenId').value.trim();
+        if (!/^0x[a-fA-F0-9]{40}$/.test(collection)) throw new Error('Invalid collection address');
+        if (!tokenId) throw new Error('Provide a token ID');
+        if (!contract) throw new Error('Set contract address first');
+        if (!contract.unstake) throw new Error('unstake(address,uint256) not available in ABI. Please update ABI.');
+        const tx = await contract.connect(signer).unstake(collection, BigInt(tokenId));
+        log(`Unstake tx: ${tx.hash}`);
+        await tx.wait();
+        log('Unstake confirmed', 'success');
+      } catch (err) { log(err.shortMessage || err.message || String(err), 'error'); }
+    });
+
+    // Activity
+    document.getElementById('clearLog').addEventListener('click', () => { logEl.innerHTML = ''; });
+
+    // Auto-init
+    (async () => {
+      loadContract();
+      if (window.ethereum) {
+        window.ethereum.on('accountsChanged', () => window.location.reload());
+        window.ethereum.on('chainChanged', () => window.location.reload());
+        const prov = await ensureProvider().catch(()=>null);
+        if (prov) {
+          const net = await prov.getNetwork();
+          networkNameEl.textContent = net.name || `chain ${net.chainId}`;
+          chainIdEl.textContent = String(net.chainId);
+        }
+      } else {
+        networkNameEl.textContent = 'No wallet';
+      }
+    })();
+  </script></body>
+</html>
