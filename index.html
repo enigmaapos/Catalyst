@@ -480,7 +480,7 @@
 
     async function fetchABI() {
       if (abi) return abi;
-      const res = await fetch('/abi/CatalystNFTStakingUpgradeable.json', { cache:'no-store' });
+      const res = await fetch('../abi/CatalystNFTStakingUpgradeable.json', { cache:'no-store' });
       if(!res.ok) throw new Error('Failed to fetch ABI');
       const json = await res.json();
       abi = Array.isArray(json) ? json : (json.abi || json);
