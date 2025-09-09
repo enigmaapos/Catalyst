@@ -125,6 +125,7 @@ contract CatalystNFTStakingUpgradeable is
     mapping(address => bool) public adminHasApproved;
 
     // -------- Events (kept) --------
+	event BluechipCollectionSet(address indexed collection, bool isBluechip);
     event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 paid);
     event NFTStaked(address indexed owner, address indexed collection, uint256 indexed tokenId, bool permanent);
     event NFTUnstaked(address indexed owner, address indexed collection, uint256 indexed tokenId);
