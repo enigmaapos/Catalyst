@@ -9,9 +9,9 @@ pragma solidity ^0.8.20;
 library GuardianLib {
     /* ========= Constants ========= */
     uint8 public constant DEPLOYER_GCOUNT    = 7;
-    uint8 public constant constant DEPLOYER_THRESHOLD = 5;
+    uint8 public constant DEPLOYER_THRESHOLD = 5;
     uint8 public constant ADMIN_GCOUNT       = 7;
-    uint8 public constant constant ADMIN_THRESHOLD    = 5;
+    uint8 public constant ADMIN_THRESHOLD    = 5;
     uint256 public constant RECOVERY_WINDOW   = 3 days;
 
     bytes32 public constant COUNCIL_DEPLOYER = keccak256("DEPLOYER");
@@ -63,7 +63,7 @@ library GuardianLib {
     /* ========= Functions (all external) ========= */
     function init(Storage storage gu, address deployer) external {
         if (gu.deployerGuardianCouncil != address(0)) revert AlreadyExists();
-        
+
         // Initialize arrays to correct length by pushing placeholder addresses
         for (uint8 i = 0; i < DEPLOYER_GCOUNT; ++i) {
             gu.deployerGuardians.push();
@@ -77,23 +77,23 @@ library GuardianLib {
 
     function setDeployerGuardian(Storage storage gu, uint8 idx, address guardian) external {
         if (idx >= DEPLOYER_GCOUNT) revert BadParam();
-        
+
         // Update mappings before overwriting the old guardian
         gu.isDeployerGuardian[gu.deployerGuardians[idx]] = false;
         gu.deployerGuardians[idx] = guardian;
         gu.isDeployerGuardian[guardian] = true;
-        
+
         emit GuardianSet(COUNCIL_DEPLOYER, idx, guardian);
     }
 
     function setAdminGuardian(Storage storage gu, uint8 idx, address guardian) external {
         if (idx >= ADMIN_GCOUNT) revert BadParam();
-        
+
         // Update mappings before overwriting the old guardian
         gu.isAdminGuardian[gu.adminGuardians[idx]] = false;
         gu.adminGuardians[idx] = guardian;
         gu.isAdminGuardian[guardian] = true;
-        
+
         emit GuardianSet(COUNCIL_ADMIN, idx, guardian);
     }
 
@@ -195,21 +195,21 @@ library GuardianLib {
         newAdmin = r.proposed;
         emit AdminRecoveryExecuted(newAdmin);
     }
-    
+
     // The `getStorage` function was removed. Here are replacement functions:
-    
+
     function getDeployerGuardians(Storage storage gu) external view returns (address[] memory) {
         return gu.deployerGuardians;
     }
-    
+
     function getAdminGuardians(Storage storage gu) external view returns (address[] memory) {
         return gu.adminGuardians;
     }
-    
+
     function getDeployerRecovery(Storage storage gu) external view returns (RecoveryRequest memory) {
         return gu.deployerRecovery;
     }
-    
+
     function getAdminRecovery(Storage storage gu) external view returns (RecoveryRequest memory) {
         return gu.adminRecovery;
     }
