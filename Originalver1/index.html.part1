@@ -1038,3 +1038,185 @@
         log("Harvest confirmed ✅", "ok");
       }catch(e){ log(e.message||e, "err"); }
     };
+
+// --- Stake: Unstake ---
+    $("btnUnstake").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const col = parseAddress($("colStake").value);
+        const id = parseUint($("tidStake").value);
+        const tx = await WRITE_CONTRACT.unstake(col, id);
+        log(`Unstake sent: ${tx.hash}`);
+        await tx.wait();
+        log("Unstake confirmed ✅", "ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    // --- Stake: View Pending Rewards ---
+    $("btnViewPending").onclick = async ()=>{
+      try{
+        requireWallet();
+        const col = parseAddress($("colStake").value);
+        const id = parseUint($("tidStake").value);
+        const pending = await READ_CONTRACT.pendingRewardOf(col, id);
+        $("pendingView").textContent = ethers.formatUnits(pending, 18) + " CATA";
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * BLUE-CHIP (NON-CUSTODIAL)
+     * ============================ */
+    $("btnEnrollBlue").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.enrollBluechip();
+        log(`Blue-chip enrollment sent: ${tx.hash}`);
+        await tx.wait();
+        log("Enrollment confirmed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnHarvestBlue").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const col = parseAddress($("colBlue").value);
+        const tx = await WRITE_CONTRACT.harvestBluechip(col);
+        log(`Blue-chip harvest sent: ${tx.hash}`);
+        await tx.wait();
+        log("Blue-chip harvest confirmed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * GOVERNANCE
+     * ============================ */
+    $("btnPropose").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const target = parseAddress($("govTarget").value);
+        const data = $("govData").value.trim();
+        const tx = await WRITE_CONTRACT.propose(target, data);
+        log(`Proposal submitted: ${tx.hash}`);
+        await tx.wait();
+        log("Proposal confirmed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnVote").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const pid = parseUint($("votePid").value);
+        const support = $("voteSupport").value === "true";
+        const tx = await WRITE_CONTRACT.vote(pid, support);
+        log(`Vote sent: ${tx.hash}`);
+        await tx.wait();
+        log("Vote confirmed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnExecute").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const pid = parseUint($("execPid").value);
+        const tx = await WRITE_CONTRACT.execute(pid);
+        log(`Proposal execution sent: ${tx.hash}`);
+        await tx.wait();
+        log("Proposal executed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * GUARDIANS
+     * ============================ */
+    $("btnPropRecover").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const newImpl = parseAddress($("recoverImpl").value);
+        const tx = await WRITE_CONTRACT.proposeRecovery(newImpl);
+        log(`Recovery proposal sent: ${tx.hash}`);
+        await tx.wait();
+        log("Recovery proposed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnExecRecover").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.executeRecovery();
+        log(`Recovery execution sent: ${tx.hash}`);
+        await tx.wait();
+        log("Recovery executed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * ADMIN
+     * ============================ */
+    $("btnPause").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.pause();
+        log(`Pause sent: ${tx.hash}`);
+        await tx.wait();
+        log("Contract paused ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnUnpause").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.unpause();
+        log(`Unpause sent: ${tx.hash}`);
+        await tx.wait();
+        log("Contract unpaused ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnWithdraw").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const to = parseAddress($("withdrawTo").value);
+        const amt = parseUint($("withdrawAmt").value);
+        const tx = await WRITE_CONTRACT.withdrawTreasury(to, amt);
+        log(`Treasury withdraw sent: ${tx.hash}`);
+        await tx.wait();
+        log("Withdraw confirmed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * READ-ONLY VIEWS
+     * ============================ */
+    $("btnStats").onclick = async ()=>{
+      try{
+        const totalStaked = await READ_CONTRACT.totalStaked();
+        const totalSupply = await READ_CONTRACT.totalSupply();
+        $("statsView").textContent = 
+          `Total Staked: ${totalStaked}\nTotal Supply: ${ethers.formatUnits(totalSupply,18)} CATA`;
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnCollections").onclick = async ()=>{
+      try{
+        const count = await READ_CONTRACT.collectionCount();
+        $("collectionsView").textContent = `Registered Collections: ${count}`;
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnGuardians").onclick = async ()=>{
+      try{
+        const g0 = await READ_CONTRACT.adminGuardians(0);
+        $("guardiansView").textContent = `Guardian[0]: ${g0}`;
+      }catch(e){ log(e.message||e,"err"); }
+    };
