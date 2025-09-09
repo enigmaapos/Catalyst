@@ -5,55 +5,55 @@ pragma solidity ^0.8.20;
 library BluechipLib {
     struct WalletEnrollment {
         bool enrolled;
-        uint256 enrolledBlock;
+        uint256 lastHarvestBlock;
     }
 
-    struct CollectionBlue {
-        mapping(address => WalletEnrollment) bluechipWallets;
-        mapping(address => bool) isBluechipCollection;
+    struct Storage {
+        // mapping: collection => (wallet => enrollment info)
+        mapping(address => mapping(address => WalletEnrollment)) bluechipWallets;
+        mapping(address => bool) isBluechipCollection; 
         uint256 bluechipWalletFee;
     }
 
-    event WalletEnrolled(address indexed wallet, uint256 blockNumber, uint256 feePaid);
-    event BluechipCollectionSet(address indexed collection, bool isBluechip);
-
     function enroll(
-        CollectionBlue storage b,
-        address /*collection*/, // kept for compatibility (unused for global per-wallet)
+        Storage storage b,
+        address collection, // can be address(0) for global
         address wallet,
-        uint256 currentBlock,
+        uint256 blockNum,
         uint256 fee,
-        function(address,uint256) internal _splitFeeFromSender
+        function(address,uint256) internal feeHandler
     ) internal {
-        require(wallet != address(0), "BluechipLib: zero wallet");
-        WalletEnrollment storage we = b.bluechipWallets[wallet]; // canonical global enrollment slot
-        require(!we.enrolled, "BluechipLib: already enrolled");
+        WalletEnrollment storage we = b.bluechipWallets[collection][wallet];
+        require(!we.enrolled, "Already enrolled");
 
-        // collect fee (caller must have minted / transferred CATA to payer)
         if (fee > 0) {
-            _splitFeeFromSender(wallet, fee);
+            feeHandler(wallet, fee);
         }
-        we.enrolled = true;
-        we.enrolledBlock = currentBlock;
 
-        emit WalletEnrolled(wallet, currentBlock, fee);
+        we.enrolled = true;
+        we.lastHarvestBlock = blockNum;
     }
 
     function harvest(
-        CollectionBlue storage b,
+        Storage storage b,
         address collection,
         address wallet,
-        uint256 currentBlock,
+        uint256 blockNum,
         uint256 baseRewardRate,
-        uint256 numberOfBlocksPerRewardUnit,
-        function(address,uint256) internal _mintReward
+        uint256 blocksPerRewardUnit,
+        function(address,uint256) internal mintReward
     ) internal {
-        // simplified: reward computed externally or by main contract calling this helper
-        require(b.isBluechipCollection[collection], "BluechipLib: not blue");
         WalletEnrollment storage we = b.bluechipWallets[collection][wallet];
-        require(we.enrolled || b.bluechipWallets[address(0)][wallet].enrolled, "BluechipLib: not enrolled");
-        // main contract must ensure wallet owns tokens; here we just emit or call mint via _mintReward
-        // For simplicity we will call _mintReward externally in the main contract after computing rewards.
-        emit BluechipCollectionSet(collection, true);
+        require(we.enrolled, "Not enrolled");
+
+        // Example reward logic
+        uint256 blocksElapsed = blockNum - we.lastHarvestBlock;
+        uint256 reward = (blocksElapsed * baseRewardRate) / blocksPerRewardUnit;
+
+        if (reward > 0) {
+            mintReward(wallet, reward);
+        }
+
+        we.lastHarvestBlock = blockNum;
     }
 }
