@@ -258,6 +258,12 @@ contract CatalystNFTStakingUpgradeable is
         _;
     }
 
+/// @dev ensures provided collection was registered previously
+modifier onlyRegistered(address collection) {
+    if (registeredIndex[collection] == 0) revert NotRegistered();
+    _;
+}
+
     // -------- Guardians: admin setters (only DEFAULT_ADMIN_ROLE allowed) --------
     function setDeployerGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (idx >= DEPLOYER_GCOUNT) revert BadParam();
@@ -494,11 +500,15 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     // -------- Blue-chip (non-custodial) --------
-    function setBluechipCollection(address collection, bool isBluechip) external onlyContractAdminRole whenNotPaused {
-        if (collection == address(0)) revert ZeroAddress();
-        b.isBluechipCollection[collection] = isBluechip;
-        emit BluechipLib.BluechipCollectionSet(collection, isBluechip);
-    }
+function setBluechipCollection(address collection, bool isBluechip)
+    external
+    onlyRole(CONTRACT_ADMIN_ROLE)
+    whenNotPaused
+    onlyRegistered(collection)
+{
+    b.isBluechipCollection[collection] = isBluechip;
+    emit BluechipCollectionSet(collection, isBluechip);
+}
 
     function enrollBluechip() external whenNotPaused nonReentrant {
         address wallet = _msgSender();
