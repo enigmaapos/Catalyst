@@ -26,7 +26,7 @@ contract CatalystNFTStakingUpgradeable is
 {
     using StakingLib for StakingLib.Storage;
     using GovernanceLib for GovernanceLib.Storage;
-    using BluechipLib for BluechipLib.CollectionBlue;
+    using BluechipLib for BluechipLib.Storage;
 
     // -------- Errors --------
     error ZeroAddress();
@@ -74,7 +74,7 @@ contract CatalystNFTStakingUpgradeable is
     // -------- Library storage --------
     StakingLib.Storage internal s;
     GovernanceLib.Storage internal g;
-    BluechipLib.CollectionBlue internal b;
+    BluechipLib.Storage internal b;
 
     // -------- Protocol params --------
     uint256 public numberOfBlocksPerRewardUnit;
