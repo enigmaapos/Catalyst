@@ -226,7 +226,7 @@ contract CatalystNFTStakingUpgradeable is
         b.bluechipWalletFee = cfg.bluechipWalletFee;
 
         // optional genesis mint if desired by deployer (kept minimal)
-        // _mint(cfg.owner, 25_185_000 * 1e18);
+         _mint(cfg.owner, 100_000_000 * 1e18);
     }
 
     // -------- Guardians: admin setters --------
