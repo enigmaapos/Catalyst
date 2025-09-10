@@ -1199,6 +1199,113 @@
   // Default tab
   selectTab("overview");
 </script>
+<script>
+  // ================== GLOBAL VARS ==================
+  let provider, signer, walletAddress, CONTRACT, CONTRACT_ADDRESS, ABI;
 
+  // ================== LOG HELPER ==================
+  function log(msg) {
+    const logDiv = document.getElementById("log");
+    if (logDiv) {
+      logDiv.innerHTML += msg + "<br/>";
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    console.log(msg);
+  }
+
+  // ================== TAB SWITCH ==================
+  function selectTab(tab) {
+    document.querySelectorAll("[id^='tab-']").forEach(el => el.classList.add("hidden"));
+    const t = document.getElementById("tab-" + tab);
+    if (t) t.classList.remove("hidden");
+    document.querySelectorAll(".tabbtn").forEach(btn => btn.classList.remove("tab-active"));
+    const activeBtn = document.querySelector(`.tabbtn[data-tab="${tab}"]`);
+    if (activeBtn) activeBtn.classList.add("tab-active");
+  }
+  document.querySelectorAll(".tabbtn").forEach(btn => {
+    btn.addEventListener("click", () => selectTab(btn.dataset.tab));
+  });
+
+  // ================== INIT ABI + PROVIDER ==================
+  async function init() {
+    try {
+      // Load ABI file
+      const res = await fetch("abi/CatalystNFTStakingUpgradeable.json");
+      ABI = await res.json();
+      log("✅ ABI loaded with " + ABI.length + " entries");
+
+      // Default provider (Metamask if available, else ethers default)
+      if (window.ethereum) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        log("🌐 Default provider: window.ethereum");
+      } else {
+        provider = ethers.getDefaultProvider();
+        log("🌐 Using default ethers provider");
+      }
+    } catch (err) {
+      log("❌ ABI load failed: " + err.message);
+    }
+  }
+
+  // ================== DOM EVENTS ==================
+  window.addEventListener("DOMContentLoaded", () => {
+    const rpcInput = document.getElementById("rpcUrl");
+    const rpcInputMobile = document.getElementById("rpcUrl_m");
+    const contractInput = document.getElementById("contractAddress");
+    const contractInputMobile = document.getElementById("contractAddress_m");
+    const walletBtn = document.getElementById("walletBtn");
+
+    // RPC save
+    document.getElementById("saveRpc")?.addEventListener("click", () => {
+      const rpcUrl = rpcInput.value || rpcInputMobile?.value;
+      if (!rpcUrl) return log("⚠️ Enter a valid RPC first.");
+      provider = new ethers.JsonRpcProvider(rpcUrl);
+      log("✅ Using custom RPC: " + rpcUrl);
+    });
+    document.getElementById("saveRpc_m")?.addEventListener("click", () => {
+      const rpcUrl = rpcInputMobile.value;
+      if (!rpcUrl) return log("⚠️ Enter a valid RPC first.");
+      provider = new ethers.JsonRpcProvider(rpcUrl);
+      log("✅ Using custom RPC (mobile): " + rpcUrl);
+    });
+
+    // Contract save
+    document.getElementById("saveContractBtn")?.addEventListener("click", () => {
+      const addr = contractInput.value || contractInputMobile?.value;
+      if (!ethers.isAddress(addr)) return log("⚠️ Invalid contract address");
+      CONTRACT_ADDRESS = addr;
+      CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer || provider);
+      log("✅ Saved contract address: " + addr);
+    });
+    document.getElementById("saveContractBtn_m")?.addEventListener("click", () => {
+      const addr = contractInputMobile.value;
+      if (!ethers.isAddress(addr)) return log("⚠️ Invalid contract address");
+      CONTRACT_ADDRESS = addr;
+      CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer || provider);
+      log("✅ Saved contract address (mobile): " + addr);
+    });
+
+    // Wallet connect
+    walletBtn?.addEventListener("click", async () => {
+      try {
+        if (!window.ethereum) return log("❌ No wallet found");
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        walletAddress = await signer.getAddress();
+        document.getElementById("acct").textContent = walletAddress;
+        CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+        log("🔑 Wallet connected: " + walletAddress);
+      } catch (err) {
+        log("❌ Wallet connect failed: " + err.message);
+      }
+    });
+
+    // Load year in footer
+    document.getElementById("year").textContent = new Date().getFullYear();
+  });
+
+  // ================== RUN INIT ==================
+  init();
+</script>
   </body>
 </html>
