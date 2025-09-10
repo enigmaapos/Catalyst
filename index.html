@@ -1175,5 +1175,29 @@
 })();
 </script>
 <!-- End Chunk 3 -->
+ <script>
+  // ============ TAB HANDLER ============
+  function selectTab(tab) {
+    // Hide all tabs
+    document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+    // Remove active class from all buttons
+    document.querySelectorAll('.tabbtn').forEach(btn => btn.classList.remove('tab-active'));
+    // Show selected tab
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+    // Highlight active button
+    document.querySelectorAll(`[data-tab="${tab}"]`).forEach(btn => btn.classList.add('tab-active'));
+  }
+
+  // Attach handlers to all tab buttons
+  document.querySelectorAll('.tabbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-tab');
+      selectTab(tab);
+    });
+  });
+
+  // Default tab
+  selectTab("overview");
+</script>
   </body>
 </html>
