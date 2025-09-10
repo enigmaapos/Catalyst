@@ -61,6 +61,9 @@ contract CatalystNFTStakingUpgradeable is
     uint256 public constant MAX_HARVEST_BATCH = 50;
     uint256 public constant MAX_STAKE_PER_COLLECTION = 20_000;
     uint256 public constant WEIGHT_SCALE = 1e18;
+    // Guardian Councils constants must be duplicated for array length checks
+    uint8 public constant DEPLOYER_GCOUNT = 7;
+    uint8 public constant ADMIN_GCOUNT = 7;
     // -------- Library storage --------
     StakingLib.Storage internal s;
     // custodial staking only
@@ -136,8 +139,8 @@ contract CatalystNFTStakingUpgradeable is
         uint256 maxBaseRewardRate;
         // safety clamp
         // guardians
-        address[GuardianLib.DEPLOYER_GCOUNT] deployerGuardians;
-        address[GuardianLib.ADMIN_GCOUNT] adminGuardians;
+        address[DEPLOYER_GCOUNT] deployerGuardians;
+        address[ADMIN_GCOUNT] adminGuardians;
         // bluechip
         uint256 bluechipWalletFee;
         // per-wallet (Option A)
