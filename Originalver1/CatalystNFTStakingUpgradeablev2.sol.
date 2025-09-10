@@ -54,8 +54,8 @@ contract CatalystNFTStakingUpgradeable is
     uint256 public constant BP_DENOM = 10000;
     // caps (must mirror lib)
     uint256 public constant GLOBAL_CAP = 1_000_000_000;
-    uint256 public constant TERM_CAP   = 750_000_000;
-    uint256 public constant PERM_CAP   = 250_000_000;
+    uint256 public constant TERM_CAP = 750_000_000;
+    uint256 public constant PERM_CAP = 250_000_000;
     uint256 public constant MAX_HARVEST_BATCH = 50;
     uint256 public constant MAX_STAKE_PER_COLLECTION = 20_000;
     uint256 public constant WEIGHT_SCALE = 1e18;
@@ -405,11 +405,6 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     function harvest(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
-        // Corrected Guard: Check if the user is the owner of the staked NFT
-        if (s.stakeLog[collection][_msgSender()][tokenId].staker != _msgSender()) {
-            revert Unauthorized();
-        }
-
         uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
         if (reward == 0) return;
 
@@ -428,11 +423,6 @@ contract CatalystNFTStakingUpgradeable is
         StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
         if (!info.currentlyStaked) revert NotStaked();
         if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
-
-        // ADDED GUARD: Verify the caller is the owner of the staked NFT
-        if (info.owner != _msgSender()) {
-            revert Unauthorized();
-        }
         
         // harvest pending first
         uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
@@ -642,8 +632,7 @@ contract CatalystNFTStakingUpgradeable is
         totalPermanent = s.totalStakedPermanent;
         remainingGlobal = GLOBAL_CAP > totalAll ? GLOBAL_CAP - totalAll : 0;
         remainingTerm = TERM_CAP > totalTerm ? TERM_CAP - totalTerm : 0;
-        remainingPermanent = PERM_CAP > totalPermanent ?
-        PERM_CAP - totalPermanent : 0;
+        remainingPermanent = PERM_CAP > totalPermanent ? PERM_CAP - totalPermanent : 0;
     }
 
     function pendingRewardsView(address collection, address owner, uint256 tokenId)
