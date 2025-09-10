@@ -2,162 +2,273 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Catalyst Protocol DApp</title>
+  <title>Catalyst DApp</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.2/dist/ethers.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.umd.min.js"></script>
   <style>
     .tab { display: none; }
-    .tab.active { display: block; }
+    .active-tab { display: block; }
+    .btn { background:#2563eb; color:white; padding:6px 12px; border-radius:8px; }
+    .mono { font-family: monospace; }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-900">
-  <div class="container mx-auto p-6">
-    <h1 class="text-3xl font-bold mb-6">🌐 Catalyst Protocol DApp</h1>
-    
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+  <div class="max-w-5xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6 text-center">Catalyst Staking DApp</h1>
+
     <!-- Navigation Tabs -->
-    <div class="flex space-x-4 mb-6">
-      <button class="tab-btn bg-blue-500 text-white px-4 py-2 rounded" data-tab="dashboard">Dashboard</button>
-      <button class="tab-btn bg-blue-500 text-white px-4 py-2 rounded" data-tab="staking">Staking</button>
-      <button class="tab-btn bg-blue-500 text-white px-4 py-2 rounded" data-tab="bluechip">Blue-chip</button>
-      <button class="tab-btn bg-blue-500 text-white px-4 py-2 rounded" data-tab="governance">Governance</button>
-      <button class="tab-btn bg-blue-500 text-white px-4 py-2 rounded" data-tab="guardians">Guardians</button>
-      <button class="tab-btn bg-blue-500 text-white px-4 py-2 rounded" data-tab="admin">Admin</button>
+    <div class="flex gap-3 mb-6">
+      <button class="btn" onclick="switchTab('staking')">Staking</button>
+      <button class="btn" onclick="switchTab('governance')">Governance</button>
+      <button class="btn" onclick="switchTab('bluechip')">Bluechip</button>
+      <button class="btn" onclick="switchTab('dashboard')">Dashboard</button>
     </div>
 
-    <!-- Tabs -->
-    <div id="dashboard" class="tab active">
-      <h2 class="text-2xl font-semibold mb-4">📊 Dashboard</h2>
-      <button id="btnStats" class="bg-green-500 px-4 py-2 rounded text-white">View Staking Stats</button>
-      <pre id="statsView" class="bg-gray-800 text-white p-3 mt-3 rounded"></pre>
-
-      <button id="btnCollections" class="bg-green-500 px-4 py-2 rounded text-white mt-4">View Collections</button>
-      <pre id="collectionsView" class="bg-gray-800 text-white p-3 mt-3 rounded"></pre>
-
-      <button id="btnGuardians" class="bg-green-500 px-4 py-2 rounded text-white mt-4">View Guardians</button>
-      <pre id="guardiansView" class="bg-gray-800 text-white p-3 mt-3 rounded"></pre>
+    <!-- =============== STAKING TAB =============== -->
+    <div class="tab active-tab" id="tab-staking">
+      <h3 class="text-xl font-semibold mb-2">NFT Staking</h3>
+      <input id="stakeCollection" placeholder="Collection Address" class="p-2 rounded text-black w-full mb-2">
+      <input id="stakeTokenId" placeholder="Token ID" class="p-2 rounded text-black w-full mb-2">
+      <button id="btnStake" class="btn">Stake NFT</button>
+      <button id="btnUnstake" class="btn">Unstake NFT</button>
+      <button id="btnHarvest" class="btn">Harvest Rewards</button>
+      <pre id="stakeLog" class="mono mt-3 text-green-400">—</pre>
     </div>
 
-    <div id="staking" class="tab">
-      <h2 class="text-2xl font-semibold mb-4">🔒 NFT Staking</h2>
-      <input id="colStake" placeholder="Collection address" class="border p-2 w-full mb-2"/>
-      <input id="tidStake" placeholder="Token ID" class="border p-2 w-full mb-2"/>
-      <label><input type="checkbox" id="permanentStake"/> Permanent</label>
-      <button id="btnStake" class="bg-blue-600 px-4 py-2 rounded text-white mt-2">Stake NFT</button>
-
-      <h3 class="mt-6 text-xl font-semibold">Batch Stake</h3>
-      <input id="colBatchStake" placeholder="Collection address" class="border p-2 w-full mb-2"/>
-      <input id="tidsBatchStake" placeholder="Token IDs (comma separated)" class="border p-2 w-full mb-2"/>
-      <label><input type="checkbox" id="permanentBatch"/> Permanent</label>
-      <button id="btnBatchStake" class="bg-blue-600 px-4 py-2 rounded text-white mt-2">Batch Stake</button>
-
-      <h3 class="mt-6 text-xl font-semibold">Harvest & Unstake</h3>
-      <input id="colHarvest" placeholder="Collection address" class="border p-2 w-full mb-2"/>
-      <input id="tidHarvest" placeholder="Token ID" class="border p-2 w-full mb-2"/>
-      <button id="btnHarvestOne" class="bg-green-600 px-4 py-2 rounded text-white mt-2">Harvest</button>
-      <button id="btnUnstake" class="bg-red-600 px-4 py-2 rounded text-white mt-2">Unstake</button>
+    <!-- =============== GOVERNANCE TAB =============== -->
+    <div class="tab" id="tab-governance">
+      <h3 class="text-xl font-semibold mb-2">Governance</h3>
+      <input id="govParam" placeholder="Param Target (0,1,2…)" class="p-2 rounded text-black w-full mb-2">
+      <input id="govValue" placeholder="New Value" class="p-2 rounded text-black w-full mb-2">
+      <button id="btnPropose" class="btn">Propose</button>
+      <input id="voteId" placeholder="Proposal ID" class="p-2 rounded text-black w-full mt-4 mb-2">
+      <button id="btnVote" class="btn">Vote</button>
+      <button id="btnExecute" class="btn">Execute</button>
+      <pre id="govLog" class="mono mt-3 text-purple-400">—</pre>
     </div>
 
-    <div id="bluechip" class="tab">
-      <h2 class="text-2xl font-semibold mb-4">💎 Blue-chip</h2>
-      <button id="btnEnrollBluechip" class="bg-blue-600 px-4 py-2 rounded text-white">Enroll Wallet</button>
-
-      <h3 class="mt-6 text-xl font-semibold">Harvest Blue-chip Rewards</h3>
-      <input id="colBluechip" placeholder="Collection address" class="border p-2 w-full mb-2"/>
-      <button id="btnHarvestBluechip" class="bg-green-600 px-4 py-2 rounded text-white">Harvest Bluechip</button>
-
-      <h3 class="mt-6 text-xl font-semibold">Admin: Flag Collection</h3>
-      <input id="colFlag" placeholder="Collection address" class="border p-2 w-full mb-2"/>
-      <select id="isBluechipFlag" class="border p-2 w-full mb-2">
-        <option value="true">True</option>
-        <option value="false">False</option>
-      </select>
-      <button id="btnSetBluechip" class="bg-purple-600 px-4 py-2 rounded text-white">Set Bluechip Collection</button>
+    <!-- =============== BLUECHIP TAB =============== -->
+    <div class="tab" id="tab-bluechip">
+      <h3 class="text-xl font-semibold mb-2">Bluechip Enrollment</h3>
+      <button id="btnEnroll" class="btn">Enroll as Bluechip Wallet</button>
+      <input id="blueCollection" placeholder="Bluechip Collection Address" class="p-2 rounded text-black w-full mt-4 mb-2">
+      <button id="btnHarvestBlue" class="btn">Harvest Bluechip Rewards</button>
+      <pre id="blueLog" class="mono mt-3 text-yellow-400">—</pre>
     </div>
 
-    <div id="governance" class="tab">
-      <h2 class="text-2xl font-semibold mb-4">🗳️ Governance</h2>
-      <select id="proposalType" class="border p-2 w-full mb-2">
-        <option value="0">BASE_REWARD</option>
-        <option value="1">HARVEST_FEE</option>
-        <option value="2">UNSTAKE_FEE</option>
-        <option value="3">REGISTRATION_FEE_FALLBACK</option>
-        <option value="4">VOTING_PARAM</option>
-        <option value="5">TIER_UPGRADE</option>
-      </select>
-      <input id="paramTarget" placeholder="Param Target (if needed)" class="border p-2 w-full mb-2"/>
-      <input id="newValue" placeholder="New Value" class="border p-2 w-full mb-2"/>
-      <input id="collectionContext" placeholder="Collection Context (if any)" class="border p-2 w-full mb-2"/>
-      <button id="btnPropose" class="bg-blue-600 px-4 py-2 rounded text-white">Propose</button>
+    <!-- =============== DASHBOARD TAB =============== -->
+    <div class="tab" id="tab-dashboard">
+      <h3 class="text-xl font-bold mb-4">📊 Protocol Dashboard</h3>
 
-      <h3 class="mt-6 text-xl font-semibold">Vote & Execute</h3>
-      <input id="proposalId" placeholder="Proposal ID" class="border p-2 w-full mb-2"/>
-      <button id="btnVote" class="bg-green-600 px-4 py-2 rounded text-white">Vote</button>
-      <button id="btnExecuteProposal" class="bg-red-600 px-4 py-2 rounded text-white">Execute Proposal</button>
-    </div>
+      <!-- Protocol Stats -->
+      <div class="card p-4 mb-4 bg-gray-900 rounded-2xl shadow">
+        <h4 class="font-semibold mb-2">Protocol Stats</h4>
+        <button id="btnStats" class="btn">Load Stats</button>
+        <pre id="statsView" class="mono text-sm text-green-400">—</pre>
+      </div>
 
-    <div id="guardians" class="tab">
-      <h2 class="text-2xl font-semibold mb-4">🛡️ Guardians</h2>
-      <h3 class="text-xl">Set Guardian</h3>
-      <input id="guardianIdx" placeholder="Guardian Index" class="border p-2 w-full mb-2"/>
-      <input id="guardianAddr" placeholder="Guardian Address" class="border p-2 w-full mb-2"/>
-      <button id="btnSetDeployerGuardian" class="bg-purple-600 px-4 py-2 rounded text-white">Set Deployer Guardian</button>
-      <button id="btnSetAdminGuardian" class="bg-purple-600 px-4 py-2 rounded text-white">Set Admin Guardian</button>
+      <!-- Treasury -->
+      <div class="card p-4 mb-4 bg-gray-900 rounded-2xl shadow">
+        <h4 class="font-semibold mb-2">Treasury</h4>
+        <button id="btnTreasury" class="btn">View Treasury Balance</button>
+        <pre id="treasuryView" class="mono text-sm text-blue-400">—</pre>
+      </div>
 
-      <h3 class="mt-6 text-xl">Recovery</h3>
-      <input id="newDeployer" placeholder="New Deployer" class="border p-2 w-full mb-2"/>
-      <button id="btnProposeDeployerRecovery" class="bg-blue-600 px-4 py-2 rounded text-white">Propose Deployer Recovery</button>
-      <button id="btnApproveDeployerRecovery" class="bg-green-600 px-4 py-2 rounded text-white">Approve Deployer Recovery</button>
-      <button id="btnExecuteDeployerRecovery" class="bg-red-600 px-4 py-2 rounded text-white">Execute Deployer Recovery</button>
+      <!-- Collections -->
+      <div class="card p-4 mb-4 bg-gray-900 rounded-2xl shadow">
+        <h4 class="font-semibold mb-2">Registered Collections</h4>
+        <button id="btnCollections" class="btn">View Collections</button>
+        <pre id="collectionsView" class="mono text-sm text-yellow-400">—</pre>
+      </div>
 
-      <input id="newAdmin" placeholder="New Admin" class="border p-2 w-full mb-2 mt-6"/>
-      <button id="btnProposeAdminRecovery" class="bg-blue-600 px-4 py-2 rounded text-white">Propose Admin Recovery</button>
-      <button id="btnApproveAdminRecovery" class="bg-green-600 px-4 py-2 rounded text-white">Approve Admin Recovery</button>
-      <button id="btnExecuteAdminRecovery" class="bg-red-600 px-4 py-2 rounded text-white">Execute Admin Recovery</button>
-    </div>
+      <!-- Governance Parameters -->
+      <div class="card p-4 mb-4 bg-gray-900 rounded-2xl shadow">
+        <h4 class="font-semibold mb-2">Governance Parameters</h4>
+        <button id="btnGovParams" class="btn">Load Governance Params</button>
+        <pre id="govParamsView" class="mono text-sm text-purple-400">—</pre>
+      </div>
 
-    <div id="admin" class="tab">
-      <h2 class="text-2xl font-semibold mb-4">⚙️ Admin</h2>
-      <h3>Treasury</h3>
-      <input id="treasuryTo" placeholder="Recipient address" class="border p-2 w-full mb-2"/>
-      <input id="treasuryAmt" placeholder="Amount" class="border p-2 w-full mb-2"/>
-      <button id="btnWithdrawTreasury" class="bg-red-600 px-4 py-2 rounded text-white">Withdraw Treasury</button>
+      <!-- Guardians -->
+      <div class="card p-4 mb-4 bg-gray-900 rounded-2xl shadow">
+        <h4 class="font-semibold mb-2">Guardian Councils</h4>
+        <button id="btnGuardians" class="btn">View Guardians</button>
+        <pre id="guardiansView" class="mono text-sm text-orange-400">—</pre>
+      </div>
 
-      <h3 class="mt-6">Pause / Unpause</h3>
-      <button id="btnPause" class="bg-yellow-600 px-4 py-2 rounded text-white">Pause</button>
-      <button id="btnUnpause" class="bg-green-600 px-4 py-2 rounded text-white">Unpause</button>
+      <!-- Recovery -->
+      <div class="card p-4 mb-4 bg-gray-900 rounded-2xl shadow">
+        <h4 class="font-semibold mb-2">Recovery Status</h4>
+        <button id="btnRecovery" class="btn">Check Recovery</button>
+        <pre id="recoveryView" class="mono text-sm text-red-400">—</pre>
+      </div>
+
+      <!-- Cooldowns -->
+      <div class="card p-4 mb-4 bg-gray-900 rounded-2xl shadow">
+        <h4 class="font-semibold mb-2">Cooldowns</h4>
+        <button id="btnCooldown" class="btn">View My Cooldown</button>
+        <pre id="cooldownView" class="mono text-sm text-cyan-400">—</pre>
+      </div>
+
+      <!-- Burn Stats -->
+      <div class="card p-4 mb-4 bg-gray-900 rounded-2xl shadow">
+        <h4 class="font-semibold mb-2">Burn Stats</h4>
+        <button id="btnBurnStats" class="btn">View My Burned CATA</button>
+        <pre id="burnStatsView" class="mono text-sm text-pink-400">—</pre>
+      </div>
     </div>
   </div>
 
+  <!-- =============== SCRIPT =============== -->
   <script>
-    /* -------------------
-       Tab Navigation
-    ------------------- */
-    document.querySelectorAll('.tab-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-        document.getElementById(btn.dataset.tab).classList.add('active');
-      });
-    });
+    let provider, signer, walletAddress;
+    const CONTRACT_ADDRESS = "YOUR_DEPLOYED_CONTRACT";
+    const ABI = []; // paste ABI JSON here
 
-    /* -------------------
-       Ethers.js Setup
-    ------------------- */
-    let provider, signer, CONTRACT, CONTRACT_ADDRESS, ABI;
+    function $(id){ return document.getElementById(id); }
+    function switchTab(tab){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active-tab')); $("tab-"+tab).classList.add('active-tab'); }
+    function log(msg, target="stakeLog"){ $(target).textContent = msg; }
+    function requireWallet(){ if(!walletAddress) throw new Error("Connect wallet first"); }
 
-    async function init() {
+    let READ_CONTRACT, WRITE_CONTRACT;
+
+    async function connectWallet(){
       provider = new ethers.BrowserProvider(window.ethereum);
       signer = await provider.getSigner();
-
-      const res = await fetch("abi/CatalystNFTStakingUpgradeable.json");
-      ABI = await res.json();
-
-      CONTRACT_ADDRESS = "YOUR_DEPLOYED_CONTRACT"; // TODO: replace
-      CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      walletAddress = await signer.getAddress();
+      READ_CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+      WRITE_CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      console.log("Wallet connected:", walletAddress);
     }
+    connectWallet();
 
-    function log(msg) { console.log(msg); }
+    /* ================== Staking ================== */
+    $("btnStake").onclick = async ()=>{
+      try{ requireWallet();
+        let tx = await WRITE_CONTRACT.stake($("stakeCollection").value,$("stakeTokenId").value,false);
+        log("Stake tx sent: "+tx.hash);
+      }catch(e){ log(e.message); }
+    };
+    $("btnUnstake").onclick = async ()=>{
+      try{ requireWallet();
+        let tx = await WRITE_CONTRACT.unstake($("stakeCollection").value,$("stakeTokenId").value);
+        log("Unstake tx sent: "+tx.hash);
+      }catch(e){ log(e.message); }
+    };
+    $("btnHarvest").onclick = async ()=>{
+      try{ requireWallet();
+        let tx = await WRITE_CONTRACT.harvest($("stakeCollection").value,$("stakeTokenId").value);
+        log("Harvest tx sent: "+tx.hash);
+      }catch(e){ log(e.message); }
+    };
 
-    window.onload = init;
+    /* ================== Governance ================== */
+    $("btnPropose").onclick = async ()=>{
+      try{ requireWallet();
+        let tx = await WRITE_CONTRACT.propose(0, $("govParam").value, $("govValue").value, ethers.ZeroAddress);
+        log("Propose tx sent: "+tx.hash,"govLog");
+      }catch(e){ log(e.message,"govLog"); }
+    };
+    $("btnVote").onclick = async ()=>{
+      try{ requireWallet();
+        let tx = await WRITE_CONTRACT.vote($("voteId").value);
+        log("Vote tx sent: "+tx.hash,"govLog");
+      }catch(e){ log(e.message,"govLog"); }
+    };
+    $("btnExecute").onclick = async ()=>{
+      try{ requireWallet();
+        let tx = await WRITE_CONTRACT.executeProposal($("voteId").value);
+        log("Execute tx sent: "+tx.hash,"govLog");
+      }catch(e){ log(e.message,"govLog"); }
+    };
+
+    /* ================== Bluechip ================== */
+    $("btnEnroll").onclick = async ()=>{
+      try{ requireWallet();
+        let tx = await WRITE_CONTRACT.enrollBluechip();
+        log("Enroll tx sent: "+tx.hash,"blueLog");
+      }catch(e){ log(e.message,"blueLog"); }
+    };
+    $("btnHarvestBlue").onclick = async ()=>{
+      try{ requireWallet();
+        let tx = await WRITE_CONTRACT.harvestBluechip($("blueCollection").value);
+        log("Harvest Bluechip tx sent: "+tx.hash,"blueLog");
+      }catch(e){ log(e.message,"blueLog"); }
+    };
+
+    /* ================== Dashboard ================== */
+    $("btnStats").onclick = async ()=>{
+      try {
+        const res = await READ_CONTRACT.stakingStats();
+        $("statsView").textContent =
+          `Total: ${res[0]}\nTerm: ${res[1]}\nPermanent: ${res[2]}\nRemaining Global: ${res[3]}\nRemaining Term: ${res[4]}\nRemaining Permanent: ${res[5]}`;
+      } catch(e){ log(e.message,"statsView"); }
+    };
+    $("btnTreasury").onclick = async ()=>{
+      try {
+        const bal = await READ_CONTRACT.treasuryBalance();
+        $("treasuryView").textContent = `Treasury Balance: ${ethers.formatUnits(bal,18)} CATA`;
+      } catch(e){ log(e.message,"treasuryView"); }
+    };
+    $("btnCollections").onclick = async ()=>{
+      try {
+        const count = await READ_CONTRACT.collectionCount();
+        let txt = `Total Collections: ${count}\n`;
+        for (let i=0;i<count;i++){
+          let addr = await READ_CONTRACT.registeredCollections(i);
+          txt += ` #${i}: ${addr}\n`;
+        }
+        $("collectionsView").textContent = txt;
+      } catch(e){ log(e.message,"collectionsView"); }
+    };
+    $("btnGovParams").onclick = async ()=>{
+      try {
+        const minStakeAge = await READ_CONTRACT.minStakeAgeForVoting();
+        const maxBase = await READ_CONTRACT.maxBaseRewardRate();
+        const fee = await READ_CONTRACT.collectionRegistrationFee();
+        const harvestFee = await READ_CONTRACT.initialHarvestBurnFeeRate();
+        const unstakeFee = await READ_CONTRACT.unstakeBurnFee();
+        $("govParamsView").textContent =
+          `Min Stake Age: ${minStakeAge}\nMax Base Reward Rate: ${maxBase}\nRegistration Fee: ${ethers.formatUnits(fee,18)} CATA\nHarvest Burn Fee: ${harvestFee}%\nUnstake Fee: ${ethers.formatUnits(unstakeFee,18)} CATA`;
+      } catch(e){ log(e.message,"govParamsView"); }
+    };
+    $("btnGuardians").onclick = async ()=>{
+      try {
+        let txt = "Deployer Guardians:\n";
+        for (let i=0;i<7;i++){
+          try{ txt += ` [${i}] ${await READ_CONTRACT.deployerGuardians(i)}\n`; }catch{}
+        }
+        txt += "\nAdmin Guardians:\n";
+        for (let j=0;j<7;j++){
+          try{ txt += ` [${j}] ${await READ_CONTRACT.adminGuardians(j)}\n`; }catch{}
+        }
+        $("guardiansView").textContent = txt;
+      } catch(e){ log(e.message,"guardiansView"); }
+    };
+    $("btnRecovery").onclick = async ()=>{
+      try {
+        const dep = await READ_CONTRACT.deployerRecovery();
+        const adm = await READ_CONTRACT.adminRecovery();
+        $("recoveryView").textContent =
+          `Deployer Recovery:\n Proposed: ${dep.proposed}\n Approvals: ${dep.approvals}\n Deadline: ${dep.deadline}\n Executed: ${dep.executed}\n\n` +
+          `Admin Recovery:\n Proposed: ${adm.proposed}\n Approvals: ${adm.approvals}\n Deadline: ${adm.deadline}\n Executed: ${adm.executed}`;
+      } catch(e){ log(e.message,"recoveryView"); }
+    };
+    $("btnCooldown").onclick = async ()=>{
+      try {
+        requireWallet();
+        const cd = await READ_CONTRACT.stakingCooldownBlocks();
+        const last = await READ_CONTRACT.lastStakingBlock(walletAddress);
+        $("cooldownView").textContent =
+          `Cooldown: ${cd} blocks\nLast Stake Block: ${last}\nCurrent Block: ${await provider.getBlockNumber()}`;
+      } catch(e){ log(e.message,"cooldownView"); }
+    };
+    $("btnBurnStats").onclick = async ()=>{
+      try {
+        requireWallet();
+        const burned = await READ_CONTRACT.burnedCatalystByAddress(walletAddress);
+        $("burnStatsView").textContent = `You have burned: ${ethers.formatUnits(burned,18)} CATA`;
+      } catch(e){ log(e.message,"burnStatsView"); }
+    };
   </script>
 </body>
 </html>
