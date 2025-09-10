@@ -1,1311 +1,713 @@
- <!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <title>Catalyst Protocol DApp</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.2/dist/ethers.min.js"></script>
-  <style>
-    body { background: #030712; color: #f3f4f6; }
-    .glass { background: rgba(17, 25, 40, 0.8); backdrop-filter: blur(12px); }
-    .btn { background:#2563eb; color:white; padding:6px 12px; border-radius:8px; }
-    .btn-ghost { background:transparent; border:1px solid #1b2640; }
-    .btn-primary { background:#2563eb; }
-    .btn-danger { background:#dc2626; }
-    .mono { font-family: monospace; }
-    .muted { color:#9ca3af; }
-    .card { background:#0b1220; }
-    .pill { background:#1e293b; padding:2px 6px; border-radius:6px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalyst</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <style>
+        body {
+            background-color: #0c152a;
+            color: #ffffff;
+            font-family: sans-serif;
+        }
+        .glass {
+            background-color: rgba(14, 23, 49, 0.4);
+            backdrop-filter: blur(10px);
+        }
+        .ring-1 {
+            border: 1px solid #1a2d50;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background-color: #1a62fe;
+            color: #fff;
+        }
+        .btn-ghost {
+            background-color: transparent;
+            color: #8fa4d4;
+        }
+        .muted {
+            color: #8fa4d4;
+        }
+        .mono {
+            font-family: monospace;
+        }
+        .tabbtn {
+            position: relative;
+        }
+        .tab-active {
+            color: #fff;
+        }
+        .tab-active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 2px;
+            background-color: #1a62fe;
+        }
+        .chip {
+            display: inline-block;
+            background-color: #1c2b53;
+            border-radius: 9999px;
+            padding: 0.1rem 0.5rem;
+            font-size: 0.75rem;
+            color: #a3b3e6;
+        }
+        .badge {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: #fff;
+            padding: 0.1rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+        }
+        .pill {
+            display: inline-block;
+            background-color: #3f558a;
+            color: #a3b3e6;
+            padding: 0.1rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+        }
+        .link {
+            color: #1a62fe;
+            text-decoration: underline;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 1024px) {
+            .grid-2 {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+    </style>
 </head>
-<body class="min-h-screen">
-<header class="glass ring-1 shadow-card sticky top-0 z-40">
-  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-3 items-center">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-[#10203d] border border-[#1e2e54] grid place-items-center">
-        <span class="text-xl">⚗️</span>
-      </div>
-      <div>
-        <h1 class="text-lg font-semibold">Catalyst — Official DApp</h1>
-        <div class="text-xs muted -mt-0.5">Universal NFT Utility • Deflationary Tokenomics • Guardian Recovery</div>
-      </div>
-    </div>
+<body class="bg-[#0c152a]">
+  <header class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-2 text-2xl font-bold title">
+      <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🔱</div>
+      Catalyst
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btnConnect" class="btn btn-primary">Connect Wallet</button>
+      <span id="walletAddress" class="mono text-sm muted hidden">0x...</span>
+    </div>
+  </header>
 
-    <div class="flex items-center gap-2 ml-auto">
-      <span id="acct" class="mono text-xs muted">Not connected</span>
-      <button id="walletBtn" class="btn btn-primary">Connect</button>
-    </div>
-  </div>
-</header>
+<main class="max-w-7xl mx-auto px-4 py-6 grid-2 gap-6">
 
-<main class="max-w-7xl mx-auto px-4 py-6 grid md:grid-cols-3 gap-6">
-  <section class="space-y-6 md:col-span-2">
+    <section class="space-y-6">
 
-    <!-- Tabs -->
-    <div class="glass ring-1 rounded-2xl p-2 flex flex-wrap gap-2">
-      <button data-tab="overview" class="tabbtn btn btn-ghost tab-active">Overview</button>
-      <button data-tab="read" class="tabbtn btn btn-ghost">Read</button>
-      <button data-tab="stake" class="tabbtn btn btn-ghost">Stake</button>
-      <button data-tab="bluechip" class="tabbtn btn btn-ghost">Blue-Chip</button>
-      <button data-tab="governance" class="tabbtn btn btn-ghost">Governance</button>
-      <button data-tab="guardians" class="tabbtn btn btn-ghost">Guardians</button>
-      <button data-tab="admin" class="tabbtn btn btn-ghost">Admin</button>
-      <button data-tab="whitepaper" class="tabbtn btn btn-ghost">Whitepaper</button>
-    </div>
+      <div class="glass ring-1 rounded-2xl p-2 flex flex-wrap gap-2">
+        <button data-tab="overview" class="tabbtn btn btn-ghost tab-active">Overview</button>
+        <button data-tab="read" class="tabbtn btn btn-ghost">Read</button>
+        <button data-tab="stake" class="tabbtn btn btn-ghost">Stake</button>
+        <button data-tab="bluechip" class="tabbtn btn btn-ghost">Blue-Chip</button>
+        <button data-tab="governance" class="tabbtn btn btn-ghost">Governance</button>
+        <button data-tab="guardians" class="tabbtn btn btn-ghost">Guardians</button>
+        <button data-tab="admin" class="tabbtn btn btn-ghost">Admin</button>
+        <button data-tab="whitepaper" class="tabbtn btn btn-ghost">Whitepaper</button>
+      </div>
 
-    <!-- Tab Content: Overview -->
-    <div id="tab-overview" class="glass ring-1 rounded-2xl p-5 space-y-5">
-      <h2 class="text-xl font-semibold">Catalyst at a Glance</h2>
-      <p class="muted text-sm">
-        Catalyst is a universal NFT staking & governance protocol. Stake ERC-721s for CATA rewards,
-        participate in burn-weighted governance, and use the Guardian Council recovery system.
-      </p>
-      <div class="grid md:grid-cols-3 gap-4">
-        <div class="card rounded-xl p-4 ring-1">
-          <div class="font-semibold">Mission</div>
-          <p class="muted text-sm mt-2">Immutable fee split <span class="mono">90% burn / 9% treasury / 1% deployer</span>.</p>
-        </div>
-        <div class="card rounded-xl p-4 ring-1">
-          <div class="font-semibold">Usage</div>
-          <ol class="text-sm list-decimal ml-5 muted">
-            <li>Connect wallet for writes.</li>
-            <li>Reads work without wallet.</li>
-            <li>Check whitepaper tab for docs.</li>
-          </ol>
-        </div>
-        <div class="card rounded-xl p-4 ring-1">
-          <div class="font-semibold">Docs</div>
-          <p class="muted text-sm">Governance, guardians, and burn mechanisms are immutable and transparent.</p>
-        </div>
-      </div>
-    </div>
+      <div id="tab-overview" class="glass ring-1 rounded-2xl p-5 space-y-5">
+        <div class="flex items-start gap-4">
+          <div class="hidden sm:block w-14 h-14 rounded-xl bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-2xl">🧭</div>
+          <div class="space-y-2">
+            <h2 class="text-xl font-semibold title">Catalyst at a Glance</h2>
+            <p class="muted leading-relaxed">
+              Catalyst is a universal NFT staking & governance protocol. Stake ERC-721s for CATA rewards, participate
+              in burn-weighted governance, and use the Guardian Council recovery system. The system is designed for
+              <span class="chip">security</span>, <span class="chip">scalability</span>, and <span class="chip">sustainability</span>.
+            </p>
+          </div>
+        </div>
 
-    <!-- Other tabs go here (Read, Stake, Bluechip, Governance, Guardians, Admin, Whitepaper) -->     
-<!-- ====== Chunk 2: All remaining tabs, aside, modal, footer ====== -->
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="card rounded-xl p-4 ring-1">
+            <div class="text-sm muted mb-1">Mission</div>
+            <div class="font-semibold">Non-profit R&amp;D</div>
+            <p class="muted text-sm mt-2">Immutable fee split <span class="mono">90% burn / 9% treasury / 1% deployer</span>. Community-governed treasury. Deflationary incentives.</p>
+          </div>
+          <div class="card rounded-xl p-4 ring-1">
+            <div class="text-sm muted mb-1">Usage</div>
+            <ol class="text-sm list-decimal ml-5 space-y-1 muted">
+              <li>Save your proxy contract address.</li>
+              <li>Optionally set a custom read RPC.</li>
+              <li>Connect wallet for write actions; reads work without it.</li>
+            </ol>
+          </div>
+          <div class="card rounded-xl p-4 ring-1">
+            <div class="text-sm muted mb-1">Docs</div>
+            <div class="space-y-1 text-sm">
+              <div><span class="badge">Whitepaper</span> See the <a href="#tab-whitepaper" class="link" onclick="selectTab('whitepaper')">summary</a> tab.</div>
+              <div><span class="badge">Views</span> Inspect pending rewards, collections, and governance data.</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <!-- =============== READ =============== -->
-    <div id="tab-read" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
-      <h2 class="text-lg font-semibold title">Read-Only Helpers & Inspectors</h2>
-      <p class="muted text-sm">These calls never require a wallet. Use them to explore the protocol before interacting.</p>
+      <div id="tab-read" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <h2 class="text-lg font-semibold title">Read-Only Helpers & Inspectors</h2>
+        <p class="muted text-sm">These calls never require a wallet. Use them to explore the protocol before interacting.</p>
 
-      <div class="card rounded-xl p-4 ring-1">
-        <div class="flex items-center justify-between">
-          <h3 class="font-semibold">Protocol Stats</h3>
-          <div class="flex items-center gap-2">
-            <button id="btnRefresh" class="btn btn-primary text-sm">Refresh</button>
-            <label class="text-xs flex items-center gap-2">
-              <input id="autoRefresh" type="checkbox" class="accent-blue-400">
-              <span class="muted">Auto</span>
-            </label>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm">
-          <div class="flex justify-between border-b border-[#172244] pb-2">
-            <span class="muted">totalAll</span> <span id="st_totalAll" class="mono">—</span>
-          </div>
-          <div class="flex justify-between border-b border-[#172244] pb-2">
-            <span class="muted">totalTerm</span> <span id="st_totalTerm" class="mono">—</span>
-          </div>
-          <div class="flex justify-between border-b border-[#172244] pb-2">
-            <span class="muted">totalPermanent</span> <span id="st_totalPermanent" class="mono">—</span>
-          </div>
-          <div class="flex justify-between border-b border-[#172244] pb-2">
-            <span class="muted">remainingGlobal</span> <span id="st_remainingGlobal" class="mono">—</span>
-          </div>
-          <div class="flex justify-between border-b border-[#172244] pb-2">
-            <span class="muted">remainingTerm</span> <span id="st_remainingTerm" class="mono">—</span>
-          </div>
-          <div class="flex justify-between border-b border-[#172244] pb-2">
-            <span class="muted">remainingPermanent</span> <span id="st_remainingPermanent" class="mono">—</span>
-          </div>
-          <div class="flex justify-between border-b border-[#172244] pb-2">
-            <span class="muted">treasuryBalance</span> <span id="st_treasury" class="mono">—</span>
-          </div>
-          <div class="flex justify-between border-b border-[#172244] pb-2">
-            <span class="muted">deployerAddress</span> <span id="st_deployer" class="mono">—</span>
-          </div>
-          <div class="flex justify-between border-b border-[#172244] pb-2">
-            <span class="muted">paused</span> <span id="st_paused" class="mono">—</span>
-          </div>
-        </div>
-      </div>
+        <div class="card rounded-xl p-4 ring-1">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">Protocol Stats</h3>
+            <div class="flex items-center gap-2">
+              <button id="btnRefresh" class="btn btn-primary text-sm">Refresh</button>
+              <label class="text-xs flex items-center gap-2">
+                <input id="autoRefresh" type="checkbox" class="accent-blue-400">
+                <span class="muted">Auto</span>
+              </label>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm">
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">totalAll</span> <span id="st_totalAll" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">totalTerm</span> <span id="st_totalTerm" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">totalPermanent</span> <span id="st_totalPermanent" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">remainingGlobal</span> <span id="st_remainingGlobal" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">remainingTerm</span> <span id="st_remainingTerm" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">remainingPermanent</span> <span id="st_remainingPermanent" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">treasuryBalance</span> <span id="st_treasury" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">deployerAddress</span> <span id="st_deployer" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">paused</span> <span id="st_paused" class="mono">—</span>
+            </div>
+          </div>
+        </div>
 
-      <div class="card rounded-xl p-4 ring-1">
-        <h3 class="font-semibold mb-2">Pending Rewards (read)</h3>
-        <div class="grid md:grid-cols-2 gap-3">
-          <div>
-            <div class="text-xs muted mb-1">Collection</div>
-            <input id="vCol" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xCollection" />
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Owner (leave blank → connected)</div>
-            <input id="vOwner" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xOwner" />
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Token ID</div>
-            <input id="vTokenId" type="number" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="e.g. 123" />
-          </div>
-          <div class="flex items-end">
-            <button id="btnViewPending2" class="btn btn-primary w-full">View Pending</button>
-          </div>
-        </div>
-        <div id="pendingOut" class="mono text-sm muted mt-3">—</div>
-      </div>
+        <div class="card rounded-xl p-4 ring-1">
+          <h3 class="font-semibold mb-2">Pending Rewards (read)</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Collection</div>
+              <input id="vCol" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xCollection" />
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Owner (leave blank → connected)</div>
+              <input id="vOwner" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xOwner" />
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Token ID</div>
+              <input id="vTokenId" type="number" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="e.g. 123" />
+            </div>
+            <div class="flex items-end">
+              <button id="btnViewPending2" class="btn btn-primary w-full">View Pending</button>
+            </div>
+          </div>
+          <div id="pendingOut" class="mono text-sm muted mt-3">—</div>
+        </div>
 
-      <div class="card rounded-xl p-4 ring-1">
-        <h3 class="font-semibold mb-3">Registered Collections / Blue-Chip</h3>
-        <div class="flex gap-2">
-          <button id="btnListCollections" class="btn btn-primary">List Registered</button>
-          <button id="btnListBlue" class="btn btn-ghost">List Blue-Chips</button>
-        </div>
-        <div id="collectionsOut" class="mono text-sm muted mt-3">—</div>
-      </div>
+        <div class="card rounded-xl p-4 ring-1">
+          <h3 class="font-semibold mb-3">Registered Collections / Blue-Chip</h3>
+          <div class="flex gap-2">
+            <button id="btnListCollections" class="btn btn-primary">List Registered</button>
+            <button id="btnListBlue" class="btn btn-ghost">List Blue-Chips</button>
+          </div>
+          <div id="collectionsOut" class="mono text-sm muted mt-3">—</div>
+        </div>
 
-      <div class="card rounded-xl p-4 ring-1">
-        <h3 class="font-semibold mb-3">User / Collection Info</h3>
-        <div class="grid md:grid-cols-2 gap-3">
-          <div>
-            <div class="text-xs muted mb-1">User</div>
-            <input id="infoUser" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xUser (blank → connected)" />
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Collection (optional)</div>
-            <input id="infoCol" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xCollection" />
-          </div>
-        </div>
-        <div class="flex gap-2 mt-3">
-          <button id="btnUserInfo" class="btn btn-primary">Get User Info</button>
-          <button id="btnColInfo" class="btn btn-ghost">Get Collection Info</button>
-        </div>
-        <div id="infoOut" class="mono text-sm muted mt-3">—</div>
-      </div>
-    </div>
+        <div class="card rounded-xl p-4 ring-1">
+          <h3 class="font-semibold mb-3">User / Collection Info</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">User</div>
+              <input id="infoUser" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xUser (blank → connected)" />
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Collection (optional)</div>
+              <input id="infoCol" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xCollection" />
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button id="btnUserInfo" class="btn btn-primary">Get User Info</button>
+            <button id="btnColInfo" class="btn btn-ghost">Get Collection Info</button>
+          </div>
+          <div id="infoOut" class="mono text-sm muted mt-3">—</div>
+        </div>
+      </div>
 
-    <!-- =============== STAKE (detailed) =============== -->
-    <div id="tab-stake" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🧱</div>
-        <div>
-          <h2 class="text-lg font-semibold title">Custodial Staking</h2>
-          <p class="muted text-sm">
-            Stake ERC-721 tokens into Catalyst. Term stakes expire; permanent stakes lock for stronger yield.
-          </p>
-        </div>
-      </div>
+      <div id="tab-stake" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🧱</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Custodial Staking</h2>
+            <p class="muted text-sm">
+              Stake ERC-721 tokens into Catalyst. Term stakes have a fixed duration; permanent stakes lock forever for
+              higher rewards. Harvests are deflationary: a portion is burned (90/9/1 system).
+            </p>
+        </div>
+        </div>
 
-      <details class="rounded-lg ring-1 p-3">
-        <summary class="cursor-pointer font-medium">📘 Learn More</summary>
-        <ul class="mt-2 text-sm muted list-disc ml-5 space-y-1">
-          <li><b>Term:</b> accrues until end; early unstake disallowed.</li>
-          <li><b>Permanent:</b> no unlock; higher sustained reward rate.</li>
-          <li><b>Caps:</b> 20k NFTs/collection, 1B global (75% term / 25% perm).</li>
-        </ul>
-      </details>
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">📘 Learn More</summary>
+          <ul class="mt-2 text-sm muted list-disc ml-5 space-y-1">
+            <li><b>Term:</b> accrues until end; early unstake disallowed.</li>
+            <li><b>Permanent:</b> no unlock; higher sustained reward rate.</li>
+            <li><b>Caps:</b> 20k NFTs/collection, 1B global (75% term / 25% perm).</li>
+          </ul>
+        </details>
 
-      <div class="card rounded-xl p-4 ring-1 space-y-4">
-        <h3 class="font-semibold">Single Stake</h3>
-        <div class="grid md:grid-cols-2 gap-3">
-          <div>
-            <div class="text-xs muted mb-1">Collection</div>
-            <input id="colStake" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Token ID</div>
-            <input id="tidStake" type="number" placeholder="123" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Stake Type</div>
-            <select id="permanent" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
-              <option value="false">Term</option>
-              <option value="true">Permanent</option>
-            </select>
-          </div>
-          <div class="flex items-end gap-2">
-            <button id="btnApprove721" class="btn btn-ghost">Approve setApprovalForAll</button>
-            <button id="btnApprove721Check" class="btn btn-ghost">Check</button>
-          </div>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <button id="btnStakeOne" class="btn btn-primary">Stake NFT</button>
-          <button id="btnHarvestOne" class="btn btn-ghost">Harvest</button>
-          <button id="btnUnstakeOne" class="btn btn-ghost">Unstake</button>
-          <button id="btnViewPending" class="btn btn-ghost">View Pending</button>
-          <span id="pendingView" class="mono text-sm muted">—</span>
-        </div>
-        <div class="text-xs muted">
-          <span class="tooltip" data-tip="Unstake may include a burn fee for unverified collections.">ⓘ</span> Fees follow the immutable 90/9/1 split.
-        </div>
-      </div>
+        <div class="card rounded-xl p-4 ring-1 space-y-4">
+          <h3 class="font-semibold">Single Stake</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Collection</div>
+              <input id="colStake" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Token ID</div>
+              <input id="tidStake" type="number" placeholder="123" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Stake Type</div>
+              <select id="permanent" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+                <option value="false">Term</option>
+                <option value="true">Permanent</option>
+              </select>
+            </div>
+            <div class="flex items-end gap-2">
+              <button id="btnApprove721" class="btn btn-ghost">Approve setApprovalForAll</button>
+              <button id="btnApprove721Check" class="btn btn-ghost">Check</button>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="btnStake" class="btn btn-primary">Stake NFT</button>
+            <button id="btnHarvestOne" class="btn btn-ghost">Harvest</button>
+            <button id="btnUnstake" class="btn btn-ghost">Unstake</button>
+            <button id="btnViewPending" class="btn btn-ghost">View Pending</button>
+            <span id="pendingView" class="mono text-sm muted">—</span>
+          </div>
+          <div class="text-xs muted">
+            <span class="tooltip" data-tip="Unstake may include a burn fee for unverified collections.">ⓘ</span> Fees follow the immutable 90/9/1 split.
+          </div>
+        </div>
 
-      <div class="card rounded-xl p-4 ring-1 space-y-3">
-        <h3 class="font-semibold">Batch Stake (≤ ~50 safe)</h3>
-        <div class="grid md:grid-cols-2 gap-3">
-          <div>
-            <div class="text-xs muted mb-1">Collection</div>
-            <input id="colBatch" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Token IDs (CSV)</div>
-            <input id="tidsBatch" placeholder="1,2,3,4" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Stake Type</div>
-            <select id="permanentBatch" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
-              <option value="false">Term</option>
-              <option value="true">Permanent</option>
-            </select>
-          </div>
-          <div class="flex items-end">
-            <button id="btnApprove721Batch" class="btn btn-ghost w-full">Approve (Batch)</button>
-          </div>
-        </div>
-        <button id="btnBatchStake" class="btn btn-primary">Batch Stake</button>
-        <div class="text-xs muted">
-          <span class="tooltip" data-tip="Block gas limits vary per chain; consider smaller batches on L1.">ⓘ</span> Keep batches reasonable to avoid out-of-gas.
-        </div>
-      </div>
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <h3 class="font-semibold">Batch Stake (≤ ~50 safe)</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Collection</div>
+              <input id="colBatch" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Token IDs (CSV)</div>
+              <input id="tidsBatch" placeholder="1,2,3,4" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Stake Type</div>
+              <select id="permanentBatch" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+                <option value="false">Term</option>
+                <option value="true">Permanent</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button id="btnApprove721Batch" class="btn btn-ghost w-full">Approve (Batch)</button>
+            </div>
+          </div>
+          <button id="btnBatchStake" class="btn btn-primary">Batch Stake</button>
+          <div class="text-xs muted">
+            <span class="tooltip" data-tip="Block gas limits vary per chain; consider smaller batches on L1.">ⓘ</span> Keep batches reasonable to avoid out-of-gas.
+          </div>
+        </div>
 
-      <div class="card rounded-xl p-4 ring-1 space-y-3">
-        <h3 class="font-semibold">Register Collection (permissionless)</h3>
-        <div class="grid md:grid-cols-2 gap-3">
-          <div>
-            <div class="text-xs muted mb-1">Collection</div>
-            <input id="colRegister" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Declared Max Supply (≤ 20000)</div>
-            <input id="declaredSupply" type="number" placeholder="10000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-          </div>
-        </div>
-        <button id="btnRegister" class="btn btn-primary">Register</button>
-        <div class="text-xs muted">
-          <span class="tooltip" data-tip="Unverified collections incur surcharges until they upgrade.">ⓘ</span> Verified collections enjoy normal fees.
-        </div>
-      </div>
-    </div>
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <h3 class="font-semibold">Register Collection (permissionless)</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Collection</div>
+              <input id="colRegister" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Declared Max Supply (≤ 20000)</div>
+              <input id="declaredSupply" type="number" placeholder="10000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+          </div>
+          <button id="btnRegister" class="btn btn-primary">Register</button>
+          <div class="text-xs muted">
+            <span class="tooltip" data-tip="Unverified collections incur surcharges until they upgrade.">ⓘ</span> Verified collections (usually owner-registered) enjoy normal fees.
+          </div>
+        </div>
+      </div>
 
-    <!-- =============== BLUECHIP =============== -->
-    <div id="tab-bluechip" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">💎</div>
-        <div>
-          <h2 class="text-lg font-semibold title">Blue-Chip (Non-Custodial)</h2>
-          <p class="muted text-sm">
-            Enroll your wallet once, then harvest for any flagged blue-chip collection you hold.
-          </p>
-        </div>
-      </div>
+      <div id="tab-bluechip" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">💎</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Blue-Chip (Non-Custodial)</h2>
+            <p class="muted text-sm">
+              Earn rewards without transferring NFTs. <b>Enroll your wallet once</b>, then harvest for any flagged blue-chip
+              collection you hold. This minimizes custody risk for high-value assets.
+            </p>
+          </div>
+        </div>
 
-      <div class="card rounded-xl p-4 ring-1 space-y-3">
-        <div class="grid md:grid-cols-2 gap-3">
-          <div>
-            <div class="text-xs muted mb-1">Enroll Wallet (one-time)</div>
-            <button id="btnEnrollBlue" class="btn btn-primary w-full">Enroll</button>
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Harvest for Collection</div>
-            <div class="flex gap-2">
-              <input id="colBlueHarvest" placeholder="0xCollection" class="flex-1 bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-              <button id="btnHarvestBlue" class="btn btn-primary">Harvest</button>
-            </div>
-            <div class="text-xs muted mt-1">Wallet must own ≥1 token of that collection.</div>
-          </div>
-        </div>
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">📘 Learn More</summary>
+          <p class="muted text-sm mt-2">Enrollment is per-wallet (not per collection). If your wallet holds tokens of any flagged blue-chip collection, you can harvest non-custodially.</p>
+        </details>
 
-        <details class="rounded-lg ring-1 p-3">
-          <summary class="cursor-pointer">Admin: Flag / Unflag Collection</summary>
-          <div class="grid md:grid-cols-3 gap-3 mt-3">
-            <div>
-              <div class="text-xs muted mb-1">Collection</div>
-              <input id="colFlagBlue" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-            </div>
-            <div>
-              <div class="text-xs muted mb-1">Status</div>
-              <select id="isBlueFlag" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
-                <option value="true">Flag as Blue-Chip</option>
-                <option value="false">Remove Blue-Chip</option>
-              </select>
-            </div>
-            <div class="flex items-end">
-              <button id="btnSetBlue" class="btn btn-primary w-full">Set Blue-Chip</button>
-            </div>
-          </div>
-        </details>
-      </div>
-    </div>
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Enroll Wallet (one-time)</div>
+              <button id="btnEnrollBlue" class="btn btn-primary w-full">Enroll</button>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Harvest for Collection</div>
+              <div class="flex gap-2">
+                <input id="colBlueHarvest" placeholder="0xCollection" class="flex-1 bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                <button id="btnHarvestBlue" class="btn btn-primary">Harvest</button>
+              </div>
+              <div class="text-xs muted mt-1">Wallet must own ≥1 token of that collection.</div>
+            </div>
+          </div>
 
-    <!-- =============== GOVERNANCE =============== -->
-    <div id="tab-governance" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🏛️</div>
-        <div>
-          <h2 class="text-lg font-semibold title">Governance</h2>
-          <p class="muted text-sm">
-            Burn-weighted voting and collection-aware caps. Proposals change params, fee rates, and more.
-          </p>
-        </div>
-      </div>
+          <details class="rounded-lg ring-1 p-3">
+            <summary class="cursor-pointer">Admin: Flag / Unflag Collection</summary>
+            <div class="grid md:grid-cols-3 gap-3 mt-3">
+              <div>
+                <div class="text-xs muted mb-1">Collection</div>
+                <input id="colFlagBlue" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <div class="text-xs muted mb-1">Status</div>
+                <select id="isBlueFlag" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+                  <option value="true">Flag as Blue-Chip</option>
+                  <option value="false">Remove Blue-Chip</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button id="btnSetBlue" class="btn btn-primary w-full">Set Blue-Chip</button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
 
-      <div class="grid lg:grid-cols-2 gap-4">
-        <div class="card rounded-xl p-4 ring-1 space-y-3">
-          <h3 class="font-semibold">Create Proposal</h3>
-          <div class="grid md:grid-cols-2 gap-3">
-            <div>
-              <div class="text-xs muted mb-1">Proposal Type</div>
-              <select id="pType" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
-                <option value="0">BASE_REWARD</option>
-                <option value="1">HARVEST_FEE</option>
-                <option value="2">UNSTAKE_FEE</option>
-                <option value="3">REGISTRATION_FEE_FALLBACK</option>
-                <option value="4">VOTING_PARAM</option>
-                <option value="5">TIER_UPGRADE</option>
-              </select>
-            </div>
-            <div>
-              <div class="text-xs muted mb-1">Param Target (for VOTING_PARAM)</div>
-              <input id="paramTargetGov" type="number" value="0" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-            </div>
-            <div>
-              <div class="text-xs muted mb-1">New Value (uint256)</div>
-              <input id="newValueGov" type="number" placeholder="1000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-            </div>
-            <div>
-              <div class="text-xs muted mb-1">Collection Context (optional)</div>
-              <input id="collCtx" placeholder="0x… or 0x0000…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-            </div>
-          </div>
-          <button id="btnPropose" class="btn btn-primary">Create Proposal</button>
-        </div>
+      <div id="tab-governance" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🏛️</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Governance</h2>
+            <p class="muted text-sm">
+              Burn-Weighted Collection Governance (BWCG). Vote weight ties to burned CATA and stake-age; per-collection caps
+              avoid monopolies. The <span class="mono">90/9/1</span> split is immutable and cannot be changed by governance.
+            </p>
+          </div>
+        </div>
 
-        <div class="card rounded-xl p-4 ring-1 space-y-3">
-          <h3 class="font-semibold">Vote / Execute</h3>
-          <div class="grid md:grid-cols-2 gap-3">
-            <div>
-              <div class="text-xs muted mb-1">Proposal ID (bytes32)</div>
-              <input id="propId" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-            </div>
-            <div class="flex items-end gap-2">
-              <button id="btnVote" class="btn btn-ghost w-full">Vote</button>
-              <button id="btnExecute" class="btn btn-primary w-full">Execute</button>
-            </div>
-          </div>
-          <div class="text-xs muted">Ensure quorum + endBlock passed before execution.</div>
-        </div>
-      </div>
-    </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <h3 class="font-semibold">Create Proposal</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div>
+                <div class="text-xs muted mb-1">Proposal Type</div>
+                <select id="pType" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+                  <option value="0">BASE_REWARD</option>
+                  <option value="1">HARVEST_FEE</option>
+                  <option value="2">UNSTAKE_FEE</option>
+                  <option value="3">REGISTRATION_FEE_FALLBACK</option>
+                  <option value="4">VOTING_PARAM</option>
+                  <option value="5">TIER_UPGRADE</option>
+                </select>
+              </div>
+              <div>
+                <div class="text-xs muted mb-1">Param Target (for VOTING_PARAM)</div>
+                <input id="paramTarget" type="number" value="0" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <div class="text-xs muted mb-1">New Value (uint256)</div>
+                <input id="newValue" type="number" placeholder="1000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <div class="text-xs muted mb-1">Collection Context (optional)</div>
+                <input id="collCtx" placeholder="0x… or 0x0000…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+            </div>
+            <button id="btnPropose" class="btn btn-primary">Create Proposal</button>
+          </div>
 
-    <!-- =============== GUARDIANS =============== -->
-    <div id="tab-guardians" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🛡️</div>
-        <div>
-          <h2 class="text-lg font-semibold title">Guardian Councils (DRS)</h2>
-          <p class="muted text-sm">
-            Deployer & Admin Guardian Councils (7 seats, 5-of-7 threshold) can recover lost keys or rotate roles.
-          </p>
-        </div>
-      </div>
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <h3 class="font-semibold">Vote / Execute</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div>
+                <div class="text-xs muted mb-1">Proposal ID (bytes32)</div>
+                <input id="propId" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div class="flex items-end gap-2">
+                <button id="btnVote" class="btn btn-ghost w-full">Vote</button>
+                <button id="btnExecute" class="btn btn-primary w-full">Execute</button>
+              </div>
+            </div>
+            <div class="text-xs muted">Ensure quorum + endBlock passed before execution.</div>
+          </div>
+        </div>
+      </div>
 
-      <div class="grid lg:grid-cols-2 gap-4">
-        <div class="card rounded-xl p-4 ring-1 space-y-3">
-          <h3 class="font-semibold">Deployer Council</h3>
-          <div class="grid md:grid-cols-2 gap-3">
-            <div>
-              <div class="text-xs muted mb-1">Proposed New Deployer</div>
-              <input id="newDeployer" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-            </div>
-            <div class="flex items-end gap-2">
-              <button id="btnPropDep" class="btn btn-primary w-full">Propose</button>
-              <button id="btnApproveDep" class="btn btn-ghost w-full">Approve</button>
-              <button id="btnExecDep" class="btn btn-primary w-full" data-confirm="guardian-exec">Execute</button>
-            </div>
-          </div>
-        </div>
+      <div id="tab-guardians" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🛡️</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Guardian Councils (DRS)</h2>
+            <p class="muted text-sm">
+              Deployer & Admin Guardian Councils (7 seats, 5-of-7 threshold) can recover lost keys or rotate roles.
+              Includes compromise detection and reset flows.
+            </p>
+          </div>
+        </div>
 
-        <div class="card rounded-xl p-4 ring-1 space-y-3">
-          <h3 class="font-semibold">Admin Council</h3>
-          <div class="grid md:grid-cols-2 gap-3">
-            <div>
-              <div class="text-xs muted mb-1">Proposed New Admin</div>
-              <input id="newAdmin" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-            </div>
-            <div class="flex items-end gap-2">
-              <button id="btnPropAdm" class="btn btn-primary w-full">Propose</button>
-              <button id="btnApproveAdm" class="btn btn-ghost w-full">Approve</button>
-              <button id="btnExecAdm" class="btn btn-primary w-full" data-confirm="guardian-exec">Execute</button>
-            </div>
-          </div>
-        </div>
-      </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <h3 class="font-semibold">Deployer Council</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div>
+                <div class="text-xs muted mb-1">Proposed New Deployer</div>
+                <input id="newDeployer" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+              <div class="flex items-end gap-2">
+                <button id="btnPropDep" class="btn btn-primary w-full">Propose</button>
+                <button id="btnApproveDep" class="btn btn-ghost w-full">Approve</button>
+                <button id="btnExecDep" class="btn btn-primary w-full" data-confirm="guardian-exec">Execute</button>
+              </div>
+            </div>
+          </div>
 
-      <details class="rounded-lg ring-1 p-3">
-        <summary class="cursor-pointer">Admin: Set/Replace Guardians (role-gated)</summary>
-        <div class="grid lg:grid-cols-2 gap-4 mt-3">
-          <div class="card rounded-xl p-4 ring-1 space-y-3">
-            <h4 class="font-semibold">Set Deployer Guardian</h4>
-            <div class="grid md:grid-cols-3 gap-3">
-              <div>
-                <div class="text-xs muted mb-1">Index (0–6)</div>
-                <input id="depIdx" type="number" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-              </div>
-              <div>
-                <div class="text-xs muted mb-1">Guardian</div>
-                <input id="depGuardian" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-              </div>
-              <div class="flex items-end">
-                <button id="btnSetDepGuardian" class="btn btn-primary w-full">Set</button>
-              </div>
-            </div>
-          </div>
-          <div class="card rounded-xl p-4 ring-1 space-y-3">
-            <h4 class="font-semibold">Set Admin Guardian</h4>
-            <div class="grid md:grid-cols-3 gap-3">
-              <div>
-                <div class="text-xs muted mb-1">Index (0–6)</div>
-                <input id="admIdx" type="number" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-              </div>
-              <div>
-                <div class="text-xs muted mb-1">Guardian</div>
-                <input id="admGuardian" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-              </div>
-              <div class="flex items-end">
-                <button id="btnSetAdmGuardian" class="btn btn-primary w-full">Set</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <p class="text-xs muted mt-2">
-          Safety: zero-address is blocked; each index can be updated individually. Monitor <span class="mono">GuardianSet</span> events.
-        </p>
-      </details>
-    </div>
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <h3 class="font-semibold">Admin Council</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div>
+                <div class="text-xs muted mb-1">Proposed New Admin</div>
+                <input id="newAdmin" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div class="flex items-end gap-2">
+                <button id="btnPropAdm" class="btn btn-primary w-full">Propose</button>
+                <button id="btnApproveAdm" class="btn btn-ghost w-full">Approve</button>
+                <button id="btnExecAdm" class="btn btn-primary w-full" data-confirm="guardian-exec">Execute</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <!-- =============== ADMIN =============== -->
-    <div id="tab-admin" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">⚙️</div>
-        <div>
-          <h2 class="text-lg font-semibold title">Admin Controls</h2>
-          <p class="muted text-sm">Privileged operations. Use carefully and only with appropriate roles.</p>
-        </div>
-      </div>
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer">Admin: Set/Replace Guardians (role-gated)</summary>
+          <div class="grid lg:grid-cols-2 gap-4 mt-3">
+            <div class="card rounded-xl p-4 ring-1 space-y-3">
+              <h4 class="font-semibold">Set Deployer Guardian</h4>
+              <div class="grid md:grid-cols-3 gap-3">
+                <div>
+                  <div class="text-xs muted mb-1">Index (0–6)</div>
+                  <input id="depIdx" type="number" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                </div>
+                <div>
+                  <div class="text-xs muted mb-1">Guardian</div>
+                  <input id="depGuardian" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                </div>
+                <div class="flex items-end">
+                  <button id="btnSetDepGuardian" class="btn btn-primary w-full">Set</button>
+                </div>
+              </div>
+            </div>
+            <div class="card rounded-xl p-4 ring-1 space-y-3">
+              <h4 class="font-semibold">Set Admin Guardian</h4>
+              <div class="grid md:grid-cols-3 gap-3">
+                <div>
+                  <div class="text-xs muted mb-1">Index (0–6)</div>
+                  <input id="admIdx" type="number" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                </div>
+                <div>
+                  <div class="text-xs muted mb-1">Guardian</div>
+                  <input id="admGuardian" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                </div>
+                <div class="flex items-end">
+                  <button id="btnSetAdmGuardian" class="btn btn-primary w-full">Set</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs muted mt-2">
+            Safety: zero-address is blocked; each index can be updated individually. Emit <span class="mono">GuardianSet</span> events for monitoring.
+          </p>
+        </details>
+      </div>
 
-      <div class="card rounded-xl p-4 ring-1 space-y-3">
-        <h3 class="font-semibold">Pause / Unpause</h3>
-        <div class="flex gap-2">
-          <button id="btnPause" class="btn btn-ghost">Pause</button>
-          <button id="btnUnpause" class="btn btn-primary">Unpause</button>
-        </div>
-        <div class="text-xs muted">Verify <span class="mono">paused</span> status in the Read tab after toggling.</div>
-      </div>
+      <div id="tab-admin" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">⚙️</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Admin Controls</h2>
+            <p class="muted text-sm">Privileged operations. Use carefully and only with appropriate roles.</p>
+          </div>
+        </div>
 
-      <div class="card rounded-xl p-4 ring-1 space-y-3">
-        <h3 class="font-semibold">Treasury Withdraw</h3>
-        <div class="grid md:grid-cols-2 gap-3">
-          <div>
-            <div class="text-xs muted mb-1">Recipient</div>
-            <input id="toTreasury" placeholder="0xRecipient" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-          </div>
-          <div>
-            <div class="text-xs muted mb-1">Amount (wei)</div>
-            <input id="amtTreasury" type="number" placeholder="1000000000000000000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-          </div>
-        </div>
-        <button id="btnWithdraw" class="btn btn-danger" data-confirm="withdraw">Withdraw</button>
-        <div class="text-xs muted">Guarded by confirmation modal.</div>
-      </div>
-    </div>
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <h3 class="font-semibold">Pause / Unpause</h3>
+          <div class="flex gap-2">
+            <button id="btnPause" class="btn btn-ghost">Pause</button>
+            <button id="btnUnpause" class="btn btn-primary">Unpause</button>
+          </div>
+          <div class="text-xs muted">Verify <span class="mono">paused</span> status in the Read tab after toggling.</div>
+        </div>
 
-    <!-- =============== WHITEPAPER =============== -->
-    <div id="tab-whitepaper" class="glass ring-1 rounded-2xl p-5 space-y-5 hidden">
-      <h2 class="text-lg font-semibold title">Whitepaper Summary</h2>
-      <details class="rounded-lg ring-1 p-3" open>
-        <summary class="cursor-pointer font-medium">Vision & Mission</summary>
-        <p class="muted text-sm mt-2">
-          Catalyst aims to be the universal utility layer for NFTs: every ERC-721 can stake, burn, and participate in governance.
-        </p>
-      </details>
-      <details class="rounded-lg ring-1 p-3">
-        <summary class="cursor-pointer font-medium">Tokenomics (CATA)</summary>
-        <ul class="mt-2 text-sm muted list-disc ml-5 space-y-1">
-          <li>Immutable fee split: <span class="mono">90% Burn / 9% Treasury / 1% Deployer</span>.</li>
-          <li>Global stake cap: 1B NFTs (750M term, 250M permanent).</li>
-          <li>Per-collection cap: 20k NFTs.</li>
-        </ul>
-      </details>
-      <details class="rounded-lg ring-1 p-3">
-        <summary class="cursor-pointer font-medium">Governance</summary>
-        <p class="muted text-sm mt-2">
-          Burn-weighted voting with per-collection caps and stake-age requirements.
-        </p>
-      </details>
-      <details class="rounded-lg ring-1 p-3">
-        <summary class="cursor-pointer font-medium">Guardian Recovery (DRS)</summary>
-        <p class="muted text-sm mt-2">
-          Deployer and Admin councils (7 seats, 5-of-7 approvals by default). Recovery rotates keys safely.
-        </p>
-      </details>
-      <div class="text-xs muted">Read the full paper for math, proofs, and edge cases.</div>
-    </div>
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <h3 class="font-semibold">Treasury Withdraw</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Recipient</div>
+              <input id="toTreasury" placeholder="0xRecipient" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Amount (wei)</div>
+              <input id="amtTreasury" type="number" placeholder="1000000000000000000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+          </div>
+          <button id="btnWithdraw" class="btn btn-danger" data-confirm="withdraw">Withdraw</button>
+          <div class="text-xs muted">Guarded by confirmation modal.</div>
+        </div>
+      </div>
 
-    </section>
+      <div id="tab-whitepaper" class="glass ring-1 rounded-2xl p-5 space-y-5 hidden">
+        <h2 class="text-lg font-semibold title">Whitepaper Summary</h2>
+        <details class="rounded-lg ring-1 p-3" open>
+          <summary class="cursor-pointer font-medium">Vision & Mission</summary>
+          <p class="muted text-sm mt-2">
+            Catalyst aims to be the universal utility layer for NFTs: every ERC-721 can stake, burn, and participate in governance.
+            The protocol balances incentives between blue-chip collections and unverified projects, using proof-of-burn for legitimacy.
+          </p>
+        </details>
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">Tokenomics (CATA)</summary>
+          <ul class="mt-2 text-sm muted list-disc ml-5 space-y-1">
+            <li>Immutable fee split: <span class="mono">90% Burn / 9% Treasury / 1% Deployer</span>.</li>
+            <li>Global stake cap: 1B NFTs (750M term, 250M permanent).</li>
+            <li>Per-collection cap: 20k NFTs.</li>
+          </ul>
+        </details>
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">Governance</summary>
+          <p class="muted text-sm mt-2">
+            Burn-weighted voting with per-collection caps and stake-age requirements. The 90/9/1 split is immutable.
+          </p>
+        </details>
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">Guardian Recovery (DRS)</summary>
+          <p class="muted text-sm mt-2">
+            Deployer and Admin councils (7 seats, 5-of-7 approvals by default). Recovery proposals allow safe rotation of keys and roles.
+          </p>
+        </details>
+        <div class="text-xs muted">Read the full paper for math, proofs, and edge cases.</div>
+      </div>
+    </section>
 
-    <!-- =============== ASIDE (console + safety) =============== -->
-    <aside class="space-y-6">
-      <div class="glass ring-1 rounded-2xl p-5">
-        <h3 class="font-semibold mb-3">Console / Activity</h3>
-        <div id="log" class="mono text-xs max-h-[520px] overflow-auto rounded-lg border border-[#122041] bg-[#081126] p-2">
-        </div>
-        <div class="text-[11px] muted mt-2">
-          Tips: Use the <span class="kbd">Read</span> tab to explore safely. Write actions require wallet and may trigger confirmations.
-        </div>
-      </div>
+    <aside class="space-y-6">
+      <div class="glass ring-1 rounded-2xl p-5">
+        <h3 class="font-semibold mb-3">Console / Activity</h3>
+        <div id="log" class="mono text-xs max-h-[520px] overflow-auto rounded-lg border border-[#122041] bg-[#081126] p-2">
+          </div>
+        <div class="text-[11px] muted mt-2">
+          Tips: You can use the <span class="kbd">Read</span> tab to explore safely. Write actions require wallet and may trigger confirmations.
+        </div>
+      </div>
 
-      <div class="glass ring-1 rounded-2xl p-5">
-        <h3 class="font-semibold mb-3">Safety Notes</h3>
-        <ul class="text-sm muted space-y-2">
-          <li><span class="pill">Production</span> Always verify you’re on the official domain & contract.</li>
-          <li><span class="pill">Fees</span> The 90/9/1 split is immutable by design.</li>
-          <li><span class="pill">Upgrades</span> Contract may be upgradable; review proxy admin ownership and change logs.</li>
-        </ul>
-      </div>
-    </aside>
+      <div class="glass ring-1 rounded-2xl p-5">
+        <h3 class="font-semibold mb-3">Safety Notes</h3>
+        <ul class="text-sm muted space-y-2">
+          <li><span class="pill">Production</span> Always verify you’re on the official domain & contract.</li>
+          <li><span class="pill">Fees</span> The 90/9/1 split is immutable by design.</li>
+          <li><span class="pill">Upgrades</span> Contract may be upgradable; review proxy admin ownership and change logs.</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
 
-  </main>
+<footer class="max-w-7xl mx-auto px-4 py-8 text-center muted text-sm">
+    Catalyst • Universal NFT Utility • © <span id="year"></span>
+  </footer>
 
-  <footer class="max-w-7xl mx-auto px-4 py-8 text-center muted text-sm">
-    Catalyst • Universal NFT Utility • © <span id="year"></span>
-  </footer>
+  <div id="modal" class="fixed inset-0 hidden items-center justify-center z-50">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative glass ring-1 rounded-2xl w-[95%] max-w-lg p-5">
+      <div class="flex items-start gap-3">
+        <div id="modalIcon" class="w-10 h-10 rounded-lg grid place-items-center text-xl">⚠️</div>
+        <div class="grow">
+          <h3 id="modalTitle" class="font-semibold">Confirm</h3>
+          <p id="modalBody" class="muted text-sm mt-1">Are you sure?</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button id="modalCancel" class="btn btn-ghost">Cancel</button>
+        <button id="modalOk" class="btn btn-primary">Confirm</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- =============== MODAL (used by script confirmations) =============== -->
-  <div id="modal" class="fixed inset-0 hidden items-center justify-center z-50">
-    <div class="absolute inset-0 bg-black/60"></div>
-    <div class="relative glass ring-1 rounded-2xl w-[95%] max-w-lg p-5">
-      <div class="flex items-start gap-3">
-        <div id="modalIcon" class="w-10 h-10 rounded-lg grid place-items-center text-xl">⚠️</div>
-        <div class="grow">
-          <h3 id="modalTitle" class="font-semibold">Confirm</h3>
-          <p id="modalBody" class="muted text-sm mt-1">Are you sure?</p>
-        </div>
-      </div>
-      <div class="flex justify-end gap-2 mt-4">
-        <button id="modalCancel" class="btn btn-ghost">Cancel</button>
-        <button id="modalOk" class="btn btn-primary">Confirm</button>
-      </div>
-    </div>
-  </div>
-
-<!-- End of Chunk 2 -->
-  <!-- ====== Chunk 3: JavaScript (ABI load, wallet, handlers) ====== -->
 <script>
-(async function(){ 
-  // Globals
-  let ABI = null;
-  let rpcOverride = "";
-  let contractAddress = "";
-  let provider = null;      // read provider (BrowserProvider or JsonRpcProvider)
-  let signer = null;        // signer when wallet connected
-  let readContract = null;
-  let writeContract = null;
-  let walletAddress = null;
-  let autoRefreshTimer = null;
+    const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json";
+    const RPC_URL = "http://localhost:8545"; // For local testing
+    const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
-  // DOM helpers
-  const $ = id => document.getElementById(id);
-  const log = (txt, level="info") => {
-    const el = $("log");
-    const at = new Date().toISOString().slice(11,19);
-    el.innerHTML = `<div class="text-xs ${level==='err'?'text-red-400':'text-green-300'}">[${at}] ${txt}</div>` + el.innerHTML;
-  };
-
-  // Modal helpers
-  let modalResolve = null;
-  function showModal(title, body) {
-    $("modalTitle").textContent = title;
-    $("modalBody").textContent = body;
-    $("modal").classList.remove("hidden");
-    return new Promise((res) => {
-      modalResolve = res;
-    });
-  }
-  $("modalCancel").onclick = ()=>{ $("modal").classList.add("hidden"); if (modalResolve) modalResolve(false); };
-  $("modalOk").onclick = ()=>{ $("modal").classList.add("hidden"); if (modalResolve) modalResolve(true); };
-
-  // Load ABI
-  async function loadABI(){
-    if (ABI) return ABI;
-    try {
-      const resp = await fetch('../abi/CatalystNFTStakingUpgradeable.json');
-      ABI = await resp.json();
-      log("ABI loaded");
-      return ABI;
-    } catch (e) {
-      log("Failed to load ABI from /abi/CatalystNFTStakingUpgradeable.json — check path", "err");
-      throw e;
-    }
-  }
-
-  // Provider selection: RPC override (if set) else window.ethereum
-  function getReadProvider(){
-    if (rpcOverride && rpcOverride.trim() !== "") {
-      try {
-        return new ethers.JsonRpcProvider(rpcOverride);
-      } catch (e) {
-        log("Invalid RPC URL, falling back to window.ethereum", "err");
-      }
-    }
-    if (window.ethereum) {
-      return new ethers.BrowserProvider(window.ethereum);
-    }
-    // last resort: public fallback
-    return new ethers.JsonRpcProvider("https://cloudflare-eth.com/");
-  }
-
-  function ensureContractInstances() {
-    if (!ABI) throw new Error("ABI not loaded");
-    if (!contractAddress || !ethers.isAddress(contractAddress)) throw new Error("Set a valid contract address in header and click Save");
-
-    provider = provider || getReadProvider();
-    readContract = new ethers.Contract(contractAddress, ABI, provider);
-
-    if (signer) {
-      writeContract = new ethers.Contract(contractAddress, ABI, signer);
-    } else {
-      writeContract = null;
-    }
-  }
-
-  // Wallet connect
-  async function connectWallet(){
-    if (!window.ethereum) { log("No injected wallet found (window.ethereum)", "err"); throw new Error("No wallet"); }
-    provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    signer = await provider.getSigner();
-    walletAddress = await signer.getAddress();
-    $("acct").textContent = walletAddress;
-    $("walletBtn").textContent = "Connected";
-    writeContract = new ethers.Contract(contractAddress, ABI, signer);
-    log("Wallet connected: " + walletAddress);
-    return walletAddress;
-  }
-
-  // Save RPC & contract address buttons
-  $("saveRpc")?.addEventListener("click", ()=>{
-    rpcOverride = $("rpcUrl").value.trim();
-    provider = null; // reset to pick new RPC
-    readContract = null; writeContract = null;
-    log("RPC overridden: " + (rpcOverride || "cleared"));
-  });
-  $("saveRpc_m")?.addEventListener("click", ()=>{
-    rpcOverride = $("rpcUrl_m").value.trim();
-    provider = null; readContract = null; writeContract = null;
-    log("RPC overridden (mobile): " + (rpcOverride || "cleared"));
-  });
-
-  $("saveContractBtn")?.addEventListener("click", ()=>{
-    contractAddress = $("contractAddress").value.trim();
-    if (!ethers.isAddress(contractAddress)) { log("Invalid contract address", "err"); return; }
-    ensureContractInstances();
-    log("Contract address saved: " + contractAddress);
-  });
-  $("saveContractBtn_m")?.addEventListener("click", ()=>{
-    contractAddress = $("contractAddress_m").value.trim();
-    if (!ethers.isAddress(contractAddress)) { log("Invalid contract address (mobile)", "err"); return; }
-    ensureContractInstances();
-    log("Contract address (mobile) saved: " + contractAddress);
-  });
-
-  // Wallet button
-  $("walletBtn").addEventListener("click", async ()=>{
-    try {
-      await loadABI();
-      if (!contractAddress) {
-        contractAddress = $("contractAddress").value.trim();
-        if (!ethers.isAddress(contractAddress)) { log("Set valid contract address before connecting wallet", "err"); return; }
-      }
-      await connectWallet();
-      ensureContractInstances();
-    } catch (e) {
-      log("Wallet connect failed: " + (e?.message||e), "err");
-    }
-  });
-
-  // === Read helpers ===
-  async function refreshStats(){
-    try {
-      await loadABI();
-      ensureContractInstances();
-      const res = await readContract.stakingStats();
-      $("st_totalAll").textContent = res[0].toString();
-      $("st_totalTerm").textContent = res[1].toString();
-      $("st_totalPermanent").textContent = res[2].toString();
-      $("st_remainingGlobal").textContent = res[3].toString();
-      $("st_remainingTerm").textContent = res[4].toString();
-      $("st_remainingPermanent").textContent = res[5].toString();
-      const tb = await readContract.treasuryBalance();
-      $("st_treasury").textContent = tb.toString();
-      const dep = await readContract.deployerAddress();
-      $("st_deployer").textContent = dep;
-      const paused = await readContract.paused();
-      $("st_paused").textContent = paused ? "yes" : "no";
-      log("Stats refreshed");
-    } catch (e) {
-      log("refreshStats error: " + (e?.message||e), "err");
-    }
-  }
-
-  $("btnRefresh")?.addEventListener("click", refreshStats);
-  $("autoRefresh")?.addEventListener("change", (ev)=>{
-    if (ev.target.checked) {
-      autoRefreshTimer = setInterval(refreshStats, 30000);
-      log("Auto-refresh enabled");
-    } else {
-      clearInterval(autoRefreshTimer);
-      autoRefreshTimer = null;
-      log("Auto-refresh disabled");
-    }
-  });
-
-  // Pending rewards read
-  $("btnViewPending2")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      const col = $("vCol").value.trim();
-      const ownerRaw = $("vOwner").value.trim();
-      const owner = ownerRaw || (walletAddress || null);
-      const tokenId = Number($("vTokenId").value);
-      if (!col || !ethers.isAddress(col)) { $("pendingOut").textContent = "Set a valid collection address"; return; }
-      if (!owner) { $("pendingOut").textContent = "Provide owner or connect wallet"; return; }
-      if (!Number.isFinite(tokenId)) { $("pendingOut").textContent = "Provide token id"; return; }
-      const pending = await readContract.pendingRewardsView(col, owner, tokenId);
-      $("pendingOut").textContent = pending.toString();
-      log(`Pending rewards for ${owner} / ${col} #${tokenId}: ${pending.toString()}`);
-    } catch (e) {
-      $("pendingOut").textContent = e?.message || String(e);
-      log("pending read error: " + (e?.message||e), "err");
-    }
-  });
-
-  // Collections list & bluechip list
-  $("btnListCollections")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      const count = await readContract.collectionCount();
-      const n = Number(count);
-      let out = `Total: ${n}\n`;
-      for (let i=0;i<n;i++){
-        try {
-          const addr = await readContract.registeredCollections(i);
-          out += `#${i} ${addr}\n`;
-        } catch {}
-      }
-      $("collectionsOut").textContent = out;
-      log("Listed collections");
-    } catch (e) {
-      $("collectionsOut").textContent = e?.message||String(e);
-      log("list collections error: " + (e?.message||e), "err");
-    }
-  });
-
-  $("btnListBlue")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      const count = await readContract.collectionCount();
-      const n = Number(count);
-      let out = "Blue-chip flagged:\n";
-      for (let i=0;i<n;i++){
-        try {
-          const addr = await readContract.registeredCollections(i);
-          const isBlue = await readContract.b ? await readContract.b().isBluechipCollection?.[addr] : null;
-          // fallback: try calling a public getter via readContract.isBluechipCollection(addr) if available
-          let flagged = null;
-          try { flagged = await readContract.isBluechipCollection(addr); } catch {}
-          if (flagged) out += `${addr}\n`;
-        } catch {}
-      }
-      $("collectionsOut").textContent = out;
-      log("Listed blue-chip collections (best-effort)");
-    } catch (e) {
-      $("collectionsOut").textContent = e?.message||String(e);
-      log("list blue error: " + (e?.message||e), "err");
-    }
-  });
-
-  // User / collection info
-  $("btnUserInfo")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      let user = $("infoUser").value.trim() || walletAddress;
-      if (!user) { $("infoOut").textContent = "No user provided and wallet not connected"; return; }
-      // show burned amount and last staking block
-      const burned = await readContract.burnedCatalystByAddress(user);
-      const last = await readContract.lastStakingBlock(user);
-      $("infoOut").textContent = `Burned: ${burned.toString()}\nLastStakeBlock: ${last.toString()}`;
-      log("Fetched user info");
-    } catch (e) {
-      $("infoOut").textContent = e?.message||String(e);
-      log("user info error: " + (e?.message||e), "err");
-    }
-  });
-
-  $("btnColInfo")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      const col = $("infoCol").value.trim();
-      if (!col || !ethers.isAddress(col)) { $("infoOut").textContent = "Provide valid collection"; return; }
-      const idx = await readContract.registeredIndex(col);
-      $("infoOut").textContent = `registeredIndex: ${idx.toString()}`;
-      log("Fetched collection info");
-    } catch (e) {
-      $("infoOut").textContent = e?.message||String(e);
-      log("col info error: " + (e?.message||e), "err");
-    }
-  });
-
-  // ======== Staking Write Functions ========
-  // Approve helpers (setApprovalForAll)
-  $("btnApprove721")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI();
-      await ensureContractInstances();
-      if (!signer) { await connectWallet(); ensureContractInstances(); }
-      const col = $("colStake").value.trim();
-      if (!ethers.isAddress(col)) { log("Invalid collection"); return; }
-      const nft = new ethers.Contract(col, ["function setApprovalForAll(address,bool) external"], signer);
-      const tx = await nft.setApprovalForAll(contractAddress, true);
-      log("Approval tx sent: " + tx.hash);
-      await tx.wait();
-      log("Approval confirmed");
-    } catch (e) {
-      log("approve error: " + (e?.message||e), "err");
-    }
-  });
-
-  $("btnApprove721Check")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      const col = $("colStake").value.trim();
-      if (!ethers.isAddress(col)) { log("Invalid collection"); return; }
-      const nftRead = new ethers.Contract(col, ["function isApprovedForAll(address,address) view returns (bool)"], provider);
-      const owner = walletAddress || $("acct").textContent;
-      if (!owner) { log("Connect wallet to check"); return; }
-      const ok = await nftRead.isApprovedForAll(owner, contractAddress);
-      log("Approved?: " + ok);
-    } catch (e) {
-      log("approve check error: " + (e?.message||e), "err");
-    }
-  });
-
-  // single stake
-  $("btnStakeOne")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) { await connectWallet(); ensureContractInstances(); }
-      const col = $("colStake").value.trim();
-      const tid = Number($("tidStake").value);
-      const permanent = $("permanent").value === "true";
-      if (!ethers.isAddress(col)) { log("Invalid collection", "err"); return; }
-      if (!Number.isFinite(tid)) { log("Invalid token id", "err"); return; }
-      const tx = await writeContract.stake(col, tid, permanent);
-      log("Stake tx sent: " + tx.hash);
-      await tx.wait();
-      log("Stake confirmed");
-    } catch (e) {
-      log("stake error: " + (e?.message||e), "err");
-    }
-  });
-
-  // harvest single
-  $("btnHarvestOne")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) { await connectWallet(); ensureContractInstances(); }
-      const col = $("colStake").value.trim();
-      const tid = Number($("tidStake").value);
-      const tx = await writeContract.harvest(col, tid);
-      log("Harvest tx: " + tx.hash);
-      await tx.wait();
-      log("Harvest done");
-    } catch (e) { log("harvest error: " + (e?.message||e), "err"); }
-  });
-
-  // unstake single
-  $("btnUnstakeOne")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) { await connectWallet(); ensureContractInstances(); }
-      const col = $("colStake").value.trim();
-      const tid = Number($("tidStake").value);
-      const tx = await writeContract.unstake(col, tid);
-      log("Unstake tx: " + tx.hash);
-      await tx.wait();
-      log("Unstaked");
-    } catch (e) { log("unstake error: " + (e?.message||e), "err"); }
-  });
-
-  // view pending for single
-  $("btnViewPending")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      const col = $("colStake").value.trim();
-      const tid = Number($("tidStake").value);
-      if (!ethers.isAddress(col)) { $("pendingView").textContent = "Invalid collection"; return; }
-      const owner = walletAddress || $("acct").textContent;
-      if (!owner) { $("pendingView").textContent = "Connect wallet or provide owner"; return; }
-      const pending = await readContract.pendingRewardsView(col, owner, tid);
-      $("pendingView").textContent = pending.toString();
-      log("Pending: " + pending.toString());
-    } catch (e) { $("pendingView").textContent = e?.message || String(e); log("pending read error: " + (e?.message||e), "err"); }
-  });
-
-  // Batch stake
-  $("btnBatchStake")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const col = $("colBatch").value.trim();
-      const tids = $("tidsBatch").value.split(',').map(x=>Number(x.trim())).filter(x=>Number.isFinite(x));
-      const perm = $("permanentBatch").value === "true";
-      if (!ethers.isAddress(col)) { log("Invalid collection", "err"); return; }
-      if (!tids.length) { log("No token ids", "err"); return; }
-      const tx = await writeContract.batchStake(col, tids, perm);
-      log("Batch stake sent: " + tx.hash);
-      await tx.wait();
-      log("Batch stake mined");
-    } catch (e) { log("batch stake error: " + (e?.message||e), "err"); }
-  });
-
-  // Register collection
-  $("btnRegister")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const col = $("colRegister").value.trim();
-      const declared = Number($("declaredSupply").value);
-      if (!ethers.isAddress(col)) { log("Invalid collection address", "err"); return; }
-      if (!Number.isFinite(declared) || declared <= 0) { log("Invalid declared supply", "err"); return; }
-      const tx = await writeContract.registerCollection(col, declared);
-      log("Register tx: " + tx.hash);
-      await tx.wait();
-      log("Collection registered");
-    } catch (e) { log("register error: " + (e?.message||e), "err"); }
-  });
-
-  // ===== Bluechip =====
-  $("btnEnrollBlue")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const tx = await writeContract.enrollBluechip();
-      log("Enroll tx: " + tx.hash);
-      await tx.wait();
-      log("Enrollment complete");
-    } catch (e) { log("enroll error: " + (e?.message||e), "err"); }
-  });
-
-  $("btnHarvestBlue")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const col = $("colBlueHarvest").value.trim();
-      if (!ethers.isAddress(col)) { log("Invalid collection", "err"); return; }
-      const tx = await writeContract.harvestBluechip(col);
-      log("Harvest blue tx: " + tx.hash);
-      await tx.wait();
-      log("Blue-chip harvested");
-    } catch (e) { log("harvest blue error: " + (e?.message||e), "err"); }
-  });
-
-  $("btnSetBlue")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const col = $("colFlagBlue").value.trim();
-      const isBlue = $("isBlueFlag").value === "true";
-      if (!ethers.isAddress(col)) { log("Invalid collection", "err"); return; }
-      const tx = await writeContract.setBluechipCollection(col, isBlue);
-      log("Flag tx: " + tx.hash);
-      await tx.wait();
-      log("Collection flag updated");
-    } catch (e) { log("set blue error: " + (e?.message||e), "err"); }
-  });
-
-  // ===== Governance =====
-  $("btnPropose")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const pType = Number($("pType").value);
-      const paramTarget = Number($("paramTargetGov").value || 0);
-      const newValue = BigInt($("newValueGov").value || 0);
-      const ctx = $("collCtx").value.trim() || ethers.ZeroAddress;
-      const tx = await writeContract.propose(pType, paramTarget, newValue, ctx);
-      log("Propose sent: " + tx.hash);
-      const rc = await tx.wait();
-      // the contract returns bytes32 id from createProposal; for simplicity we fetch events in logs or user can copy id from tx logs
-      log("Proposal created - check tx logs for id");
-    } catch (e) { log("propose error: " + (e?.message||e), "err"); }
-  });
-
-  $("btnVote")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const id = $("propId").value.trim();
-      if (!id) { log("Provide proposal id", "err"); return; }
-      const tx = await writeContract.vote(id);
-      log("Vote sent: " + tx.hash);
-      await tx.wait();
-      log("Voted");
-    } catch (e) { log("vote error: " + (e?.message||e), "err"); }
-  });
-
-  $("btnExecute")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const id = $("propId").value.trim();
-      if (!id) { log("Provide proposal id", "err"); return; }
-      const tx = await writeContract.executeProposal(id);
-      log("Execute sent: " + tx.hash);
-      await tx.wait();
-      log("Proposal executed (if eligible)");
-    } catch (e) { log("execute error: " + (e?.message||e), "err"); }
-  });
-
-  // ===== Guardians =====
-  $("btnPropDep")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const newAddr = $("newDeployer").value.trim();
-      if (!ethers.isAddress(newAddr)) { log("Invalid address", "err"); return; }
-      const tx = await writeContract.proposeDeployerRecovery(newAddr);
-      log("Propose deployer recovery: " + tx.hash);
-      await tx.wait(); log("Propose tx mined");
-    } catch (e) { log("prop dep error: " + (e?.message||e), "err"); }
-  });
-
-  $("btnApproveDep")?.addEventListener("click", async ()=>{
-    try { await loadABI(); ensureContractInstances(); if (!signer) await connectWallet();
-      const tx = await writeContract.approveDeployerRecovery();
-      log("Approve deployer: " + tx.hash); await tx.wait(); log("Approved"); } catch (e){ log("approve dep error: "+(e?.message||e),"err"); }
-  });
-
-  $("btnExecDep")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const ok = await showModal("Execute Deployer Recovery", "This will change deployerAddress if approvals met. Continue?");
-      if (!ok) return;
-      const tx = await writeContract.executeDeployerRecovery();
-      log("Execute recovery tx: " + tx.hash);
-      await tx.wait();
-      log("Deployer recovered");
-    } catch (e) { log("exec dep error: " + (e?.message||e), "err"); }
-  });
-
-  // Admin council
-  $("btnPropAdm")?.addEventListener("click", async ()=>{
-    try { await loadABI(); ensureContractInstances(); if (!signer) await connectWallet();
-      const a = $("newAdmin").value.trim(); if (!ethers.isAddress(a)) { log("Invalid", "err"); return; }
-      const tx = await writeContract.proposeAdminRecovery(a); log("Propose admin: " + tx.hash); await tx.wait(); log("Proposed"); } catch (e){ log("prop adm error: "+(e?.message||e),"err"); }
-  });
-  $("btnApproveAdm")?.addEventListener("click", async ()=>{ try { await loadABI(); ensureContractInstances(); if (!signer) await connectWallet(); const tx = await writeContract.approveAdminRecovery(); log("Approve admin: "+tx.hash); await tx.wait(); log("Approved"); } catch(e){ log("approve adm error: "+(e?.message||e),"err"); }});
-  $("btnExecAdm")?.addEventListener("click", async ()=>{ try { await loadABI(); ensureContractInstances(); if (!signer) await connectWallet(); const ok = await showModal("Execute Admin Recovery","Will grant DEFAULT_ADMIN_ROLE to proposed. Continue?"); if(!ok) return; const tx = await writeContract.executeAdminRecovery(); log("Exec admin: "+tx.hash); await tx.wait(); log("Admin recovered"); } catch(e){ log("exec adm error: "+(e?.message||e),"err"); }});
-
-  // Set guardians (admin role)
-  $("btnSetDepGuardian")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances(); if (!signer) await connectWallet();
-      const idx = Number($("depIdx").value); const g = $("depGuardian").value.trim();
-      if (!Number.isInteger(idx) || idx < 0) { log("Invalid index", "err"); return; }
-      if (!ethers.isAddress(g)) { log("Invalid guardian address", "err"); return; }
-      const tx = await writeContract.setDeployerGuardian(idx, g);
-      log("Set deployer guardian tx: " + tx.hash); await tx.wait(); log("Set done");
-    } catch (e) { log("set dep guardian error: " + (e?.message||e), "err"); }
-  });
-
-  $("btnSetAdmGuardian")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances(); if (!signer) await connectWallet();
-      const idx = Number($("admIdx").value); const g = $("admGuardian").value.trim();
-      if (!Number.isInteger(idx) || idx < 0) { log("Invalid index", "err"); return; }
-      if (!ethers.isAddress(g)) { log("Invalid guardian address", "err"); return; }
-      const tx = await writeContract.setAdminGuardian(idx, g);
-      log("Set admin guardian tx: " + tx.hash); await tx.wait(); log("Set done");
-    } catch (e) { log("set adm guardian error: " + (e?.message||e), "err"); }
-  });
-
-  // ===== Admin functions =====
-  $("btnPause")?.addEventListener("click", async ()=>{
-    try { await loadABI(); ensureContractInstances(); if (!signer) await connectWallet(); const tx = await writeContract.pause(); log("Pause sent: "+tx.hash); await tx.wait(); log("Paused"); } catch (e){ log("pause error: "+(e?.message||e),"err"); }});
-  $("btnUnpause")?.addEventListener("click", async ()=>{ try { await loadABI(); ensureContractInstances(); if (!signer) await connectWallet(); const tx = await writeContract.unpause(); log("Unpause sent: "+tx.hash); await tx.wait(); log("Unpaused"); } catch(e){ log("unpause error: "+(e?.message||e),"err"); }});
-
-  // Withdraw treasury with modal confirm
-  $("btnWithdraw")?.addEventListener("click", async ()=>{
-    try {
-      await loadABI(); ensureContractInstances();
-      if (!signer) await connectWallet();
-      const to = $("toTreasury").value.trim();
-      const amt = $("amtTreasury").value.trim();
-      if (!ethers.isAddress(to)) { log("Invalid recipient", "err"); return; }
-      if (!amt) { log("Provide amount", "err"); return; }
-      const ok = await showModal("Withdraw Treasury", `Withdraw ${amt} wei to ${to}?`);
-      if (!ok) return;
-      const tx = await writeContract.withdrawTreasury(to, BigInt(amt));
-      log("Withdraw tx: " + tx.hash);
-      await tx.wait();
-      log("Withdraw executed");
-    } catch (e) { log("withdraw error: " + (e?.message||e), "err"); }
-  });
-
-  // ===== Misc UI wiring =====
-  // Header contract + rpc inputs: set defaults
-  $("year").textContent = new Date().getFullYear();
-
-  // Initialize ABI load so UI becomes responsive
-  try {
-    await loadABI();
-  } catch (e) {
-    // already logged
-  }
-
-  log("UI ready — set contract & connect wallet to perform write actions");
-})();
+    document.getElementById("year").textContent = new Date().getFullYear();
 </script>
-<!-- End Chunk 3 -->
- <script>
-  // ============ TAB HANDLER ============
-  function selectTab(tab) {
-    // Hide all tabs
-    document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
-    // Remove active class from all buttons
-    document.querySelectorAll('.tabbtn').forEach(btn => btn.classList.remove('tab-active'));
-    // Show selected tab
-    document.getElementById('tab-' + tab).classList.remove('hidden');
-    // Highlight active button
-    document.querySelectorAll(`[data-tab="${tab}"]`).forEach(btn => btn.classList.add('tab-active'));
-  }
-
-  // Attach handlers to all tab buttons
-  document.querySelectorAll('.tabbtn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tab = btn.getAttribute('data-tab');
-      selectTab(tab);
-    });
-  });
-
-  // Default tab
-  selectTab("overview");
-</script>
-<script>
-  // ================== GLOBAL VARS ==================
-  let provider, signer, walletAddress, CONTRACT, CONTRACT_ADDRESS, ABI;
-
-  // ================== LOG HELPER ==================
-  function log(msg) {
-    const logDiv = document.getElementById("log");
-    if (logDiv) {
-      logDiv.innerHTML += msg + "<br/>";
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
-    console.log(msg);
-  }
-
-  // ================== TAB SWITCH ==================
-  function selectTab(tab) {
-    document.querySelectorAll("[id^='tab-']").forEach(el => el.classList.add("hidden"));
-    const t = document.getElementById("tab-" + tab);
-    if (t) t.classList.remove("hidden");
-    document.querySelectorAll(".tabbtn").forEach(btn => btn.classList.remove("tab-active"));
-    const activeBtn = document.querySelector(`.tabbtn[data-tab="${tab}"]`);
-    if (activeBtn) activeBtn.classList.add("tab-active");
-  }
-  document.querySelectorAll(".tabbtn").forEach(btn => {
-    btn.addEventListener("click", () => selectTab(btn.dataset.tab));
-  });
-
-  // ================== INIT ABI + PROVIDER ==================
-  async function init() {
-    try {
-      // Load ABI file
-      const res = await fetch("abi/CatalystNFTStakingUpgradeable.json");
-      ABI = await res.json();
-      log("✅ ABI loaded with " + ABI.length + " entries");
-
-      // Default provider (Metamask if available, else ethers default)
-      if (window.ethereum) {
-        provider = new ethers.BrowserProvider(window.ethereum);
-        log("🌐 Default provider: window.ethereum");
-      } else {
-        provider = ethers.getDefaultProvider();
-        log("🌐 Using default ethers provider");
-      }
-    } catch (err) {
-      log("❌ ABI load failed: " + err.message);
-    }
-  }
-
-  // ================== DOM EVENTS ==================
-  window.addEventListener("DOMContentLoaded", () => {
-    const rpcInput = document.getElementById("rpcUrl");
-    const rpcInputMobile = document.getElementById("rpcUrl_m");
-    const contractInput = document.getElementById("contractAddress");
-    const contractInputMobile = document.getElementById("contractAddress_m");
-    const walletBtn = document.getElementById("walletBtn");
-
-    // RPC save
-    document.getElementById("saveRpc")?.addEventListener("click", () => {
-      const rpcUrl = rpcInput.value || rpcInputMobile?.value;
-      if (!rpcUrl) return log("⚠️ Enter a valid RPC first.");
-      provider = new ethers.JsonRpcProvider(rpcUrl);
-      log("✅ Using custom RPC: " + rpcUrl);
-    });
-    document.getElementById("saveRpc_m")?.addEventListener("click", () => {
-      const rpcUrl = rpcInputMobile.value;
-      if (!rpcUrl) return log("⚠️ Enter a valid RPC first.");
-      provider = new ethers.JsonRpcProvider(rpcUrl);
-      log("✅ Using custom RPC (mobile): " + rpcUrl);
-    });
-
-    // Contract save
-    document.getElementById("saveContractBtn")?.addEventListener("click", () => {
-      const addr = contractInput.value || contractInputMobile?.value;
-      if (!ethers.isAddress(addr)) return log("⚠️ Invalid contract address");
-      CONTRACT_ADDRESS = addr;
-      CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer || provider);
-      log("✅ Saved contract address: " + addr);
-    });
-    document.getElementById("saveContractBtn_m")?.addEventListener("click", () => {
-      const addr = contractInputMobile.value;
-      if (!ethers.isAddress(addr)) return log("⚠️ Invalid contract address");
-      CONTRACT_ADDRESS = addr;
-      CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer || provider);
-      log("✅ Saved contract address (mobile): " + addr);
-    });
-
-    // Wallet connect
-    walletBtn?.addEventListener("click", async () => {
-      try {
-        if (!window.ethereum) return log("❌ No wallet found");
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        walletAddress = await signer.getAddress();
-        document.getElementById("acct").textContent = walletAddress;
-        CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-        log("🔑 Wallet connected: " + walletAddress);
-      } catch (err) {
-        log("❌ Wallet connect failed: " + err.message);
-      }
-    });
-
-    // Load year in footer
-    document.getElementById("year").textContent = new Date().getFullYear();
-  });
-
-  // ================== RUN INIT ==================
-  init();
-</script>
-  </body>
+</body>
 </html>
