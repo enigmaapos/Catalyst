@@ -1,3 +1,7 @@
+core chain testnet
+main - ca 0x493E4ba582300890ce0F36De5629D22A1E6276d7
+proxy - ca 0xa1a8aB9AE937Abce999333EA22779E7d20752506
+
 [
   "0x1111111111111111111111111111111111111111",   // owner
   "1000000000000000000",                         // rewardRateIncrementPerNFT (1e18 = 1 CATA base unit)
