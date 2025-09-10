@@ -635,7 +635,7 @@
   async function loadABI(){
     if (ABI) return ABI;
     try {
-      const resp = await fetch('/abi/CatalystNFTStakingUpgradeable.json');
+      const resp = await fetch('../abi/CatalystNFTStakingUpgradeable.json');
       ABI = await resp.json();
       log("ABI loaded");
       return ABI;
@@ -1199,57 +1199,6 @@
   // Default tab
   selectTab("overview");
 </script>
- <script>
-// ================== UTILS ==================
-function log(msg) {
-  const logDiv = document.getElementById("log");
-  if (logDiv) logDiv.innerHTML += msg + "<br/>";
-  console.log(msg);
-}
 
-// ================== DOM-READY HANDLERS ==================
-window.addEventListener("DOMContentLoaded", () => {
-  const rpcInput = document.getElementById("rpcUrl");
-  const rpcInputMobile = document.getElementById("rpcUrl_m");
-  const contractInput = document.getElementById("contractAddress");
-  const contractInputMobile = document.getElementById("contractAddress_m");
-  const walletBtn = document.getElementById("walletBtn");
-
-  // RPC save
-  if (rpcInput && document.getElementById("saveRpc")) {
-    document.getElementById("saveRpc").addEventListener("click", () => {
-      const rpcUrl = rpcInput.value || rpcInputMobile?.value;
-      if (!rpcUrl) return log("⚠️ Enter a valid RPC first.");
-      provider = new ethers.JsonRpcProvider(rpcUrl);
-      log("✅ Using custom RPC: " + rpcUrl);
-    });
-  }
-
-  // Contract save
-  if (contractInput && document.getElementById("saveContractBtn")) {
-    document.getElementById("saveContractBtn").addEventListener("click", () => {
-      const addr = contractInput.value || contractInputMobile?.value;
-      if (!ethers.isAddress(addr)) return log("⚠️ Invalid contract address");
-      CONTRACT_ADDRESS = addr;
-      CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer || provider);
-      log("✅ Saved contract address: " + addr);
-    });
-  }
-
-  // Wallet connect
-  if (walletBtn) {
-    walletBtn.addEventListener("click", async () => {
-      if (!window.ethereum) return log("❌ No wallet found");
-      provider = new ethers.BrowserProvider(window.ethereum);
-      signer = await provider.getSigner();
-      walletAddress = await signer.getAddress();
-      document.getElementById("acct").textContent = walletAddress;
-      log("🔑 Wallet connected: " + walletAddress);
-    });
-  }
-});
-</script>
-</body>
-</html>
   </body>
 </html>
