@@ -1144,10 +1144,20 @@ function toWei(val, decimals = 18) {
     await initWriteContract();
     const col = parseAddress($("colFlagBlue").value);
     const flag = $("isBlueFlag").value === "true";
-    const tx = await WRITE_CONTRACT.setBluechipCollection(col, flag); // ✅ correct name
+
+    // read current status first
+    const current = await READ_CONTRACT.isBlueChip(col);
+    if (current === flag) {
+      log(`No change: collection is already ${flag ? "flagged" : "cleared"}`, "warn");
+      return;
+    }
+
+    // only send tx if state differs
+    const tx = await WRITE_CONTRACT.setBluechipCollection(col, flag);
     log(`Set blue-chip sent: ${tx.hash}`);
     await tx.wait();
     log(`Blue-chip ${flag ? "flagged" : "cleared"} ✅`, "ok");
+
   } catch (e) {
     log(e.message || e, "err");
   }
