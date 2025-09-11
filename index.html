@@ -697,17 +697,35 @@
     /* =========================
        DOM HELPERS & LOG
        ========================= */
-    const $ = (id) => document.getElementById(id);
-    function now(){ return new Date().toLocaleTimeString(); }
-    function log(msg, cls=""){
-      const wrap = $("log");
-      const div = document.createElement("div");
-      div.className = "logline " + (cls||"");
-      div.textContent = `[${now()}] ${msg}`;
-      wrap.prepend(div);
-    }
-    function setYear(){ $("year").textContent = new Date().getFullYear(); }
-    setYear();
+    // existing
+const $ = (id) => document.getElementById(id);
+function now(){ return new Date().toLocaleTimeString(); }
+function log(msg, cls=""){
+  const wrap = $("log");
+  const div = document.createElement("div");
+  div.className = "logline " + (cls||"");
+  div.textContent = `[${now()}] ${msg}`;
+  wrap.prepend(div);
+}
+function setYear(){ $("year").textContent = new Date().getFullYear(); }
+setYear();
+
+// ✅ new helpers for numbers
+function toReadable(raw, decimals = 18) {
+  try {
+    return ethers.formatUnits(raw, decimals); // BigInt -> human
+  } catch {
+    return raw?.toString?.() || "—";
+  }
+}
+
+function toWei(val, decimals = 18) {
+  try {
+    return ethers.parseUnits(val.toString(), decimals); // human -> BigInt
+  } catch {
+    return 0n;
+  }
+}
 
     /* =========================
        MODAL (CONFIRMATIONS)
@@ -825,7 +843,7 @@
 
         try{
           const tb = await READ_CONTRACT.treasuryBalance();
-          $("st_treasury").textContent = tb.toString();
+          $("st_treasury").textContent = toReadable(tb);
         }catch{ $("st_treasury").textContent = "n/a"; }
 
         try{
