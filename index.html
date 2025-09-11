@@ -60,6 +60,614 @@
 </head>
 <body class="min-h-screen">
 
+    <header class="glass ring-1 shadow-card sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-3 items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-[#10203d] border border-[#1e2e54] grid place-items-center">
+          <span class="text-xl">⚗️</span>
+        </div>
+        <div>
+          <h1 class="text-lg font-semibold title">Catalyst — Official DApp</h1>
+          <div class="text-xs muted -mt-0.5">Universal NFT Utility • Deflationary Tokenomics • Guardian Recovery</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 ml-auto">
+        <div class="hidden lg:flex items-center gap-2">
+          <span class="text-xs muted">RPC</span>
+          <input id="rpcUrl" placeholder="https://…" class="w-72 bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#3553a3]" />
+          <button id="saveRpc" class="btn btn-ghost text-sm">Use RPC</button>
+        </div>
+
+        <div class="hidden lg:flex items-center gap-2">
+          <span class="text-xs muted">Contract</span>
+          <input id="contractAddress" placeholder="0x… (proxy)" class="w-[22rem] bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#3553a3]" />
+          <button id="saveContractBtn" class="btn btn-primary text-sm">Save</button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span id="acct" class="mono text-xs muted">Not connected</span>
+          <button id="walletBtn" class="btn btn-primary">Connect</button>
+        </div>
+      </div>
+
+      <div class="w-full grid grid-cols-1 gap-2 lg:hidden mt-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs muted">RPC</span>
+          <input id="rpcUrl_m" placeholder="https://…" class="flex-1 bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#3553a3]" />
+          <button id="saveRpc_m" class="btn btn-ghost text-sm">Use</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs muted">Contract</span>
+          <input id="contractAddress_m" placeholder="0x… (proxy)" class="flex-1 bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#3553a3]" />
+          <button id="saveContractBtn_m" class="btn btn-primary text-sm">Save</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 grid-2 gap-6">
+
+    <section class="space-y-6">
+
+      <div class="glass ring-1 rounded-2xl p-2 flex flex-wrap gap-2">
+        <button data-tab="overview" class="tabbtn btn btn-ghost tab-active">Overview</button>
+        <button data-tab="read" class="tabbtn btn btn-ghost">Read</button>
+        <button data-tab="stake" class="tabbtn btn btn-ghost">Stake</button>
+        <button data-tab="bluechip" class="tabbtn btn btn-ghost">Blue-Chip</button>
+        <button data-tab="governance" class="tabbtn btn btn-ghost">Governance</button>
+        <button data-tab="guardians" class="tabbtn btn btn-ghost">Guardians</button>
+        <button data-tab="admin" class="tabbtn btn btn-ghost">Admin</button>
+        <button data-tab="whitepaper" class="tabbtn btn btn-ghost">Whitepaper</button>
+      </div>
+
+      <div id="tab-overview" class="glass ring-1 rounded-2xl p-5 space-y-5">
+        <div class="flex items-start gap-4">
+          <div class="hidden sm:block w-14 h-14 rounded-xl bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-2xl">🧭</div>
+          <div class="space-y-2">
+            <h2 class="text-xl font-semibold title">Catalyst at a Glance</h2>
+            <p class="muted leading-relaxed">
+              Catalyst is a universal NFT staking & governance protocol. Stake ERC-721s for CATA rewards, participate
+              in burn-weighted governance, and use the Guardian Council recovery system. The system is designed for
+              <span class="chip">security</span>, <span class="chip">scalability</span>, and <span class="chip">sustainability</span>.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="card rounded-xl p-4 ring-1">
+            <div class="text-sm muted mb-1">Mission</div>
+            <div class="font-semibold">Non-profit R&amp;D</div>
+            <p class="muted text-sm mt-2">Immutable fee split <span class="mono">90% burn / 9% treasury / 1% deployer</span>. Community-governed treasury. Deflationary incentives.</p>
+          </div>
+          <div class="card rounded-xl p-4 ring-1">
+            <div class="text-sm muted mb-1">Usage</div>
+            <ol class="text-sm list-decimal ml-5 space-y-1 muted">
+              <li>Save your proxy contract address.</li>
+              <li>Optionally set a custom read RPC.</li>
+              <li>Connect wallet for write actions; reads work without it.</li>
+            </ol>
+          </div>
+          <div class="card rounded-xl p-4 ring-1">
+            <div class="text-sm muted mb-1">Docs</div>
+            <div class="space-y-1 text-sm">
+              <div><span class="badge">Whitepaper</span> See the <a href="#tab-whitepaper" class="link" onclick="selectTab('whitepaper')">summary</a> tab.</div>
+              <div><span class="badge">Views</span> Inspect pending rewards, collections, and governance data.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-read" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <h2 class="text-lg font-semibold title">Read-Only Helpers & Inspectors</h2>
+        <p class="muted text-sm">These calls never require a wallet. Use them to explore the protocol before interacting.</p>
+
+        <div class="card rounded-xl p-4 ring-1">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">Protocol Stats</h3>
+            <div class="flex items-center gap-2">
+              <button id="btnRefresh" class="btn btn-primary text-sm">Refresh</button>
+              <label class="text-xs flex items-center gap-2">
+                <input id="autoRefresh" type="checkbox" class="accent-blue-400">
+                <span class="muted">Auto</span>
+              </label>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm">
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">totalAll</span> <span id="st_totalAll" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">totalTerm</span> <span id="st_totalTerm" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">totalPermanent</span> <span id="st_totalPermanent" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">remainingGlobal</span> <span id="st_remainingGlobal" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">remainingTerm</span> <span id="st_remainingTerm" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">remainingPermanent</span> <span id="st_remainingPermanent" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">treasuryBalance</span> <span id="st_treasury" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">deployerAddress</span> <span id="st_deployer" class="mono">—</span>
+            </div>
+            <div class="flex justify-between border-b border-[#172244] pb-2">
+              <span class="muted">paused</span> <span id="st_paused" class="mono">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card rounded-xl p-4 ring-1">
+          <h3 class="font-semibold mb-2">Pending Rewards (read)</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Collection</div>
+              <input id="vCol" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xCollection" />
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Owner (leave blank → connected)</div>
+              <input id="vOwner" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xOwner" />
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Token ID</div>
+              <input id="vTokenId" type="number" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="e.g. 123" />
+            </div>
+            <div class="flex items-end">
+              <button id="btnViewPending2" class="btn btn-primary w-full">View Pending</button>
+            </div>
+          </div>
+          <div id="pendingOut" class="mono text-sm muted mt-3">—</div>
+        </div>
+
+        <div class="card rounded-xl p-4 ring-1">
+          <h3 class="font-semibold mb-3">Registered Collections / Blue-Chip</h3>
+          <div class="flex gap-2">
+            <button id="btnListCollections" class="btn btn-primary">List Registered</button>
+            <button id="btnListBlue" class="btn btn-ghost">List Blue-Chips</button>
+          </div>
+          <div id="collectionsOut" class="mono text-sm muted mt-3">—</div>
+        </div>
+
+        <div class="card rounded-xl p-4 ring-1">
+          <h3 class="font-semibold mb-3">User / Collection Info</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">User</div>
+              <input id="infoUser" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xUser (blank → connected)" />
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Collection (optional)</div>
+              <input id="infoCol" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xCollection" />
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button id="btnUserInfo" class="btn btn-primary">Get User Info</button>
+            <button id="btnColInfo" class="btn btn-ghost">Get Collection Info</button>
+          </div>
+          <div id="infoOut" class="mono text-sm muted mt-3">—</div>
+        </div>
+      </div>
+
+      <div id="tab-stake" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🧱</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Custodial Staking</h2>
+            <p class="muted text-sm">
+              Stake ERC-721 tokens into Catalyst. Term stakes have a fixed duration; permanent stakes lock forever for
+              higher rewards. Harvests are deflationary: a portion is burned (90/9/1 system).
+            </p>
+          </div>
+        </div>
+
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">📘 Learn More</summary>
+          <ul class="mt-2 text-sm muted list-disc ml-5 space-y-1">
+            <li><b>Term:</b> accrues until end; early unstake disallowed.</li>
+            <li><b>Permanent:</b> no unlock; higher sustained reward rate.</li>
+            <li><b>Caps:</b> 20k NFTs/collection, 1B global (75% term / 25% perm).</li>
+          </ul>
+        </details>
+
+        <div class="card rounded-xl p-4 ring-1 space-y-4">
+          <h3 class="font-semibold">Single Stake</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Collection</div>
+              <input id="colStake" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Token ID</div>
+              <input id="tidStake" type="number" placeholder="123" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Stake Type</div>
+              <select id="permanent" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+                <option value="false">Term</option>
+                <option value="true">Permanent</option>
+              </select>
+            </div>
+            <div class="flex items-end gap-2">
+              <button id="btnApprove721" class="btn btn-ghost">Approve setApprovalForAll</button>
+              <button id="btnApprove721Check" class="btn btn-ghost">Check</button>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="btnStake" class="btn btn-primary">Stake NFT</button>
+            <button id="btnHarvestOne" class="btn btn-ghost">Harvest</button>
+            <button id="btnUnstake" class="btn btn-ghost">Unstake</button>
+            <button id="btnViewPending" class="btn btn-ghost">View Pending</button>
+            <span id="pendingView" class="mono text-sm muted">—</span>
+          </div>
+          <div class="text-xs muted">
+            <span class="tooltip" data-tip="Unstake may include a burn fee for unverified collections.">ⓘ</span> Fees follow the immutable 90/9/1 split.
+          </div>
+        </div>
+
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <h3 class="font-semibold">Batch Stake (≤ ~50 safe)</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Collection</div>
+              <input id="colBatch" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Token IDs (CSV)</div>
+              <input id="tidsBatch" placeholder="1,2,3,4" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Stake Type</div>
+              <select id="permanentBatch" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+                <option value="false">Term</option>
+                <option value="true">Permanent</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button id="btnApprove721Batch" class="btn btn-ghost w-full">Approve (Batch)</button>
+            </div>
+          </div>
+          <button id="btnBatchStake" class="btn btn-primary">Batch Stake</button>
+          <div class="text-xs muted">
+            <span class="tooltip" data-tip="Block gas limits vary per chain; consider smaller batches on L1.">ⓘ</span> Keep batches reasonable to avoid out-of-gas.
+          </div>
+        </div>
+
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <h3 class="font-semibold">Register Collection (permissionless)</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Collection</div>
+              <input id="colRegister" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Declared Max Supply (≤ 20000)</div>
+              <input id="declaredSupply" type="number" placeholder="10000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+          </div>
+          <button id="btnRegister" class="btn btn-primary">Register</button>
+          <div class="text-xs muted">
+            <span class="tooltip" data-tip="Unverified collections incur surcharges until they upgrade.">ⓘ</span> Verified collections (usually owner-registered) enjoy normal fees.
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-bluechip" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">💎</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Blue-Chip (Non-Custodial)</h2>
+            <p class="muted text-sm">
+              Earn rewards without transferring NFTs. <b>Enroll your wallet once</b>, then harvest for any flagged blue-chip
+              collection you hold. This minimizes custody risk for high-value assets.
+            </p>
+          </div>
+        </div>
+
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">📘 Learn More</summary>
+          <p class="muted text-sm mt-2">Enrollment is per-wallet (not per collection). If your wallet holds tokens of any flagged blue-chip collection, you can harvest non-custodially.</p>
+        </details>
+
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Enroll Wallet (one-time)</div>
+              <button id="btnEnrollBlue" class="btn btn-primary w-full">Enroll</button>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Harvest for Collection</div>
+              <div class="flex gap-2">
+                <input id="colBlueHarvest" placeholder="0xCollection" class="flex-1 bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                <button id="btnHarvestBlue" class="btn btn-primary">Harvest</button>
+              </div>
+              <div class="text-xs muted mt-1">Wallet must own ≥1 token of that collection.</div>
+            </div>
+          </div>
+
+          <details class="rounded-lg ring-1 p-3">
+            <summary class="cursor-pointer">Admin: Flag / Unflag Collection</summary>
+            <div class="grid md:grid-cols-3 gap-3 mt-3">
+              <div>
+                <div class="text-xs muted mb-1">Collection</div>
+                <input id="colFlagBlue" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <div class="text-xs muted mb-1">Status</div>
+                <select id="isBlueFlag" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+                  <option value="true">Flag as Blue-Chip</option>
+                  <option value="false">Remove Blue-Chip</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button id="btnSetBlue" class="btn btn-primary w-full">Set Blue-Chip</button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div id="tab-governance" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🏛️</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Governance</h2>
+            <p class="muted text-sm">
+              Burn-Weighted Collection Governance (BWCG). Vote weight ties to burned CATA and stake-age; per-collection caps
+              avoid monopolies. The <span class="mono">90/9/1</span> split is immutable and cannot be changed by governance.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <h3 class="font-semibold">Create Proposal</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div>
+                <div class="text-xs muted mb-1">Proposal Type</div>
+                <select id="pType" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+                  <option value="0">BASE_REWARD</option>
+                  <option value="1">HARVEST_FEE</option>
+                  <option value="2">UNSTAKE_FEE</option>
+                  <option value="3">REGISTRATION_FEE_FALLBACK</option>
+                  <option value="4">VOTING_PARAM</option>
+                  <option value="5">TIER_UPGRADE</option>
+                </select>
+              </div>
+              <div>
+                <div class="text-xs muted mb-1">Param Target (for VOTING_PARAM)</div>
+                <input id="paramTarget" type="number" value="0" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <div class="text-xs muted mb-1">New Value (uint256)</div>
+                <input id="newValue" type="number" placeholder="1000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <div class="text-xs muted mb-1">Collection Context (optional)</div>
+                <input id="collCtx" placeholder="0x… or 0x0000…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+            </div>
+            <button id="btnPropose" class="btn btn-primary">Create Proposal</button>
+          </div>
+
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <h3 class="font-semibold">Vote / Execute</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div>
+                <div class="text-xs muted mb-1">Proposal ID (bytes32)</div>
+                <input id="propId" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div class="flex items-end gap-2">
+                <button id="btnVote" class="btn btn-ghost w-full">Vote</button>
+                <button id="btnExecute" class="btn btn-primary w-full">Execute</button>
+              </div>
+            </div>
+            <div class="text-xs muted">Ensure quorum + endBlock passed before execution.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-guardians" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🛡️</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Guardian Councils (DRS)</h2>
+            <p class="muted text-sm">
+              Deployer & Admin Guardian Councils (7 seats, 5-of-7 threshold) can recover lost keys or rotate roles.
+              Includes compromise detection and reset flows.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <h3 class="font-semibold">Deployer Council</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div>
+                <div class="text-xs muted mb-1">Proposed New Deployer</div>
+                <input id="newDeployer" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div class="flex items-end gap-2">
+                <button id="btnPropDep" class="btn btn-primary w-full">Propose</button>
+                <button id="btnApproveDep" class="btn btn-ghost w-full">Approve</button>
+                <button id="btnExecDep" class="btn btn-primary w-full" data-confirm="guardian-exec">Execute</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <h3 class="font-semibold">Admin Council</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div>
+                <div class="text-xs muted mb-1">Proposed New Admin</div>
+                <input id="newAdmin" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div class="flex items-end gap-2">
+                <button id="btnPropAdm" class="btn btn-primary w-full">Propose</button>
+                <button id="btnApproveAdm" class="btn btn-ghost w-full">Approve</button>
+                <button id="btnExecAdm" class="btn btn-primary w-full" data-confirm="guardian-exec">Execute</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer">Admin: Set/Replace Guardians (role-gated)</summary>
+          <div class="grid lg:grid-cols-2 gap-4 mt-3">
+            <div class="card rounded-xl p-4 ring-1 space-y-3">
+              <h4 class="font-semibold">Set Deployer Guardian</h4>
+              <div class="grid md:grid-cols-3 gap-3">
+                <div>
+                  <div class="text-xs muted mb-1">Index (0–6)</div>
+                  <input id="depIdx" type="number" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                </div>
+                <div>
+                  <div class="text-xs muted mb-1">Guardian</div>
+                  <input id="depGuardian" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                </div>
+                <div class="flex items-end">
+                  <button id="btnSetDepGuardian" class="btn btn-primary w-full">Set</button>
+                </div>
+              </div>
+            </div>
+            <div class="card rounded-xl p-4 ring-1 space-y-3">
+              <h4 class="font-semibold">Set Admin Guardian</h4>
+              <div class="grid md:grid-cols-3 gap-3">
+                <div>
+                  <div class="text-xs muted mb-1">Index (0–6)</div>
+                  <input id="admIdx" type="number" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                </div>
+                <div>
+                  <div class="text-xs muted mb-1">Guardian</div>
+                  <input id="admGuardian" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                </div>
+                <div class="flex items-end">
+                  <button id="btnSetAdmGuardian" class="btn btn-primary w-full">Set</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs muted mt-2">
+            Safety: zero-address is blocked; each index can be updated individually. Emit <span class="mono">GuardianSet</span> events for monitoring.
+          </p>
+        </details>
+      </div>
+
+      <div id="tab-admin" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">⚙️</div>
+          <div>
+            <h2 class="text-lg font-semibold title">Admin Controls</h2>
+            <p class="muted text-sm">Privileged operations. Use carefully and only with appropriate roles.</p>
+          </div>
+        </div>
+
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <h3 class="font-semibold">Pause / Unpause</h3>
+          <div class="flex gap-2">
+            <button id="btnPause" class="btn btn-ghost">Pause</button>
+            <button id="btnUnpause" class="btn btn-primary">Unpause</button>
+          </div>
+          <div class="text-xs muted">Verify <span class="mono">paused</span> status in the Read tab after toggling.</div>
+        </div>
+
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <h3 class="font-semibold">Treasury Withdraw</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Recipient</div>
+              <input id="toTreasury" placeholder="0xRecipient" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Amount (wei)</div>
+              <input id="amtTreasury" type="number" placeholder="1000000000000000000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+          </div>
+          <button id="btnWithdraw" class="btn btn-danger" data-confirm="withdraw">Withdraw</button>
+          <div class="text-xs muted">Guarded by confirmation modal.</div>
+        </div>
+      </div>
+
+      <div id="tab-whitepaper" class="glass ring-1 rounded-2xl p-5 space-y-5 hidden">
+        <h2 class="text-lg font-semibold title">Whitepaper Summary</h2>
+        <details class="rounded-lg ring-1 p-3" open>
+          <summary class="cursor-pointer font-medium">Vision & Mission</summary>
+          <p class="muted text-sm mt-2">
+            Catalyst aims to be the universal utility layer for NFTs: every ERC-721 can stake, burn, and participate in governance.
+            The protocol balances incentives between blue-chip collections and unverified projects, using proof-of-burn for legitimacy.
+          </p>
+        </details>
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">Tokenomics (CATA)</summary>
+          <ul class="mt-2 text-sm muted list-disc ml-5 space-y-1">
+            <li>Immutable fee split: <span class="mono">90% Burn / 9% Treasury / 1% Deployer</span>.</li>
+            <li>Global stake cap: 1B NFTs (750M term, 250M permanent).</li>
+            <li>Per-collection cap: 20k NFTs.</li>
+          </ul>
+        </details>
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">Governance</summary>
+          <p class="muted text-sm mt-2">
+            Burn-weighted voting with per-collection caps and stake-age requirements. The 90/9/1 split is immutable.
+          </p>
+        </details>
+        <details class="rounded-lg ring-1 p-3">
+          <summary class="cursor-pointer font-medium">Guardian Recovery (DRS)</summary>
+          <p class="muted text-sm mt-2">
+            Deployer and Admin councils (7 seats, 5-of-7 approvals by default). Recovery proposals allow safe rotation of keys and roles.
+          </p>
+        </details>
+        <div class="text-xs muted">Read the full paper for math, proofs, and edge cases.</div>
+      </div>
+    </section>
+
+    <aside class="space-y-6">
+      <div class="glass ring-1 rounded-2xl p-5">
+        <h3 class="font-semibold mb-3">Console / Activity</h3>
+        <div id="log" class="mono text-xs max-h-[520px] overflow-auto rounded-lg border border-[#122041] bg-[#081126] p-2">
+          </div>
+        <div class="text-[11px] muted mt-2">
+          Tips: You can use the <span class="kbd">Read</span> tab to explore safely. Write actions require wallet and may trigger confirmations.
+        </div>
+      </div>
+
+      <div class="glass ring-1 rounded-2xl p-5">
+        <h3 class="font-semibold mb-3">Safety Notes</h3>
+        <ul class="text-sm muted space-y-2">
+          <li><span class="pill">Production</span> Always verify you’re on the official domain & contract.</li>
+          <li><span class="pill">Fees</span> The 90/9/1 split is immutable by design.</li>
+          <li><span class="pill">Upgrades</span> Contract may be upgradable; review proxy admin ownership and change logs.</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="max-w-7xl mx-auto px-4 py-8 text-center muted text-sm">
+    Catalyst • Universal NFT Utility • © <span id="year"></span>
+  </footer>
+
+  <div id="modal" class="fixed inset-0 hidden items-center justify-center z-50">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative glass ring-1 rounded-2xl w-[95%] max-w-lg p-5">
+      <div class="flex items-start gap-3">
+        <div id="modalIcon" class="w-10 h-10 rounded-lg grid place-items-center text-xl">⚠️</div>
+        <div class="grow">
+          <h3 id="modalTitle" class="font-semibold">Confirm</h3>
+          <p id="modalBody" class="muted text-sm mt-1">Are you sure?</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button id="modalCancel" class="btn btn-ghost">Cancel</button>
+        <button id="modalOk" class="btn btn-primary">Confirm</button>
+      </div>
+    </div>
+  </div>
   
   <script>
     /* =========================
