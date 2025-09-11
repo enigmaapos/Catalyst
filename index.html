@@ -668,891 +668,282 @@
       </div>
     </div>
   </div>
-  
+
   <script>
-    /* =========================
-       CONFIG & STATE (improved)
-       ========================= */
-
-    // ABI loader (unchanged path per request)
-    const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json";
-
-    // You confirmed this proxy is correct — kept as default.
-    const DEFAULT_CONTRACT = "0xF6f4B2eb6b9D4e87fA5D38DE9124Dd4C212a61FD";
-
-    // Default read RPC (Core testnet)
-    const DEFAULT_RPC = "https://rpc.test.btcs.network/";
-
-    // Minimal ERC-721 helper ABI (used only for approvals/checks)
-    const ERC721_ABI = [
-      "function setApprovalForAll(address operator, bool approved)",
-      "function isApprovedForAll(address owner, address operator) view returns (bool)",
-      "function approve(address to, uint256 tokenId)",
-      "function getApproved(uint256 tokenId) view returns (address)"
-    ];
-
-    // Internal state
-    let READ_PROVIDER = null;
-    let WALLET_PROVIDER = null;
-    let SIGNER = null;
-    let USER_ADDR = null;
-
-    let ABI = null;
-    let READ_CONTRACT = null;
-    let WRITE_CONTRACT = null;
-    let CONTRACT_ADDR = "";
-
-    let refreshTimer = null;
-
-    /* =========================
-       DOM HELPERS & LOG
-       ========================= */
-    const $ = id => document.getElementById(id);
-    function now(){ return new Date().toLocaleTimeString(); }
-    function log(msg, cls=""){
-      try {
-        const wrap = $("log");
-        const div = document.createElement("div");
-        div.className = "logline " + (cls||"");
-        div.textContent = `[${now()}] ${msg}`;
-        wrap.prepend(div);
-      } catch {}
-      // also console
-      if (cls === "err") console.error(msg); else console.debug(msg);
-    }
-    function setYear(){ try { $("year").textContent = new Date().getFullYear(); } catch {} }
-    setYear();
-
-    /* =========================
-       MODAL (CONFIRMATIONS)
-       ========================= */
-    let modalResolver = null;
-    function confirmModal({title, body, icon="⚠️", danger=false}){
-      $("modalTitle").textContent = title;
-      $("modalBody").textContent = body;
-      $("modalIcon").textContent = icon;
-      $("modalOk").className = danger ? "btn btn-danger" : "btn btn-primary";
-      $("modal").classList.remove("hidden");
-      return new Promise((resolve)=>{
-        modalResolver = resolve;
-      });
-    }
-    $("modalCancel")?.addEventListener("click", ()=>{ $("modal").classList.add("hidden"); modalResolver?.(false); });
-    $("modalOk")?.addEventListener("click", ()=>{ $("modal").classList.add("hidden"); modalResolver?.(true); });
-
-    /* =========================
-       ABI / PROVIDERS (robust)
-       ========================= */
-    async function loadABI(){
-      if (ABI) return ABI;
-      try {
-        const res = await fetch(ABI_URL, {cache:"no-store"});
-        if (!res.ok) throw new Error(`ABI load failed: ${res.status} ${res.statusText}`);
-        const json = await res.json();
-        ABI = Array.isArray(json) ? json : (json.abi || json);
-        if(!Array.isArray(ABI)) throw new Error("ABI array not found in JSON");
-        log(`ABI loaded (${ABI.length} entries)`, "ok");
-        return ABI;
-      } catch (e) {
-        log(`Failed to load ABI at ${ABI_URL}: ${e.message||e}`, "err");
-        throw e;
-      }
-    }
-
-    async function setupReadProvider(customRpc){
-      try{
-        // prefer explicit RPC if provided, otherwise default to a JSON-RPC provider
-        const rpc = customRpc || localStorage.getItem("catalyst_rpc") || DEFAULT_RPC;
-        READ_PROVIDER = new ethers.JsonRpcProvider(rpc);
-        log(`Read provider set -> ${rpc}`, "ok");
-        return READ_PROVIDER;
-      }catch(e){
-        log(`Read provider error: ${e.message||e}`, "err");
-        READ_PROVIDER = null;
-        throw e;
-      }
-    }
-
-    async function connectWallet(){
-      if(!window.ethereum) throw new Error("No injected wallet found (MetaMask / WalletConnect)");
-      // BrowserProvider wraps window.ethereum for ethers v6
-      WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
-      // request access
-      await WALLET_PROVIDER.send("eth_requestAccounts", []);
-      SIGNER = await WALLET_PROVIDER.getSigner();
-      USER_ADDR = await SIGNER.getAddress();
-      $("acct").textContent = USER_ADDR;
-      $("walletBtn").textContent = "Disconnect";
-      log(`Wallet connected: ${USER_ADDR}`, "ok");
-
-      // initialize write contract immediately so writes are ready
-      try {
-        await initWriteContract();
-      } catch(e){
-        log(`Init write contract failed: ${e.message||e}`, "err");
-      }
-    }
-
-    function requireWallet(){
-      if(!USER_ADDR || !SIGNER) throw new Error("Please connect wallet first");
-    }
-
-    function saveContractAddress(addr){
-      localStorage.setItem("catalyst_contract", addr);
-      CONTRACT_ADDR = addr;
-      $("contractAddress").value = addr;
-      $("contractAddress_m").value = addr;
-      log(`Saved contract: ${addr}`, "ok");
-    }
-    function getSavedAddress(){
-      return localStorage.getItem("catalyst_contract") || DEFAULT_CONTRACT;
-    }
-
-    async function initReadContract(){
-      // ensure contract address is set
-      if(!CONTRACT_ADDR) CONTRACT_ADDR = getSavedAddress();
-      if(!CONTRACT_ADDR) throw new Error("Contract address empty");
-      if(!READ_PROVIDER) await setupReadProvider();
-      const abi = await loadABI();
-      READ_CONTRACT = new ethers.Contract(CONTRACT_ADDR, abi, READ_PROVIDER);
-      // quick sanity: check bytecode is present
-      try {
-        const code = await READ_PROVIDER.getCode(CONTRACT_ADDR);
-        if (!code || code === "0x") log(`Warning: No bytecode at ${CONTRACT_ADDR}`, "warn");
-      } catch (e) {
-        log(`Could not fetch code at ${CONTRACT_ADDR}: ${e.message||e}`, "warn");
-      }
-      return READ_CONTRACT;
-    }
-
-    async function initWriteContract(){
-      requireWallet();
-      if(!CONTRACT_ADDR) CONTRACT_ADDR = getSavedAddress();
-      if(!CONTRACT_ADDR) throw new Error("Contract address empty");
-      const abi = await loadABI();
-      WRITE_CONTRACT = new ethers.Contract(CONTRACT_ADDR, abi, SIGNER);
-      return WRITE_CONTRACT;
-    }
-
-    /* =========================
-       PARSERS
-       ========================= */
-    function parseAddress(v){
-      const s = (v||"").trim();
-      if(!ethers.isAddress(s)) throw new Error("Invalid address");
-      return s;
-    }
-    function parseUint(v, fallback=0n){
-      const s = (v??"").toString().trim();
-      if(!s) return BigInt(fallback);
-      return BigInt(s);
-    }
-    function parseIdsCSV(csv){
-      return (csv||"").split(",").map(s=>s.trim()).filter(Boolean).map(s=>BigInt(s));
-    }
-
-    /* =========================
-       NETWORK SAFETY CHECK
-       ========================= */
-    async function checkNetworkIsCoreTestnet(provider){
-      // We can't rely on chainId being exact across forks; instead warn if network doesn't look like a Core RPC.
-      try {
-        if (!provider) return false;
-        const net = await provider.getNetwork();
-        const name = (net?.name||"").toLowerCase();
-        // best-effort check: rpc.test.btcs.network is Core testnet; chain name may not be 'core'
-        if (name.includes("core") || name.includes("btcs") || (provider.connection && provider.connection.url && provider.connection.url.includes("test.btcs"))) {
-          return true;
-        }
-        // otherwise warn, but still allow actions if user insists
-        log(`Connected to network: ${net?.chainId || net?.name}. Recommended: Core Testnet.`, "warn");
-        return false;
-      } catch(e){
-        log(`Network check failed: ${e.message||e}`, "warn");
-        return false;
-      }
-    }
-
-    /* =========================
-       STATS (READ)
-       ========================= */
-    async function refreshStats(){
-      try{
-        await initReadContract();
-        await checkNetworkIsCoreTestnet(READ_PROVIDER);
-        // using expected names; adjust if your ABI differs
-        let s;
-        try {
-          s = await READ_CONTRACT.stakingStats();
-        } catch(e) {
-          // fallback: contract might expose separate getters - just show an error
-          log(`stakingStats() read failed: ${shortErr(e)}`, "err");
-          return;
-        }
-        $("st_totalAll").textContent = s.totalAll?.toString?.() || s[0]?.toString?.() || "—";
-        $("st_totalTerm").textContent = s.totalTerm?.toString?.() || s[1]?.toString?.() || "—";
-        $("st_totalPermanent").textContent = s.totalPermanent?.toString?.() || s[2]?.toString?.() || "—";
-        $("st_remainingGlobal").textContent = s.remainingGlobal?.toString?.() || s[3]?.toString?.() || "—";
-        $("st_remainingTerm").textContent = s.remainingTerm?.toString?.() || s[4]?.toString?.() || "—";
-        $("st_remainingPermanent").textContent = s.remainingPermanent?.toString?.() || s[5]?.toString?.() || "—";
-
-        try{
-          const tb = await READ_CONTRACT.treasuryBalance();
-          $("st_treasury").textContent = tb.toString();
-        }catch{ $("st_treasury").textContent = "n/a"; }
-
-        try{
-          const dep = await READ_CONTRACT.deployerAddress();
-          $("st_deployer").textContent = dep;
-        }catch{ $("st_deployer").textContent = "n/a"; }
-
-        try{
-          const paused = await READ_CONTRACT.paused();
-          $("st_paused").textContent = paused ? "true" : "false";
-        }catch{ $("st_paused").textContent = "n/a"; }
-
-        log("Stats refreshed", "ok");
-      }catch(e){
-        log(`Stats error: ${shortErr(e)}`, "err");
-      }
-    }
-    function toggleAutoRefresh(on){
-      if (refreshTimer){ clearInterval(refreshTimer); refreshTimer = null; }
-      if (on){ refreshTimer = setInterval(refreshStats, 8000); }
-    }
-
-    /* =========================
-       TABS wiring (unchanged behaviour)
-       ========================= */
-    function selectTab(key){
-      document.querySelectorAll(".tabbtn").forEach(b=>b.classList.remove("tab-active"));
-      document.querySelectorAll("[id^='tab-']").forEach(el=>el.classList.add("hidden"));
-      document.querySelector(`[data-tab='${key}']`)?.classList.add("tab-active");
-      document.getElementById(`tab-${key}`)?.classList.remove("hidden");
-      if(key === "whitepaper"){ location.hash = "tab-whitepaper"; }
-    }
-
-    /* =========================
-       UTIL: better error shortener (shows revert reason when possible)
-       ========================= */
-    function shortErr(e){
-      try {
-        if (!e) return String(e);
-        // ethers v6 revert structure: e?.reason or e?.data?.message or e?.error?.message
-        if (e?.reason) return e.reason;
-        if (e?.data?.message) return e.data.message;
-        if (e?.error?.message) return e.error.message;
-        if (e?.message) return e.message;
-        return JSON.stringify(e).slice(0,240);
-      } catch(err){ return String(e); }
-    }
-
-    /* =========================
-       DOCUMENT READY + Initialization
-       ========================= */
-    document.addEventListener("DOMContentLoaded", ()=>{
-      document.querySelectorAll(".tabbtn").forEach(btn=>{
-        btn.onclick = ()=> selectTab(btn.dataset.tab);
-      });
-
-      // Header actions
-      $("saveRpc").onclick = async ()=>{
-        const url = $("rpcUrl").value.trim();
-        localStorage.setItem("catalyst_rpc", url);
-        await setupReadProvider(url);
-        if (CONTRACT_ADDR){
-          try{ await initReadContract(); log("Read contract re-initialized", "ok"); }catch(e){ log(e.message||e,"err"); }
-        }
-      };
-      $("saveRpc_m").onclick = async ()=>{
-        const url = $("rpcUrl_m").value.trim();
-        localStorage.setItem("catalyst_rpc", url);
-        $("rpcUrl").value = url;
-        await setupReadProvider(url);
-        if (CONTRACT_ADDR){
-          try{ await initReadContract(); log("Read contract re-initialized", "ok"); }catch(e){ log(e.message||e,"err"); }
-        }
-      };
-
-      $("saveContractBtn").onclick = ()=>{ try{ saveContractAddress($("contractAddress").value.trim()); }catch(e){ log(e.message||e,"err"); } };
-      $("saveContractBtn_m").onclick = ()=>{ try{ saveContractAddress($("contractAddress_m").value.trim()); }catch(e){ log(e.message||e,"err"); } };
-
-      $("walletBtn").onclick = async ()=>{
-        try{
-          if(!USER_ADDR){
-            await connectWallet();
-            $("walletBtn").textContent = "Disconnect";
-          }else{
-            USER_ADDR = null; SIGNER = null; WRITE_CONTRACT = null; WALLET_PROVIDER = null;
-            $("acct").textContent = "Not connected";
-            $("walletBtn").textContent = "Connect";
-            log("Wallet disconnected (local)", "warn");
-          }
-        }catch(e){ log(shortErr(e), "err"); }
-      };
-
-      $("btnRefresh").onclick = refreshStats;
-      $("autoRefresh").onchange = (e)=> toggleAutoRefresh(e.target.checked);
-
-      log("UI ready — background init starting…", "ok");
-    });
-
-    window.addEventListener("load", async ()=>{
-      try{
-        // load saved RPC and contract address
-        const savedRpc = localStorage.getItem("catalyst_rpc") || DEFAULT_RPC;
-        $("rpcUrl").value = savedRpc; $("rpcUrl_m").value = savedRpc;
-        await setupReadProvider(savedRpc);
-
-        const saved = getSavedAddress();
-        if(saved){
-          $("contractAddress").value = saved;
-          $("contractAddress_m").value = saved;
-          CONTRACT_ADDR = saved;
-          try{ await initReadContract(); log("Read contract preloaded", "ok"); }catch(e){ log(shortErr(e),"err"); }
-        } else {
-          // populate UI with default proxy
-          saveContractAddress(DEFAULT_CONTRACT);
-          try{ await initReadContract(); log("Read contract preloaded (default)", "ok"); }catch(e){ log(shortErr(e),"err"); }
-        }
-
-        // if wallet already connected, restore signer
-        if(window.ethereum){
-          try{
-            const accounts = await window.ethereum.request({ method:"eth_accounts" });
-            if(accounts && accounts.length){
-              WALLET_PROVIDER = new ethers.BrowserProvider(window.ethereum);
-              SIGNER = await WALLET_PROVIDER.getSigner();
-              USER_ADDR = accounts[0];
-              $("acct").textContent = USER_ADDR;
-              $("walletBtn").textContent = "Disconnect";
-              try { await initWriteContract(); } catch(_){}
-              log(`Wallet restored: ${USER_ADDR}`, "ok");
-            }
-          }catch(e){ /* ignore */ }
-        }
-
-        if(CONTRACT_ADDR) await refreshStats();
-        log("Background init complete", "ok");
-      }catch(e){
-        log(`Init error: ${shortErr(e)}`, "err");
-      }
-    });
-
-    /* =========================
-       WRITE/READ ACTIONS (improved)
-       ========================= */
-
-    // Approve (setApprovalForAll)
-    $("btnApprove721").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const col = parseAddress($("colStake").value);
-        const nft = new ethers.Contract(col, ERC721_ABI, SIGNER);
-
-        // check current isApprovedForAll first
-        try{
-          const ok = await nft.isApprovedForAll(USER_ADDR, CONTRACT_ADDR);
-          if(ok){
-            log("Contract already set as operator for your NFTs", "ok");
-            return;
-          }
-        }catch(e){ /* ignore if method not available */ }
-
-        const tx = await nft.setApprovalForAll(CONTRACT_ADDR, true);
-        log(`Approval sent: ${tx.hash}`);
-        await tx.wait();
-        log("Approval confirmed ✅", "ok");
-      }catch(e){ log(shortErr(e), "err"); }
-    };
-
-    // Check approval for specific collection
-    $("btnApprove721Check").onclick = async ()=>{
-      try{
-        await initReadContract();
-        const col = parseAddress($("colStake").value);
-        if(!USER_ADDR){ log("Connect wallet to check isApprovedForAll for your account", "warn"); return; }
-        const nft = new ethers.Contract(col, ERC721_ABI, READ_PROVIDER);
-        const ok = await nft.isApprovedForAll(USER_ADDR, CONTRACT_ADDR);
-        log(`isApprovedForAll = ${ok}`, ok ? "ok" : "warn");
-      }catch(e){ log(shortErr(e), "err"); }
-    };
-
-    // Single stake + optional auto-approval (auto-check)
-    $("btnStake").onclick = async ()=>{
-      try{
-        requireWallet();
-        const isPerm = $("permanent").value === "true";
-        // confirm permanent if selected
-        if(isPerm){
-          const ok = await confirmModal({
-            title: "Confirm Permanent Stake",
-            body: "Permanent stake locks the NFT forever and cannot be unstaked. Proceed?",
-            icon: "♾️",
-            danger: true
-          });
-          if(!ok){ log("Permanent stake cancelled", "warn"); return; }
-        }
-        await initWriteContract();
-        const col = parseAddress($("colStake").value);
-        const id = parseUint($("tidStake").value);
-
-        // auto-check approval: if not approved, offer to approve automatically
-        const nft = new ethers.Contract(col, ERC721_ABI, SIGNER);
-        let approved = false;
-        try {
-          approved = await nft.isApprovedForAll(USER_ADDR, CONTRACT_ADDR);
-          if (!approved) {
-            // try if token is individually approved to proxy
-            try {
-              const approvedAddr = await nft.getApproved(id);
-              if (approvedAddr && approvedAddr.toLowerCase() === CONTRACT_ADDR.toLowerCase()) approved = true;
-            } catch {}
-          }
-        } catch {}
-
-        if (!approved) {
-          const doAuto = confirm("This token/collection is not approved. Approve setApprovalForAll now? (OK=yes / Cancel=no)");
-          if (doAuto) {
-            const txA = await nft.setApprovalForAll(CONTRACT_ADDR, true);
-            log(`Approval tx sent: ${txA.hash}`);
-            await txA.wait();
-            log("Approval confirmed ✅", "ok");
-          } else {
-            log("Stake aborted: approval required", "warn");
-            return;
-          }
-        }
-
-        const tx = await WRITE_CONTRACT.stake(col, id, isPerm);
-        log(`Stake sent: ${tx.hash}`);
-        await tx.wait();
-        log("Stake confirmed ✅", "ok");
-      }catch(e){ log(shortErr(e), "err"); }
-    };
-
-    // Harvest single token
-    $("btnHarvestOne").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const col = parseAddress($("colStake").value);
-        const id = parseUint($("tidStake").value);
-        const tx = await WRITE_CONTRACT.harvestOne(col, id);
-        log(`Harvest sent: ${tx.hash}`);
-        await tx.wait();
-        log("Harvest confirmed ✅", "ok");
-      }catch(e){ log(shortErr(e), "err"); }
-    };
-
-    // Unstake
-    $("btnUnstake").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const col = parseAddress($("colStake").value);
-        const id = parseUint($("tidStake").value);
-        const tx = await WRITE_CONTRACT.unstake(col, id);
-        log(`Unstake sent: ${tx.hash}`);
-        await tx.wait();
-        log("Unstake confirmed ✅", "ok");
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    // View pending (read-only; owner optional)
-    $("btnViewPending").onclick = async ()=>{
-      try{
-        // prefer read contract so wallet not required
-        await initReadContract();
-        const col = parseAddress($("colStake").value);
-        const id = parseUint($("tidStake").value);
-        // prefer standard pendingRewardOf; some ABIs may differ
-        try {
-          const pending = await READ_CONTRACT.pendingRewardOf(col, id);
-          $("pendingView").textContent = ethers.formatUnits(pending, 18) + " CATA";
-        } catch (e) {
-          log(`pendingRewardOf not available: ${shortErr(e)}`, "err");
-        }
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    /* ============================
-     * BLUE-CHIP (NON-CUSTODIAL)
-     * ============================ */
-    $("btnEnrollBlue").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.enrollBluechip();
-        log(`Blue-chip enrollment sent: ${tx.hash}`);
-        await tx.wait();
-        log("Enrollment confirmed ✅","ok");
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    $("btnHarvestBlue").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const col = parseAddress($("colBlueHarvest").value);
-        const tx = await WRITE_CONTRACT.harvestBluechip(col);
-        log(`Blue-chip harvest sent: ${tx.hash}`);
-        await tx.wait();
-        log("Blue-chip harvest confirmed ✅","ok");
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    $("btnSetBlue").onclick = async ()=>{
-      try {
-        requireWallet();
-        await initWriteContract();
-        const col = parseAddress($("colFlagBlue").value);
-        const flag = $("isBlueFlag").value === "true";
-        const tx = await WRITE_CONTRACT.setBlueChip(col, flag);
-        log(`Set blue-chip sent: ${tx.hash}`);
-        await tx.wait();
-        log(`Blue-chip ${flag ? "flagged" : "cleared"} ✅`, "ok");
-      } catch(e){ log(shortErr(e), "err"); }
-    };
-
-    /* ============================
-     * GOVERNANCE / GUARDIANS / ADMIN (kept behavior; better error messages)
-     * ============================ */
-
-    $("btnPropose").onclick = async ()=>{
-      try {
-        requireWallet();
-        await initWriteContract();
-        const pType = parseUint($("pType").value);
-        const paramTarget = parseUint($("paramTarget").value || 0n);
-        const newValue = parseUint($("newValue").value);
-        const ctxRaw = $("collCtx").value.trim();
-        const ctx = ctxRaw && ethers.isAddress(ctxRaw) ? ctxRaw : ethers.ZeroAddress;
-        const tx = await WRITE_CONTRACT.propose(pType, paramTarget, newValue, ctx);
-        log(`Propose sent: ${tx.hash}`);
-        const rc = await tx.wait();
-        log("Proposal created ✅ (check logs for ID)", "ok");
-      } catch(e){ log(shortErr(e), "err"); }
-    };
-
-    $("btnVote").onclick = async ()=>{
-      try {
-        requireWallet();
-        await initWriteContract();
-        const id = $("propId").value.trim();
-        if (!id) throw new Error("Proposal ID required");
-        const tx = await WRITE_CONTRACT.vote(id);
-        log(`Vote sent: ${tx.hash}`);
-        await tx.wait();
-        log("Vote confirmed ✅", "ok");
-      } catch(e){ log(shortErr(e), "err"); }
-    };
-
-    $("btnExecute").onclick = async ()=>{
-      try {
-        requireWallet();
-        await initWriteContract();
-        const id = $("propId").value.trim();
-        if (!id) throw new Error("Proposal ID required");
-        const tx = await WRITE_CONTRACT.execute(id);
-        log(`Execute sent: ${tx.hash}`);
-        await tx.wait();
-        log("Proposal executed ✅", "ok");
-      } catch(e){ log(shortErr(e), "err"); }
-    };
-
-    // Guardians / Admin flows (kept behavior; sanitized inputs)
-    $("btnPropDep").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const addr = parseAddress($("newDeployer").value);
-        const tx = await WRITE_CONTRACT.proposeDeployer(addr);
-        log(`Propose new deployer sent: ${tx.hash}`);
-        await tx.wait();
-        log("New deployer proposed ✅", "ok");
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    $("btnApproveDep").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const addr = parseAddress($("newDeployer").value);
-        const tx = await WRITE_CONTRACT.approveDeployer(addr);
-        log(`Approve new deployer sent: ${tx.hash}`);
-        await tx.wait();
-        log("Approval recorded ✅", "ok");
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    $("btnExecDep").onclick = async ()=>{
-      try{
-        requireWallet();
-        const addr = parseAddress($("newDeployer").value);
-        const ok = await confirmModal({ title:"⚠️ Execute Deployer Recovery", body:`New Deployer: ${addr}\nProceed?`, danger:true });
-        if (!ok) return;
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.executeDeployer(addr);
-        log(`Execute deployer recovery sent: ${tx.hash}`);
-        await tx.wait();
-        log("Deployer recovery executed ✅", "ok");
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    $("btnPropAdm").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const addr = parseAddress($("newAdmin").value);
-        const tx = await WRITE_CONTRACT.proposeAdmin(addr);
-        log(`Propose new admin sent: ${tx.hash}`);
-        await tx.wait();
-        log("New admin proposed ✅", "ok");
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    $("btnApproveAdm").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const addr = parseAddress($("newAdmin").value);
-        const tx = await WRITE_CONTRACT.approveAdmin(addr);
-        log(`Approve new admin sent: ${tx.hash}`);
-        await tx.wait();
-        log("Approval recorded ✅", "ok");
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    $("btnExecAdm").onclick = async ()=>{
-      try{
-        requireWallet();
-        const addr = parseAddress($("newAdmin").value);
-        const ok = await confirmModal({ title:"⚠️ Execute Admin Recovery", body:`New Admin: ${addr}\nProceed?`, danger:true });
-        if (!ok) return;
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.executeAdmin(addr);
-        log(`Execute admin recovery sent: ${tx.hash}`);
-        await tx.wait();
-        log("Admin recovery executed ✅", "ok");
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    /* ============================
-       ADMIN: PAUSE / UNPAUSE / WITHDRAW
-       ============================ */
-    $("btnPause").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.pause();
-        log(`Pause sent: ${tx.hash}`);
-        await tx.wait();
-        log("Contract paused ✅", "ok");
-        try { $("st_paused").textContent = "true"; } catch(_){}
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    $("btnUnpause").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.unpause();
-        log(`Unpause sent: ${tx.hash}`);
-        await tx.wait();
-        log("Contract unpaused ✅", "ok");
-        try { $("st_paused").textContent = "false"; } catch(_){}
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    $("btnWithdraw").onclick = async ()=>{
-      try{
-        requireWallet();
-        const to = parseAddress($("toTreasury").value);
-        const amt = parseUint($("amtTreasury").value);
-        const ok = await confirmModal({ title:"⚠️ Treasury Withdraw", body:`Recipient: ${to}\nAmount (wei): ${amt}\nProceed?`, danger:true });
-        if (!ok) return;
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.withdrawTreasury(to, amt);
-        log(`Withdraw sent: ${tx.hash}`);
-        await tx.wait();
-        log("Treasury withdrawn ✅", "ok");
-        try { await refreshStats(); } catch(_){}
-      }catch(e){ log(shortErr(e),"err"); }
-    };
-
-    /* ============================
-     * READ HELPERS (lists & info) - kept, minor resilience improvements
-     * ============================ */
-
-    $("btnViewPending2").onclick = async ()=>{
-      try{
-        await initReadContract();
-        const col = parseAddress($("vCol").value);
-        const ownerRaw = ($("vOwner").value||"").trim();
-        const idStr = ($("vTokenId").value||"").trim();
-
-        let out = "";
-        if (idStr) {
-          const id = parseUint(idStr);
-          try{
-            const v = await READ_CONTRACT.pendingRewardOf(col, id);
-            out += `pendingRewardOf(${col}, #${id}) = ${ethers.formatUnits(v,18)} CATA\n`;
-          }catch(e){
-            out += `pendingRewardOf not available (${shortErr(e)})\n`;
-          }
-        }
-
-        if (ownerRaw) {
-          const owner = parseAddress(ownerRaw);
-          try{
-            const v2 = await READ_CONTRACT.pendingRewardOfOwner(col, owner);
-            out += `pendingRewardOfOwner(${col}, ${owner}) = ${ethers.formatUnits(v2,18)} CATA\n`;
-          }catch(e){
-            out += `pendingRewardOfOwner not available (${shortErr(e)})\n`;
-          }
-        }
-
-        if (!out) out = "Provide a token ID and/or Owner address.";
-        $("pendingOut").textContent = out.trim();
-      }catch(e){ log(shortErr(e), "err"); }
-    };
-
-    $("btnListCollections").onclick = async ()=>{
-      try{
-        await initReadContract();
-        let lines = [];
-        let listed = false;
-
-        try{
-          const arr = await READ_CONTRACT.getRegisteredCollections();
-          arr.forEach((a,i)=>lines.push(`${i}. ${a}`));
-          listed = true;
-        }catch{}
-
-        if (!listed){
-          try{
-            const n = await READ_CONTRACT.collectionCount();
-            lines.push(`count = ${n}`);
-            for (let i=0n; i<n && i<200n; i++){
-              try{
-                const a = await READ_CONTRACT.collectionAt(i);
-                lines.push(`${i}. ${a}`);
-              }catch{ break; }
-            }
-            listed = true;
-          }catch{}
-        }
-
-        $("collectionsOut").textContent = listed ? lines.join("\n") : "No listing method available on this ABI.";
-      }catch(e){ log(shortErr(e), "err"); }
-    };
-
-    $("btnListBlue").onclick = async ()=>{
-      try{
-        await initReadContract();
-        let lines = [];
-        let listed = false;
-
-        try{
-          const arr = await READ_CONTRACT.getBlueChips();
-          arr.forEach((a,i)=>lines.push(`${i}. ${a}`));
-          listed = true;
-        }catch{}
-
-        if (!listed){
-          try{
-            const n = await READ_CONTRACT.collectionCount();
-            for (let i=0n; i<n && i<200n; i++){
-              try{
-                const a = await READ_CONTRACT.collectionAt(i);
-                const flag = await READ_CONTRACT.isBlueChip(a);
-                if (flag) lines.push(`${i}. ${a}`);
-              }catch{}
-            }
-            listed = true;
-          }catch{}
-        }
-
-        $("collectionsOut").textContent = listed ? (lines.length?lines.join("\n"):"(none flagged)") : "No blue-chip listing method available.";
-      }catch(e){ log(shortErr(e), "err"); }
-    };
-
-    $("btnUserInfo").onclick = async ()=>{
-      try{
-        await initReadContract();
-        const who = ($("infoUser").value||"").trim() || USER_ADDR;
-        if (!who) throw new Error("Provide user or connect wallet");
-        const addr = parseAddress(who);
-
-        let out = [`User: ${addr}`];
-
-        try{
-          const bal = await READ_CONTRACT.balanceOf(addr);
-          out.push(`CATA balanceOf = ${ethers.formatUnits(bal,18)}`);
-        }catch{}
-        try{
-          const st = await READ_CONTRACT.userStakeCount(addr);
-          out.push(`userStakeCount = ${st}`);
-        }catch{}
-        try{
-          const en = await READ_CONTRACT.isBluechipEnrolled(addr);
-          out.push(`bluechip enrolled = ${en}`);
-        }catch{}
-
-        $("infoOut").textContent = out.join("\n");
-      }catch(e){ log(shortErr(e), "err"); }
-    };
-
-    $("btnColInfo").onclick = async ()=>{
-      try{
-        await initReadContract();
-        const col = parseAddress($("infoCol").value);
-        let out = [`Collection: ${col}`];
-
-        try{
-          const info = await READ_CONTRACT.collectionInfo(col);
-          if (info.maxSupply) out.push(`maxSupply = ${info.maxSupply}`);
-          if (info.verified!==undefined) out.push(`verified = ${info.verified}`);
-          if (info.isBlue!==undefined) out.push(`bluechip = ${info.isBlue}`);
-        }catch(e){ out.push(`collectionInfo not available (${shortErr(e)})`); }
-
-        $("infoOut").textContent = out.join("\n");
-      }catch(e){ log(shortErr(e), "err"); }
-    };
-
-    /* ============================
-       Wallet event handlers (accounts/chain)
-       ============================ */
-    if (window.ethereum) {
-      window.ethereum.on?.("accountsChanged", (accs)=>{
-        if (!accs || accs.length === 0) {
-          USER_ADDR = null; SIGNER = null; WRITE_CONTRACT = null;
-          $("acct").textContent = "Not connected";
-          $("walletBtn").textContent = "Connect";
-          log("Wallet disconnected (accountsChanged)", "warn");
-        } else {
-          USER_ADDR = accs[0];
-          $("acct").textContent = USER_ADDR;
-          $("walletBtn").textContent = "Disconnect";
-          log(`Account switched → ${USER_ADDR}`, "ok");
-          // refresh signer lazy on next write
-          WRITE_CONTRACT = null;
-        }
-      });
-
-      window.ethereum.on?.("chainChanged", async ()=>{
-        WRITE_CONTRACT = null; SIGNER = null;
-        // When chain changes, force re-init of read provider and contract
-        try{ await setupReadProvider(localStorage.getItem("catalyst_rpc") || DEFAULT_RPC); await initReadContract(); log("Chain changed — refreshed read contract", "warn"); } catch(e){ log(shortErr(e),"warn"); }
-      });
-    }
-
-    /* ============================
-       Final ready message
-       ============================ */
-    log("Action wiring complete — DApp ready ✅", "ok");
-  </script>
+/* =========================
+   CONFIG
+   ========================= */
+const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json"; // ABI file
+const DEFAULT_CONTRACT = "0xF6f4B2eb6b9D4e87fA5D38DE9124Dd4C212a61FD"; // Proxy address
+const DEFAULT_RPC = "https://rpc.test.btcs.network/";
+
+let provider, signer, userAddr, contract, abi;
+
+/* =========================
+   HELPERS
+   ========================= */
+const $ = id => document.getElementById(id);
+function log(msg, cls="") {
+  const el = $("log");
+  if (!el) return;
+  const div = document.createElement("div");
+  div.className = "logline " + cls;
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.prepend(div);
+  console.log(msg);
+}
+function parseAddr(v) {
+  if (!ethers.isAddress(v)) throw new Error("Invalid address");
+  return v;
+}
+function parseBig(v) {
+  return BigInt((v||"0").toString().trim());
+}
+
+/* =========================
+   INIT CONTRACT
+   ========================= */
+async function loadABI() {
+  if (abi) return abi;
+  const res = await fetch(ABI_URL);
+  abi = await res.json();
+  return abi;
+}
+async function initContract(write=false) {
+  const _abi = await loadABI();
+  if (write) {
+    if (!window.ethereum) throw new Error("Wallet not found");
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+    userAddr = await signer.getAddress();
+    contract = new ethers.Contract(DEFAULT_CONTRACT, _abi, signer);
+  } else {
+    provider = new ethers.JsonRpcProvider(DEFAULT_RPC);
+    contract = new ethers.Contract(DEFAULT_CONTRACT, _abi, provider);
+  }
+  return contract;
+}
+
+/* =========================
+   WALLET
+   ========================= */
+async function connectWallet() {
+  await initContract(true);
+  $("acct").textContent = userAddr;
+  $("walletBtn").textContent = "Disconnect";
+  log(`Wallet connected: ${userAddr}`, "ok");
+}
+
+/* =========================
+   READ FUNCTIONS
+   ========================= */
+async function refreshStats() {
+  try {
+    await initContract(false);
+    const stats = await contract.stakingStats();
+    $("st_totalAll").textContent = stats.totalAll.toString();
+    $("st_totalTerm").textContent = stats.totalTerm.toString();
+    $("st_totalPermanent").textContent = stats.totalPermanent.toString();
+    $("st_remainingGlobal").textContent = stats.remainingGlobal.toString();
+    $("st_remainingTerm").textContent = stats.remainingTerm.toString();
+    $("st_remainingPermanent").textContent = stats.remainingPermanent.toString();
+    const treasury = await contract.treasuryBalance();
+    $("st_treasury").textContent = ethers.formatUnits(treasury, 18);
+    log("Stats refreshed ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function viewPendingReward() {
+  try {
+    await initContract(false);
+    const col = parseAddr($("colStake").value.trim());
+    const id = parseBig($("tidStake").value);
+    const reward = await contract.pendingRewardOf(col, id);
+    $("pendingView").textContent = ethers.formatUnits(reward, 18) + " CATA";
+  } catch (e) { log(e.message, "err"); }
+}
+async function viewUserInfo() {
+  try {
+    await initContract(false);
+    const who = $("infoUser").value.trim() || userAddr;
+    const addr = parseAddr(who);
+    const count = await contract.userStakeCount(addr);
+    const enrolled = await contract.isBluechipEnrolled(addr);
+    const out = `User: ${addr}\nStakeCount: ${count}\nBluechip Enrolled: ${enrolled}`;
+    $("infoOut").textContent = out;
+  } catch (e) { log(e.message, "err"); }
+}
+async function viewCollectionInfo() {
+  try {
+    await initContract(false);
+    const col = parseAddr($("infoCol").value.trim());
+    const info = await contract.collectionInfo(col);
+    $("infoOut").textContent = `Collection: ${col}\nMaxSupply: ${info.maxSupply}\nVerified: ${info.verified}\nBluechip: ${info.isBlue}`;
+  } catch (e) { log(e.message, "err"); }
+}
+
+/* =========================
+   WRITE FUNCTIONS
+   ========================= */
+// Collections
+async function registerCollection() {
+  try {
+    await initContract(true);
+    const col = parseAddr($("colReg").value.trim());
+    const supply = parseBig($("maxSupply").value);
+    const tx = await contract.registerCollection(col, supply);
+    log(`Tx sent: ${tx.hash}`);
+    await tx.wait();
+    log("Collection registered ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+
+// Staking
+async function stakeNFT() {
+  try {
+    await initContract(true);
+    const col = parseAddr($("colStake").value.trim());
+    const id = parseBig($("tidStake").value);
+    const isPerm = $("permanent").value === "true";
+    const tx = await contract.stake(col, id, isPerm);
+    log(`Stake tx: ${tx.hash}`);
+    await tx.wait();
+    log("NFT staked ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function batchStakeNFT() {
+  try {
+    await initContract(true);
+    const col = parseAddr($("colBatch").value.trim());
+    const ids = $("tidBatch").value.split(",").map(x => parseBig(x));
+    const isPerm = $("permanentBatch").value === "true";
+    const tx = await contract.batchStake(col, ids, isPerm);
+    log(`Batch stake tx: ${tx.hash}`);
+    await tx.wait();
+    log("Batch stake confirmed ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function unstakeNFT() {
+  try {
+    await initContract(true);
+    const col = parseAddr($("colStake").value.trim());
+    const id = parseBig($("tidStake").value);
+    const tx = await contract.unstake(col, id);
+    log(`Unstake tx: ${tx.hash}`);
+    await tx.wait();
+    log("Unstake confirmed ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function harvestOne() {
+  try {
+    await initContract(true);
+    const col = parseAddr($("colStake").value.trim());
+    const id = parseBig($("tidStake").value);
+    const tx = await contract.harvestOne(col, id);
+    log(`Harvest tx: ${tx.hash}`);
+    await tx.wait();
+    log("Harvest confirmed ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+
+// Bluechip
+async function enrollBluechip() {
+  try {
+    await initContract(true);
+    const tx = await contract.enrollBluechip();
+    log(`Enroll tx: ${tx.hash}`);
+    await tx.wait();
+    log("Enrolled in Bluechip ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function harvestBluechip() {
+  try {
+    await initContract(true);
+    const col = parseAddr($("colBlueHarvest").value.trim());
+    const tx = await contract.harvestBluechip(col);
+    log(`Harvest Bluechip tx: ${tx.hash}`);
+    await tx.wait();
+    log("Bluechip harvest ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function setBlueChip() {
+  try {
+    await initContract(true);
+    const col = parseAddr($("colFlagBlue").value.trim());
+    const flag = $("isBlueFlag").value === "true";
+    const tx = await contract.setBlueChip(col, flag);
+    log(`Set bluechip tx: ${tx.hash}`);
+    await tx.wait();
+    log("Bluechip status updated ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+
+// Governance
+const ProposalTypes = { RewardRateChange: 0, CollectionLimitChange: 1, TreasuryWithdraw: 2 };
+async function propose() {
+  try {
+    await initContract(true);
+    const typeStr = $("pType").value;
+    const pType = ProposalTypes[typeStr] ?? parseInt(typeStr);
+    const target = parseBig($("paramTarget").value);
+    const newVal = parseBig($("newValue").value);
+    const ctx = $("collCtx").value.trim() || ethers.ZeroAddress;
+    const tx = await contract.propose(pType, target, newVal, ctx);
+    log(`Propose tx: ${tx.hash}`);
+    await tx.wait();
+    log("Proposal submitted ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function voteProposal() {
+  try {
+    await initContract(true);
+    const id = parseBig($("propId").value);
+    const tx = await contract.vote(id);
+    log(`Vote tx: ${tx.hash}`);
+    await tx.wait();
+    log("Vote confirmed ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function executeProposal() {
+  try {
+    await initContract(true);
+    const id = parseBig($("propId").value);
+    const tx = await contract.execute(id);
+    log(`Execute tx: ${tx.hash}`);
+    await tx.wait();
+    log("Proposal executed ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+
+// Admin
+async function pauseContract() {
+  try {
+    await initContract(true);
+    const tx = await contract.pause();
+    log(`Pause tx: ${tx.hash}`);
+    await tx.wait();
+    log("Contract paused ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function unpauseContract() {
+  try {
+    await initContract(true);
+    const tx = await contract.unpause();
+    log(`Unpause tx: ${tx.hash}`);
+    await tx.wait();
+    log("Contract unpaused ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+async function withdrawTreasury() {
+  try {
+    await initContract(true);
+    const to = parseAddr($("toTreasury").value.trim());
+    const amt = parseBig($("amtTreasury").value);
+    const tx = await contract.withdrawTreasury(to, amt);
+    log(`Withdraw tx: ${tx.hash}`);
+    await tx.wait();
+    log("Treasury withdrawn ✅", "ok");
+  } catch (e) { log(e.message, "err"); }
+}
+</script>
 </body>
 </html>
