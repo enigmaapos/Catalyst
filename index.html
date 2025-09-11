@@ -1451,68 +1451,53 @@ function toWei(val, decimals = 18) {
     };
 
     // List registered collections (tries getRegisteredCollections(); falls back to count loop if available)
-    $("btnListCollections").onclick = async ()=>{
-      try{
-        await initReadContract();
-        let lines = [];
-        let listed = false;
+    $("btnListCollections").onclick = async () => {
+  try {
+    await initReadContract();
+    let lines = [];
 
-        // try direct getter
-        try{
-          const arr = await READ_CONTRACT.getRegisteredCollections();
-          arr.forEach((a,i)=>lines.push(`${i}. ${a}`));
-          listed = true;
-        }catch{}
+    const n = await READ_CONTRACT.collectionCount();
+    lines.push(`count = ${n}`);
 
-        if (!listed){
-          // try count + collectionAt(i)
-          try{
-            const n = await READ_CONTRACT.collectionCount();
-            lines.push(`count = ${n}`);
-            for (let i=0n; i<n && i<200n; i++){
-              try{
-                const a = await READ_CONTRACT.collectionAt(i);
-                lines.push(`${i}. ${a}`);
-              }catch{ break; }
-            }
-            listed = true;
-          }catch{}
-        }
+    for (let i = 0n; i < n && i < 200n; i++) {
+      try {
+        const a = await READ_CONTRACT.collectionAt(i);
+        lines.push(`${i}. ${a}`);
+      } catch {
+        break;
+      }
+    }
 
-        $("collectionsOut").textContent = listed ? lines.join("\n") : "No listing method available on this ABI.";
-      }catch(e){ log(e.message||e, "err"); }
-    };
+    $("collectionsOut").textContent = lines.length
+      ? lines.join("\n")
+      : "(none registered)";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     // List blue-chip collections (tries getBlueChips(); falls back to isBlueChip via collectionAt loop)
-    $("btnListBlue").onclick = async ()=>{
-      try{
-        await initReadContract();
-        let lines = [];
-        let listed = false;
+    $("btnListBlue").onclick = async () => {
+  try {
+    await initReadContract();
+    let lines = [];
 
-        try{
-          const arr = await READ_CONTRACT.getBlueChips();
-          arr.forEach((a,i)=>lines.push(`${i}. ${a}`));
-          listed = true;
-        }catch{}
+    const n = await READ_CONTRACT.collectionCount();
+    for (let i = 0n; i < n && i < 200n; i++) {
+      try {
+        const a = await READ_CONTRACT.collectionAt(i);
+        const flag = await READ_CONTRACT.isBlueChip(a);
+        if (flag) lines.push(`${i}. ${a}`);
+      } catch {}
+    }
 
-        if (!listed){
-          try{
-            const n = await READ_CONTRACT.collectionCount();
-            for (let i=0n; i<n && i<200n; i++){
-              try{
-                const a = await READ_CONTRACT.collectionAt(i);
-                const flag = await READ_CONTRACT.isBlueChip(a);
-                if (flag) lines.push(`${i}. ${a}`);
-              }catch{}
-            }
-            listed = true;
-          }catch{}
-        }
-
-        $("collectionsOut").textContent = listed ? (lines.length?lines.join("\n"):"(none flagged)") : "No blue-chip listing method available.";
-      }catch(e){ log(e.message||e, "err"); }
-    };
+    $("collectionsOut").textContent = lines.length
+      ? lines.join("\n")
+      : "(none flagged)";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     // User info (tries userInfo(address) / balances)
     $("btnUserInfo").onclick = async ()=>{
