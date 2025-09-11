@@ -669,12 +669,13 @@
     </div>
   </div>
 
-  <script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+<script>
 /* =========================
    CONFIG
    ========================= */
-const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json"; // ABI file
-const DEFAULT_CONTRACT = "0xF6f4B2eb6b9D4e87fA5D38DE9124Dd4C212a61FD"; // Proxy address
+const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json";
+const DEFAULT_CONTRACT = "0xF6f4B2eb6b9D4e87fA5D38DE9124Dd4C212a61FD"; // Proxy
 const DEFAULT_RPC = "https://rpc.test.btcs.network/";
 
 let provider, signer, userAddr, contract, abi;
@@ -693,11 +694,11 @@ function log(msg, cls="") {
   console.log(msg);
 }
 function parseAddr(v) {
-  if (!ethers.isAddress(v)) throw new Error("Invalid address");
+  if (!ethers.utils.isAddress(v)) throw new Error("Invalid address");
   return v;
 }
 function parseBig(v) {
-  return BigInt((v||"0").toString().trim());
+  return ethers.BigNumber.from(v.toString().trim() || "0");
 }
 
 /* =========================
@@ -713,12 +714,13 @@ async function initContract(write=false) {
   const _abi = await loadABI();
   if (write) {
     if (!window.ethereum) throw new Error("Wallet not found");
-    provider = new ethers.BrowserProvider(window.ethereum);
-    signer = await provider.getSigner();
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
     userAddr = await signer.getAddress();
     contract = new ethers.Contract(DEFAULT_CONTRACT, _abi, signer);
   } else {
-    provider = new ethers.JsonRpcProvider(DEFAULT_RPC);
+    provider = new ethers.providers.JsonRpcProvider(DEFAULT_RPC);
     contract = new ethers.Contract(DEFAULT_CONTRACT, _abi, provider);
   }
   return contract;
@@ -748,7 +750,7 @@ async function refreshStats() {
     $("st_remainingTerm").textContent = stats.remainingTerm.toString();
     $("st_remainingPermanent").textContent = stats.remainingPermanent.toString();
     const treasury = await contract.treasuryBalance();
-    $("st_treasury").textContent = ethers.formatUnits(treasury, 18);
+    $("st_treasury").textContent = ethers.utils.formatUnits(treasury, 18);
     log("Stats refreshed ✅", "ok");
   } catch (e) { log(e.message, "err"); }
 }
@@ -758,7 +760,7 @@ async function viewPendingReward() {
     const col = parseAddr($("colStake").value.trim());
     const id = parseBig($("tidStake").value);
     const reward = await contract.pendingRewardOf(col, id);
-    $("pendingView").textContent = ethers.formatUnits(reward, 18) + " CATA";
+    $("pendingView").textContent = ethers.utils.formatUnits(reward, 18) + " CATA";
   } catch (e) { log(e.message, "err"); }
 }
 async function viewUserInfo() {
@@ -768,8 +770,7 @@ async function viewUserInfo() {
     const addr = parseAddr(who);
     const count = await contract.userStakeCount(addr);
     const enrolled = await contract.isBluechipEnrolled(addr);
-    const out = `User: ${addr}\nStakeCount: ${count}\nBluechip Enrolled: ${enrolled}`;
-    $("infoOut").textContent = out;
+    $("infoOut").textContent = `User: ${addr}\nStakeCount: ${count}\nBluechip: ${enrolled}`;
   } catch (e) { log(e.message, "err"); }
 }
 async function viewCollectionInfo() {
@@ -777,7 +778,8 @@ async function viewCollectionInfo() {
     await initContract(false);
     const col = parseAddr($("infoCol").value.trim());
     const info = await contract.collectionInfo(col);
-    $("infoOut").textContent = `Collection: ${col}\nMaxSupply: ${info.maxSupply}\nVerified: ${info.verified}\nBluechip: ${info.isBlue}`;
+    $("infoOut").textContent =
+      `Collection: ${col}\nMaxSupply: ${info.maxSupply}\nVerified: ${info.verified}\nBluechip: ${info.isBlue}`;
   } catch (e) { log(e.message, "err"); }
 }
 
@@ -886,7 +888,7 @@ async function propose() {
     const pType = ProposalTypes[typeStr] ?? parseInt(typeStr);
     const target = parseBig($("paramTarget").value);
     const newVal = parseBig($("newValue").value);
-    const ctx = $("collCtx").value.trim() || ethers.ZeroAddress;
+    const ctx = $("collCtx").value.trim() || ethers.constants.AddressZero;
     const tx = await contract.propose(pType, target, newVal, ctx);
     log(`Propose tx: ${tx.hash}`);
     await tx.wait();
@@ -945,5 +947,6 @@ async function withdrawTreasury() {
   } catch (e) { log(e.message, "err"); }
 }
 </script>
+  
 </body>
 </html>
