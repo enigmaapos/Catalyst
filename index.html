@@ -273,6 +273,45 @@ Governance: Burn-Weighted Collection Governance (BWCG): Top collections by burne
       {"inputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"name":"executeProposal","outputs":[],"stateMutability":"nonpayable","type":"function"},
       {"inputs":[],"name":"collectionRegistrationFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
       {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+      // --- Deployer Guardians ---
+{
+  "inputs":[
+    {"internalType":"uint256","name":"index","type":"uint256"},
+    {"internalType":"address","name":"guardian","type":"address"}
+  ],
+  "name":"setDeployerGuardian",
+  "outputs":[],
+  "stateMutability":"nonpayable",
+  "type":"function"
+},
+{
+  "inputs":[{"internalType":"address","name":"newDeployer","type":"address"}],
+  "name":"proposeDeployerRecovery",
+  "outputs":[],
+  "stateMutability":"nonpayable",
+  "type":"function"
+},
+{
+  "inputs":[],
+  "name":"approveDeployerRecovery",
+  "outputs":[],
+  "stateMutability":"nonpayable",
+  "type":"function"
+},
+{
+  "inputs":[],
+  "name":"executeDeployerRecovery",
+  "outputs":[],
+  "stateMutability":"nonpayable",
+  "type":"function"
+}
+             {
+  "inputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+  "name":"deployerGuardians",
+  "outputs":[{"internalType":"address","name":"","type":"address"}],
+  "stateMutability":"view",
+  "type":"function"
+}
     ];
 
     let provider, signer, contract;
