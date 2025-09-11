@@ -993,7 +993,7 @@
       }catch(e){ log(e.message||e, "err"); }
     };
 
-    // --- Stake: Harvest / Unstake / View Pending ---
+    // --- Stake: Harvest ---
     $("btnHarvestOne").onclick = async ()=>{
       try{
         requireWallet();
@@ -1031,6 +1031,67 @@
         $("pendingView").textContent = ethers.formatUnits(pending, 18) + " CATA";
       }catch(e){ log(e.message||e,"err"); }
     };
+
+    $("btnBatchStake").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colBatch").value);
+
+    // parse CSV into array of numbers
+    const tids = $("tidsBatch").value
+      .split(",")
+      .map(s => parseUint(s.trim()))
+      .filter(n => !isNaN(n));
+
+    const permanent = $("permanentBatch").value === "true";
+
+    const tx = await WRITE_CONTRACT.batchStake(col, tids, permanent);
+    log(`Batch stake sent: ${tx.hash}`);
+    await tx.wait();
+    log("Batch stake confirmed ✅", "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
+    $("btnApprove721Batch").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colBatch").value);
+
+    // Minimal ERC721 ABI for approvals
+    const ERC721_ABI = [
+      { "inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],
+        "name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function" }
+    ];
+
+    const nft = new ethers.Contract(col, ERC721_ABI, WRITE_CONTRACT.runner);
+    const tx = await nft.setApprovalForAll(CONTRACT_ADDRESS, true);
+    log(`Approval sent: ${tx.hash}`);
+    await tx.wait();
+    log("Approval confirmed ✅", "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
+    $("btnRegister").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colRegister").value);
+    const declaredSupply = parseUint($("declaredSupply").value);
+
+    const tx = await WRITE_CONTRACT.registerCollection(col, declaredSupply);
+    log(`Register collection sent: ${tx.hash}`);
+    await tx.wait();
+    log("Collection registered ✅", "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     /* ============================
      * BLUE-CHIP (NON-CUSTODIAL)
