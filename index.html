@@ -8,8 +8,10 @@
   />
   <title>Catalyst — Official DApp</title>
 
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- Ethers v6 (UMD) -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 
   <link rel="icon" href="data:,">
@@ -59,6 +61,7 @@
 </head>
 <body class="min-h-screen">
 
+  <!-- Header -->
   <header class="glass ring-1 shadow-card sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-3 items-center">
       <div class="flex items-center gap-3">
@@ -71,6 +74,7 @@
         </div>
       </div>
 
+      <!-- RPC -->
       <div class="flex items-center gap-2 ml-auto">
         <div class="hidden lg:flex items-center gap-2">
           <span class="text-xs muted">RPC</span>
@@ -78,18 +82,21 @@
           <button id="saveRpc" class="btn btn-ghost text-sm">Use RPC</button>
         </div>
 
+        <!-- Contract -->
         <div class="hidden lg:flex items-center gap-2">
           <span class="text-xs muted">Contract</span>
           <input id="contractAddress" placeholder="0x… (proxy)" class="w-[22rem] bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#3553a3]" />
           <button id="saveContractBtn" class="btn btn-primary text-sm">Save</button>
         </div>
 
+        <!-- Wallet -->
         <div class="flex items-center gap-2">
           <span id="acct" class="mono text-xs muted">Not connected</span>
           <button id="walletBtn" class="btn btn-primary">Connect</button>
         </div>
       </div>
 
+      <!-- Mobile inputs -->
       <div class="w-full grid grid-cols-1 gap-2 lg:hidden mt-2">
         <div class="flex items-center gap-2">
           <span class="text-xs muted">RPC</span>
@@ -105,10 +112,13 @@
     </div>
   </header>
 
+  <!-- Main -->
   <main class="max-w-7xl mx-auto px-4 py-6 grid-2 gap-6">
 
+    <!-- Left: App -->
     <section class="space-y-6">
 
+      <!-- Tabs -->
       <div class="glass ring-1 rounded-2xl p-2 flex flex-wrap gap-2">
         <button data-tab="overview" class="tabbtn btn btn-ghost tab-active">Overview</button>
         <button data-tab="read" class="tabbtn btn btn-ghost">Read</button>
@@ -120,6 +130,7 @@
         <button data-tab="whitepaper" class="tabbtn btn btn-ghost">Whitepaper</button>
       </div>
 
+      <!-- Overview -->
       <div id="tab-overview" class="glass ring-1 rounded-2xl p-5 space-y-5">
         <div class="flex items-start gap-4">
           <div class="hidden sm:block w-14 h-14 rounded-xl bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-2xl">🧭</div>
@@ -157,10 +168,12 @@
         </div>
       </div>
 
+      <!-- Read Tab -->
       <div id="tab-read" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <h2 class="text-lg font-semibold title">Read-Only Helpers & Inspectors</h2>
         <p class="muted text-sm">These calls never require a wallet. Use them to explore the protocol before interacting.</p>
 
+        <!-- Protocol Stats -->
         <div class="card rounded-xl p-4 ring-1">
           <div class="flex items-center justify-between">
             <h3 class="font-semibold">Protocol Stats</h3>
@@ -203,6 +216,7 @@
           </div>
         </div>
 
+        <!-- Pending -->
         <div class="card rounded-xl p-4 ring-1">
           <h3 class="font-semibold mb-2">Pending Rewards (read)</h3>
           <div class="grid md:grid-cols-2 gap-3">
@@ -225,6 +239,7 @@
           <div id="pendingOut" class="mono text-sm muted mt-3">—</div>
         </div>
 
+        <!-- Collections & Bluechip -->
         <div class="card rounded-xl p-4 ring-1">
           <h3 class="font-semibold mb-3">Registered Collections / Blue-Chip</h3>
           <div class="flex gap-2">
@@ -234,6 +249,7 @@
           <div id="collectionsOut" class="mono text-sm muted mt-3">—</div>
         </div>
 
+        <!-- User & Collection Info -->
         <div class="card rounded-xl p-4 ring-1">
           <h3 class="font-semibold mb-3">User / Collection Info</h3>
           <div class="grid md:grid-cols-2 gap-3">
@@ -254,6 +270,7 @@
         </div>
       </div>
 
+      <!-- Stake Tab -->
       <div id="tab-stake" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🧱</div>
@@ -275,6 +292,7 @@
           </ul>
         </details>
 
+        <!-- Approvals + Single -->
         <div class="card rounded-xl p-4 ring-1 space-y-4">
           <h3 class="font-semibold">Single Stake</h3>
           <div class="grid md:grid-cols-2 gap-3">
@@ -310,6 +328,7 @@
           </div>
         </div>
 
+        <!-- Batch -->
         <div class="card rounded-xl p-4 ring-1 space-y-3">
           <h3 class="font-semibold">Batch Stake (≤ ~50 safe)</h3>
           <div class="grid md:grid-cols-2 gap-3">
@@ -338,6 +357,7 @@
           </div>
         </div>
 
+        <!-- Register -->
         <div class="card rounded-xl p-4 ring-1 space-y-3">
           <h3 class="font-semibold">Register Collection (permissionless)</h3>
           <div class="grid md:grid-cols-2 gap-3">
@@ -357,6 +377,7 @@
         </div>
       </div>
 
+      <!-- Blue-Chip -->
       <div id="tab-bluechip" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">💎</div>
@@ -412,6 +433,7 @@
         </div>
       </div>
 
+      <!-- Governance -->
       <div id="tab-governance" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🏛️</div>
@@ -425,6 +447,7 @@
         </div>
 
         <div class="grid lg:grid-cols-2 gap-4">
+          <!-- Propose -->
           <div class="card rounded-xl p-4 ring-1 space-y-3">
             <h3 class="font-semibold">Create Proposal</h3>
             <div class="grid md:grid-cols-2 gap-3">
@@ -455,6 +478,7 @@
             <button id="btnPropose" class="btn btn-primary">Create Proposal</button>
           </div>
 
+          <!-- Vote/Execute -->
           <div class="card rounded-xl p-4 ring-1 space-y-3">
             <h3 class="font-semibold">Vote / Execute</h3>
             <div class="grid md:grid-cols-2 gap-3">
@@ -472,6 +496,7 @@
         </div>
       </div>
 
+      <!-- Guardians -->
       <div id="tab-guardians" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">🛡️</div>
@@ -485,6 +510,7 @@
         </div>
 
         <div class="grid lg:grid-cols-2 gap-4">
+          <!-- Deployer -->
           <div class="card rounded-xl p-4 ring-1 space-y-3">
             <h3 class="font-semibold">Deployer Council</h3>
             <div class="grid md:grid-cols-2 gap-3">
@@ -500,6 +526,7 @@
             </div>
           </div>
 
+          <!-- Admin -->
           <div class="card rounded-xl p-4 ring-1 space-y-3">
             <h3 class="font-semibold">Admin Council</h3>
             <div class="grid md:grid-cols-2 gap-3">
@@ -558,6 +585,7 @@
         </details>
       </div>
 
+      <!-- Admin -->
       <div id="tab-admin" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">⚙️</div>
@@ -593,6 +621,7 @@
         </div>
       </div>
 
+      <!-- Whitepaper -->
       <div id="tab-whitepaper" class="glass ring-1 rounded-2xl p-5 space-y-5 hidden">
         <h2 class="text-lg font-semibold title">Whitepaper Summary</h2>
         <details class="rounded-lg ring-1 p-3" open>
@@ -626,11 +655,13 @@
       </div>
     </section>
 
+    <!-- Right: Console -->
     <aside class="space-y-6">
       <div class="glass ring-1 rounded-2xl p-5">
         <h3 class="font-semibold mb-3">Console / Activity</h3>
         <div id="log" class="mono text-xs max-h-[520px] overflow-auto rounded-lg border border-[#122041] bg-[#081126] p-2">
-          </div>
+          <!-- log lines will prepend -->
+        </div>
         <div class="text-[11px] muted mt-2">
           Tips: You can use the <span class="kbd">Read</span> tab to explore safely. Write actions require wallet and may trigger confirmations.
         </div>
@@ -651,6 +682,7 @@
     Catalyst • Universal NFT Utility • © <span id="year"></span>
   </footer>
 
+  <!-- Modals -->
   <div id="modal" class="fixed inset-0 hidden items-center justify-center z-50">
     <div class="absolute inset-0 bg-black/60"></div>
     <div class="relative glass ring-1 rounded-2xl w-[95%] max-w-lg p-5">
@@ -674,7 +706,7 @@
        ========================= */
     const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json";
     const DEFAULT_CONTRACT = "0xF6f4B2eb6b9D4e87fA5D38DE9124Dd4C212a61FD";   // ← set your official proxy here (optional)
-    const DEFAULT_RPC = "https://rpc.test.btcs.network/";        // ← optional default read RPC
+    const DEFAULT_RPC = "";        // ← optional default read RPC
 
     const ERC721_ABI = [
       "function setApprovalForAll(address operator, bool approved)",
@@ -1050,12 +1082,213 @@
       try{
         requireWallet();
         await initWriteContract();
-        const col = parseAddress($("colBlueHarvest").value);
+        const col = parseAddress($("colBlue").value);
         const tx = await WRITE_CONTRACT.harvestBluechip(col);
         log(`Blue-chip harvest sent: ${tx.hash}`);
         await tx.wait();
         log("Blue-chip harvest confirmed ✅","ok");
       }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * GOVERNANCE
+     * ============================ */
+    $("btnPropose").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const target = parseAddress($("govTarget").value);
+        const data = $("govData").value.trim();
+        const tx = await WRITE_CONTRACT.propose(target, data);
+        log(`Proposal submitted: ${tx.hash}`);
+        await tx.wait();
+        log("Proposal confirmed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnVote").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const pid = parseUint($("votePid").value);
+        const support = $("voteSupport").value === "true";
+        const tx = await WRITE_CONTRACT.vote(pid, support);
+        log(`Vote sent: ${tx.hash}`);
+        await tx.wait();
+        log("Vote confirmed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnExecute").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const pid = parseUint($("execPid").value);
+        const tx = await WRITE_CONTRACT.execute(pid);
+        log(`Proposal execution sent: ${tx.hash}`);
+        await tx.wait();
+        log("Proposal executed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * GUARDIANS
+     * ============================ */
+    $("btnPropRecover").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const newImpl = parseAddress($("recoverImpl").value);
+        const tx = await WRITE_CONTRACT.proposeRecovery(newImpl);
+        log(`Recovery proposal sent: ${tx.hash}`);
+        await tx.wait();
+        log("Recovery proposed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnExecRecover").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.executeRecovery();
+        log(`Recovery execution sent: ${tx.hash}`);
+        await tx.wait();
+        log("Recovery executed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * ADMIN
+     * ============================ */
+    $("btnPause").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.pause();
+        log(`Pause sent: ${tx.hash}`);
+        await tx.wait();
+        log("Contract paused ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnUnpause").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.unpause();
+        log(`Unpause sent: ${tx.hash}`);
+        await tx.wait();
+        log("Contract unpaused ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnWithdraw").onclick = async ()=>{
+      try{
+        requireWallet();
+        await initWriteContract();
+        const to = parseAddress($("withdrawTo").value);
+        const amt = parseUint($("withdrawAmt").value);
+        const tx = await WRITE_CONTRACT.withdrawTreasury(to, amt);
+        log(`Treasury withdraw sent: ${tx.hash}`);
+        await tx.wait();
+        log("Withdraw confirmed ✅","ok");
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    /* ============================
+     * READ-ONLY VIEWS
+     * ============================ */
+    $("btnStats").onclick = async ()=>{
+      try{
+        const totalStaked = await READ_CONTRACT.totalStaked();
+        const totalSupply = await READ_CONTRACT.totalSupply();
+        $("statsView").textContent = 
+          `Total Staked: ${totalStaked}\nTotal Supply: ${ethers.formatUnits(totalSupply,18)} CATA`;
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnCollections").onclick = async ()=>{
+      try{
+        const count = await READ_CONTRACT.collectionCount();
+        $("collectionsView").textContent = `Registered Collections: ${count}`;
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+    $("btnGuardians").onclick = async ()=>{
+      try{
+        const g0 = await READ_CONTRACT.adminGuardians(0);
+        $("guardiansView").textContent = `Guardian[0]: ${g0}`;
+      }catch(e){ log(e.message||e,"err"); }
+    };
+
+/* ============================
+     * MODAL CONFIRMATION (REUSABLE)
+     * ============================ */
+    // Creates (once) and shows a confirmation modal with a message & details.
+    // Returns a Promise<boolean>.
+    function confirmAction(title, lines) {
+      return new Promise((resolve) => {
+        let modal = document.getElementById("confirmModal");
+        if (!modal) {
+          modal = document.createElement("div");
+          modal.id = "confirmModal";
+          modal.style.position = "fixed";
+          modal.style.inset = "0";
+          modal.style.background = "rgba(0,0,0,.5)";
+          modal.style.display = "none";
+          modal.style.zIndex = "9999";
+          modal.innerHTML = `
+            <div style="max-width:560px;margin:10vh auto;background:#0e1522;border:1px solid #21283a;border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.4)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <h3 style="margin:0;font-size:18px">${title || "Confirm"}</h3>
+                <button id="cfClose" class="ghost small">✕</button>
+              </div>
+              <div id="cfBody" class="mono muted" style="margin-top:10px;white-space:pre-wrap"></div>
+              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+                <button id="cfCancel" class="ghost">Cancel</button>
+                <button id="cfOk" class="primary">Confirm</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+        }
+        // set content
+        modal.querySelector("h3").textContent = title || "Confirm";
+        modal.querySelector("#cfBody").textContent =
+          Array.isArray(lines) ? lines.join("\n") : (lines || "");
+        // wire
+        const close = () => { modal.style.display = "none"; };
+        modal.querySelector("#cfClose").onclick = () => { close(); resolve(false); };
+        modal.querySelector("#cfCancel").onclick = () => { close(); resolve(false); };
+        modal.querySelector("#cfOk").onclick = () => { close(); resolve(true); };
+        // show
+        modal.style.display = "block";
+      });
+    }
+
+    /* ============================
+     * BLUE-CHIP (NON-CUSTODIAL)
+     * ============================ */
+    $("btnEnrollBlue").onclick = async ()=>{
+      try {
+        requireWallet();
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.blueChipEnroll();
+        log(`Enroll sent: ${tx.hash}`);
+        await tx.wait();
+        log("Blue-chip enrollment confirmed ✅", "ok");
+      } catch(e){ log(e.message||e, "err"); }
+    };
+
+    $("btnHarvestBlue").onclick = async ()=>{
+      try {
+        requireWallet();
+        await initWriteContract();
+        const col = parseAddress($("colBlueHarvest").value);
+        const tx = await WRITE_CONTRACT.harvestBlue(col);
+        log(`Harvest (blue-chip) sent: ${tx.hash}`);
+        await tx.wait();
+        log("Harvest (blue-chip) confirmed ✅", "ok");
+      } catch(e){ log(e.message||e, "err"); }
     };
 
     // Admin: flag/unflag blue-chip
@@ -1526,6 +1759,7 @@
         if (hh.startsWith("tab-")) selectTab(hh.substring(4));
       });
     })();
+
   </script>
 </body>
 </html>
