@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="/css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.min.js"></script>
   <style>
-    /* Minimal styles for the prototype */
     :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#7c3aed}
     html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial;background:linear-gradient(180deg,#071029,#071320);color:#e6eef6}
     .app{display:flex;gap:1rem;padding:20px;max-width:1200px;margin:0 auto}
@@ -59,17 +58,9 @@
         <div class="small muted">Total Registered: <span id="totalRegistered">-</span></div>
         <div class="small muted">Burned (you): <span id="burnedByAddress">-</span></div>
       </div>
-
-      <div class="card small muted">
-        <div>Contract ABI included from your upload (truncated in UI) — for full ABI see project files.</div>
-        <div style="margin-top:8px">
-          <button onclick="ui.showTab('contract')">View Embedded ABI & Contract</button>
-        </div>
-      </div>
     </aside>
 
     <main>
-      <!-- Tabs content -->
       <div id="tabs">
 
         <!-- Overview -->
@@ -79,7 +70,6 @@
           <div class="row">
             <div class="card" style="flex:1">
               <h3 class="small">Protocol</h3>
-              <div class="small">Fee split: <strong>90% burn / 9% treasury / 1% deployer</strong></div>
               <div class="small">Global cap: <span id="globalCap">-</span></div>
               <div class="small">Per-collection cap: <span id="collectionCap">-</span></div>
             </div>
@@ -126,15 +116,15 @@
 
         <!-- Bluechip -->
         <section id="bluechip" class="tab" style="display:none">
-          <h1>Bluechip Enrollment / Harvest (non-custodial)</h1>
+          <h1>Bluechip Enrollment / Harvest</h1>
           <div class="card">
-            <div class="small">Enroll wallet for bluechip rewards</div>
+            <div class="small">Enroll wallet</div>
             <button onclick="actions.enrollBluechip()">Enroll Wallet</button>
             <div class="small muted" id="enrollResult"></div>
           </div>
 
           <div class="card">
-            <div class="small">Harvest rewards for bluechip collection</div>
+            <div class="small">Harvest rewards</div>
             <input id="blueHarvestCollection" placeholder="0x..." />
             <button onclick="actions.harvestBluechip()">Harvest</button>
             <div class="small muted" id="blueHarvestResult"></div>
@@ -150,9 +140,8 @@
             <select id="proposalType">
               <option value="0">BASE_REWARD</option>
               <option value="1">VOTING_PARAM</option>
-              <!-- add other types the contract supports -->
             </select>
-            <div class="small" style="margin-top:8px">Param target (numeric)</div>
+            <div class="small" style="margin-top:8px">Param target</div>
             <input id="proposalParam" placeholder="e.g. 0"/>
             <div class="small" style="margin-top:8px">New value</div>
             <input id="proposalValue" placeholder="e.g. 1000"/>
@@ -161,77 +150,15 @@
               <div id="proposeResult" class="small muted"></div>
             </div>
           </div>
-
-          <div class="card">
-            <h3 class="small">Vote / Execute</h3>
-            <div class="small">Proposal ID (bytes32)</div>
-            <input id="voteId" placeholder="0x..." />
-            <div class="row" style="margin-top:8px">
-              <button onclick="actions.vote()">Vote</button>
-              <button onclick="actions.executeProposal()">Execute</button>
-              <div id="voteResult" class="small muted"></div>
-            </div>
-          </div>
         </section>
 
         <!-- Admin -->
         <section id="admin" class="tab" style="display:none">
           <h1>Admin / Guardians</h1>
           <div class="card">
-            <h3 class="small">Guardians (Deployer / Admin)</h3>
-            <div class="small">Set guardian (admin only)</div>
-            <input id="guardianIdx" placeholder="index 0..6" />
-            <input id="guardianAddr" placeholder="0x..." />
-            <div style="margin-top:8px" class="row">
-              <button onclick="actions.setAdminGuardian()">Set Admin Guardian</button>
-              <div id="guardianResult" class="small muted"></div>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3 class="small">Recovery (guardian flows)</h3>
-            <div class="small">Propose admin recovery (guardian)</div>
-            <input id="proposeAdminAddr" placeholder="0x..." />
-            <div style="margin-top:8px" class="row">
-              <button onclick="actions.proposeAdminRecovery()">Propose Recovery</button>
-              <button onclick="actions.approveAdminRecovery()">Approve Recovery</button>
-              <button onclick="actions.executeAdminRecovery()">Execute Recovery</button>
-              <div id="recoveryResult" class="small muted"></div>
-            </div>
-          </div>
-
-          <div class="card">
-  <h3 class="small">Deployer Guardians</h3>
-  <div class="small">Set guardian (deployer only)</div>
-  <input id="deployerGuardianIdx" placeholder="index 0..6" />
-  <input id="deployerGuardianAddr" placeholder="0x..." />
-  <div style="margin-top:8px" class="row">
-    <button onclick="actions.setDeployerGuardian()">Set Deployer Guardian</button>
-    <div id="deployerGuardianResult" class="small muted"></div>
-  </div>
-</div>
-
-<div class="card">
-  <h3 class="small">Deployer Recovery (guardian flows)</h3>
-  <input id="proposeDeployerAddr" placeholder="0x..." />
-  <div style="margin-top:8px" class="row">
-    <button onclick="actions.proposeDeployerRecovery()">Propose Recovery</button>
-    <button onclick="actions.approveDeployerRecovery()">Approve Recovery</button>
-    <button onclick="actions.executeDeployerRecovery()">Execute Recovery</button>
-    <div id="deployerRecoveryResult" class="small muted"></div>
-  </div>
-</div>
-        </section>
-
-        <!-- Contract / ABI viewer -->
-        <section id="contract" class="tab" style="display:none">
-          <h1>Embedded ABI & Contract (truncated)</h1>
-          <div class="card">
-            <h3 class="small">ABI (excerpt)</h3>
-            <pre id="abiBlock">// ABI loaded from project file (truncated) — replace with full ABI file for production</pre>
-            <div class="small muted">Full ABI file: CatalystNFTStakingUpgradeable.json.txt</div>
-            <div class="small muted">Contract source (sol): CatalystNFTStakingUpgradeable.sol.txt</div>
-            <div class="small muted">Whitepaper: Catalyst Whitepaper.txt</div>
+            <h3 class="small">Guardians</h3>
+            <button onclick="actions.showGuardians()">Show Guardians</button>
+            <pre id="guardiansList" class="small muted"></pre>
           </div>
         </section>
 
@@ -239,17 +166,11 @@
         <section id="whitepaper" class="tab" style="display:none">
           <h1>Whitepaper (excerpt)</h1>
           <div class="card">
-            <div class="small muted">Catalyst Whitepaper — core sections below (full file available in project files). See file: Catalyst Whitepaper.txt</div>
-            <textarea readonly id="whitepaperText">
+            <textarea readonly>
 Catalyst Whitepaper — Universal Utility & Governance for All NFTs
-
-(Excerpt)
-Tokenomics (CATA): Deflationary mechanics: Harvest burn fee, Unstake burn fee, Registration fees; Immutable fee distribution: 90% Burn, 9% Treasury, 1% Deployer.
-
-Governance: Burn-Weighted Collection Governance (BWCG): Top collections by burned CATA get full voting rights. Per-collection vote cap prevents monopolies.
-(See full whitepaper file for details.)
+Tokenomics: 90% Burn, 9% Treasury, 1% Deployer.
+Governance: Burn-Weighted Collection Governance (BWCG).
             </textarea>
-            <div class="small muted">Source citation: see project files. </div>
           </div>
         </section>
 
@@ -258,63 +179,16 @@ Governance: Burn-Weighted Collection Governance (BWCG): Top collections by burne
   </div>
 
   <script>
-    // --- Config: replace CONTRACT_ADDRESS with your deployed proxy address
     const CONTRACT_ADDRESS = "0xF6f4B2eb6b9D4e87fA5D38DE9124Dd4C212a61FD";
-    // Minimal ABI excerpt for critical calls used by the UI (add full ABI for full coverage)
-    const CONTRACT_ABI = [
-      // simple excerpts; replace with your full ABI (upload file: CatalystNFTStakingUpgradeable.json.txt)
-      {"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256[]","name":"tokenIds","type":"uint256[]"},{"internalType":"bool","name":"permanent","type":"bool"}],"name":"batchStake","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bool","name":"permanent","type":"bool"}],"name":"stake","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"harvest","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256[]","name":"tokenIds","type":"uint256[]"},{"internalType":"bool","name":"permanent","type":"bool"}],"name":"batchStake","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"declaredMaxSupply","type":"uint256"}],"name":"registerCollection","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[],"name":"enrollBluechip","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"name":"executeProposal","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[],"name":"collectionRegistrationFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-      {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
-      // --- Deployer Guardians ---
-{
-  "inputs":[
-    {"internalType":"uint256","name":"index","type":"uint256"},
-    {"internalType":"address","name":"guardian","type":"address"}
-  ],
-  "name":"setDeployerGuardian",
-  "outputs":[],
-  "stateMutability":"nonpayable",
-  "type":"function"
-},
-{
-  "inputs":[{"internalType":"address","name":"newDeployer","type":"address"}],
-  "name":"proposeDeployerRecovery",
-  "outputs":[],
-  "stateMutability":"nonpayable",
-  "type":"function"
-},
-{
-  "inputs":[],
-  "name":"approveDeployerRecovery",
-  "outputs":[],
-  "stateMutability":"nonpayable",
-  "type":"function"
-},
-{
-  "inputs":[],
-  "name":"executeDeployerRecovery",
-  "outputs":[],
-  "stateMutability":"nonpayable",
-  "type":"function"
-}
-             {
-  "inputs":[{"internalType":"uint256","name":"","type":"uint256"}],
-  "name":"deployerGuardians",
-  "outputs":[{"internalType":"address","name":"","type":"address"}],
-  "stateMutability":"view",
-  "type":"function"
-}
-    ];
+    const ABI_URL = "abi/CatalystNFTStakingUpgradeable.json";
 
-    let provider, signer, contract;
+    let provider, signer, contract, CONTRACT_ABI;
+
+    async function loadABI() {
+      const res = await fetch(ABI_URL);
+      CONTRACT_ABI = await res.json();
+      console.log("ABI loaded", CONTRACT_ABI.length, "functions");
+    }
 
     const ui = {
       showTab: (id) => {
@@ -326,7 +200,8 @@ Governance: Burn-Weighted Collection Governance (BWCG): Top collections by burne
 
     const actions = {
       connect: async () => {
-        if (!window.ethereum) return alert('Install MetaMask or another Web3 wallet.');
+        if (!window.ethereum) return alert('Install MetaMask first.');
+        await loadABI();
         provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
@@ -334,13 +209,6 @@ Governance: Burn-Weighted Collection Governance (BWCG): Top collections by burne
         const net = await provider.getNetwork();
         document.getElementById('network').textContent = net.name + ' (' + net.chainId + ')';
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-        // populate a few read-only fields
-        try {
-          const regFee = await contract.collectionRegistrationFee();
-          document.getElementById('collectionCap').textContent = '20,000 (protocol)';
-          document.getElementById('globalCap').textContent = '1,000,000,000 (protocol)';
-          document.getElementById('treasury').textContent = 'loading...';
-        } catch (e) { console.warn(e) }
       },
 
       stake: async () => {
@@ -348,32 +216,23 @@ Governance: Burn-Weighted Collection Governance (BWCG): Top collections by burne
           const col = document.getElementById('stakeCollection').value;
           const tid = Number(document.getElementById('stakeTokenId').value);
           const perm = document.getElementById('stakePermanent').checked;
-          if (!col || !tid) return alert('collection + tokenId required');
-          // must call ERC721 approve on target NFT contract first (UI not showing approval flow)
           const tx = await contract.stake(col, tid, perm);
-          document.getElementById('stakeResult').textContent = 'tx sent: ' + tx.hash;
+          document.getElementById('stakeResult').textContent = 'tx: ' + tx.hash;
           await tx.wait();
-          document.getElementById('stakeResult').textContent = 'staked — tx mined: ' + tx.hash;
-        } catch (err) {
-          console.error(err);
-          document.getElementById('stakeResult').textContent = 'error: ' + (err.message||err);
-        }
+          document.getElementById('stakeResult').textContent = 'staked';
+        } catch (err) { document.getElementById('stakeResult').textContent = err.message; }
       },
 
       batchStake: async () => {
         try {
           const col = document.getElementById('batchCollection').value;
-          const ids = document.getElementById('batchTokenIds').value.split(',').map(s=>s.trim()).filter(Boolean).map(Number);
+          const ids = document.getElementById('batchTokenIds').value.split(',').map(s=>Number(s.trim()));
           const perm = document.getElementById('batchPermanent').checked;
-          if (!col || ids.length===0) return alert('collection + tokenIds required');
           const tx = await contract.batchStake(col, ids, perm);
-          document.getElementById('batchResult').textContent = 'tx sent: ' + tx.hash;
+          document.getElementById('batchResult').textContent = 'tx: ' + tx.hash;
           await tx.wait();
-          document.getElementById('batchResult').textContent = 'batch staked — tx mined: ' + tx.hash;
-        } catch (err) {
-          console.error(err);
-          document.getElementById('batchResult').textContent = 'error: ' + (err.message||err);
-        }
+          document.getElementById('batchResult').textContent = 'batch staked';
+        } catch (err) { document.getElementById('batchResult').textContent = err.message; }
       },
 
       enrollBluechip: async () => {
@@ -382,24 +241,17 @@ Governance: Burn-Weighted Collection Governance (BWCG): Top collections by burne
           document.getElementById('enrollResult').textContent = 'tx: ' + tx.hash;
           await tx.wait();
           document.getElementById('enrollResult').textContent = 'enrolled';
-        } catch (err) {
-          console.error(err);
-          document.getElementById('enrollResult').textContent = 'error: ' + (err.message||err);
-        }
+        } catch (err) { document.getElementById('enrollResult').textContent = err.message; }
       },
 
       harvestBluechip: async () => {
         try {
           const col = document.getElementById('blueHarvestCollection').value;
-          if (!col) return alert('collection required');
-          const tx = await contract.harvestBluechip(col);
+          const tx = await contract.harvest(col, 0); // adjust if your ABI differs
           document.getElementById('blueHarvestResult').textContent = 'tx: ' + tx.hash;
           await tx.wait();
           document.getElementById('blueHarvestResult').textContent = 'harvested';
-        } catch (err) {
-          console.error(err);
-          document.getElementById('blueHarvestResult').textContent = 'error: ' + (err.message||err);
-        }
+        } catch (err) { document.getElementById('blueHarvestResult').textContent = err.message; }
       },
 
       propose: async () => {
@@ -408,148 +260,30 @@ Governance: Burn-Weighted Collection Governance (BWCG): Top collections by burne
           const param = Number(document.getElementById('proposalParam').value);
           const val = Number(document.getElementById('proposalValue').value);
           const tx = await contract.propose(type, param, val, ethers.ZeroAddress);
-          document.getElementById('proposeResult').textContent = 'propose tx: ' + tx.hash;
+          document.getElementById('proposeResult').textContent = 'tx: ' + tx.hash;
           await tx.wait();
           document.getElementById('proposeResult').textContent = 'proposal created';
-        } catch (err) {
-          console.error(err);
-          document.getElementById('proposeResult').textContent = 'error: ' + (err.message||err);
-        }
+        } catch (err) { document.getElementById('proposeResult').textContent = err.message; }
       },
 
-      vote: async () => {
+      showGuardians: async () => {
         try {
-          const id = document.getElementById('voteId').value;
-          if (!id) return alert('proposal id required');
-          const tx = await contract.vote(id);
-          document.getElementById('voteResult').textContent = 'vote tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('voteResult').textContent = 'voted';
+          let output = "";
+          for (let i = 0; i < 7; i++) {
+            try {
+              const g = await contract.deployerGuardians(i);
+              if (g !== ethers.ZeroAddress) output += `Guardian[${i}]: ${g}\n`;
+            } catch (e) { break; }
+          }
+          document.getElementById('guardiansList').textContent = output || "No guardians set.";
         } catch (err) {
-          console.error(err);
-          document.getElementById('voteResult').textContent = 'error: ' + (err.message||err);
+          document.getElementById('guardiansList').textContent = err.message;
         }
-      },
-
-      executeProposal: async () => {
-        try {
-          const id = document.getElementById('voteId').value;
-          if (!id) return alert('proposal id required');
-          const tx = await contract.executeProposal(id);
-          document.getElementById('voteResult').textContent = 'execute tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('voteResult').textContent = 'executed';
-        } catch (err) {
-          console.error(err);
-          document.getElementById('voteResult').textContent = 'error: ' + (err.message||err);
-        }
-      },
-
-      setAdminGuardian: async () => {
-        try {
-          const idx = Number(document.getElementById('guardianIdx').value);
-          const addr = document.getElementById('guardianAddr').value;
-          const tx = await contract.setAdminGuardian(idx, addr);
-          document.getElementById('guardianResult').textContent = 'tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('guardianResult').textContent = 'set';
-        } catch (err) {
-          console.error(err);
-          document.getElementById('guardianResult').textContent = 'error: ' + (err.message||err);
-        }
-      },
-
-      proposeAdminRecovery: async () => {
-        try {
-          const addr = document.getElementById('proposeAdminAddr').value;
-          const tx = await contract.proposeAdminRecovery(addr);
-          document.getElementById('recoveryResult').textContent = 'tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('recoveryResult').textContent = 'proposed';
-        } catch (err) {
-          console.error(err);
-          document.getElementById('recoveryResult').textContent = 'error: ' + (err.message||err);
-        }
-      },
-
-      approveAdminRecovery: async () => {
-        try {
-          const tx = await contract.approveAdminRecovery();
-          document.getElementById('recoveryResult').textContent = 'tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('recoveryResult').textContent = 'approved';
-        } catch (err) {
-          console.error(err);
-          document.getElementById('recoveryResult').textContent = 'error: ' + (err.message||err);
-        }
-      },
-
-      executeAdminRecovery: async () => {
-        try {
-          const tx = await contract.executeAdminRecovery();
-          document.getElementById('recoveryResult').textContent = 'tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('recoveryResult').textContent = 'executed';
-        } catch (err) {
-          console.error(err);
-          document.getElementById('recoveryResult').textContent = 'error: ' + (err.message||err);
-        }
-      },
-
-     setDeployerGuardian: async () => {
-        try {
-          const idx = Number(document.getElementById('deployerGuardianIdx').value);
-          const addr = document.getElementById('deployerGuardianAddr').value;
-          const tx = await contract.setDeployerGuardian(idx, addr);
-          document.getElementById('deployerGuardianResult').textContent = 'tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('deployerGuardianResult').textContent = 'set';
-        } catch (err) {
-          document.getElementById('deployerGuardianResult').textContent = 'error: ' + (err.message||err);
-        }
-      },
-
-      proposeDeployerRecovery: async () => {
-        try {
-          const addr = document.getElementById('proposeDeployerAddr').value;
-          const tx = await contract.proposeDeployerRecovery(addr);
-          document.getElementById('deployerRecoveryResult').textContent = 'tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('deployerRecoveryResult').textContent = 'proposed';
-        } catch (err) {
-          document.getElementById('deployerRecoveryResult').textContent = 'error: ' + (err.message||err);
-        }
-      },
-
-      approveDeployerRecovery: async () => {
-        try {
-          const tx = await contract.approveDeployerRecovery();
-          document.getElementById('deployerRecoveryResult').textContent = 'tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('deployerRecoveryResult').textContent = 'approved';
-        } catch (err) {
-          document.getElementById('deployerRecoveryResult').textContent = 'error: ' + (err.message||err);
-        }
-      },
-
-      executeDeployerRecovery: async () => {
-        try {
-          const tx = await contract.executeDeployerRecovery();
-          document.getElementById('deployerRecoveryResult').textContent = 'tx: ' + tx.hash;
-          await tx.wait();
-          document.getElementById('deployerRecoveryResult').textContent = 'executed';
-        } catch (err) {
-          document.getElementById('deployerRecoveryResult').textContent = 'error: ' + (err.message||err);
-        }
-      } 
+      }
     };
 
     document.getElementById('connectBtn').addEventListener('click', actions.connect);
-    // show initial tab
     ui.showTab('overview');
-
-    // load ABI text from embedded CONTRACT_ABI into viewer
-    document.getElementById('abiBlock').textContent = JSON.stringify(CONTRACT_ABI, null, 2);
   </script>
 </body>
 </html>
