@@ -704,8 +704,8 @@
     /* =========================
        CONFIG & STATE
        ========================= */
-    const ABI_URL = "abi/CatalystNFTStakingUpgradeable.json";
-    const DEFAULT_CONTRACT = "";   // ← set your official proxy here (optional)
+    const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json";
+    const DEFAULT_CONTRACT = "0xF6f4B2eb6b9D4e87fA5D38DE9124Dd4C212a61FD";   // ← set your official proxy here (optional)
     const DEFAULT_RPC = "";        // ← optional default read RPC
 
     const ERC721_ABI = [
