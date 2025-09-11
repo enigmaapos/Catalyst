@@ -1278,6 +1278,38 @@
       }catch(e){ log(e.message||e,"err"); }
     };
 
+    $("btnSetDepGuardian").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const idx = parseUint($("depIdx").value);
+    const guardian = parseAddress($("depGuardian").value);
+
+    const tx = await WRITE_CONTRACT.setDeployerGuardian(idx, guardian);
+    log(`Set deployer guardian sent: ${tx.hash}`);
+    await tx.wait();
+    log("Deployer guardian updated ✅", "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
+    $("btnSetAdmGuardian").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const idx = parseUint($("admIdx").value);
+    const guardian = parseAddress($("admGuardian").value);
+
+    const tx = await WRITE_CONTRACT.setAdminGuardian(idx, guardian);
+    log(`Set admin guardian sent: ${tx.hash}`);
+    await tx.wait();
+    log("Admin guardian updated ✅", "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
     /* ============================
      * ADMIN: PAUSE / UNPAUSE / WITHDRAW
      * ============================ */
