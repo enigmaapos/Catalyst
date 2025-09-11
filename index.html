@@ -1525,10 +1525,9 @@ function toWei(val, decimals = 18) {
         let out = [`User: ${addr}`];
 
         // common views, guarded with try/catch so it works across ABI variants
-        try {
-  const bal = await READ_CONTRACT.balanceOf(addr);
-  out.push(`CATA balanceOf = ${toReadable(bal)}`);
-    }
+        try{
+const bal = await READ_CONTRACT.balanceOf(addr);
+out.push(CATA balanceOf = ${ethers.formatUnits(bal,18)});
         }catch{}
         try{
           const st = await READ_CONTRACT.userStakeCount(addr);
