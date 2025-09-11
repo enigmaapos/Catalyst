@@ -199,6 +199,28 @@
               <div id="recoveryResult" class="small muted"></div>
             </div>
           </div>
+
+          <div class="card">
+  <h3 class="small">Deployer Guardians</h3>
+  <div class="small">Set guardian (deployer only)</div>
+  <input id="deployerGuardianIdx" placeholder="index 0..6" />
+  <input id="deployerGuardianAddr" placeholder="0x..." />
+  <div style="margin-top:8px" class="row">
+    <button onclick="actions.setDeployerGuardian()">Set Deployer Guardian</button>
+    <div id="deployerGuardianResult" class="small muted"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3 class="small">Deployer Recovery (guardian flows)</h3>
+  <input id="proposeDeployerAddr" placeholder="0x..." />
+  <div style="margin-top:8px" class="row">
+    <button onclick="actions.proposeDeployerRecovery()">Propose Recovery</button>
+    <button onclick="actions.approveDeployerRecovery()">Approve Recovery</button>
+    <button onclick="actions.executeDeployerRecovery()">Execute Recovery</button>
+    <div id="deployerRecoveryResult" class="small muted"></div>
+  </div>
+</div>
         </section>
 
         <!-- Contract / ABI viewer -->
@@ -433,7 +455,54 @@ Governance: Burn-Weighted Collection Governance (BWCG): Top collections by burne
           console.error(err);
           document.getElementById('recoveryResult').textContent = 'error: ' + (err.message||err);
         }
-      }
+      },
+
+     setDeployerGuardian: async () => {
+        try {
+          const idx = Number(document.getElementById('deployerGuardianIdx').value);
+          const addr = document.getElementById('deployerGuardianAddr').value;
+          const tx = await contract.setDeployerGuardian(idx, addr);
+          document.getElementById('deployerGuardianResult').textContent = 'tx: ' + tx.hash;
+          await tx.wait();
+          document.getElementById('deployerGuardianResult').textContent = 'set';
+        } catch (err) {
+          document.getElementById('deployerGuardianResult').textContent = 'error: ' + (err.message||err);
+        }
+      },
+
+      proposeDeployerRecovery: async () => {
+        try {
+          const addr = document.getElementById('proposeDeployerAddr').value;
+          const tx = await contract.proposeDeployerRecovery(addr);
+          document.getElementById('deployerRecoveryResult').textContent = 'tx: ' + tx.hash;
+          await tx.wait();
+          document.getElementById('deployerRecoveryResult').textContent = 'proposed';
+        } catch (err) {
+          document.getElementById('deployerRecoveryResult').textContent = 'error: ' + (err.message||err);
+        }
+      },
+
+      approveDeployerRecovery: async () => {
+        try {
+          const tx = await contract.approveDeployerRecovery();
+          document.getElementById('deployerRecoveryResult').textContent = 'tx: ' + tx.hash;
+          await tx.wait();
+          document.getElementById('deployerRecoveryResult').textContent = 'approved';
+        } catch (err) {
+          document.getElementById('deployerRecoveryResult').textContent = 'error: ' + (err.message||err);
+        }
+      },
+
+      executeDeployerRecovery: async () => {
+        try {
+          const tx = await contract.executeDeployerRecovery();
+          document.getElementById('deployerRecoveryResult').textContent = 'tx: ' + tx.hash;
+          await tx.wait();
+          document.getElementById('deployerRecoveryResult').textContent = 'executed';
+        } catch (err) {
+          document.getElementById('deployerRecoveryResult').textContent = 'error: ' + (err.message||err);
+        }
+      } 
     };
 
     document.getElementById('connectBtn').addEventListener('click', actions.connect);
