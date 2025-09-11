@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Catalyst DApp Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.min.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #0f172a; color: #f1f5f9; padding: 20px; }
+    h1 { font-size: 24px; }
+    .card { background: #1e293b; padding: 16px; border-radius: 12px; margin: 12px 0; }
+    input { padding: 6px; border-radius: 6px; border: none; margin: 4px 0; width: 100%; }
+    button { padding: 6px 12px; border: none; border-radius: 6px; margin-top: 6px; cursor: pointer; background: #3b82f6; color: white; }
+    button:hover { background: #2563eb; }
+    pre { background: #0f172a; padding: 8px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+    .grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  </style>
+</head>
+<body>
+  <h1>Catalyst DApp Dashboard</h1>
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <p id="status">Not connected</p>
+
+  <!-- Overview -->
+  <div class="card">
+    <h2>Overview</h2>
+    <p>Fee Split: 90% Burn / 9% Treasury / 1% Deployer</p>
+    <p>Global Cap: 1,000,000,000</p>
+    <p>Per-Collection Cap: 20,000</p>
+    <p>Treasury Balance: <span id="treasury">0</span> CATA</p>
+    <p>Your Balance: <span id="balance">0</span> CATA</p>
+  </div>
+
+  <!-- Stake / Unstake / Harvest -->
+  <div class="grid">
+    <div class="card">
+      <h2>Stake NFT</h2>
+      <input id="stakeCollection" placeholder="Collection (0x…)" />
+      <input id="stakeTokenId" placeholder="Token ID" />
+      <label><input type="checkbox" id="stakePermanent"> Permanent</label><br>
+      <button onclick="stake()">Stake</button>
+    </div>
+    <div class="card">
+      <h2>Unstake NFT</h2>
+      <input id="unstakeCollection" placeholder="Collection (0x…)" />
+      <input id="unstakeTokenId" placeholder="Token ID" />
+      <button onclick="unstake()">Unstake</button>
+    </div>
+    <div class="card">
+      <h2>Harvest Rewards</h2>
+      <input id="harvestCollection" placeholder="Collection (0x…)" />
+      <input id="harvestTokenId" placeholder="Token ID" />
+      <button onclick="harvest()">Harvest</button>
+    </div>
+    <div class="card">
+      <h2>Batch Stake</h2>
+      <input id="batchCollection" placeholder="Collection (0x…)" />
+      <input id="batchTokenIds" placeholder="1,2,3" />
+      <label><input type="checkbox" id="batchPermanent"> Permanent</label><br>
+      <button onclick="batchStake()">Batch Stake</button>
+    </div>
+  </div>
+
+  <!-- Bluechip -->
+  <div class="grid">
+    <div class="card">
+      <h2>Enroll Bluechip</h2>
+      <button onclick="enrollBluechip()">Enroll Wallet</button>
+    </div>
+    <div class="card">
+      <h2>Harvest Bluechip</h2>
+      <input id="blueCollection" placeholder="Collection (0x…)" />
+      <button onclick="harvestBluechip()">Harvest</button>
+    </div>
+    <div class="card">
+      <h2>Set Bluechip (Admin)</h2>
+      <input id="blueAdminCollection" placeholder="Collection (0x…)" />
+      <input id="blueAdminFlag" placeholder="true / false" />
+      <button onclick="setBluechip()">Set</button>
+    </div>
+  </div>
+
+  <!-- Governance -->
+  <div class="grid">
+    <div class="card">
+      <h2>Propose</h2>
+      <input id="proposalType" placeholder="Type (0=BASE_REWARD,…)" />
+      <input id="proposalParam" placeholder="Param target" />
+      <input id="proposalValue" placeholder="New value" />
+      <button onclick="propose()">Propose</button>
+    </div>
+    <div class="card">
+      <h2>Vote / Execute</h2>
+      <input id="proposalId" placeholder="Proposal ID (bytes32)" />
+      <button onclick="vote()">Vote</button>
+      <button onclick="executeProposal()">Execute</button>
+    </div>
+  </div>
+
+  <!-- Admin -->
+  <div class="grid">
+    <div class="card">
+      <h2>Set Admin Guardian</h2>
+      <input id="adminIdx" placeholder="Index (0-6)" />
+      <input id="adminAddr" placeholder="Guardian address" />
+      <button onclick="setAdminGuardian()">Set</button>
+    </div>
+    <div class="card">
+      <h2>Admin Recovery</h2>
+      <input id="adminRecoveryAddr" placeholder="Proposed admin" />
+      <button onclick="proposeAdminRecovery()">Propose</button>
+      <button onclick="approveAdminRecovery()">Approve</button>
+      <button onclick="executeAdminRecovery()">Execute</button>
+    </div>
+    <div class="card">
+      <h2>Treasury Withdrawal</h2>
+      <input id="treasuryTo" placeholder="Recipient" />
+      <input id="treasuryAmt" placeholder="Amount" />
+      <button onclick="withdrawTreasury()">Withdraw</button>
+    </div>
+    <div class="card">
+      <h2>Pause Controls</h2>
+      <button onclick="pause()">Pause</button>
+      <button onclick="unpause()">Unpause</button>
+    </div>
+  </div>
+
+  <!-- Deployer -->
+  <div class="grid">
+    <div class="card">
+      <h2>Set Deployer Guardian</h2>
+      <input id="deployerIdx" placeholder="Index (0-6)" />
+      <input id="deployerAddr" placeholder="Guardian address" />
+      <button onclick="setDeployerGuardian()">Set</button>
+    </div>
+    <div class="card">
+      <h2>Deployer Recovery</h2>
+      <input id="deployerRecoveryAddr" placeholder="Proposed deployer" />
+      <button onclick="proposeDeployerRecovery()">Propose</button>
+      <button onclick="approveDeployerRecovery()">Approve</button>
+      <button onclick="executeDeployerRecovery()">Execute</button>
+    </div>
+  </div>
+
+  <!-- Tools -->
+  <div class="grid">
+    <div class="card">
+      <h2>Register Collection</h2>
+      <input id="regCollection" placeholder="Collection" />
+      <input id="regSupply" placeholder="Declared Max Supply" />
+      <button onclick="registerCollection()">Register</button>
+    </div>
+    <div class="card">
+      <h2>Pending Rewards View</h2>
+      <input id="viewColl" placeholder="Collection" />
+      <input id="viewOwner" placeholder="Owner" />
+      <input id="viewToken" placeholder="Token ID" />
+      <button onclick="pendingRewardsView()">Check</button>
+    </div>
+    <div class="card">
+      <h2>ABI Viewer</h2>
+      <pre id="abi"></pre>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <h2>Activity Log</h2>
+    <pre id="log"></pre>
+  </div>
+
+  <script>
+    const CONTRACT_ADDRESS = "0xF6f4B2eb6b9D4e87fA5D38DE9124Dd4C212a61FD";
+    const CONTRACT_ABI = /* paste your full ABI here */ [];
+
+    let provider, signer, contract, userAddr;
+
+    const log = (msg) => {
+      document.getElementById("log").textContent = msg + "\n" + document.getElementById("log").textContent;
+    };
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert("Install MetaMask");
+      provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = await provider.getSigner();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      userAddr = await signer.getAddress();
+      document.getElementById("status").innerText = "Connected: " + userAddr;
+      refresh();
+      log("Wallet connected: " + userAddr);
+      document.getElementById("abi").textContent = JSON.stringify(CONTRACT_ABI, null, 2);
+    }
+
+    async function refresh() {
+      try {
+        const bal = await contract.balanceOf(userAddr);
+        document.getElementById("balance").innerText = ethers.formatUnits(bal, 18);
+        const treas = await contract.treasuryBalance();
+        document.getElementById("treasury").innerText = ethers.formatUnits(treas, 18);
+      } catch (e) { log("⚠️ Balance fetch error"); }
+    }
+
+    async function runTx(fn, ...args) {
+      try {
+        const tx = await fn(...args);
+        log("Tx sent: " + tx.hash);
+        await tx.wait();
+        log("✅ Success: " + tx.hash);
+        refresh();
+      } catch (err) { log("❌ Error: " + (err.message || err)); }
+    }
+
+    // Stake flows
+    function stake() { runTx(contract.stake,
+      document.getElementById("stakeCollection").value,
+      Number(document.getElementById("stakeTokenId").value),
+      document.getElementById("stakePermanent").checked); }
+    function unstake() { runTx(contract.unstake,
+      document.getElementById("unstakeCollection").value,
+      Number(document.getElementById("unstakeTokenId").value)); }
+    function harvest() { runTx(contract.harvest,
+      document.getElementById("harvestCollection").value,
+      Number(document.getElementById("harvestTokenId").value)); }
+    function batchStake() {
+      const ids = document.getElementById("batchTokenIds").value.split(",").map(x => Number(x.trim()));
+      runTx(contract.batchStake,
+        document.getElementById("batchCollection").value,
+        ids,
+        document.getElementById("batchPermanent").checked);
+    }
+
+    // Bluechip
+    function enrollBluechip() { runTx(contract.enrollBluechip); }
+    function harvestBluechip() { runTx(contract.harvestBluechip,
+      document.getElementById("blueCollection").value); }
+    function setBluechip() { runTx(contract.setBluechipCollection,
+      document.getElementById("blueAdminCollection").value,
+      document.getElementById("blueAdminFlag").value === "true"); }
+
+    // Governance
+    function propose() { runTx(contract.propose,
+      Number(document.getElementById("proposalType").value),
+      Number(document.getElementById("proposalParam").value),
+      Number(document.getElementById("proposalValue").value),
+      ethers.ZeroAddress); }
+    function vote() { runTx(contract.vote, document.getElementById("proposalId").value); }
+    function executeProposal() { runTx(contract.executeProposal, document.getElementById("proposalId").value); }
+
+    // Admin
+    function setAdminGuardian() { runTx(contract.setAdminGuardian,
+      Number(document.getElementById("adminIdx").value),
+      document.getElementById("adminAddr").value); }
+    function proposeAdminRecovery() { runTx(contract.proposeAdminRecovery,
+      document.getElementById("adminRecoveryAddr").value); }
+    function approveAdminRecovery() { runTx(contract.approveAdminRecovery); }
+    function executeAdminRecovery() { runTx(contract.executeAdminRecovery); }
+    function withdrawTreasury() { runTx(contract.withdrawTreasury,
+      document.getElementById("treasuryTo").value,
+      ethers.parseUnits(document.getElementById("treasuryAmt").value, 18)); }
+    function pause() { runTx(contract.pause); }
+    function unpause() { runTx(contract.unpause); }
+
+    // Deployer
+    function setDeployerGuardian() { runTx(contract.setDeployerGuardian,
+      Number(document.getElementById("deployerIdx").value),
+      document.getElementById("deployerAddr").value); }
+    function proposeDeployerRecovery() { runTx(contract.proposeDeployerRecovery,
+      document.getElementById("deployerRecoveryAddr").value); }
+    function approveDeployerRecovery() { runTx(contract.approveDeployerRecovery); }
+    function executeDeployerRecovery() { runTx(contract.executeDeployerRecovery); }
+
+    // Tools
+    function registerCollection() { runTx(contract.registerCollection,
+      document.getElementById("regCollection").value,
+      Number(document.getElementById("regSupply").value)); }
+    async function pendingRewardsView() {
+      try {
+        const res = await contract.pendingRewardsView(
+          document.getElementById("viewColl").value,
+          document.getElementById("viewOwner").value,
+          Number(document.getElementById("viewToken").value)
+        );
+        log("Pending Rewards: " + ethers.formatUnits(res, 18));
+      } catch (err) { log("❌ Error: " + (err.message || err)); }
+    }
+  </script>
+</body>
+</html>
