@@ -379,10 +379,18 @@
 
         <div class="card rounded-xl p-4 ring-1 space-y-3">
           <div class="grid md:grid-cols-2 gap-3">
-            <div>
-              <div class="text-xs muted mb-1">Enroll Wallet (one-time)</div>
-              <button id="btnEnrollBlue" class="btn btn-primary w-full">Enroll</button>
-            </div>
+            
+  <div>
+    <div class="text-xs muted mb-1">Enroll Wallet (one-time)</div>
+    <button id="btnEnrollBlue" class="btn btn-primary w-full">Enroll</button>
+  </div>
+
+  <div class="flex gap-2 mt-2">
+    <button id="btnCheckEnroll" class="btn btn-ghost w-full">Check Enrollment</button>
+  </div>
+
+  <div id="blueEnrollStatus" class="text-xs muted mt-1">—</div>
+
             <div>
               <div class="text-xs muted mb-1">Harvest for Collection</div>
               <div class="flex gap-2">
@@ -395,22 +403,25 @@
 
           <details class="rounded-lg ring-1 p-3">
             <summary class="cursor-pointer">Admin: Flag / Unflag Collection</summary>
-            <div class="grid md:grid-cols-3 gap-3 mt-3">
-              <div>
-                <div class="text-xs muted mb-1">Collection</div>
-                <input id="colFlagBlue" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-              </div>
-              <div>
-                <div class="text-xs muted mb-1">Status</div>
-                <select id="isBlueFlag" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
-                  <option value="true">Flag as Blue-Chip</option>
-                  <option value="false">Remove Blue-Chip</option>
-                </select>
-              </div>
-              <div class="flex items-end">
-                <button id="btnSetBlue" class="btn btn-primary w-full">Set Blue-Chip</button>
-              </div>
-            </div>
+<div class="grid md:grid-cols-3 gap-3 mt-3">
+  <div>
+    <div class="text-xs muted mb-1">Collection</div>
+    <input id="colFlagBlue" placeholder="0x…" 
+      class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+    <div id="colBlueStatus" class="text-xs mt-1 muted">—</div> <!-- ✅ added -->
+  </div>
+  <div>
+    <div class="text-xs muted mb-1">Status</div>
+    <select id="isBlueFlag" 
+      class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+      <option value="true">Flag as Blue-Chip</option>
+      <option value="false">Remove Blue-Chip</option>
+    </select>
+  </div>
+  <div class="flex items-end">
+    <button id="btnSetBlue" class="btn btn-primary w-full">Set Blue-Chip</button>
+  </div>
+</div>
           </details>
         </div>
       </div>
@@ -729,34 +740,7 @@ function toWei(val, decimals = 18) {
     return 0n;
   }
 }
-
-    async function isRegisteredCollection(addr) {
-  try {
-    await initReadContract();
-    const info = await READ_CONTRACT.collections(addr);
-
-    // Debug: log what the contract actually returns
-    console.log("Collection info raw:", info);
-
-    // Try field name first, fallback to index 0
-    let declared;
-    if (info.declaredMaxSupply !== undefined) {
-      declared = info.declaredMaxSupply;
-    } else if (info[0] !== undefined) {
-      declared = info[0];
-    } else {
-      declared = 0n;
-    }
-
-    // Use BigInt-safe comparison
-    return BigInt(declared) > 0n;
-  } catch (e) {
-    console.warn("isRegisteredCollection error:", e);
-    return false;
-  }
-}
     
-
     /* =========================
        MODAL (CONFIRMATIONS)
        ========================= */
@@ -1125,6 +1109,16 @@ function toWei(val, decimals = 18) {
   }
 };
 
+async function isRegisteredCollection(addr) {
+  try {
+    const idx = await READ_CONTRACT.registeredIndex(addr);
+    return idx > 0n;  // BigInt compare
+  } catch (e) {
+    log(e.message || e, "err");
+    return false;
+  }
+}
+    
     $("colRegister").addEventListener("input", async () => {
   const col = $("colRegister").value.trim();
   if (!col || !ethers.isAddress(col)) {
@@ -1169,16 +1163,47 @@ function toWei(val, decimals = 18) {
     /* ============================
      * BLUE-CHIP (NON-CUSTODIAL)
      * ============================ */
-    $("btnEnrollBlue").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.enrollBluechip();
-        log(`Blue-chip enrollment sent: ${tx.hash}`);
-        await tx.wait();
-        log("Enrollment confirmed ✅","ok");
-      }catch(e){ log(e.message||e,"err"); }
-    };
+    // ✅ Check enrollment status
+// 🔹 Check if wallet is enrolled (always address(0) slot)
+async function checkEnrollment() {
+  try {
+    await initReadContract();
+
+    const info = await READ_CONTRACT.bluechipWallets(
+      "0x0000000000000000000000000000000000000000", // ✅ global slot
+      walletAddress
+    );
+
+    $("blueEnrollStatus").textContent = info.enrolled
+      ? `✅ Enrolled at block ${info.enrolledAtBlock}`
+      : "❌ Not enrolled";
+  } catch (e) {
+    $("blueEnrollStatus").textContent = "⚠️ Error checking";
+    log(e.message || e, "err");
+  }
+}
+
+// 🔹 Enroll the wallet
+$("btnEnrollBlue").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const tx = await WRITE_CONTRACT.enrollBluechip();
+    log(`Blue-chip enrollment sent: ${tx.hash}`);
+    await tx.wait();
+    log("Enrollment confirmed ✅", "ok");
+
+    // refresh status
+    checkEnrollment();
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
+// 🔹 Manual check
+$("btnCheckEnroll").onclick = () => {
+  checkEnrollment();
+};
 
     $("btnHarvestBlue").onclick = async ()=>{
       try{
@@ -1193,16 +1218,43 @@ function toWei(val, decimals = 18) {
     };
 
     // Admin: flag/unflag blue-chip
-    $("btnSetBlue").onclick = async () => {
+    // Auto-check if collection is already Blue-Chip
+$("colFlagBlue").addEventListener("input", async () => {
+  const col = $("colFlagBlue").value.trim();
+  if (!col || !ethers.isAddress(col)) {
+    $("colBlueStatus").textContent = "—";
+    return;
+  }
+
+  try {
+    await initReadContract();
+    const isBlue = await READ_CONTRACT.isBluechipCollection(col);
+    $("colBlueStatus").textContent = isBlue
+      ? "✅ Already Blue-Chip"
+      : "❌ Not Blue-Chip";
+  } catch (e) {
+    $("colBlueStatus").textContent = "⚠️ Error checking";
+    log(e.message || e, "err");
+  }
+});
+
+// Admin button (already in your code)
+$("btnSetBlue").onclick = async () => {
   try {
     requireWallet();
     await initWriteContract();
     const col = parseAddress($("colFlagBlue").value);
     const flag = $("isBlueFlag").value === "true";
-    const tx = await WRITE_CONTRACT.setBluechipCollection(col, flag); // ✅ correct name
+    const tx = await WRITE_CONTRACT.setBluechipCollection(col, flag);
     log(`Set blue-chip sent: ${tx.hash}`);
     await tx.wait();
     log(`Blue-chip ${flag ? "flagged" : "cleared"} ✅`, "ok");
+
+    // 🔄 refresh status after transaction
+    const isBlue = await READ_CONTRACT.isBluechipCollection(col);
+    $("colBlueStatus").textContent = isBlue
+      ? "✅ Already Blue-Chip"
+      : "❌ Not Blue-Chip";
   } catch (e) {
     log(e.message || e, "err");
   }
@@ -1507,33 +1559,18 @@ function toWei(val, decimals = 18) {
       }catch(e){ log(e.message||e, "err"); }
     };
 
-    // List registered collections (tries getRegisteredCollections(); falls back to count loop if available)
-    
-
-
-
-
-
-
-
-
+// List all registered collections
 $("btnListCollections").onclick = async () => {
   try {
     await initReadContract();
     let lines = [];
-
     const n = await READ_CONTRACT.collectionCount();
     lines.push(`count = ${n}`);
 
-    for (let i = 0n; i < n && i < 200n; i++) {
-      try {
-        const a = await READ_CONTRACT.collectionAt(i);
-        lines.push(`${i}. ${a}`);
-      } catch {
-        break;
-      }
+    for (let i = 0; i < n && i < 200; i++) {
+      const addr = await READ_CONTRACT.registeredCollections(i);
+      lines.push(`${i}. ${addr}`);
     }
-
     $("collectionsOut").textContent = lines.length
       ? lines.join("\n")
       : "(none registered)";
@@ -1542,24 +1579,21 @@ $("btnListCollections").onclick = async () => {
   }
 };
 
-    // List blue-chip collections (tries getBlueChips(); falls back to isBlueChip via collectionAt loop)
-    $("btnListBlue").onclick = async () => {
+// List all flagged blue-chips
+$("btnListBlue").onclick = async () => {
   try {
     await initReadContract();
     let lines = [];
-
     const n = await READ_CONTRACT.collectionCount();
-    for (let i = 0n; i < n && i < 200n; i++) {
-      try {
-        const a = await READ_CONTRACT.collectionAt(i);
-        const flag = await READ_CONTRACT.isBlueChip(a);
-        if (flag) lines.push(`${i}. ${a}`);
-      } catch {}
-    }
 
+    for (let i = 0; i < n && i < 200; i++) {
+      const addr = await READ_CONTRACT.registeredCollections(i);
+      const flag = await READ_CONTRACT.isBluechipCollection(addr);
+      if (flag) lines.push(`${i}. ${addr}`);
+    }
     $("collectionsOut").textContent = lines.length
       ? lines.join("\n")
-      : "(none flagged)";
+      : "(none flagged as blue-chip)";
   } catch (e) {
     log(e.message || e, "err");
   }
@@ -1594,32 +1628,35 @@ $("btnListCollections").onclick = async () => {
     };
 
     // Collection info (tries collectionInfo(struct) / isRegistered / caps)
-    $("btnColInfo").onclick = async ()=>{
-      try{
-        await initReadContract();
-        const col = parseAddress($("infoCol").value);
-        let out = [`Collection: ${col}`];
+    $("btnColInfo").onclick = async () => {
+  try {
+    await initReadContract();
+    const col = parseAddress($("infoCol").value);
+    let out = [`Collection: ${col}`];
 
-        try{
-          const info = await READ_CONTRACT.collectionInfo(col);
-          // print best-effort keys / tuple
-          if (info.maxSupply) out.push(`maxSupply = ${info.maxSupply}`);
-          if (info.verified!==undefined) out.push(`verified = ${info.verified}`);
-          if (info.isBlue!==undefined) out.push(`bluechip = ${info.isBlue}`);
-        }catch{}
+    // ✅ Registered?
+    const idx = await READ_CONTRACT.registeredIndex(col);
+    out.push(`registered = ${idx > 0}`);
 
-        try{
-          const reg = await READ_CONTRACT.isCollectionRegistered(col);
-          out.push(`registered = ${reg}`);
-        }catch{}
-        try{
-          const bc = await READ_CONTRACT.isBlueChip(col);
-          out.push(`bluechip = ${bc}`);
-        }catch{}
+    // ✅ Bluechip flag?
+    try {
+      const blue = await READ_CONTRACT.isBluechipCollection(col);
+      out.push(`bluechip = ${blue}`);
+    } catch (err) {
+      out.push("bluechip = (not supported in ABI?)");
+    }
 
-        $("infoOut").textContent = out.join("\n");
-      }catch(e){ log(e.message||e, "err"); }
-    };
+    // ✅ Total staked
+    try {
+      const total = await READ_CONTRACT.collectionTotalStaked(col);
+      out.push(`totalStaked = ${total}`);
+    } catch {}
+
+    $("infoOut").textContent = out.join("\n");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     /* ============================
      * ADMIN (safe confirm wrappers)
