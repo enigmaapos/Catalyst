@@ -338,7 +338,7 @@
           </div>
         </div>
 
-        <div class="card rounded-xl p-4 ring-1 space-y-3">
+      <div class="card rounded-xl p-4 ring-1 space-y-3">
   <h3 class="font-semibold">Register Collection (permissionless)</h3>
   <div class="grid md:grid-cols-2 gap-3">
     <div>
@@ -672,8 +672,8 @@
        CONFIG & STATE
        ========================= */
     const ABI_URL = "../abi/CatalystNFTStakingUpgradeable.json";
-    const DEFAULT_CONTRACT = "";   // ← set your official proxy here (optional)
-    const DEFAULT_RPC = "";        // ← optional default read RPC
+    const DEFAULT_CONTRACT = "0xF6f4B2eb6b9D4e87fA5D38DE9124Dd4C212a61FD";   // ← set your official proxy here (optional)
+    const DEFAULT_RPC = "https://rpc.test.btcs.network/";        // ← optional default read RPC
 
     const ERC721_ABI = [
       "function setApprovalForAll(address operator, bool approved)",
@@ -696,17 +696,62 @@
     /* =========================
        DOM HELPERS & LOG
        ========================= */
-    const $ = (id) => document.getElementById(id);
-    function now(){ return new Date().toLocaleTimeString(); }
-    function log(msg, cls=""){
-      const wrap = $("log");
-      const div = document.createElement("div");
-      div.className = "logline " + (cls||"");
-      div.textContent = `[${now()}] ${msg}`;
-      wrap.prepend(div);
+    // existing
+const $ = (id) => document.getElementById(id);
+function now(){ return new Date().toLocaleTimeString(); }
+function log(msg, cls=""){
+  const wrap = $("log");
+  const div = document.createElement("div");
+  div.className = "logline " + (cls||"");
+  div.textContent = `[${now()}] ${msg}`;
+  wrap.prepend(div);
+}
+function setYear(){ $("year").textContent = new Date().getFullYear(); }
+setYear();
+
+// ✅ new helpers for numbers
+function toReadable(raw, decimals = 18) {
+  try {
+    return ethers.formatUnits(raw, decimals); // BigInt -> human
+  } catch {
+    return raw?.toString?.() || "—";
+  }
+}
+
+function toWei(val, decimals = 18) {
+  try {
+    return ethers.parseUnits(val.toString(), decimals); // human -> BigInt
+  } catch {
+    return 0n;
+  }
+}
+
+    async function isRegisteredCollection(addr) {
+  try {
+    await initReadContract();
+    const info = await READ_CONTRACT.collections(addr);
+
+    // Debug: log what the contract actually returns
+    console.log("Collection info raw:", info);
+
+    // Try field name first, fallback to index 0
+    let declared;
+    if (info.declaredMaxSupply !== undefined) {
+      declared = info.declaredMaxSupply;
+    } else if (info[0] !== undefined) {
+      declared = info[0];
+    } else {
+      declared = 0n;
     }
-    function setYear(){ $("year").textContent = new Date().getFullYear(); }
-    setYear();
+
+    // Use BigInt-safe comparison
+    return BigInt(declared) > 0n;
+  } catch (e) {
+    console.warn("isRegisteredCollection error:", e);
+    return false;
+  }
+}
+    
 
     /* =========================
        MODAL (CONFIRMATIONS)
@@ -824,7 +869,7 @@
 
         try{
           const tb = await READ_CONTRACT.treasuryBalance();
-          $("st_treasury").textContent = tb.toString();
+          $("st_treasury").textContent = toReadable(tb);
         }catch{ $("st_treasury").textContent = "n/a"; }
 
         try{
@@ -992,7 +1037,7 @@
       }catch(e){ log(e.message||e, "err"); }
     };
 
-    // --- Stake: Harvest / Unstake / View Pending ---
+    // --- Stake: Harvest ---
     $("btnHarvestOne").onclick = async ()=>{
       try{
         requireWallet();
@@ -1031,6 +1076,92 @@
       }catch(e){ log(e.message||e,"err"); }
     };
 
+    $("btnBatchStake").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colBatch").value);
+
+    // parse CSV into array of numbers
+    const tids = $("tidsBatch").value
+      .split(",")
+      .map(s => parseUint(s.trim()))
+      .filter(n => !isNaN(n));
+
+    const permanent = $("permanentBatch").value === "true";
+
+    const tx = await WRITE_CONTRACT.batchStake(col, tids, permanent);
+    log(`Batch stake sent: ${tx.hash}`);
+    await tx.wait();
+    log("Batch stake confirmed ✅", "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
+    $("btnApprove721Batch").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colBatch").value);
+
+    // Minimal ERC721 ABI for approvals
+    const ERC721_ABI = [
+      { "inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],
+        "name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function" }
+    ];
+
+    const nft = new ethers.Contract(col, ERC721_ABI, WRITE_CONTRACT.runner);
+    const tx = await nft.setApprovalForAll(CONTRACT_ADDRESS, true);
+    log(`Approval sent: ${tx.hash}`);
+    await tx.wait();
+    log("Approval confirmed ✅", "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
+    $("colRegister").addEventListener("input", async () => {
+  const col = $("colRegister").value.trim();
+  if (!col || !ethers.isAddress(col)) {
+    $("colRegisterStatus").textContent = "—";
+    return;
+  }
+
+  try {
+    const registered = await isRegisteredCollection(col);
+    $("colRegisterStatus").textContent = registered
+      ? "✅ Already registered"
+      : "❌ Not registered";
+  } catch (e) {
+    $("colRegisterStatus").textContent = "⚠️ Error checking";
+    log(e.message || e, "err");
+  }
+});
+
+    $("btnRegister").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colRegister").value);
+    const declaredSupply = parseUint($("declaredSupply").value);
+
+    if (await isRegisteredCollection(col)) {
+      log("Collection is already registered", "warn");
+      $("colRegisterStatus").textContent = "✅ Already registered";
+      return;
+    }
+
+    const tx = await WRITE_CONTRACT.registerCollection(col, declaredSupply);
+    log(`Register collection sent: ${tx.hash}`);
+    await tx.wait();
+    log("Collection registered ✅", "ok");
+    $("colRegisterStatus").textContent = "✅ Registered just now";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+    
     /* ============================
      * BLUE-CHIP (NON-CUSTODIAL)
      * ============================ */
@@ -1058,18 +1189,20 @@
     };
 
     // Admin: flag/unflag blue-chip
-    $("btnSetBlue").onclick = async ()=>{
-      try {
-        requireWallet();
-        await initWriteContract();
-        const col = parseAddress($("colFlagBlue").value);
-        const flag = $("isBlueFlag").value === "true";
-        const tx = await WRITE_CONTRACT.setBlueChip(col, flag);
-        log(`Set blue-chip sent: ${tx.hash}`);
-        await tx.wait();
-        log(`Blue-chip ${flag ? "flagged" : "cleared"} ✅`, "ok");
-      } catch(e){ log(e.message||e, "err"); }
-    };
+    $("btnSetBlue").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colFlagBlue").value);
+    const flag = $("isBlueFlag").value === "true";
+    const tx = await WRITE_CONTRACT.setBluechipCollection(col, flag); // ✅ correct name
+    log(`Set blue-chip sent: ${tx.hash}`);
+    await tx.wait();
+    log(`Blue-chip ${flag ? "flagged" : "cleared"} ✅`, "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     /* ============================
      * GOVERNANCE: PROPOSE / VOTE / EXECUTE
@@ -1216,6 +1349,38 @@
       }catch(e){ log(e.message||e,"err"); }
     };
 
+    $("btnSetDepGuardian").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const idx = parseUint($("depIdx").value);
+    const guardian = parseAddress($("depGuardian").value);
+
+    const tx = await WRITE_CONTRACT.setDeployerGuardian(idx, guardian);
+    log(`Set deployer guardian sent: ${tx.hash}`);
+    await tx.wait();
+    log("Deployer guardian updated ✅", "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
+    $("btnSetAdmGuardian").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const idx = parseUint($("admIdx").value);
+    const guardian = parseAddress($("admGuardian").value);
+
+    const tx = await WRITE_CONTRACT.setAdminGuardian(idx, guardian);
+    log(`Set admin guardian sent: ${tx.hash}`);
+    await tx.wait();
+    log("Admin guardian updated ✅", "ok");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
     /* ============================
      * ADMIN: PAUSE / UNPAUSE / WITHDRAW
      * ============================ */
@@ -1339,68 +1504,62 @@
     };
 
     // List registered collections (tries getRegisteredCollections(); falls back to count loop if available)
-    $("btnListCollections").onclick = async ()=>{
-      try{
-        await initReadContract();
-        let lines = [];
-        let listed = false;
+    
 
-        // try direct getter
-        try{
-          const arr = await READ_CONTRACT.getRegisteredCollections();
-          arr.forEach((a,i)=>lines.push(`${i}. ${a}`));
-          listed = true;
-        }catch{}
 
-        if (!listed){
-          // try count + collectionAt(i)
-          try{
-            const n = await READ_CONTRACT.collectionCount();
-            lines.push(`count = ${n}`);
-            for (let i=0n; i<n && i<200n; i++){
-              try{
-                const a = await READ_CONTRACT.collectionAt(i);
-                lines.push(`${i}. ${a}`);
-              }catch{ break; }
-            }
-            listed = true;
-          }catch{}
-        }
 
-        $("collectionsOut").textContent = listed ? lines.join("\n") : "No listing method available on this ABI.";
-      }catch(e){ log(e.message||e, "err"); }
-    };
+
+
+
+
+
+$("btnListCollections").onclick = async () => {
+  try {
+    await initReadContract();
+    let lines = [];
+
+    const n = await READ_CONTRACT.collectionCount();
+    lines.push(`count = ${n}`);
+
+    for (let i = 0n; i < n && i < 200n; i++) {
+      try {
+        const a = await READ_CONTRACT.collectionAt(i);
+        lines.push(`${i}. ${a}`);
+      } catch {
+        break;
+      }
+    }
+
+    $("collectionsOut").textContent = lines.length
+      ? lines.join("\n")
+      : "(none registered)";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     // List blue-chip collections (tries getBlueChips(); falls back to isBlueChip via collectionAt loop)
-    $("btnListBlue").onclick = async ()=>{
-      try{
-        await initReadContract();
-        let lines = [];
-        let listed = false;
+    $("btnListBlue").onclick = async () => {
+  try {
+    await initReadContract();
+    let lines = [];
 
-        try{
-          const arr = await READ_CONTRACT.getBlueChips();
-          arr.forEach((a,i)=>lines.push(`${i}. ${a}`));
-          listed = true;
-        }catch{}
+    const n = await READ_CONTRACT.collectionCount();
+    for (let i = 0n; i < n && i < 200n; i++) {
+      try {
+        const a = await READ_CONTRACT.collectionAt(i);
+        const flag = await READ_CONTRACT.isBlueChip(a);
+        if (flag) lines.push(`${i}. ${a}`);
+      } catch {}
+    }
 
-        if (!listed){
-          try{
-            const n = await READ_CONTRACT.collectionCount();
-            for (let i=0n; i<n && i<200n; i++){
-              try{
-                const a = await READ_CONTRACT.collectionAt(i);
-                const flag = await READ_CONTRACT.isBlueChip(a);
-                if (flag) lines.push(`${i}. ${a}`);
-              }catch{}
-            }
-            listed = true;
-          }catch{}
-        }
-
-        $("collectionsOut").textContent = listed ? (lines.length?lines.join("\n"):"(none flagged)") : "No blue-chip listing method available.";
-      }catch(e){ log(e.message||e, "err"); }
-    };
+    $("collectionsOut").textContent = lines.length
+      ? lines.join("\n")
+      : "(none flagged)";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     // User info (tries userInfo(address) / balances)
     $("btnUserInfo").onclick = async ()=>{
