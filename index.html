@@ -1566,16 +1566,22 @@ $("btnListBlue").onclick = async () => {
     const col = parseAddress($("infoCol").value);
     let out = [`Collection: ${col}`];
 
-    // registered?
-    try {
-      const idx = await READ_CONTRACT.registeredIndex(col);
-      out.push(`registered = ${idx != 0}`);
-    } catch {}
+    // ✅ Registered?
+    const idx = await READ_CONTRACT.registeredIndex(col);
+    out.push(`registered = ${idx > 0}`);
 
-    // bluechip?
+    // ✅ Bluechip flag?
     try {
-      const bc = await READ_CONTRACT.isBluechipCollection(col);
-      out.push(`bluechip = ${bc}`);
+      const blue = await READ_CONTRACT.isBluechipCollection(col);
+      out.push(`bluechip = ${blue}`);
+    } catch (err) {
+      out.push("bluechip = (not supported in ABI?)");
+    }
+
+    // ✅ Total staked
+    try {
+      const total = await READ_CONTRACT.collectionTotalStaked(col);
+      out.push(`totalStaked = ${total}`);
     } catch {}
 
     $("infoOut").textContent = out.join("\n");
