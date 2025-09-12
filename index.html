@@ -730,8 +730,8 @@ function toWei(val, decimals = 18) {
   try {
     await initReadContract();
     const info = await READ_CONTRACT.collections(addr);
-    // if declaredMaxSupply > 0, treat as registered
-    return info.declaredMaxSupply > 0;
+    const declared = info.declaredMaxSupply ?? info[0]; // use field if exists, else index
+    return declared > 0;
   } catch {
     return false;
   }
