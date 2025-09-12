@@ -1507,16 +1507,7 @@ function toWei(val, decimals = 18) {
       }catch(e){ log(e.message||e, "err"); }
     };
 
-    // List registered collections (tries getRegisteredCollections(); falls back to count loop if available)
-    
-
-
-
-
-
-
-
-
+    // List all registered collections
 $("btnListCollections").onclick = async () => {
   try {
     await initReadContract();
@@ -1525,11 +1516,11 @@ $("btnListCollections").onclick = async () => {
     const n = await READ_CONTRACT.collectionCount();
     lines.push(`count = ${n}`);
 
-    for (let i = 0n; i < n && i < 200n; i++) {
+    for (let i = 0; i < n && i < 200; i++) {
       try {
-        const a = await READ_CONTRACT.collectionAt(i);
+        const a = await READ_CONTRACT.registeredCollections(i);
         lines.push(`${i}. ${a}`);
-      } catch {
+      } catch (err) {
         break;
       }
     }
@@ -1542,24 +1533,26 @@ $("btnListCollections").onclick = async () => {
   }
 };
 
-    // List blue-chip collections (tries getBlueChips(); falls back to isBlueChip via collectionAt loop)
-    $("btnListBlue").onclick = async () => {
+// List blue-chip collections
+$("btnListBlue").onclick = async () => {
   try {
     await initReadContract();
     let lines = [];
 
     const n = await READ_CONTRACT.collectionCount();
-    for (let i = 0n; i < n && i < 200n; i++) {
+    for (let i = 0; i < n && i < 200; i++) {
       try {
-        const a = await READ_CONTRACT.collectionAt(i);
-        const flag = await READ_CONTRACT.isBlueChip(a);
+        const a = await READ_CONTRACT.registeredCollections(i);
+        const flag = await READ_CONTRACT.isBluechipCollection(a); // ✅ correct fn
         if (flag) lines.push(`${i}. ${a}`);
-      } catch {}
+      } catch (err) {
+        // continue if one fails
+      }
     }
 
     $("collectionsOut").textContent = lines.length
       ? lines.join("\n")
-      : "(none flagged)";
+      : "(none flagged as blue-chip)";
   } catch (e) {
     log(e.message || e, "err");
   }
