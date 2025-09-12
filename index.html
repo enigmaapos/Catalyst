@@ -382,7 +382,11 @@
             <div>
   <div class="text-xs muted mb-1">Enroll Wallet (one-time)</div>
   <button id="btnEnrollBlue" class="btn btn-primary w-full">Enroll</button>
-  <div id="blueEnrollStatus" class="text-xs muted mt-1">—</div> <!-- ✅ status -->
+  <div class="flex gap-2 mt-2">
+    <input id="colBlueStatus" placeholder="0xCollection" class="flex-1 bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+    <button id="btnCheckEnroll" class="btn btn-ghost">Check</button>
+  </div>
+  <div id="blueEnrollStatus" class="text-xs muted mt-1">—</div>
 </div>
             <div>
               <div class="text-xs muted mb-1">Harvest for Collection</div>
@@ -1157,13 +1161,11 @@ async function isRegisteredCollection(addr) {
      * BLUE-CHIP (NON-CUSTODIAL)
      * ============================ */
     // ✅ Check enrollment status
-async function checkEnrollment() {
+async function checkEnrollment(col) {
   try {
     await initReadContract();
-    const info = await READ_CONTRACT.bluechipWallets(
-      "0x0000000000000000000000000000000000000000", // global enrollment
-      walletAddress
-    );
+
+    const info = await READ_CONTRACT.bluechipWallets(col, walletAddress);
 
     $("blueEnrollStatus").textContent = info.enrolled
       ? `✅ Enrolled at block ${info.enrolledAtBlock}`
@@ -1173,6 +1175,11 @@ async function checkEnrollment() {
     log(e.message || e, "err");
   }
 }
+
+    $("btnCheckEnroll").onclick = () => {
+  const col = parseAddress($("colBlueStatus").value);
+  checkEnrollment(col);
+};
 
 // ✅ Enroll wallet
 $("btnEnrollBlue").onclick = async () => {
