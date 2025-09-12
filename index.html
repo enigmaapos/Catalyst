@@ -339,23 +339,22 @@
         </div>
 
         <div class="card rounded-xl p-4 ring-1 space-y-3">
-          <h3 class="font-semibold">Register Collection (permissionless)</h3>
-          <div class="grid md:grid-cols-2 gap-3">
-            <div>
-              <div class="text-xs muted mb-1">Collection</div>
-              <input id="colRegister" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-            </div>
-            <div>
-              <div class="text-xs muted mb-1">Declared Max Supply (≤ 20000)</div>
-              <input id="declaredSupply" type="number" placeholder="10000" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-            </div>
-          </div>
-          <button id="btnRegister" class="btn btn-primary">Register</button>
-          <div class="text-xs muted">
-            <span class="tooltip" data-tip="Unverified collections incur surcharges until they upgrade.">ⓘ</span> Verified collections (usually owner-registered) enjoy normal fees.
-          </div>
-        </div>
-      </div>
+  <h3 class="font-semibold">Register Collection (permissionless)</h3>
+  <div class="grid md:grid-cols-2 gap-3">
+    <div>
+      <div class="text-xs muted mb-1">Collection</div>
+      <input id="colRegister" placeholder="0x…" 
+        class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+      <div id="colRegisterStatus" class="text-xs mt-1 muted">—</div> <!-- ✅ status output -->
+    </div>
+    <div>
+      <div class="text-xs muted mb-1">Declared Max Supply (≤ 20000)</div>
+      <input id="declaredSupply" type="number" placeholder="10000"
+        class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+    </div>
+  </div>
+  <button id="btnRegister" class="btn btn-primary">Register</button>
+</div>  
 
       <div id="tab-bluechip" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
