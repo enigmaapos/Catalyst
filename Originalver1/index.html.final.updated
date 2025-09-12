@@ -354,7 +354,11 @@
     </div>
   </div>
   <button id="btnRegister" class="btn btn-primary">Register</button>
-</div>  
+          <div class="text-xs muted">
+            <span class="tooltip" data-tip="Unverified collections incur surcharges until they upgrade.">ⓘ</span> Verified collections (usually owner-registered) enjoy normal fees.
+          </div>
+        </div>
+      </div>
 
       <div id="tab-bluechip" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
