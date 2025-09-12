@@ -726,31 +726,7 @@ function toWei(val, decimals = 18) {
   }
 }
 
-    async function isRegisteredCollection(addr) {
-  try {
-    await initReadContract();
-    const info = await READ_CONTRACT.collections(addr);
-
-    // Debug: log what the contract actually returns
-    console.log("Collection info raw:", info);
-
-    // Try field name first, fallback to index 0
-    let declared;
-    if (info.declaredMaxSupply !== undefined) {
-      declared = info.declaredMaxSupply;
-    } else if (info[0] !== undefined) {
-      declared = info[0];
-    } else {
-      declared = 0n;
-    }
-
-    // Use BigInt-safe comparison
-    return BigInt(declared) > 0n;
-  } catch (e) {
-    console.warn("isRegisteredCollection error:", e);
-    return false;
-  }
-}
+    
 
     /* =========================
        MODAL (CONFIRMATIONS)
@@ -1120,7 +1096,46 @@ function toWei(val, decimals = 18) {
   }
 };
 
-    
+    $("colRegister").addEventListener("input", async () => {
+  const col = $("colRegister").value.trim();
+  if (!col || !ethers.isAddress(col)) {
+    $("colRegisterStatus").textContent = "—";
+    return;
+  }
+
+  try {
+    const registered = await isRegisteredCollection(col);
+    $("colRegisterStatus").textContent = registered
+      ? "✅ Already registered"
+      : "❌ Not registered";
+  } catch (e) {
+    $("colRegisterStatus").textContent = "⚠️ Error checking";
+    log(e.message || e, "err");
+  }
+});
+
+    $("btnRegister").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colRegister").value);
+    const declaredSupply = parseUint($("declaredSupply").value);
+
+    if (await isRegisteredCollection(col)) {
+      log("Collection is already registered", "warn");
+      $("colRegisterStatus").textContent = "✅ Already registered";
+      return;
+    }
+
+    const tx = await WRITE_CONTRACT.registerCollection(col, declaredSupply);
+    log(`Register collection sent: ${tx.hash}`);
+    await tx.wait();
+    log("Collection registered ✅", "ok");
+    $("colRegisterStatus").textContent = "✅ Registered just now";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
     
     /* ============================
      * BLUE-CHIP (NON-CUSTODIAL)
