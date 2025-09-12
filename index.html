@@ -732,18 +732,7 @@ function toWei(val, decimals = 18) {
     return 0n;
   }
 }
-
-    async function isRegisteredCollection(addr) {
-  try {
-    const idx = await READ_CONTRACT.registeredIndex(addr);
-    return idx > 0n;  // BigInt compare
-  } catch (e) {
-    log(e.message || e, "err");
-    return false;
-  }
-}
     
-
     /* =========================
        MODAL (CONFIRMATIONS)
        ========================= */
@@ -1112,6 +1101,16 @@ function toWei(val, decimals = 18) {
   }
 };
 
+async function isRegisteredCollection(addr) {
+  try {
+    const idx = await READ_CONTRACT.registeredIndex(addr);
+    return idx > 0n;  // BigInt compare
+  } catch (e) {
+    log(e.message || e, "err");
+    return false;
+  }
+}
+    
     $("colRegister").addEventListener("input", async () => {
   const col = $("colRegister").value.trim();
   if (!col || !ethers.isAddress(col)) {
@@ -1156,16 +1155,40 @@ function toWei(val, decimals = 18) {
     /* ============================
      * BLUE-CHIP (NON-CUSTODIAL)
      * ============================ */
-    $("btnEnrollBlue").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.enrollBluechip();
-        log(`Blue-chip enrollment sent: ${tx.hash}`);
-        await tx.wait();
-        log("Enrollment confirmed ✅","ok");
-      }catch(e){ log(e.message||e,"err"); }
-    };
+    // ✅ Check enrollment status
+async function checkEnrollment() {
+  try {
+    await initReadContract();
+    const info = await READ_CONTRACT.bluechipWallets(
+      "0x0000000000000000000000000000000000000000", // global enrollment
+      walletAddress
+    );
+
+    $("blueEnrollStatus").textContent = info.enrolled
+      ? `✅ Enrolled at block ${info.enrolledAtBlock}`
+      : "❌ Not enrolled";
+  } catch (e) {
+    $("blueEnrollStatus").textContent = "⚠️ Error checking";
+    log(e.message || e, "err");
+  }
+}
+
+// ✅ Enroll wallet
+$("btnEnrollBlue").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const tx = await WRITE_CONTRACT.enrollBluechip();
+    log(`Blue-chip enrollment sent: ${tx.hash}`);
+    await tx.wait();
+    log("Enrollment confirmed ✅", "ok");
+
+    // refresh status after enrollment
+    checkEnrollment();
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     $("btnHarvestBlue").onclick = async ()=>{
       try{
