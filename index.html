@@ -730,9 +730,24 @@ function toWei(val, decimals = 18) {
   try {
     await initReadContract();
     const info = await READ_CONTRACT.collections(addr);
-    const declared = info.declaredMaxSupply ?? info[0]; // use field if exists, else index
-    return declared > 0;
-  } catch {
+
+    // Debug: log what the contract actually returns
+    console.log("Collection info raw:", info);
+
+    // Try field name first, fallback to index 0
+    let declared;
+    if (info.declaredMaxSupply !== undefined) {
+      declared = info.declaredMaxSupply;
+    } else if (info[0] !== undefined) {
+      declared = info[0];
+    } else {
+      declared = 0n;
+    }
+
+    // Use BigInt-safe comparison
+    return BigInt(declared) > 0n;
+  } catch (e) {
+    console.warn("isRegisteredCollection error:", e);
     return false;
   }
 }
@@ -1111,10 +1126,16 @@ function toWei(val, decimals = 18) {
     $("colRegisterStatus").textContent = "—";
     return;
   }
-  const registered = await isRegisteredCollection(col);
-  $("colRegisterStatus").textContent = registered
-    ? "✅ Already registered"
-    : "❌ Not registered";
+
+  try {
+    const registered = await isRegisteredCollection(col);
+    $("colRegisterStatus").textContent = registered
+      ? "✅ Already registered"
+      : "❌ Not registered";
+  } catch (e) {
+    $("colRegisterStatus").textContent = "⚠️ Error checking";
+    log(e.message || e, "err");
+  }
 });
 
     $("btnRegister").onclick = async () => {
