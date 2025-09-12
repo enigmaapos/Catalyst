@@ -1507,54 +1507,49 @@ function toWei(val, decimals = 18) {
       }catch(e){ log(e.message||e, "err"); }
     };
 
-    // List all registered collections
-$("btnListCollections").onclick = async () => {
+// List registered collections
+document.getElementById("btnListCollections").onclick = async () => {
   try {
     await initReadContract();
-    let lines = [];
-
-    const n = await READ_CONTRACT.collectionCount();
-    lines.push(`count = ${n}`);
-
-    for (let i = 0; i < n && i < 200; i++) {
+    const nBig = await READ_CONTRACT.collectionCount(); // returns BigInt in v6
+    const n = Number(nBig);
+    let lines = [`count = ${n}`];
+    for (let i = 0; i < n && i < 500; i++) {
       try {
-        const a = await READ_CONTRACT.registeredCollections(i);
-        lines.push(`${i}. ${a}`);
+        const addr = await READ_CONTRACT.registeredCollections(i);
+        lines.push(`${i}: ${addr}`);
       } catch (err) {
+        console.warn("failed index", i, err);
         break;
       }
     }
-
-    $("collectionsOut").textContent = lines.length
-      ? lines.join("\n")
-      : "(none registered)";
+    document.getElementById("collectionsOut").textContent = lines.join("\n");
   } catch (e) {
-    log(e.message || e, "err");
+    console.error(e);
+    document.getElementById("collectionsOut").textContent = "Error: " + (e.message || e);
   }
 };
 
-// List blue-chip collections
-$("btnListBlue").onclick = async () => {
+// List blue-chip flagged collections
+document.getElementById("btnListBlue").onclick = async () => {
   try {
     await initReadContract();
+    const n = Number(await READ_CONTRACT.collectionCount());
     let lines = [];
-
-    const n = await READ_CONTRACT.collectionCount();
-    for (let i = 0; i < n && i < 200; i++) {
+    for (let i = 0; i < n; i++) {
       try {
-        const a = await READ_CONTRACT.registeredCollections(i);
-        const flag = await READ_CONTRACT.isBluechipCollection(a); // ✅ correct fn
-        if (flag) lines.push(`${i}. ${a}`);
+        const addr = await READ_CONTRACT.registeredCollections(i);
+        // Your Solidity variable is `isBluechipCollection`
+        const flag = await READ_CONTRACT.isBluechipCollection(addr);
+        if (flag) lines.push(`${i}: ${addr}`);
       } catch (err) {
-        // continue if one fails
+        console.warn("error checking blue flag for index", i, err);
       }
     }
-
-    $("collectionsOut").textContent = lines.length
-      ? lines.join("\n")
-      : "(none flagged as blue-chip)";
+    document.getElementById("collectionsOut").textContent = lines.length ? lines.join("\n") : "(none flagged)";
   } catch (e) {
-    log(e.message || e, "err");
+    console.error(e);
+    document.getElementById("collectionsOut").textContent = "Error: " + (e.message || e);
   }
 };
 
