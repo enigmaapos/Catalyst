@@ -732,26 +732,10 @@ function toWei(val, decimals = 18) {
 
     async function isRegisteredCollection(addr) {
   try {
-    await initReadContract();
-    const info = await READ_CONTRACT.collections(addr);
-
-    // Debug: log what the contract actually returns
-    console.log("Collection info raw:", info);
-
-    // Try field name first, fallback to index 0
-    let declared;
-    if (info.declaredMaxSupply !== undefined) {
-      declared = info.declaredMaxSupply;
-    } else if (info[0] !== undefined) {
-      declared = info[0];
-    } else {
-      declared = 0n;
-    }
-
-    // Use BigInt-safe comparison
-    return BigInt(declared) > 0n;
+    const idx = await READ_CONTRACT.registeredIndex(addr);
+    return idx > 0n;  // BigInt compare
   } catch (e) {
-    console.warn("isRegisteredCollection error:", e);
+    log(e.message || e, "err");
     return false;
   }
 }
