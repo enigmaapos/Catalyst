@@ -1507,57 +1507,45 @@ function toWei(val, decimals = 18) {
       }catch(e){ log(e.message||e, "err"); }
     };
 
-  // === Registered Collections ===
-  $("btnListCollections").onclick = async () => {
-    try {
-      await initReadContract();
-      let lines = [];
+  // List all registered collections
+$("btnListCollections").onclick = async () => {
+  try {
+    await initReadContract();
+    let lines = [];
+    const n = await READ_CONTRACT.collectionCount();
+    lines.push(`count = ${n}`);
 
-      const n = Number(await READ_CONTRACT.collectionCount()); // cast BigInt → number
-      lines.push(`count = ${n}`);
-
-      for (let i = 0; i < n && i < 200; i++) {
-        try {
-          const a = await READ_CONTRACT.registeredCollections(i);
-          lines.push(`${i}. ${a}`);
-        } catch (err) {
-          console.warn("Error reading collection", i, err);
-          break;
-        }
-      }
-
-      $("collectionsOut").textContent = lines.length
-        ? lines.join("\n")
-        : "(none registered)";
-    } catch (e) {
-      log(e.message || e, "err");
+    for (let i = 0; i < n && i < 200; i++) {
+      const addr = await READ_CONTRACT.registeredCollections(i);
+      lines.push(`${i}. ${addr}`);
     }
-  };
+    $("collectionsOut").textContent = lines.length
+      ? lines.join("\n")
+      : "(none registered)";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
-  // === Blue-chip Collections ===
-  $("btnListBlue").onclick = async () => {
-    try {
-      await initReadContract();
-      let lines = [];
+// List all flagged blue-chips
+$("btnListBlue").onclick = async () => {
+  try {
+    await initReadContract();
+    let lines = [];
+    const n = await READ_CONTRACT.collectionCount();
 
-      const n = Number(await READ_CONTRACT.collectionCount());
-      for (let i = 0; i < n && i < 200; i++) {
-        try {
-          const a = await READ_CONTRACT.registeredCollections(i);
-          const flag = await READ_CONTRACT.isBluechipCollection(a);
-          if (flag) lines.push(`${i}. ${a}`);
-        } catch (err) {
-          console.warn("Error checking bluechip", i, err);
-        }
-      }
-
-      $("collectionsOut").textContent = lines.length
-        ? lines.join("\n")
-        : "(none flagged as blue-chip)";
-    } catch (e) {
-      log(e.message || e, "err");
+    for (let i = 0; i < n && i < 200; i++) {
+      const addr = await READ_CONTRACT.registeredCollections(i);
+      const flag = await READ_CONTRACT.isBluechipCollection(addr);
+      if (flag) lines.push(`${i}. ${addr}`);
     }
-  };
+    $("collectionsOut").textContent = lines.length
+      ? lines.join("\n")
+      : "(none flagged as blue-chip)";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     // User info (tries userInfo(address) / balances)
     $("btnUserInfo").onclick = async ()=>{
