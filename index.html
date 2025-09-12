@@ -1576,32 +1576,29 @@ $("btnListBlue").onclick = async () => {
     };
 
     // Collection info (tries collectionInfo(struct) / isRegistered / caps)
-    $("btnColInfo").onclick = async ()=>{
-      try{
-        await initReadContract();
-        const col = parseAddress($("infoCol").value);
-        let out = [`Collection: ${col}`];
+    $("btnColInfo").onclick = async () => {
+  try {
+    await initReadContract();
+    const col = parseAddress($("infoCol").value);
+    let out = [`Collection: ${col}`];
 
-        try{
-          const info = await READ_CONTRACT.collectionInfo(col);
-          // print best-effort keys / tuple
-          if (info.maxSupply) out.push(`maxSupply = ${info.maxSupply}`);
-          if (info.verified!==undefined) out.push(`verified = ${info.verified}`);
-          if (info.isBlue!==undefined) out.push(`bluechip = ${info.isBlue}`);
-        }catch{}
+    // registered?
+    try {
+      const idx = await READ_CONTRACT.registeredIndex(col);
+      out.push(`registered = ${idx != 0}`);
+    } catch {}
 
-        try{
-          const reg = await READ_CONTRACT.isCollectionRegistered(col);
-          out.push(`registered = ${reg}`);
-        }catch{}
-        try{
-          const bc = await READ_CONTRACT.isBlueChip(col);
-          out.push(`bluechip = ${bc}`);
-        }catch{}
+    // bluechip?
+    try {
+      const bc = await READ_CONTRACT.isBluechipCollection(col);
+      out.push(`bluechip = ${bc}`);
+    } catch {}
 
-        $("infoOut").textContent = out.join("\n");
-      }catch(e){ log(e.message||e, "err"); }
-    };
+    $("infoOut").textContent = out.join("\n");
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     /* ============================
      * ADMIN (safe confirm wrappers)
