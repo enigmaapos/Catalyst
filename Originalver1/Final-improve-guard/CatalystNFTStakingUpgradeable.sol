@@ -674,6 +674,10 @@ function setBluechipCollection(address collection, bool isBluechip)
         remainingPermanent = PERM_CAP > totalPermanent ? PERM_CAP - totalPermanent : 0;
     }
 
+function collectionCount() external view returns (uint256) {
+    return registeredCollections.length;
+}
+
     function pendingRewardsView(address collection, address owner, uint256 tokenId)
         external
         view
