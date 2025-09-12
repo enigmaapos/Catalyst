@@ -395,22 +395,25 @@
 
           <details class="rounded-lg ring-1 p-3">
             <summary class="cursor-pointer">Admin: Flag / Unflag Collection</summary>
-            <div class="grid md:grid-cols-3 gap-3 mt-3">
-              <div>
-                <div class="text-xs muted mb-1">Collection</div>
-                <input id="colFlagBlue" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-              </div>
-              <div>
-                <div class="text-xs muted mb-1">Status</div>
-                <select id="isBlueFlag" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
-                  <option value="true">Flag as Blue-Chip</option>
-                  <option value="false">Remove Blue-Chip</option>
-                </select>
-              </div>
-              <div class="flex items-end">
-                <button id="btnSetBlue" class="btn btn-primary w-full">Set Blue-Chip</button>
-              </div>
-            </div>
+<div class="grid md:grid-cols-3 gap-3 mt-3">
+  <div>
+    <div class="text-xs muted mb-1">Collection</div>
+    <input id="colFlagBlue" placeholder="0x…" 
+      class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+    <div id="colBlueStatus" class="text-xs mt-1 muted">—</div> <!-- ✅ added -->
+  </div>
+  <div>
+    <div class="text-xs muted mb-1">Status</div>
+    <select id="isBlueFlag" 
+      class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+      <option value="true">Flag as Blue-Chip</option>
+      <option value="false">Remove Blue-Chip</option>
+    </select>
+  </div>
+  <div class="flex items-end">
+    <button id="btnSetBlue" class="btn btn-primary w-full">Set Blue-Chip</button>
+  </div>
+</div>
           </details>
         </div>
       </div>
@@ -1177,16 +1180,43 @@ function toWei(val, decimals = 18) {
     };
 
     // Admin: flag/unflag blue-chip
-    $("btnSetBlue").onclick = async () => {
+    // Auto-check if collection is already Blue-Chip
+$("colFlagBlue").addEventListener("input", async () => {
+  const col = $("colFlagBlue").value.trim();
+  if (!col || !ethers.isAddress(col)) {
+    $("colBlueStatus").textContent = "—";
+    return;
+  }
+
+  try {
+    await initReadContract();
+    const isBlue = await READ_CONTRACT.isBluechipCollection(col);
+    $("colBlueStatus").textContent = isBlue
+      ? "✅ Already Blue-Chip"
+      : "❌ Not Blue-Chip";
+  } catch (e) {
+    $("colBlueStatus").textContent = "⚠️ Error checking";
+    log(e.message || e, "err");
+  }
+});
+
+// Admin button (already in your code)
+$("btnSetBlue").onclick = async () => {
   try {
     requireWallet();
     await initWriteContract();
     const col = parseAddress($("colFlagBlue").value);
     const flag = $("isBlueFlag").value === "true";
-    const tx = await WRITE_CONTRACT.setBluechipCollection(col, flag); // ✅ correct name
+    const tx = await WRITE_CONTRACT.setBluechipCollection(col, flag);
     log(`Set blue-chip sent: ${tx.hash}`);
     await tx.wait();
     log(`Blue-chip ${flag ? "flagged" : "cleared"} ✅`, "ok");
+
+    // 🔄 refresh status after transaction
+    const isBlue = await READ_CONTRACT.isBluechipCollection(col);
+    $("colBlueStatus").textContent = isBlue
+      ? "✅ Already Blue-Chip"
+      : "❌ Not Blue-Chip";
   } catch (e) {
     log(e.message || e, "err");
   }
