@@ -1163,6 +1163,7 @@ async function isRegisteredCollection(addr) {
     // ✅ Check enrollment status
 async function checkEnrollment(col) {
   try {
+    requireWallet();
     await initReadContract();
 
     const info = await READ_CONTRACT.bluechipWallets(col, walletAddress);
@@ -1176,7 +1177,7 @@ async function checkEnrollment(col) {
   }
 }
 
-    $("btnCheckEnroll").onclick = () => {
+$("btnCheckEnroll").onclick = () => {
   const col = parseAddress($("colBlueStatus").value);
   checkEnrollment(col);
 };
@@ -1191,8 +1192,9 @@ $("btnEnrollBlue").onclick = async () => {
     await tx.wait();
     log("Enrollment confirmed ✅", "ok");
 
-    // refresh status after enrollment
-    checkEnrollment();
+    // refresh status after enrollment using the current input
+    const col = parseAddress($("colBlueStatus").value || "0x0000000000000000000000000000000000000000");
+    checkEnrollment(col);
   } catch (e) {
     log(e.message || e, "err");
   }
