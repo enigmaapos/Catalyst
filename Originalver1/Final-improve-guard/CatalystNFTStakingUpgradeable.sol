@@ -691,6 +691,10 @@ function collectionCount() external view returns (uint256) {
         return s.pendingRewards(collection, owner, tokenId, numberOfBlocksPerRewardUnit);
     }
 
+function isBluechipEnrolled(address collection, address wallet) external view returns (bool) {
+    return b.bluechipWallets[collection][wallet].enrolled;
+}
+
     // ERC721 Receiver / Pause / UUPS
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return this.onERC721Received.selector;
