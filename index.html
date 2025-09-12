@@ -338,7 +338,23 @@
           </div>
         </div>
 
-        
+      <div class="card rounded-xl p-4 ring-1 space-y-3">
+  <h3 class="font-semibold">Register Collection (permissionless)</h3>
+  <div class="grid md:grid-cols-2 gap-3">
+    <div>
+      <div class="text-xs muted mb-1">Collection</div>
+      <input id="colRegister" placeholder="0x…" 
+        class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+      <div id="colRegisterStatus" class="text-xs mt-1 muted">—</div> <!-- ✅ status output -->
+    </div>
+    <div>
+      <div class="text-xs muted mb-1">Declared Max Supply (≤ 20000)</div>
+      <input id="declaredSupply" type="number" placeholder="10000"
+        class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+    </div>
+  </div>
+  <button id="btnRegister" class="btn btn-primary">Register</button>
+</div>  
 
       <div id="tab-bluechip" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
@@ -710,7 +726,31 @@ function toWei(val, decimals = 18) {
   }
 }
 
-    
+    async function isRegisteredCollection(addr) {
+  try {
+    await initReadContract();
+    const info = await READ_CONTRACT.collections(addr);
+
+    // Debug: log what the contract actually returns
+    console.log("Collection info raw:", info);
+
+    // Try field name first, fallback to index 0
+    let declared;
+    if (info.declaredMaxSupply !== undefined) {
+      declared = info.declaredMaxSupply;
+    } else if (info[0] !== undefined) {
+      declared = info[0];
+    } else {
+      declared = 0n;
+    }
+
+    // Use BigInt-safe comparison
+    return BigInt(declared) > 0n;
+  } catch (e) {
+    console.warn("isRegisteredCollection error:", e);
+    return false;
+  }
+}
     
 
     /* =========================
@@ -1081,7 +1121,46 @@ function toWei(val, decimals = 18) {
   }
 };
 
-    
+    $("colRegister").addEventListener("input", async () => {
+  const col = $("colRegister").value.trim();
+  if (!col || !ethers.isAddress(col)) {
+    $("colRegisterStatus").textContent = "—";
+    return;
+  }
+
+  try {
+    const registered = await isRegisteredCollection(col);
+    $("colRegisterStatus").textContent = registered
+      ? "✅ Already registered"
+      : "❌ Not registered";
+  } catch (e) {
+    $("colRegisterStatus").textContent = "⚠️ Error checking";
+    log(e.message || e, "err");
+  }
+});
+
+    $("btnRegister").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colRegister").value);
+    const declaredSupply = parseUint($("declaredSupply").value);
+
+    if (await isRegisteredCollection(col)) {
+      log("Collection is already registered", "warn");
+      $("colRegisterStatus").textContent = "✅ Already registered";
+      return;
+    }
+
+    const tx = await WRITE_CONTRACT.registerCollection(col, declaredSupply);
+    log(`Register collection sent: ${tx.hash}`);
+    await tx.wait();
+    log("Collection registered ✅", "ok");
+    $("colRegisterStatus").textContent = "✅ Registered just now";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
     
     /* ============================
      * BLUE-CHIP (NON-CUSTODIAL)
@@ -1426,6 +1505,61 @@ function toWei(val, decimals = 18) {
 
     // List registered collections (tries getRegisteredCollections(); falls back to count loop if available)
     
+
+
+
+
+
+
+
+
+$("btnListCollections").onclick = async () => {
+  try {
+    await initReadContract();
+    let lines = [];
+
+    const n = await READ_CONTRACT.collectionCount();
+    lines.push(`count = ${n}`);
+
+    for (let i = 0n; i < n && i < 200n; i++) {
+      try {
+        const a = await READ_CONTRACT.collectionAt(i);
+        lines.push(`${i}. ${a}`);
+      } catch {
+        break;
+      }
+    }
+
+    $("collectionsOut").textContent = lines.length
+      ? lines.join("\n")
+      : "(none registered)";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
+    // List blue-chip collections (tries getBlueChips(); falls back to isBlueChip via collectionAt loop)
+    $("btnListBlue").onclick = async () => {
+  try {
+    await initReadContract();
+    let lines = [];
+
+    const n = await READ_CONTRACT.collectionCount();
+    for (let i = 0n; i < n && i < 200n; i++) {
+      try {
+        const a = await READ_CONTRACT.collectionAt(i);
+        const flag = await READ_CONTRACT.isBlueChip(a);
+        if (flag) lines.push(`${i}. ${a}`);
+      } catch {}
+    }
+
+    $("collectionsOut").textContent = lines.length
+      ? lines.join("\n")
+      : "(none flagged)";
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
 
     // User info (tries userInfo(address) / balances)
     $("btnUserInfo").onclick = async ()=>{
