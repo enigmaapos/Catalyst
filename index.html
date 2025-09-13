@@ -1628,29 +1628,46 @@ $("btnListBlue").onclick = async () => {
     };
 
     // Collection info (tries collectionInfo(struct) / isRegistered / caps)
-    $("btnColInfo").onclick = async () => {
+    // 🔹 Helper: Get human-readable tier
+function mapTier(tierNum) {
+  switch (tierNum) {
+    case 3: return "💎 Blue-Chip";
+    case 2: return "✅ Verified Collection";
+    case 1: return "⚠️ Unverified Collection"; // reserved for future
+    case 0: default: return "❌ Not Registered";
+  }
+}
+
+$("btnColInfo").onclick = async () => {
   try {
     await initReadContract();
     const col = parseAddress($("infoCol").value);
     let out = [`Collection: ${col}`];
 
-    // ✅ Registered?
-    const idx = await READ_CONTRACT.registeredIndex(col);
-    out.push(`registered = ${idx > 0}`);
-
-    // ✅ Bluechip flag?
+    // ✅ Registered index check
     try {
-      const blue = await READ_CONTRACT.isBluechipCollection(col);
-      out.push(`bluechip = ${blue}`);
-    } catch (err) {
-      out.push("bluechip = (not supported in ABI?)");
+      const idx = await READ_CONTRACT.registeredIndex(col);
+      out.push(`registered = ${idx > 0}`);
+    } catch {
+      out.push("registered = (not supported)");
+    }
+
+    // ✅ Tier detection
+    try {
+      const tierNum = await READ_CONTRACT.getCollectionTier(col);
+      const tierLabel = mapTier(Number(tierNum));
+      out.push(`tier = ${tierNum} (${tierLabel})`);
+    } catch {
+      out.push("tier = (not supported in ABI?)");
     }
 
     // ✅ Total staked
     try {
       const total = await READ_CONTRACT.collectionTotalStaked(col);
       out.push(`totalStaked = ${total}`);
-    } catch {}
+    } catch {
+      out.push("totalStaked = (not available)");
+    }
 
     $("infoOut").textContent = out.join("\n");
   } catch (e) {
