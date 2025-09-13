@@ -93,7 +93,9 @@ contract CatalystNFTStakingUpgradeable is
     mapping(address => uint256) public lastStakingBlock;
 
     // -------- Events (kept) --------
-	event BluechipCollectionSet(address indexed collection, bool isBluechip);
+	event CollectionTierUpgraded(address indexed collection, StakingLib.Tier newTier);
+event CollectionRegistered(address indexed collection, address indexed registrar, Tier tier, uint256 declaredSupply);
+event BluechipCollectionSet(address indexed collection, bool isBluechip);
     event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 paid);
     event NFTStaked(address indexed owner, address indexed collection, uint256 indexed tokenId, bool permanent);
     event NFTUnstaked(address indexed owner, address indexed collection, uint256 indexed tokenId);
@@ -451,6 +453,14 @@ function setBluechipCollection(address collection, bool isBluechip)
 
         emit ProposalExecuted(id, p.newValue);
     }
+
+if (p.pType == GovernanceLib.ProposalType.TIER_UPGRADE) {
+    StakingLib.CollectionConfig storage cfg = s.collectionConfigs[p.collectionAddress];
+    require(cfg.registered, "Not registered");
+    cfg.tier = StakingLib.Tier.BLUECHIP;
+    b.isBluechipCollection[p.collectionAddress] = true; // Keep BluechipLib in sync
+    emit CollectionTierUpgraded(p.collectionAddress, StakingLib.Tier.BLUECHIP);
+}
 
     function _votingWeight(address voter) internal view returns (uint256 weight, address attributedCollection) {
         // 1) Any active stake older than minStakeAge gives full weight
