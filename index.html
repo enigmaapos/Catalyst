@@ -785,6 +785,18 @@ function toWei(val, decimals = 18) {
     return 0n;
   }
 }
+
+    function groupSelectedByCollection() {
+  const grouped = {};
+  const checkboxes = $$("input[type=checkbox][data-token]:checked");
+  checkboxes.forEach(cb => {
+    const col = cb.dataset.collection;
+    const token = BigInt(cb.dataset.token);
+    if (!grouped[col]) grouped[col] = [];
+    grouped[col].push(token);
+  });
+  return grouped;
+}
     
     /* =========================
        MODAL (CONFIRMATIONS)
@@ -1323,24 +1335,23 @@ async function renderPortfolio() {
 }
 
 // ---------- Button Handlers ----------
+    
 $("btnHarvestAll").onclick = async () => {
   try {
     requireWallet();
     await initWriteContract();
 
-    const checkboxes = $$("input[type=checkbox][data-token]:checked");
-    if (checkboxes.length === 0) {
-      log("Select at least one NFT to harvest", "warn");
-      return;
+    const grouped = groupSelectedByCollection();
+    if (Object.keys(grouped).length === 0)
+      return log("Select at least one NFT to harvest", "warn");
+
+    for (const [collection, tokenIds] of Object.entries(grouped)) {
+      log(`Harvesting ${tokenIds.length} NFTs in ${collection}…`, "info");
+      const tx = await WRITE_CONTRACT.harvestBatch(collection, tokenIds);
+      await tx.wait();
+      log(`✅ Harvested ${tokenIds.length} NFTs in ${collection}`, "ok");
     }
 
-    for (const cb of checkboxes) {
-      const col = cb.dataset.collection;
-      const token = cb.dataset.token;
-      const tx = await WRITE_CONTRACT.harvest(col, token);
-      log(`Harvest sent: ${tx.hash}`);
-      await tx.wait();
-    }
     await renderPortfolio();
   } catch (e) {
     log(e.message || e, "err");
@@ -1352,24 +1363,23 @@ $("btnUnstakeSel").onclick = async () => {
     requireWallet();
     await initWriteContract();
 
-    const checkboxes = $$("input[type=checkbox][data-token]:checked");
-    if (checkboxes.length === 0) {
-      log("Select at least one NFT to unstake", "warn");
-      return;
+    const grouped = groupSelectedByCollection();
+    if (Object.keys(grouped).length === 0)
+      return log("Select at least one NFT to unstake", "warn");
+
+    for (const [collection, tokenIds] of Object.entries(grouped)) {
+      log(`Unstaking ${tokenIds.length} NFTs from ${collection}…`, "info");
+      const tx = await WRITE_CONTRACT.unstakeBatch(collection, tokenIds);
+      await tx.wait();
+      log(`✅ Unstaked ${tokenIds.length} NFTs from ${collection}`, "ok");
     }
 
-    for (const cb of checkboxes) {
-      const col = cb.dataset.collection;
-      const token = cb.dataset.token;
-      const tx = await WRITE_CONTRACT.unstake(col, token);
-      log(`Unstake sent: ${tx.hash}`);
-      await tx.wait();
-    }
     await renderPortfolio();
   } catch (e) {
     log(e.message || e, "err");
   }
 };
+
 
 // Single-row buttons (event delegation)
 document.getElementById("portfolioRows").addEventListener("click", async (e) => {
