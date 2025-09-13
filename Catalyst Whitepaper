@@ -221,31 +221,47 @@ No extra weighting beyond normal rules — ensures fairness.
 
 ---
 
-9. Guardian Council Security System (DRS) 
+9. Guardian Council Security System (DRS)
 
-The Decentralized Recovery System (DRS) uses guardian-based controls.
+Catalyst introduces the Decentralized Recovery System (DRS) — the first NFT protocol to integrate guardian-based multi-party security directly into its upgradeable smart contracts.
 
-Deployer Guardian Council (GCSS): 7 guardians, 5 approvals required (7:5).
+Two councils protect the protocol:
 
-Admin Guardian Council (AGC): 7 guardians, 5 approvals required (7:5).
+Deployer Guardian Council (GCSS): 7 guardians, 5 approvals required (7:5) to recover the deployer role.
 
-Shared Guardian Council optional.
+Admin Guardian Council (AGC): 7 guardians, 5 approvals required (7:5) to recover the default admin role.
 
+
+Features
+
+Multi-Party Recovery: No single key can compromise the protocol; 5-of-7 guardians must agree.
 
 Compromise Detection:
 
 5/7 approvals → Recovery valid.
 
-6/7 approvals → ⚠️ Warning, possible compromise.
+6/7 approvals → ⚠️ Warning (possible compromise).
 
-7/7 approvals → 🚨 Critical auto-lock.
-
-
-Last Honest Guardian Reset:
-
-If 6 of 7 approve, the 7th guardian gains temporary reset powers (48h) to prevent takeover.
+7/7 approvals → 🚨 Critical auto-lock for emergency review.
 
 
+Last Honest Guardian Reset: If 6 of 7 approve, the remaining guardian gains temporary reset powers (48h) to prevent a hostile takeover.
+
+
+Future Upgrade Path
+
+The DRS framework is designed to be upgradeable. In future versions, Catalyst governance may extend DRS into a Batch Guardians Council model — enabling multiple guardian groups to operate in parallel or in layered batches.
+
+This would:
+
+Further decentralize recovery authority.
+
+Allow specialized councils (e.g., technical, community, institutional).
+
+Improve resilience against coordinated guardian compromise.
+
+
+By design, the DRS evolution into Batch Guardians Council will remain compatible with Catalyst’s immutable rules (90% Burn, 9% Treasury, 1% Deployer).
 
 ---
 
