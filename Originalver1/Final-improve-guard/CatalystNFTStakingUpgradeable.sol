@@ -95,7 +95,7 @@ contract CatalystNFTStakingUpgradeable is
     // -------- Events --------
     event DeployerRecovered(address indexed oldDeployer, address indexed newDeployer);
     event AdminRecovered(address indexed newAdmin);
-    event BluechipCollectionSet(address indexed collection, bool isBluechip);
+	event BluechipCollectionSet(address indexed collection, bool isBluechip);
     event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 paid);
     event NFTStaked(address indexed owner, address indexed collection, uint256 indexed tokenId, bool permanent);
     event NFTUnstaked(address indexed owner, address indexed collection, uint256 indexed tokenId);
@@ -174,7 +174,7 @@ contract CatalystNFTStakingUpgradeable is
         b.bluechipWalletFee = cfg.bluechipWalletFee;
         _mint(cfg.owner, 100_000_000 * 1e18);
     }
-
+    
     // -------- Modifiers --------
     modifier onlyAdmin() {
         if (_msgSender() != deployerAddress && !hasRole(DEFAULT_ADMIN_ROLE, _msgSender())) revert Unauthorized();
@@ -216,11 +216,12 @@ contract CatalystNFTStakingUpgradeable is
     function approveDeployerRecovery() external whenNotPaused onlyDeployerGuardian {
         gu.approveRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender());
     }
-    function executeDeployerRecovery() external whenNotPaused {
-        if (gu.executeRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID) != address(0)) {
-            address newDeployer = gu.executeRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID);
+    function executeDeployerRecovery() external whenNotPaused nonReentrant {
+        address newDeployer = gu.executeRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID);
+        if (newDeployer != address(0)) {
+            address old = deployerAddress;
             deployerAddress = newDeployer;
-            emit DeployerRecovered(address(0), newDeployer);
+            emit DeployerRecovered(old, newDeployer);
         }
     }
 
@@ -231,304 +232,309 @@ contract CatalystNFTStakingUpgradeable is
     function approveAdminRecovery() external whenNotPaused onlyAdminGuardian {
         gu.approveRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID, _msgSender());
     }
-    function executeAdminRecovery() external whenNotPaused {
-        if (gu.executeRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID) != address(0)) {
-            address newAdmin = gu.executeRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID);
+    function executeAdminRecovery() external whenNotPaused nonReentrant {
+        address newAdmin = gu.executeRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID);
+        if (newAdmin != address(0)) {
             _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
             emit AdminRecovered(newAdmin);
         }
     }
 
-    // -------- Staking logic --------
-    function registerCollection(address collection, uint256 declaredSupply) external whenNotPaused {
-        if (s.collectionConfigs[collection].registered) revert AlreadyExists();
-        if (declaredSupply == 0) revert BadParam();
+    // -------- Registration (permissionless with fee guard) --------
+    function registerCollection(address collection, uint256 declaredMaxSupply) external whenNotPaused nonReentrant {
+        if (collection == address(0)) revert ZeroAddress();
+        if (registeredIndex[collection] != 0) revert AlreadyExists();
+        if (declaredMaxSupply == 0 || declaredMaxSupply > MAX_STAKE_PER_COLLECTION) revert BadParam();
 
-        _mint(_msgSender(), collectionRegistrationFee);
-        _burn(_msgSender(), collectionRegistrationFee);
-        
-        s.collectionConfigs[collection].registered = true;
-        s.collectionConfigs[collection].declaredSupply = declaredSupply;
+        uint256 fee = collectionRegistrationFee;
+        if (fee > 0) _splitFeeFromSender(_msgSender(), fee);
+
+        s.initCollection(collection, declaredMaxSupply);
         registeredCollections.push(collection);
-        registeredIndex[collection] = registeredCollections.length - 1;
+        registeredIndex[collection] = registeredCollections.length;
 
-        emit CollectionAdded(collection, declaredSupply, collectionRegistrationFee);
+        emit CollectionAdded(collection, declaredMaxSupply, fee);
     }
 
-    function stake(address collection, uint256 tokenId, bool permanent) external whenNotPaused nonReentrant {
-        if (!s.collectionConfigs[collection].registered) revert NotRegistered();
-        
-        StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
-        if (info.currentlyStaked) revert AlreadyExists();
+    // -------- Custodial Staking --------
+    modifier notInCooldown() {
+        if (block.number < lastStakingBlock[_msgSender()] + stakingCooldownBlocks) revert Cooldown();
+        _;
+    }
+
+    function stake(address collection, uint256 tokenId, bool permanent)
+    public
+    whenNotPaused
+    nonReentrant
+    notInCooldown
+    {
+        if (collection == address(0)) revert ZeroAddress();
+        if (!s.isCollectionRegistered(collection)) revert NotRegistered();
 
         IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
-        
-        s.stake(
-            collection,
-            _msgSender(),
-            tokenId,
-            permanent,
-            termDurationBlocks,
-            stakingCooldownBlocks,
-            block.number
-        );
-        
+
+        if (permanent) {
+            s.recordPermanentStake(
+                collection,
+                _msgSender(),
+                tokenId,
+                block.number,
+                rewardRateIncrementPerNFT
+            );
+        } else {
+            s.recordTermStake(
+                collection,
+                _msgSender(),
+                tokenId,
+                block.number,
+                termDurationBlocks,
+                rewardRateIncrementPerNFT
+            );
+        }
+
+        s.collectionTotalStaked[collection] += 1;
+        s.totalStakedNFTsCount++;
         s.updateBaseRewardRate(rewardRateIncrementPerNFT, maxBaseRewardRate);
-        
+        s.updateUserStakedTokens(_msgSender(), collection, tokenId);
+
+        lastStakingBlock[_msgSender()] = block.number;
         emit NFTStaked(_msgSender(), collection, tokenId, permanent);
     }
 
-    function batchStake(
-        address collection,
-        uint256[] memory tokenIds,
-        bool permanent
-    ) external {
-        if (tokenIds.length > MAX_HARVEST_BATCH) revert BatchTooLarge();
-        
-        for (uint256 i = 0; i < tokenIds.length; ++i) {
+    function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external whenNotPaused {
+        uint256 n = tokenIds.length;
+        if (n == 0 || n > MAX_HARVEST_BATCH) revert BatchTooLarge();
+        for (uint256 i = 0; i < n; ++i) {
             stake(collection, tokenIds[i], permanent);
         }
     }
 
+    function harvest(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
+        uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
+        if (reward == 0) return;
+
+        uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 10000;
+        _mint(_msgSender(), reward - burnAmt);
+        _burn(address(this), burnAmt);
+        s.updateLastHarvest(collection, _msgSender(), tokenId);
+
+        emit RewardsHarvested(_msgSender(), collection, reward, burnAmt);
+    }
+
     function unstake(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
-        if (!s.stakeLog[collection][_msgSender()][tokenId].currentlyStaked) revert NotStaked();
-        
-        if (!s.stakeLog[collection][_msgSender()][tokenId].isPermanent && block.number < s.stakeLog[collection][_msgSender()][tokenId].unstakeDeadlineBlock) {
-            revert TermNotExpired();
-        }
-        
-        if (block.number < lastStakingBlock[_msgSender()] + stakingCooldownBlocks) {
-            revert Cooldown();
+        StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
+        if (!info.currentlyStaked) revert NotStaked();
+        if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
+
+        uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
+        if (reward > 0) {
+            uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 10000;
+            _mint(_msgSender(), reward - burnAmt);
+            _burn(address(this), burnAmt);
+            s.updateLastHarvest(collection, _msgSender(), tokenId);
+            emit RewardsHarvested(_msgSender(), collection, reward, burnAmt);
         }
 
-        s.unstake(collection, _msgSender(), tokenId);
-        s.updateBaseRewardRate(rewardRateIncrementPerNFT, maxBaseRewardRate);
-        _burn(_msgSender(), unstakeBurnFee);
+        if (unstakeBurnFee > 0) {
+            _burn(_msgSender(), unstakeBurnFee);
+        }
+
+        s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
+
+        s.collectionTotalStaked[collection] -= 1;
+        s.totalStakedNFTsCount--;
+        s.removeUserStakedToken(_msgSender(), collection, tokenId);
 
         IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
-        
-        lastStakingBlock[_msgSender()] = block.number;
-        
         emit NFTUnstaked(_msgSender(), collection, tokenId);
     }
 
-    function batchUnstake(
-        address collection,
-        uint256[] memory tokenIds
-    ) external {
-        if (tokenIds.length > MAX_HARVEST_BATCH) revert BatchTooLarge();
-        
-        for (uint256 i = 0; i < tokenIds.length; ++i) {
+    function batchUnstake(address collection, uint256[] calldata tokenIds) external whenNotPaused {
+        uint256 n = tokenIds.length;
+        if (n == 0 || n > MAX_HARVEST_BATCH) revert BatchTooLarge();
+        for (uint256 i = 0; i < n; ++i) {
             unstake(collection, tokenIds[i]);
         }
     }
 
-    function harvest(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
-        (uint256 grossReward, uint256 burnedAmount) = calculateRewards(collection, _msgSender(), tokenId);
-
-        if (grossReward == 0) revert Insufficient();
-
-        _mint(_msgSender(), grossReward - burnedAmount);
-        _burn(_msgSender(), burnedAmount);
-
-        s.updateLastHarvest(collection, _msgSender(), tokenId, block.number);
-        
-        emit RewardsHarvested(_msgSender(), collection, grossReward, burnedAmount);
+    // -------- Blue-chip (non-custodial) --------
+    function setBluechipCollection(address collection, bool isBluechip)
+    external
+    onlyRole(CONTRACT_ADMIN_ROLE)
+    whenNotPaused
+    onlyRegistered(collection)
+    {
+        b.isBluechipCollection[collection] = isBluechip;
+        emit BluechipCollectionSet(collection, isBluechip);
     }
 
-    function batchHarvest(address collection, uint256[] memory tokenIds) external {
-        if (tokenIds.length > MAX_HARVEST_BATCH) revert BatchTooLarge();
+    function enrollBluechip() external whenNotPaused nonReentrant {
+        address wallet = _msgSender();
+        if (b.bluechipWallets[address(0)][wallet].enrolled) revert AlreadyEnrolled();
+        uint256 fee = b.bluechipWalletFee;
+        _splitFeeFromSender(wallet, fee);
+        b.enroll(b, address(0), wallet, block.number, fee);
+    }
 
-        for (uint256 i = 0; i < tokenIds.length; ++i) {
-            harvest(collection, tokenIds[i]);
+    function harvestBluechip(address collection) external whenNotPaused nonReentrant {
+        if (!b.isBluechipCollection[collection]) revert Ineligible();
+        if (IERC721(collection).balanceOf(_msgSender()) == 0) revert Ineligible();
+
+        uint256 reward = b.pendingRewards(b, collection, _msgSender(), block.number, numberOfBlocksPerRewardUnit);
+        if (reward > 0) {
+            _mint(_msgSender(), reward);
+            b.updateLastHarvest(b, collection, _msgSender(), block.number);
+            emit RewardsHarvested(_msgSender(), collection, reward, 0);
         }
     }
 
-    function harvestAll() external whenNotPaused nonReentrant {
-        address[] memory userCollections = s.getUserStakedCollections(_msgSender());
-        uint256 totalGrossReward = 0;
-        uint256 totalBurnedAmount = 0;
-        
-        for (uint256 i = 0; i < userCollections.length; ++i) {
-            address collection = userCollections[i];
-            uint256[] memory userTokens = s.getUserStakedTokens(collection, _msgSender());
-            for (uint256 j = 0; j < userTokens.length; ++j) {
-                (uint256 grossReward, uint256 burnedAmount) = calculateRewards(collection, _msgSender(), userTokens[j]);
-                if (grossReward > 0) {
-                    _mint(_msgSender(), grossReward - burnedAmount);
-                    _burn(_msgSender(), burnedAmount);
-                    s.updateLastHarvest(collection, _msgSender(), userTokens[j], block.number);
-                    emit RewardsHarvested(_msgSender(), collection, grossReward, burnedAmount);
-                    totalGrossReward += grossReward;
-                    totalBurnedAmount += burnedAmount;
-                }
-            }
-        }
-    }
-    
-    function calculateRewards(address collection, address owner, uint256 tokenId) public view returns (uint256 grossReward, uint256 burnedAmount) {
-        uint256 baseReward = s.pendingRewards(collection, owner, tokenId, numberOfBlocksPerRewardUnit);
-        uint256 harvestFee = (baseReward * initialHarvestBurnFeeRate) / 10000;
-        
-        return (baseReward, harvestFee);
-    }
+    // -------- Governance wrappers --------
+    function propose(
+        GovernanceLib.ProposalType pType,
+        uint8 paramTarget,
+        uint256 newValue,
+        address collectionContext
+    ) external whenNotPaused returns (bytes32) {
+        (uint256 weight,) = _votingWeight(_msgSender());
+        if (weight == 0) revert Ineligible();
 
-    function setBaseRewardRate(uint256 rate) external onlyContractAdmin {
-        uint256 oldRate = s.baseRewardRate;
-        s.baseRewardRate = rate;
-        emit BaseRewardRateUpdated(oldRate, rate);
-    }
-
-    function setHarvestFee(uint256 fee) external onlyContractAdmin {
-        uint256 oldFee = initialHarvestBurnFeeRate;
-        initialHarvestBurnFeeRate = fee;
-        emit HarvestFeeUpdated(oldFee, fee);
-    }
-
-    function setUnstakeFee(uint256 fee) external onlyContractAdmin {
-        uint256 oldFee = unstakeBurnFee;
-        unstakeBurnFee = fee;
-        emit UnstakeFeeUpdated(oldFee, fee);
-    }
-
-    function setRegistrationFee(uint256 fee) external onlyContractAdmin {
-        uint256 oldFee = collectionRegistrationFee;
-        collectionRegistrationFee = fee;
-        emit RegistrationFeeUpdated(oldFee, fee);
-    }
-
-    function proposeSetBaseRewardRate(uint256 newRate) external onlyAdmin {
-        bytes32 propId = g.createProposal(
-            GovernanceLib.ProposalType.BASE_REWARD,
-            0,
-            newRate,
-            address(0),
+        return GovernanceLib.createProposal(
+            g,
+            pType,
+            paramTarget,
+            newValue,
+            collectionContext,
             _msgSender(),
-            block.number,
-            g.votingDurationBlocks
-        );
-        s.proposals[propId] = g.proposals[propId];
-    }
-    
-    function proposeSetHarvestFee(uint256 newFee) external onlyAdmin {
-        bytes32 propId = g.createProposal(
-            GovernanceLib.ProposalType.HARVEST_FEE,
-            0,
-            newFee,
-            address(0),
-            _msgSender(),
-            block.number,
-            g.votingDurationBlocks
-        );
-        s.proposals[propId] = g.proposals[propId];
-    }
-    
-    function proposeSetUnstakeFee(uint256 newFee) external onlyAdmin {
-        bytes32 propId = g.createProposal(
-            GovernanceLib.ProposalType.UNSTAKE_FEE,
-            0,
-            newFee,
-            address(0),
-            _msgSender(),
-            block.number,
-            g.votingDurationBlocks
-        );
-        s.proposals[propId] = g.proposals[propId];
-    }
-    
-    function proposeSetRegistrationFee(uint256 newFee) external onlyAdmin {
-        bytes32 propId = g.createProposal(
-            GovernanceLib.ProposalType.REGISTRATION_FEE_FALLBACK,
-            0,
-            newFee,
-            address(0),
-            _msgSender(),
-            block.number,
-            g.votingDurationBlocks
-        );
-        s.proposals[propId] = g.proposals[propId];
-    }
-
-    function vote(bytes32 proposalId) external {
-        (address collection, uint256 tokenId, bool currentlyStaked) = s.stakeLog[collection][_msgSender()][0];
-        if (!currentlyStaked) revert Ineligible();
-        
-        address attributedCollection = collection;
-        uint256 weightScaled = 1;
-
-        g.vote(
-            proposalId,
-            _msgSender(),
-            weightScaled,
-            attributedCollection
+            block.number
         );
     }
 
-    function executeProposal(bytes32 proposalId) external {
-        GovernanceLib.Proposal memory p = g.validateForExecution(proposalId);
-        
+    function vote(bytes32 id) external whenNotPaused {
+        (uint256 weight, address attributedCollection) = _votingWeight(_msgSender());
+        if (weight == 0) revert Ineligible();
+        GovernanceLib.castVote(g, id, _msgSender(), weight, attributedCollection);
+    }
+
+    function executeProposal(bytes32 id) external whenNotPaused nonReentrant {
+        GovernanceLib.Proposal memory p = GovernanceLib.validateForExecution(g, id);
+        GovernanceLib.markExecuted(g, id);
+
         if (p.pType == GovernanceLib.ProposalType.BASE_REWARD) {
-            setBaseRewardRate(p.newValue);
+            uint256 old = s.baseRewardRate;
+            s.baseRewardRate = p.newValue > maxBaseRewardRate ? maxBaseRewardRate : p.newValue;
+            emit BaseRewardRateUpdated(old, s.baseRewardRate);
         } else if (p.pType == GovernanceLib.ProposalType.HARVEST_FEE) {
-            setHarvestFee(p.newValue);
+            uint256 old = initialHarvestBurnFeeRate;
+            initialHarvestBurnFeeRate = p.newValue;
+            emit HarvestFeeUpdated(old, p.newValue);
         } else if (p.pType == GovernanceLib.ProposalType.UNSTAKE_FEE) {
-            setUnstakeFee(p.newValue);
+            uint256 old = unstakeBurnFee;
+            unstakeBurnFee = p.newValue;
+            emit UnstakeFeeUpdated(old, p.newValue);
         } else if (p.pType == GovernanceLib.ProposalType.REGISTRATION_FEE_FALLBACK) {
-            setRegistrationFee(p.newValue);
+            uint256 old = collectionRegistrationFee;
+            collectionRegistrationFee = p.newValue;
+            emit RegistrationFeeUpdated(old, p.newValue);
+        } else if (p.pType == GovernanceLib.ProposalType.VOTING_PARAM) {
+            uint8 t = p.paramTarget;
+            if (t == 0) { uint256 old = g.minVotesRequiredScaled; g.minVotesRequiredScaled = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
+            else if (t == 1) { uint256 old = g.votingDurationBlocks; g.votingDurationBlocks = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
+            else if (t == 2) { uint256 old = g.collectionVoteCapPercent; g.collectionVoteCapPercent = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
+            else revert BadParam();
+        } else if (p.pType == GovernanceLib.ProposalType.TIER_UPGRADE) {
         } else {
             revert BadParam();
         }
         
-        g.markExecuted(proposalId);
-        emit ProposalExecuted(proposalId, p.newValue);
+        emit ProposalExecuted(id, p.newValue);
     }
 
-    // -------- Staking getters --------
-    function getTotalStaked() external view returns (uint256) {
-        return s.totalStakedAll;
+    function _votingWeight(address voter) internal view returns (uint256 weight, address attributedCollection) {
+        uint256 len = registeredCollections.length;
+        for (uint256 i = 0; i < len; ++i) {
+            address coll = registeredCollections[i];
+            uint256[] storage port = s.stakePortfolioByUser[coll][voter];
+            if (port.length == 0) continue;
+            for (uint256 j = 0; j < port.length; ++j) {
+                StakingLib.StakeInfo storage si = s.stakeLog[coll][voter][port[j]];
+                if (si.currentlyStaked && block.number >= si.stakeBlock + minStakeAgeForVoting) {
+                    return (WEIGHT_SCALE, coll);
+                }
+            }
+        }
+        for (uint256 i = 0; i < len; ++i) {
+            address coll = registeredCollections[i];
+            if (b.isBluechipCollection[coll] && (b.bluechipWallets[coll][voter].enrolled || b.bluechipWallets[address(0)][voter].enrolled)) {
+                if (IERC721(coll).balanceOf(voter) > 0) {
+                    return (WEIGHT_SCALE, coll);
+                }
+            }
+        }
+        return (0, address(0));
     }
 
-    function getTotalStakedTerm() external view returns (uint256) {
-        return s.totalStakedTerm;
-    }
-    
-    function getTotalStakedPermanent() external view returns (uint256) {
-        return s.totalStakedPermanent;
+    // -------- Fee split, treasury, helpers --------
+    function _splitFeeFromSender(address payer, uint256 amount) internal {
+        if (amount == 0) return;
+        if (balanceOf(payer) < amount) revert Insufficient();
+        uint256 burnAmt = (amount * BURN_BP) / BP_DENOM;
+        uint256 treasuryAmt = (amount * TREASURY_BP) / BP_DENOM;
+        uint256 deployerAmt = amount - burnAmt - treasuryAmt;
+
+        _burn(payer, burnAmt);
+        if (treasuryAmt > 0) {
+            _transfer(payer, address(this), treasuryAmt);
+            treasuryBalance += treasuryAmt;
+            emit TreasuryDeposit(payer, treasuryAmt);
+        }
+        if (deployerAmt > 0) {
+            _transfer(payer, deployerAddress, deployerAmt);
+        }
     }
 
-    function getStakedStatus(address collection, address owner, uint256 tokenId) external view returns (bool) {
-        return s.stakeLog[collection][owner][tokenId].currentlyStaked;
+    function withdrawTreasury(address to, uint256 amount)
+    external
+    onlyRole(CONTRACT_ADMIN_ROLE)
+    whenNotPaused
+    nonReentrant
+    {
+        if (to == address(0)) revert ZeroAddress();
+        if (amount > treasuryBalance) revert Insufficient();
+        treasuryBalance -= amount;
+        _transfer(address(this), to, amount);
+        emit TreasuryWithdrawal(to, amount);
     }
 
-    function getStakedInfo(address collection, address owner, uint256 tokenId) external view returns (StakingLib.StakeInfo memory) {
-        return s.stakeLog[collection][owner][tokenId];
+    // -------- Views --------
+    function stakingStats() external view returns (
+        uint256 totalAll,
+        uint256 totalTerm,
+        uint256 totalPermanent,
+        uint256 remainingGlobal,
+        uint256 remainingTerm,
+        uint256 remainingPermanent
+    ) {
+        totalAll = s.totalStakedAll;
+        totalTerm = s.totalStakedTerm;
+        totalPermanent = s.totalStakedPermanent;
+        remainingGlobal = GLOBAL_CAP > totalAll ? GLOBAL_CAP - totalAll : 0;
+        remainingTerm = TERM_CAP > totalTerm ? TERM_CAP - totalTerm : 0;
+        remainingPermanent = PERM_CAP > totalPermanent ? PERM_CAP - totalPermanent : 0;
     }
 
-    function getStakedTokens(address collection, address owner) external view returns (uint256[] memory) {
-        return s.getUserStakedTokens(collection, owner);
-    }
-
-    function getStakedCollections(address owner) external view returns (address[] memory) {
-        return s.getUserStakedCollections(owner);
-    }
-
-    function getCollectionConfig(address collection) external view returns (StakingLib.CollectionConfig memory) {
-        return s.collectionConfigs[collection];
-    }
-
-    function getCollectionCount() external view returns (uint256) {
+    function collectionCount() external view returns (uint256) {
         return registeredCollections.length;
     }
 
-    function getRegisteredCollections() external view returns (address[] memory) {
-        return registeredCollections;
+    function pendingRewardsView(address collection, address owner, uint256 tokenId)
+    external
+    view
+    returns (uint256)
+    {
+        return s.pendingRewards(collection, owner, tokenId, numberOfBlocksPerRewardUnit);
     }
-    
-    function getCollectionIndex(address collection) external view returns (uint256) {
-        return registeredIndex[collection];
-    }
-    
-    function getBluechipEnrollment(address collection, address wallet) external view returns (bool) {
+
+    function isBluechipEnrolled(address collection, address wallet) external view returns (bool) {
         return b.bluechipWallets[collection][wallet].enrolled;
     }
 
@@ -542,10 +548,10 @@ contract CatalystNFTStakingUpgradeable is
 
     function getCollectionTier(address collection) external view returns (uint8) {
         if (registeredIndex[collection] == 0) {
-            return 0; // Not registered
+            return 0;
         }
         if (isBluechipCollection(collection)) {
-            return 3; // Blue-chip
+            return 3;
         }
         return 2;
     }
@@ -559,4 +565,6 @@ contract CatalystNFTStakingUpgradeable is
     function unpause() external onlyRole(CONTRACT_ADMIN_ROLE) { _unpause(); }
 
     function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+
+    uint256[50] private __gap;
 }
