@@ -175,24 +175,30 @@ event AdminRecovered(address indexed newAdmin);
     }
     
     // -------- Modifiers --------
-    modifier onlyDeployerGuardian() {
-        if (!isDeployerGuardian(_msgSender())) revert Unauthorized();
+    modifier onlyAdmin() {
+        if (_msgSender() != deployerAddress && !hasRole(DEFAULT_ADMIN_ROLE, _msgSender())) revert Unauthorized();
         _;
     }
-    modifier onlyAdminGuardian() {
-        if (!isAdminGuardian(_msgSender())) revert Unauthorized();
+
+    modifier onlyRegistered(address collection) {
+        if (!s.collectionConfigs[collection].registered) revert NotRegistered();
         _;
     }
-    modifier onlyContractAdminRole() {
+
+    modifier onlyContractAdmin() {
         if (!hasRole(CONTRACT_ADMIN_ROLE, _msgSender())) revert Unauthorized();
         _;
     }
 
-/// @dev ensures provided collection was registered previously
-modifier onlyRegistered(address collection) {
-    if (registeredIndex[collection] == 0) revert NotRegistered();
-    _;
-}
+    modifier onlyDeployerGuardian() {
+        if (!gu.isGuardian(gu, GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender())) revert Unauthorized();
+        _;
+    }
+
+    modifier onlyAdminGuardian() {
+        if (!gu.isGuardian(gu, GuardianLib.ADMIN_COUNCIL_ID, _msgSender())) revert Unauthorized();
+        _;
+    }
 
 
 
