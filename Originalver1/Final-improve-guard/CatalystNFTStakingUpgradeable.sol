@@ -414,37 +414,39 @@ modifier onlyRegistered(address collection) {
     }
 
     function stake(address collection, uint256 tokenId, bool permanent)
-        public
-        whenNotPaused
-        nonReentrant
-        notInCooldown
-    {
-        if (collection == address(0)) revert ZeroAddress();
-        // transfer NFT in (custodial) - requires approval
-        IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
+    public
+    whenNotPaused
+    nonReentrant
+    notInCooldown
+{
+    if (collection == address(0)) revert ZeroAddress();
+    IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
 
-        if (permanent) {
-            s.recordPermanentStake(
-                collection,
-                _msgSender(),
-                tokenId,
-                block.number,
-                rewardRateIncrementPerNFT
-            );
-        } else {
-            s.recordTermStake(
-                collection,
-                _msgSender(),
-                tokenId,
-                block.number,
-                termDurationBlocks,
-                rewardRateIncrementPerNFT
-            );
-        }
-
-        lastStakingBlock[_msgSender()] = block.number;
-        emit NFTStaked(_msgSender(), collection, tokenId, permanent);
+    if (permanent) {
+        s.recordPermanentStake(
+            collection,
+            _msgSender(),
+            tokenId,
+            block.number,
+            rewardRateIncrementPerNFT
+        );
+    } else {
+        s.recordTermStake(
+            collection,
+            _msgSender(),
+            tokenId,
+            block.number,
+            termDurationBlocks,
+            rewardRateIncrementPerNFT
+        );
     }
+
+    // ✅ increment per-collection counter
+    s.collectionTotalStaked[collection] += 1;
+
+    lastStakingBlock[_msgSender()] = block.number;
+    emit NFTStaked(_msgSender(), collection, tokenId, permanent);
+}
 
     function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external whenNotPaused {
         uint256 n = tokenIds.length;
@@ -470,9 +472,9 @@ modifier onlyRegistered(address collection) {
     }
 
     function unstake(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
-        StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
-        if (!info.currentlyStaked) revert NotStaked();
-        if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
+    StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
+    if (!info.currentlyStaked) revert NotStaked();
+    if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
 
         // harvest pending first
         uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
@@ -493,12 +495,16 @@ modifier onlyRegistered(address collection) {
             _splitFeeFromSender(_msgSender(), unstakeBurnFee);
         }
 
-        s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
+            s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
 
-        // transfer NFT back
-        IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
-        emit NFTUnstaked(_msgSender(), collection, tokenId);
+    // ✅ decrement counter
+    if (s.collectionTotalStaked[collection] > 0) {
+        s.collectionTotalStaked[collection] -= 1;
     }
+
+    IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
+    emit NFTUnstaked(_msgSender(), collection, tokenId);
+}
 
     // -------- Blue-chip (non-custodial) --------
 function setBluechipCollection(address collection, bool isBluechip)
