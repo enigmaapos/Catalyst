@@ -697,7 +697,7 @@ function isBluechipEnrolled(address collection, address wallet) external view re
 
 /// @notice Returns true if a collection is flagged as Blue-chip
 function isBluechipCollection(address collection) public view returns (bool) {
-    return bluechipCollections[collection];
+    return b.bluechipCollections[collection];
 }
 
 /// @notice Returns the total number of NFTs staked in a given collection
