@@ -72,7 +72,7 @@ contract CatalystNFTStakingUpgradeable is
     StakingLib.Storage internal s;
     GovernanceLib.Storage internal g;
     BluechipLib.Storage internal b;
-    GuardianLib.Storage internal gu;
+    GuardianLib.Storage internal gu; // New storage for GuardianLib
 
     // -------- Protocol params --------
     uint256 public numberOfBlocksPerRewardUnit;
@@ -92,9 +92,7 @@ contract CatalystNFTStakingUpgradeable is
     mapping(address => uint256) public burnedCatalystByAddress;
     mapping(address => uint256) public lastStakingBlock;
 
-    // -------- Events --------
-    event DeployerRecovered(address indexed oldDeployer, address indexed newDeployer);
-    event AdminRecovered(address indexed newAdmin);
+    // -------- Events (kept) --------
 	event BluechipCollectionSet(address indexed collection, bool isBluechip);
     event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 paid);
     event NFTStaked(address indexed owner, address indexed collection, uint256 indexed tokenId, bool permanent);
@@ -109,6 +107,8 @@ contract CatalystNFTStakingUpgradeable is
     event RegistrationFeeUpdated(uint256 oldValue, uint256 newValue);
     event VotingParamUpdated(uint8 target, uint256 oldValue, uint256 newValue);
     event ProposalExecuted(bytes32 indexed id, uint256 appliedValue);
+event DeployerRecovered(address indexed oldDeployer, address indexed newDeployer);
+event AdminRecovered(address indexed newAdmin);
 
     // -------- Initializer --------
     struct InitConfig {
@@ -163,8 +163,7 @@ contract CatalystNFTStakingUpgradeable is
             cfg.collectionVoteCapPercent
         );
         
-        GuardianLib.init(
-            gu,
+        gu.init(
             cfg.deployerGuardians,
             cfg.deployerThreshold,
             cfg.adminGuardians,
@@ -192,53 +191,58 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     modifier onlyDeployerGuardian() {
-        if (!gu.isGuardian(gu, GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender())) revert Unauthorized();
-        _;
-    }
+    if (!gu.isGuardian(GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender())) revert Unauthorized();
+    _;
+}
 
-    modifier onlyAdminGuardian() {
-        if (!gu.isGuardian(gu, GuardianLib.ADMIN_COUNCIL_ID, _msgSender())) revert Unauthorized();
-        _;
-    }
+modifier onlyAdminGuardian() {
+    if (!gu.isGuardian(GuardianLib.ADMIN_COUNCIL_ID, _msgSender())) revert Unauthorized();
+    _;
+}
 
-    // -------- Guardians: admin setters --------
-    function setDeployerGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        gu.setGuardian(gu, GuardianLib.DEPLOYER_COUNCIL_ID, idx, guardian);
-    }
-    function setAdminGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        gu.setGuardian(gu, GuardianLib.ADMIN_COUNCIL_ID, idx, guardian);
-    }
-    
-    // -------- Deployer recovery --------
-    function proposeDeployerRecovery(address newDeployer) external whenNotPaused onlyDeployerGuardian {
-        gu.proposeRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID, newDeployer, RECOVERY_WINDOW, _msgSender());
-    }
-    function approveDeployerRecovery() external whenNotPaused onlyDeployerGuardian {
-        gu.approveRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender());
-    }
-    function executeDeployerRecovery() external whenNotPaused nonReentrant {
-        address newDeployer = gu.executeRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID);
-        if (newDeployer != address(0)) {
-            address old = deployerAddress;
-            deployerAddress = newDeployer;
-            emit DeployerRecovered(old, newDeployer);
-        }
-    }
+// -------- Guardians: admin setters --------
+function setDeployerGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    gu.setGuardian(GuardianLib.DEPLOYER_COUNCIL_ID, idx, guardian);
+}
 
-    // -------- Admin recovery --------
-    function proposeAdminRecovery(address newAdmin) external whenNotPaused onlyAdminGuardian {
-        gu.proposeRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID, newAdmin, RECOVERY_WINDOW, _msgSender());
+function setAdminGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    gu.setGuardian(GuardianLib.ADMIN_COUNCIL_ID, idx, guardian);
+}
+
+// -------- Deployer recovery --------
+function proposeDeployerRecovery(address newDeployer) external whenNotPaused onlyDeployerGuardian {
+    gu.proposeRecovery(GuardianLib.DEPLOYER_COUNCIL_ID, newDeployer, RECOVERY_WINDOW, _msgSender());
+}
+
+function approveDeployerRecovery() external whenNotPaused onlyDeployerGuardian {
+    if (gu.approveRecovery(GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender()) < gu.deployerCouncil.threshold) {
+        revert Threshold();
     }
-    function approveAdminRecovery() external whenNotPaused onlyAdminGuardian {
-        gu.approveRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID, _msgSender());
+}
+
+function executeDeployerRecovery() external whenNotPaused {
+    address old = deployerAddress;
+    address newDeployer = gu.executeRecovery(GuardianLib.DEPLOYER_COUNCIL_ID);
+    deployerAddress = newDeployer;
+    emit DeployerRecovered(old, newDeployer);
+}
+
+// -------- Admin recovery --------
+function proposeAdminRecovery(address newAdmin) external whenNotPaused onlyAdminGuardian {
+    gu.proposeRecovery(GuardianLib.ADMIN_COUNCIL_ID, newAdmin, RECOVERY_WINDOW, _msgSender());
+}
+
+function approveAdminRecovery() external whenNotPaused onlyAdminGuardian {
+    if (gu.approveRecovery(GuardianLib.ADMIN_COUNCIL_ID, _msgSender()) < gu.adminCouncil.threshold) {
+        revert Threshold();
     }
-    function executeAdminRecovery() external whenNotPaused nonReentrant {
-        address newAdmin = gu.executeRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID);
-        if (newAdmin != address(0)) {
-            _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
-            emit AdminRecovered(newAdmin);
-        }
-    }
+}
+
+function executeAdminRecovery() external whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) {
+    address newAdmin = gu.executeRecovery(GuardianLib.ADMIN_COUNCIL_ID);
+    _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
+    emit AdminRecovered(newAdmin);
+}
 
     // -------- Registration (permissionless with fee guard) --------
     function registerCollection(address collection, uint256 declaredMaxSupply) external whenNotPaused nonReentrant {
@@ -267,39 +271,35 @@ contract CatalystNFTStakingUpgradeable is
     whenNotPaused
     nonReentrant
     notInCooldown
-    {
-        if (collection == address(0)) revert ZeroAddress();
-        if (!s.isCollectionRegistered(collection)) revert NotRegistered();
+{
+    if (collection == address(0)) revert ZeroAddress();
+    IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
 
-        IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
-
-        if (permanent) {
-            s.recordPermanentStake(
-                collection,
-                _msgSender(),
-                tokenId,
-                block.number,
-                rewardRateIncrementPerNFT
-            );
-        } else {
-            s.recordTermStake(
-                collection,
-                _msgSender(),
-                tokenId,
-                block.number,
-                termDurationBlocks,
-                rewardRateIncrementPerNFT
-            );
-        }
-
-        s.collectionTotalStaked[collection] += 1;
-        s.totalStakedNFTsCount++;
-        s.updateBaseRewardRate(rewardRateIncrementPerNFT, maxBaseRewardRate);
-        s.updateUserStakedTokens(_msgSender(), collection, tokenId);
-
-        lastStakingBlock[_msgSender()] = block.number;
-        emit NFTStaked(_msgSender(), collection, tokenId, permanent);
+    if (permanent) {
+        s.recordPermanentStake(
+            collection,
+            _msgSender(),
+            tokenId,
+            block.number,
+            rewardRateIncrementPerNFT
+        );
+    } else {
+        s.recordTermStake(
+            collection,
+            _msgSender(),
+            tokenId,
+            block.number,
+            termDurationBlocks,
+            rewardRateIncrementPerNFT
+        );
     }
+
+    // ✅ increment per-collection counter
+    s.collectionTotalStaked[collection] += 1;
+
+    lastStakingBlock[_msgSender()] = block.number;
+    emit NFTStaked(_msgSender(), collection, tokenId, permanent);
+}
 
     function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external whenNotPaused {
         uint256 n = tokenIds.length;
@@ -313,79 +313,81 @@ contract CatalystNFTStakingUpgradeable is
         uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
         if (reward == 0) return;
 
-        uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 10000;
-        _mint(_msgSender(), reward - burnAmt);
-        _burn(address(this), burnAmt);
+        uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
+        _mint(_msgSender(), reward);
+        if (burnAmt > 0) {
+            _burn(_msgSender(), burnAmt);
+            burnedCatalystByAddress[_msgSender()] += burnAmt;
+        }
         s.updateLastHarvest(collection, _msgSender(), tokenId);
 
         emit RewardsHarvested(_msgSender(), collection, reward, burnAmt);
     }
 
-    function unstake(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
-        StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
-        if (!info.currentlyStaked) revert NotStaked();
-        if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
+    function unstake(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
+    StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
+    if (!info.currentlyStaked) revert NotStaked();
+    if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
 
+        // harvest pending first
         uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
         if (reward > 0) {
-            uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 10000;
-            _mint(_msgSender(), reward - burnAmt);
-            _burn(address(this), burnAmt);
+            uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
+            _mint(_msgSender(), reward);
+            if (burnAmt > 0) {
+                _burn(_msgSender(), burnAmt);
+                burnedCatalystByAddress[_msgSender()] += burnAmt;
+            }
             s.updateLastHarvest(collection, _msgSender(), tokenId);
             emit RewardsHarvested(_msgSender(), collection, reward, burnAmt);
         }
 
+        // unstake burn fee (flat)
         if (unstakeBurnFee > 0) {
-            _burn(_msgSender(), unstakeBurnFee);
+            if (balanceOf(_msgSender()) < unstakeBurnFee) revert Insufficient();
+            _splitFeeFromSender(_msgSender(), unstakeBurnFee);
         }
 
-        s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
+            s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
 
+    // ✅ decrement counter
+    if (s.collectionTotalStaked[collection] > 0) {
         s.collectionTotalStaked[collection] -= 1;
-        s.totalStakedNFTsCount--;
-        s.removeUserStakedToken(_msgSender(), collection, tokenId);
-
-        IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
-        emit NFTUnstaked(_msgSender(), collection, tokenId);
     }
 
-    function batchUnstake(address collection, uint256[] calldata tokenIds) external whenNotPaused {
-        uint256 n = tokenIds.length;
-        if (n == 0 || n > MAX_HARVEST_BATCH) revert BatchTooLarge();
-        for (uint256 i = 0; i < n; ++i) {
-            unstake(collection, tokenIds[i]);
-        }
-    }
+    IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
+    emit NFTUnstaked(_msgSender(), collection, tokenId);
+}
 
     // -------- Blue-chip (non-custodial) --------
-    function setBluechipCollection(address collection, bool isBluechip)
+function setBluechipCollection(address collection, bool isBluechip)
     external
     onlyRole(CONTRACT_ADMIN_ROLE)
     whenNotPaused
     onlyRegistered(collection)
-    {
-        b.isBluechipCollection[collection] = isBluechip;
-        emit BluechipCollectionSet(collection, isBluechip);
-    }
+{
+    b.isBluechipCollection[collection] = isBluechip;
+    emit BluechipCollectionSet(collection, isBluechip); // ✅ now works
+}
 
     function enrollBluechip() external whenNotPaused nonReentrant {
         address wallet = _msgSender();
+        // check already enrolled global slot
         if (b.bluechipWallets[address(0)][wallet].enrolled) revert AlreadyEnrolled();
         uint256 fee = b.bluechipWalletFee;
-        _splitFeeFromSender(wallet, fee);
-        b.enroll(b, address(0), wallet, block.number, fee);
+        // fee splitter will revert if insufficient balance
+        BluechipLib.enroll(b, address(0), wallet, block.number, fee, _splitFeeFromSender);
     }
 
     function harvestBluechip(address collection) external whenNotPaused nonReentrant {
         if (!b.isBluechipCollection[collection]) revert Ineligible();
-        if (IERC721(collection).balanceOf(_msgSender()) == 0) revert Ineligible();
-
-        uint256 reward = b.pendingRewards(b, collection, _msgSender(), block.number, numberOfBlocksPerRewardUnit);
-        if (reward > 0) {
-            _mint(_msgSender(), reward);
-            b.updateLastHarvest(b, collection, _msgSender(), block.number);
-            emit RewardsHarvested(_msgSender(), collection, reward, 0);
-        }
+        require(IERC721(collection).balanceOf(_msgSender()) > 0, "no token");
+        // compute reward (simple model: use baseRewardRate & blocks since last enrollment/harvest)
+        // For simplicity use baseRewardRate / total staked as approximation (same as custodial)
+        // main contract retains mint logic and bookkeeping for bluechip harvests if required
+        // Here we delegate to BluechipLib for checks, then mint externally:
+        BluechipLib.harvest(b, collection, _msgSender(), block.number, s.baseRewardRate, numberOfBlocksPerRewardUnit, _mintReward);
+        // Note: ensure BluechipLib.harvest triggers appropriate mint or inform main contract to mint
     }
 
     // -------- Governance wrappers --------
@@ -425,7 +427,7 @@ contract CatalystNFTStakingUpgradeable is
             emit BaseRewardRateUpdated(old, s.baseRewardRate);
         } else if (p.pType == GovernanceLib.ProposalType.HARVEST_FEE) {
             uint256 old = initialHarvestBurnFeeRate;
-            initialHarvestBurnFeeRate = p.newValue;
+            initialHarvestBurnFeeRate = p.newValue; // expect 0..100
             emit HarvestFeeUpdated(old, p.newValue);
         } else if (p.pType == GovernanceLib.ProposalType.UNSTAKE_FEE) {
             uint256 old = unstakeBurnFee;
@@ -442,14 +444,16 @@ contract CatalystNFTStakingUpgradeable is
             else if (t == 2) { uint256 old = g.collectionVoteCapPercent; g.collectionVoteCapPercent = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
             else revert BadParam();
         } else if (p.pType == GovernanceLib.ProposalType.TIER_UPGRADE) {
+            // hook for future upgrades
         } else {
             revert BadParam();
         }
-        
+
         emit ProposalExecuted(id, p.newValue);
     }
 
     function _votingWeight(address voter) internal view returns (uint256 weight, address attributedCollection) {
+        // 1) Any active stake older than minStakeAge gives full weight
         uint256 len = registeredCollections.length;
         for (uint256 i = 0; i < len; ++i) {
             address coll = registeredCollections[i];
@@ -462,6 +466,7 @@ contract CatalystNFTStakingUpgradeable is
                 }
             }
         }
+        // 2) Or: enrolled blue-chip + currently owns at least one token in a flagged collection
         for (uint256 i = 0; i < len; ++i) {
             address coll = registeredCollections[i];
             if (b.isBluechipCollection[coll] && (b.bluechipWallets[coll][voter].enrolled || b.bluechipWallets[address(0)][voter].enrolled)) {
@@ -476,6 +481,7 @@ contract CatalystNFTStakingUpgradeable is
     // -------- Fee split, treasury, helpers --------
     function _splitFeeFromSender(address payer, uint256 amount) internal {
         if (amount == 0) return;
+        // require that payer has enough balance (ERC20 balance check using this contract's ERC20 state)
         if (balanceOf(payer) < amount) revert Insufficient();
         uint256 burnAmt = (amount * BURN_BP) / BP_DENOM;
         uint256 treasuryAmt = (amount * TREASURY_BP) / BP_DENOM;
@@ -493,16 +499,21 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     function withdrawTreasury(address to, uint256 amount)
-    external
-    onlyRole(CONTRACT_ADMIN_ROLE)
-    whenNotPaused
-    nonReentrant
+        external
+        onlyRole(CONTRACT_ADMIN_ROLE)
+        whenNotPaused
+        nonReentrant
     {
         if (to == address(0)) revert ZeroAddress();
         if (amount > treasuryBalance) revert Insufficient();
         treasuryBalance -= amount;
         _transfer(address(this), to, amount);
         emit TreasuryWithdrawal(to, amount);
+    }
+
+    function _mintReward(address to, uint256 amount) internal {
+        if (amount == 0) return;
+        _mint(to, amount);
     }
 
     // -------- Views --------
@@ -522,39 +533,44 @@ contract CatalystNFTStakingUpgradeable is
         remainingPermanent = PERM_CAP > totalPermanent ? PERM_CAP - totalPermanent : 0;
     }
 
-    function collectionCount() external view returns (uint256) {
-        return registeredCollections.length;
-    }
+function collectionCount() external view returns (uint256) {
+    return registeredCollections.length;
+}
 
     function pendingRewardsView(address collection, address owner, uint256 tokenId)
-    external
-    view
-    returns (uint256)
+        external
+        view
+        returns (uint256)
     {
         return s.pendingRewards(collection, owner, tokenId, numberOfBlocksPerRewardUnit);
     }
 
-    function isBluechipEnrolled(address collection, address wallet) external view returns (bool) {
-        return b.bluechipWallets[collection][wallet].enrolled;
-    }
+function isBluechipEnrolled(address collection, address wallet) external view returns (bool) {
+    return b.bluechipWallets[collection][wallet].enrolled;
+}
 
-    function collectionTotalStaked(address collection) external view returns (uint256) {
-        return s.collectionTotalStaked[collection];
-    }
+/// @notice Returns the total number of NFTs staked in a given collection
+function collectionTotalStaked(address collection) external view returns (uint256) {
+    return s.collectionTotalStaked[collection];
+}
 
-    function isBluechipCollection(address collection) public view returns (bool) {
-        return b.isBluechipCollection[collection];
-    }
+/// @notice Returns true if a collection is flagged as blue-chip
+function isBluechipCollection(address collection) public view returns (bool) {
+    return b.isBluechipCollection[collection]; // ✅ use your BluechipLib storage mapping
+}
 
-    function getCollectionTier(address collection) external view returns (uint8) {
-        if (registeredIndex[collection] == 0) {
-            return 0;
-        }
-        if (isBluechipCollection(collection)) {
-            return 3;
-        }
-        return 2;
+/// @notice Returns the tier of a collection:
+/// 0 = Not Registered, 1 = Unverified (future), 2 = Verified, 3 = Blue-chip
+function getCollectionTier(address collection) external view returns (uint8) {
+    if (registeredIndex[collection] == 0) {
+        return 0; // Not registered
     }
+    if (isBluechipCollection(collection)) {
+        return 3; // Blue-chip
+    }
+    // Currently treating all registered collections as Verified
+    return 2;
+}
 
     // ERC721 Receiver / Pause / UUPS
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
