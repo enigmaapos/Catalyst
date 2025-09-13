@@ -152,10 +152,11 @@ library GuardianLib {
             if (s.deployerRecovery.executed) revert AlreadyApproved();
             if (s.deployerRecovery.approvals < s.deployerCouncil.threshold) revert ThresholdNotMet();
 
+            address old = s.deployerCouncil.guardians[0];
             address newAddress = s.deployerRecovery.proposed;
             s.deployerRecovery.executed = true;
 
-            emit Recovered(DEPLOYER_COUNCIL_ID, address(0), newAddress);
+            emit Recovered(DEPLOYER_COUNCIL_ID, old, newAddress);
             return newAddress;
         } else if (councilId == ADMIN_COUNCIL_ID) {
             if (s.adminRecovery.proposed == address(0)) revert NoRequest();
