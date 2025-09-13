@@ -29,6 +29,7 @@ library StakingLib {
         uint256 totalStakedTerm;
         uint256 totalStakedPermanent;
 
+ mapping(address => uint256) collectionTotalStaked;
         mapping(address => CollectionConfig) collectionConfigs;
         mapping(address => mapping(address => mapping(uint256 => StakeInfo))) stakeLog;
         mapping(address => mapping(address => uint256[])) stakePortfolioByUser;
