@@ -360,28 +360,36 @@
           <!-- ✅ NEW Portfolio Table Section -->
   <div class="card rounded-xl p-4 ring-1 space-y-3">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-semibold">Your Staked NFTs</h3>
-      <div class="flex gap-2">
-        <button id="btnHarvestAll" class="btn btn-primary">Harvest All</button>
-        <button id="btnUnstakeSel" class="btn btn-ghost">Unstake Selected</button>
-      </div>
-    </div>
+  <h3 class="font-semibold">Your Staked NFTs</h3>
+  <div class="flex gap-2">
+    <button id="btnHarvestAll" class="btn btn-primary">
+      Harvest All
+      <span id="harvestCount" class="ml-1 text-xs bg-[#1a2d50] px-1.5 py-0.5 rounded-md">0</span>
+    </button>
+    <button id="btnUnstakeSel" class="btn btn-ghost">
+      Unstake Selected
+      <span id="unstakeCount" class="ml-1 text-xs bg-[#1a2d50] px-1.5 py-0.5 rounded-md">0</span>
+    </button>
+  </div>
+</div>
 
     <div class="overflow-auto">
       <table class="min-w-full border-collapse text-sm">
         <thead>
-          <tr class="bg-[#0b1220] text-gray-300">
-            <th class="px-3 py-2 text-left">Sel</th>
-            <th class="px-3 py-2 text-left">Collection</th>
-            <th class="px-3 py-2 text-left">Token ID</th>
-            <th class="px-3 py-2 text-left">Type</th>
-            <th class="px-3 py-2 text-left">Stake Block</th>
-            <th class="px-3 py-2 text-left">Remaining</th>
-            <th class="px-3 py-2 text-left">Last Harvest</th>
-            <th class="px-3 py-2 text-left">Pending CATA</th>
-            <th class="px-3 py-2 text-left">Actions</th>
-          </tr>
-        </thead>
+  <tr class="bg-[#0b1220] text-gray-300">
+    <th class="px-3 py-2 text-left">
+      <input type="checkbox" id="selectAll" />
+    </th>
+    <th class="px-3 py-2 text-left">Collection</th>
+    <th class="px-3 py-2 text-left">Token ID</th>
+    <th class="px-3 py-2 text-left">Type</th>
+    <th class="px-3 py-2 text-left">Stake Block</th>
+    <th class="px-3 py-2 text-left">Remaining</th>
+    <th class="px-3 py-2 text-left">Last Harvest</th>
+    <th class="px-3 py-2 text-left">Pending CATA</th>
+    <th class="px-3 py-2 text-left">Actions</th>
+  </tr>
+</thead>
         <tbody id="portfolioRows" class="divide-y divide-[#1a2d50]">
           <!-- JS will populate rows dynamically -->
         </tbody>
@@ -1242,7 +1250,36 @@ async function computeRemainingTerm(log) {
   return `${days}d`;
 }
 
-// Render portfolio table
+function updateSelectionCounters() {
+  const selected = document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]:checked");
+  $("harvestCount").textContent = selected.length;
+  $("unstakeCount").textContent = selected.length;
+}
+
+function attachSelectAll() {
+  const selectAllBox = document.getElementById("selectAll");
+  if (!selectAllBox) return;
+
+  selectAllBox.addEventListener("change", () => {
+    const allRows = document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]");
+    allRows.forEach(cb => cb.checked = selectAllBox.checked);
+    updateSelectionCounters();
+  });
+
+  // Keep selectAll in sync + update counters when rows are clicked
+  document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const allRows = document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]");
+      const allChecked = Array.from(allRows).every(box => box.checked);
+      selectAllBox.checked = allChecked;
+      updateSelectionCounters();
+    });
+  });
+
+  updateSelectionCounters(); // initialize counter on load
+}
+
+// Modify renderPortfolio to re-bind after loading rows
 async function renderPortfolio() {
   try {
     requireWallet();
@@ -1276,6 +1313,8 @@ async function renderPortfolio() {
       `;
       $("portfolioRows").appendChild(tr);
     });
+
+    attachSelectAll(); // 👈 re-bind after table rows are inserted
   } catch (e) {
     $("portfolioRows").innerHTML =
       `<tr><td colspan="9" class="text-center py-4 text-sm text-red-500">Error loading portfolio</td></tr>`;
