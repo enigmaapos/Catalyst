@@ -360,6 +360,64 @@
         </div>
       </div>
 
+      <!-- Existing Register Collection card ends here -->
+</div> <!-- END of Register Collection card -->
+
+<!-- ▼▼ ADD THIS NEW PORTFOLIO SECTION ▼▼ -->
+<div class="card rounded-xl p-4 ring-1 space-y-3">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="font-semibold">Your Staked NFTs</h3>
+    <div class="flex gap-2">
+      <button id="btnHarvestAll" class="btn btn-primary">Harvest All</button>
+      <button id="btnUnstakeSel" class="btn btn-ghost">Unstake Selected</button>
+    </div>
+  </div>
+
+  <div class="overflow-auto">
+    <table class="min-w-full border-collapse text-sm">
+      <thead>
+        <tr class="bg-[#0b1220] text-gray-300">
+          <th class="px-3 py-2 text-left">Sel</th>
+          <th class="px-3 py-2 text-left">Collection</th>
+          <th class="px-3 py-2 text-left">Token ID</th>
+          <th class="px-3 py-2 text-left">Type</th>
+          <th class="px-3 py-2 text-left">Stake Block</th>
+          <th class="px-3 py-2 text-left">Remaining</th>
+          <th class="px-3 py-2 text-left">Last Harvest</th>
+          <th class="px-3 py-2 text-left">Pending CATA</th>
+          <th class="px-3 py-2 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="portfolioRows" class="divide-y divide-[#1a2d50]">
+        <!-- JS will populate rows dynamically:
+        <tr>
+          <td class="px-3 py-2"><input type="checkbox" data-token="123"/></td>
+          <td class="px-3 py-2 font-mono">0xCollection</td>
+          <td class="px-3 py-2">123</td>
+          <td class="px-3 py-2">Term</td>
+          <td class="px-3 py-2">#123456</td>
+          <td class="px-3 py-2">12d</td>
+          <td class="px-3 py-2">#124500</td>
+          <td class="px-3 py-2">12.34</td>
+          <td class="px-3 py-2 flex gap-2">
+            <button data-action="harvest" class="btn btn-ghost btn-xs">Harvest</button>
+            <button data-action="unstake" class="btn btn-ghost btn-xs">Unstake</button>
+          </td>
+        </tr>
+        -->
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs muted mt-3">
+    💡 Use "Harvest All" to batch harvest where supported by contract.
+    Gas estimates will show before sending the transaction.
+  </p>
+</div>
+<!-- ▲▲ END OF NEW PORTFOLIO SECTION ▲▲ -->
+
+</div> <!-- END of #tab-stake main container -->
+
       <div id="tab-bluechip" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-lg bg-[#0d162a] border border-[#1a2d50] grid place-items-center text-xl">💎</div>
@@ -1109,17 +1167,19 @@ function toWei(val, decimals = 18) {
   }
 };
 
+// ✅ Utility: Check if a collection is already registered
 async function isRegisteredCollection(addr) {
   try {
     const idx = await READ_CONTRACT.registeredIndex(addr);
-    return idx > 0n;  // BigInt compare
+    return idx > 0n; // BigInt safe comparison
   } catch (e) {
-    log(e.message || e, "err");
+    log(`Failed to check registration: ${e.message || e}`, "err");
     return false;
   }
 }
-    
-    $("colRegister").addEventListener("input", async () => {
+
+// ✅ Live status indicator on input change
+$("colRegister").addEventListener("input", debounce(async () => {
   const col = $("colRegister").value.trim();
   if (!col || !ethers.isAddress(col)) {
     $("colRegisterStatus").textContent = "—";
@@ -1135,30 +1195,232 @@ async function isRegisteredCollection(addr) {
     $("colRegisterStatus").textContent = "⚠️ Error checking";
     log(e.message || e, "err");
   }
-});
+}, 300)); // debounce to avoid spamming RPC on every keystroke
 
-    $("btnRegister").onclick = async () => {
+// ✅ Register Collection Button Handler
+$("btnRegister").onclick = async () => {
   try {
     requireWallet();
     await initWriteContract();
+
     const col = parseAddress($("colRegister").value);
     const declaredSupply = parseUint($("declaredSupply").value);
 
+    // Validation
+    if (!ethers.isAddress(col)) {
+      log("Invalid collection address", "warn");
+      $("colRegisterStatus").textContent = "⚠️ Invalid address";
+      return;
+    }
+
+    if (declaredSupply <= 0n || declaredSupply > 20000n) {
+      log("Declared supply must be between 1 and 20000", "warn");
+      return;
+    }
+
     if (await isRegisteredCollection(col)) {
-      log("Collection is already registered", "warn");
+      log("Collection already registered", "warn");
       $("colRegisterStatus").textContent = "✅ Already registered";
       return;
     }
 
+    // Send transaction
     const tx = await WRITE_CONTRACT.registerCollection(col, declaredSupply);
-    log(`Register collection sent: ${tx.hash}`);
-    await tx.wait();
-    log("Collection registered ✅", "ok");
-    $("colRegisterStatus").textContent = "✅ Registered just now";
+    log(`📤 Tx sent: ${tx.hash}`, "info");
+
+    $("btnRegister").disabled = true;
+    $("colRegisterStatus").textContent = "⏳ Registering…";
+
+    const receipt = await tx.wait();
+    if (receipt.status === 1) {
+      log("Collection registered ✅", "ok");
+      $("colRegisterStatus").textContent = "✅ Registered just now";
+    } else {
+      log("⚠️ Tx failed or reverted", "err");
+      $("colRegisterStatus").textContent = "❌ Tx failed";
+    }
+  } catch (e) {
+    log(e.message || e, "err");
+    $("colRegisterStatus").textContent = "❌ Error";
+  } finally {
+    $("btnRegister").disabled = false;
+  }
+};
+
+   // ---------- Portfolio Helpers ----------
+async function fetchUserPortfolio(userAddr) {
+  try {
+    // Ensure we have collections list (from contract or local cache)
+    const collectionCount = Number(await READ_CONTRACT.registeredCollectionsLength());
+    const stakes = [];
+
+    for (let i = 0; i < collectionCount; i++) {
+      const colAddr = await READ_CONTRACT.registeredCollections(i);
+      const portfolio = await READ_CONTRACT.stakePortfolioByUser(colAddr, userAddr);
+
+      // portfolio is an array of tokenIds (BigInt)
+      for (const tokenId of portfolio) {
+        const log = await READ_CONTRACT.stakeLog(colAddr, tokenId);
+        stakes.push({
+          collection: colAddr,
+          tokenId: tokenId,
+          permanent: log.permanent,
+          stakeBlock: log.stakeBlock,
+          remaining: await computeRemainingTerm(log),  // helper below
+          lastHarvest: log.lastHarvestBlock,
+          pending: await READ_CONTRACT.pendingRewardOf(userAddr, colAddr, tokenId)
+        });
+      }
+    }
+    return stakes;
+  } catch (e) {
+    log(`Failed to fetch portfolio: ${e.message || e}`, "err");
+    return [];
+  }
+}
+
+// Compute remaining time until end of term (or "—" for permanent)
+async function computeRemainingTerm(log) {
+  if (log.permanent) return "—";
+  const currentBlock = await PROVIDER.getBlockNumber();
+  const endBlock = Number(log.stakeBlock) + Number(log.termBlocks);
+  const remainingBlocks = endBlock - currentBlock;
+  if (remainingBlocks <= 0) return "Ended";
+  // Approximate days (adjust if your chain has different block time)
+  const days = Math.floor((remainingBlocks * 12) / 86400); // 12s per block
+  return `${days}d`;
+}
+
+// Render portfolio table
+async function renderPortfolio() {
+  try {
+    requireWallet();
+    const user = window.CURRENT_ACCOUNT;
+    $("portfolioRows").innerHTML = "Loading...";
+
+    const stakes = await fetchUserPortfolio(user);
+    $("portfolioRows").innerHTML = "";
+
+    if (stakes.length === 0) {
+      $("portfolioRows").innerHTML =
+        `<tr><td colspan="9" class="text-center py-4 text-sm muted">No NFTs staked.</td></tr>`;
+      return;
+    }
+
+    stakes.forEach((s) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="px-3 py-2"><input type="checkbox" data-collection="${s.collection}" data-token="${s.tokenId}" /></td>
+        <td class="px-3 py-2 font-mono">${s.collection}</td>
+        <td class="px-3 py-2">${s.tokenId}</td>
+        <td class="px-3 py-2">${s.permanent ? "Permanent" : "Term"}</td>
+        <td class="px-3 py-2">#${s.stakeBlock}</td>
+        <td class="px-3 py-2">${s.remaining}</td>
+        <td class="px-3 py-2">${s.lastHarvest || "—"}</td>
+        <td class="px-3 py-2">${formatCata(s.pending)}</td>
+        <td class="px-3 py-2 flex gap-2">
+          <button class="btn btn-ghost btn-xs" data-action="harvest" data-collection="${s.collection}" data-token="${s.tokenId}">Harvest</button>
+          <button class="btn btn-ghost btn-xs" data-action="unstake" data-collection="${s.collection}" data-token="${s.tokenId}">Unstake</button>
+        </td>
+      `;
+      $("portfolioRows").appendChild(tr);
+    });
+  } catch (e) {
+    $("portfolioRows").innerHTML =
+      `<tr><td colspan="9" class="text-center py-4 text-sm text-red-500">Error loading portfolio</td></tr>`;
+    log(e.message || e, "err");
+  }
+}
+
+// ---------- Button Handlers ----------
+$("btnHarvestAll").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+
+    const checkboxes = $$("input[type=checkbox][data-token]:checked");
+    if (checkboxes.length === 0) {
+      log("Select at least one NFT to harvest", "warn");
+      return;
+    }
+
+    for (const cb of checkboxes) {
+      const col = cb.dataset.collection;
+      const token = cb.dataset.token;
+      const tx = await WRITE_CONTRACT.harvest(col, token);
+      log(`Harvest sent: ${tx.hash}`);
+      await tx.wait();
+    }
+    await renderPortfolio();
   } catch (e) {
     log(e.message || e, "err");
   }
 };
+
+$("btnUnstakeSel").onclick = async () => {
+  try {
+    requireWallet();
+    await initWriteContract();
+
+    const checkboxes = $$("input[type=checkbox][data-token]:checked");
+    if (checkboxes.length === 0) {
+      log("Select at least one NFT to unstake", "warn");
+      return;
+    }
+
+    for (const cb of checkboxes) {
+      const col = cb.dataset.collection;
+      const token = cb.dataset.token;
+      const tx = await WRITE_CONTRACT.unstake(col, token);
+      log(`Unstake sent: ${tx.hash}`);
+      await tx.wait();
+    }
+    await renderPortfolio();
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+};
+
+// Single-row buttons (event delegation)
+document.getElementById("portfolioRows").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  try {
+    requireWallet();
+    await initWriteContract();
+
+    const col = btn.dataset.collection;
+    const token = btn.dataset.token;
+
+    if (btn.dataset.action === "harvest") {
+      const tx = await WRITE_CONTRACT.harvest(col, token);
+      log(`Harvest tx: ${tx.hash}`);
+      await tx.wait();
+    }
+    if (btn.dataset.action === "unstake") {
+      const tx = await WRITE_CONTRACT.unstake(col, token);
+      log(`Unstake tx: ${tx.hash}`);
+      await tx.wait();
+    }
+    await renderPortfolio();
+  } catch (e) {
+    log(e.message || e, "err");
+  }
+});
+
+// ---------- Helpers ----------
+function formatCata(value) {
+  try {
+    return (Number(value) / 1e18).toFixed(2);
+  } catch {
+    return "0.00";
+  }
+}
+
+// Render portfolio on page load / wallet connect
+window.addEventListener("load", () => {
+  if (window.CURRENT_ACCOUNT) renderPortfolio();
+}); 
     
     /* ============================
      * BLUE-CHIP (NON-CUSTODIAL)
