@@ -174,15 +174,19 @@ contract CatalystNFTStakingUpgradeable is
     
     // -------- Modifiers --------
     modifier onlyDeployerGuardian() {
-        if (!gu.isGuardian(gu, GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender())) revert Unauthorized();
+        if (!isDeployerGuardian[_msgSender()]) revert Unauthorized();
         _;
     }
     modifier onlyAdminGuardian() {
-        if (!gu.isGuardian(gu, GuardianLib.ADMIN_COUNCIL_ID, _msgSender())) revert Unauthorized();
+        if (!isAdminGuardian[_msgSender()]) revert Unauthorized();
+        _;
+    }
+    modifier onlyContractAdminRole() {
+        if (!hasRole(CONTRACT_ADMIN_ROLE, _msgSender())) revert Unauthorized();
         _;
     }
 
-/// @notice Ensures the collection is registered
+/// @dev ensures provided collection was registered previously
 modifier onlyRegistered(address collection) {
     if (registeredIndex[collection] == 0) revert NotRegistered();
     _;
