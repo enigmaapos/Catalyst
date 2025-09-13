@@ -107,6 +107,8 @@ contract CatalystNFTStakingUpgradeable is
     event RegistrationFeeUpdated(uint256 oldValue, uint256 newValue);
     event VotingParamUpdated(uint8 target, uint256 oldValue, uint256 newValue);
     event ProposalExecuted(bytes32 indexed id, uint256 appliedValue);
+event DeployerRecovered(address indexed oldDeployer, address indexed newDeployer);
+event AdminRecovered(address indexed newAdmin);
 
     // -------- Initializer --------
     struct InitConfig {
