@@ -356,49 +356,44 @@
   <button id="btnRegister" class="btn btn-primary">Register</button>
           <div class="text-xs muted">
             <span class="tooltip" data-tip="Unverified collections incur surcharges until they upgrade.">ⓘ</span> Verified collections (usually owner-registered) enjoy normal fees.
-
-      <!-- Existing Register Collection card ends here -->
-</div> <!-- END of Register Collection card -->
-
-<!-- ▼▼ ADD THIS NEW PORTFOLIO SECTION ▼▼ -->
-<div class="card rounded-xl p-4 ring-1 space-y-3">
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="font-semibold">Your Staked NFTs</h3>
-    <div class="flex gap-2">
-      <button id="btnHarvestAll" class="btn btn-primary">Harvest All</button>
-      <button id="btnUnstakeSel" class="btn btn-ghost">Unstake Selected</button>
-    </div>
-  </div>
-
-  <div class="overflow-auto">
-    <table class="min-w-full border-collapse text-sm">
-      <thead>
-        <tr class="bg-[#0b1220] text-gray-300">
-          <th class="px-3 py-2 text-left">Sel</th>
-          <th class="px-3 py-2 text-left">Collection</th>
-          <th class="px-3 py-2 text-left">Token ID</th>
-          <th class="px-3 py-2 text-left">Type</th>
-          <th class="px-3 py-2 text-left">Stake Block</th>
-          <th class="px-3 py-2 text-left">Remaining</th>
-          <th class="px-3 py-2 text-left">Last Harvest</th>
-          <th class="px-3 py-2 text-left">Pending CATA</th>
-          <th class="px-3 py-2 text-left">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="portfolioRows" class="divide-y divide-[#1a2d50]">
-      </tbody>
-    </table>
-  </div>
-
-  <p class="text-xs muted mt-3">
-    💡 Use "Harvest All" to batch harvest where supported by contract.
-    Gas estimates will show before sending the transaction.
-  </p>
-</div>
-<!-- ▲▲ END OF NEW PORTFOLIO SECTION ▲▲ -->
-
-</div> <!-- END of #tab-stake main container -->
         </div>
+          <!-- ✅ NEW Portfolio Table Section -->
+  <div class="card rounded-xl p-4 ring-1 space-y-3">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold">Your Staked NFTs</h3>
+      <div class="flex gap-2">
+        <button id="btnHarvestAll" class="btn btn-primary">Harvest All</button>
+        <button id="btnUnstakeSel" class="btn btn-ghost">Unstake Selected</button>
+      </div>
+    </div>
+
+    <div class="overflow-auto">
+      <table class="min-w-full border-collapse text-sm">
+        <thead>
+          <tr class="bg-[#0b1220] text-gray-300">
+            <th class="px-3 py-2 text-left">Sel</th>
+            <th class="px-3 py-2 text-left">Collection</th>
+            <th class="px-3 py-2 text-left">Token ID</th>
+            <th class="px-3 py-2 text-left">Type</th>
+            <th class="px-3 py-2 text-left">Stake Block</th>
+            <th class="px-3 py-2 text-left">Remaining</th>
+            <th class="px-3 py-2 text-left">Last Harvest</th>
+            <th class="px-3 py-2 text-left">Pending CATA</th>
+            <th class="px-3 py-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="portfolioRows" class="divide-y divide-[#1a2d50]">
+          <!-- JS will populate rows dynamically -->
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-xs muted mt-3">
+      💡 Use "Harvest All" to batch harvest where supported by contract.
+      Gas estimates will show before sending the transaction.
+    </p>
+  </div>
+</div>
         </div>
     </div>
 
