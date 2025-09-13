@@ -67,3 +67,146 @@ High priority items are whitepaper promises: governance transparency, guardian r
 Medium priority improves user trust and analytics — helps community see sustainability in action.
 
 Low priority is about future-proofing and nice-to-have technical transparency.
+
+
+
+
+🔑 Recommended Placement
+
+1️⃣ Guardian Council Dashboard
+
+Location:
+/pages/guardian.tsx (new Next.js page or a dedicated tab inside your existing /pages/admin.tsx if you have an admin/guardian section).
+
+Why here:
+
+It pulls gu.deployerCouncil.guardians[], gu.adminCouncil.guardians[], and GuardianLib.RecoveryProposal data (read-only views).
+
+This is an administrative function, so isolating it in its own route or tab keeps it clean.
+
+
+How to mount:
+
+Wrap your HTML snippet inside a React component (e.g., <GuardianCouncil />) and import it in guardian.tsx.
+
+Hook Approve / Reject / Execute buttons to your write functions:
+
+await contract.approveDeployerRecovery();  
+await contract.executeDeployerRecovery();
+
+
+
+---
+
+2️⃣ User Portfolio Table
+
+Location:
+Inside Stake Tab of your existing user dashboard — likely /pages/stake.tsx or /components/StakeDashboard.tsx.
+
+Suggested spot:
+Directly below your stake form or current position summary, so the user immediately sees all active stakes.
+
+Hooking logic:
+
+Read: s.stakePortfolioByUser[collection][address]
+
+Loop over tokenIds → call s.stakeLog[collection][tokenId]
+
+Populate remaining term, last harvest block, pending rewards.
+
+Wire Harvest All button → batch calls to harvestNFT().
+
+Wire Unstake → call unstakeNFT(collection, tokenId).
+
+
+
+---
+
+3️⃣ Governance Proposal Cards
+
+Location:
+Inside Governance Tab or /pages/governance.tsx.
+
+Suggested placement:
+Just under your proposal creation form (or in a separate section with filters).
+
+Hooks:
+
+Read: g.proposals[i] in a loop, compute votes → proposal.votesCast / proposal.minVotesRequiredScaled.
+
+Use votingDurationBlocks to compute Ends in X days.
+
+Buttons → vote(proposalId, support) and executeProposal(proposalId).
+
+
+
+---
+
+4️⃣ Treasury Analytics
+
+Location:
+Inside Admin Tab or /pages/treasury.tsx.
+
+Mount chart component here and feed it off-chain indexed events (TreasuryDeposit, TreasuryWithdrawal).
+
+This section is for protocol maintainers, not users — so hide behind an admin route or a special dashboard tab.
+
+
+
+---
+
+5️⃣ Per-Collection Stats + Blue-Chip Insights
+
+Location:
+Inside /pages/collections.tsx or as a tab in your dashboard UI.
+
+Good for analytics view — can be a grid view per collection.
+
+For Blue-chip: read b.bluechipWallets[collection][wallet].
+
+
+
+---
+
+6️⃣ Tier Upgrade Proposal Support
+
+Location:
+Same Governance Tab where users create proposals.
+
+Add a dropdown option for ProposalType.TIER_UPGRADE.
+
+When executed → call setBluechipCollection(collection) (if contract hook is implemented).
+
+
+
+---
+
+7️⃣ Contract Version & Proxy Info
+
+Location:
+Footer Component — used sitewide.
+
+Place at bottom of your _app.tsx layout or shared Footer.tsx.
+
+Read proxy + implementation address (UUPSUpgradeable).
+
+Optionally resolve implementation address via Etherscan API.
+
+
+
+---
+
+✅ TL;DR Placement Table
+
+Section	Recommended File / Tab	Why
+
+Guardian Council	/pages/guardian.tsx (or Admin tab)	Council quorum & recovery are admin-level features
+User Portfolio	Stake Tab (/pages/stake.tsx)	Immediate feedback on active stakes
+Proposal Cards	/pages/governance.tsx	Belongs with proposal creation & history
+Treasury Analytics	/pages/treasury.tsx	Protocol-wide financial view
+Collection Stats	/pages/collections.tsx	Analytics & APR estimation
+Blue-chip Insights	Same as collections or separate bluechip.tsx	Niche data view for power users
+Tier Upgrade Proposal	Governance Tab	A type of governance action
+Contract Version	Shared Footer.tsx	Always visible, good for debugging
+
+
