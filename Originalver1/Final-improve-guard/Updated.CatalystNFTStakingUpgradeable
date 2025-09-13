@@ -176,11 +176,11 @@ event AdminRecovered(address indexed newAdmin);
     
     // -------- Modifiers --------
     modifier onlyDeployerGuardian() {
-        if (!isDeployerGuardian[_msgSender()]) revert Unauthorized();
+        if (!isDeployerGuardian(_msgSender())) revert Unauthorized();
         _;
     }
     modifier onlyAdminGuardian() {
-        if (!isAdminGuardian[_msgSender()]) revert Unauthorized();
+        if (!isAdminGuardian(_msgSender())) revert Unauthorized();
         _;
     }
     modifier onlyContractAdminRole() {
