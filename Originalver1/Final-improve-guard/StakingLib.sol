@@ -50,15 +50,34 @@ struct CollectionConfig {
     event InternalUnstakeRecorded(address indexed owner, address indexed collection, uint256 indexed tokenId);
 
     function initCollection(Storage storage s, address collection, uint256 declaredSupply) internal {
-        require(collection != address(0), "StakingLib: zero collection");
-        CollectionConfig storage cfg = s.collectionConfigs[collection];
-        require(!cfg.registered, "StakingLib: already reg");
-        require(declaredSupply > 0 && declaredSupply <= 20000, "StakingLib: bad supply");
-        cfg.declaredSupply = declaredSupply;
-        cfg.registered = true;
-        cfg.totalStaked = 0;
-        cfg.totalStakers = 0;
+    require(collection != address(0), "StakingLib: zero address");
+    CollectionConfig storage cfg = s.collectionConfigs[collection];
+    require(!cfg.registered, "StakingLib: already registered");
+    require(declaredSupply > 0 && declaredSupply <= s.maxSupply, "StakingLib: invalid supply");
+
+    cfg.registered = true;
+    cfg.declaredSupply = declaredSupply;
+    cfg.totalStaked = 0;
+    cfg.totalStakers = 0;
+
+    // Determine tier based on caller identity
+    bool isVerified = false;
+    try Ownable(collection).owner() returns (address owner) {
+        if (owner == msg.sender) {
+            isVerified = true;
+        }
+    } catch {
+        // If collection is not Ownable, leave isVerified = false
     }
+
+    if (msg.sender == s.admin || isVerified) {
+        cfg.tier = Tier.VERIFIED;
+    } else {
+        cfg.tier = Tier.UNVERIFIED;
+    }
+
+    emit CollectionRegistered(collection, msg.sender, cfg.tier, declaredSupply);
+}
 
     function recordTermStake(
         Storage storage s,
