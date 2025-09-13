@@ -321,7 +321,7 @@ contract CatalystNFTStakingUpgradeable is
         emit RewardsHarvested(_msgSender(), collection, reward, burnAmt);
     }
 
-    function unstake(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
+    function unstake(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
         StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
         if (!info.currentlyStaked) revert NotStaked();
         if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
