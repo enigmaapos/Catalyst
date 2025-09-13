@@ -38,7 +38,22 @@
 	},
 	{
 		"inputs": [],
+		"name": "AlreadyApproved",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "AlreadyEnrolled",
+		"type": "error"
+	},
+	{
+		"inputs": [],
 		"name": "AlreadyExists",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "BadParam",
 		"type": "error"
 	},
 	{
@@ -54,6 +69,16 @@
 	{
 		"inputs": [],
 		"name": "Cooldown",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "DuplicateGuardian",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "DuplicateGuardian",
 		"type": "error"
 	},
 	{
@@ -165,6 +190,11 @@
 	},
 	{
 		"inputs": [],
+		"name": "Expired",
+		"type": "error"
+	},
+	{
+		"inputs": [],
 		"name": "FailedCall",
 		"type": "error"
 	},
@@ -181,6 +211,11 @@
 	{
 		"inputs": [],
 		"name": "InvalidInitialization",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NoRequest",
 		"type": "error"
 	},
 	{
@@ -215,6 +250,11 @@
 	},
 	{
 		"inputs": [],
+		"name": "ThresholdNotMet",
+		"type": "error"
+	},
+	{
+		"inputs": [],
 		"name": "UUPSUnauthorizedCallContext",
 		"type": "error"
 	},
@@ -236,6 +276,16 @@
 	},
 	{
 		"inputs": [],
+		"name": "Unauthorized",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ZeroAddress",
+		"type": "error"
+	},
+	{
+		"inputs": [],
 		"name": "ZeroAddress",
 		"type": "error"
 	},
@@ -250,50 +300,6 @@
 			}
 		],
 		"name": "AdminRecovered",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "guardian",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint8",
-				"name": "approvals",
-				"type": "uint8"
-			}
-		],
-		"name": "AdminRecoveryApproved",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "proposer",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "proposed",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "deadline",
-				"type": "uint256"
-			}
-		],
-		"name": "AdminRecoveryProposed",
 		"type": "event"
 	},
 	{
@@ -351,6 +357,25 @@
 			},
 			{
 				"indexed": false,
+				"internalType": "bool",
+				"name": "isBluechip",
+				"type": "bool"
+			}
+		],
+		"name": "BluechipCollectionSet",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "collection",
+				"type": "address"
+			},
+			{
+				"indexed": false,
 				"internalType": "uint256",
 				"name": "declaredSupply",
 				"type": "uint256"
@@ -389,56 +414,12 @@
 		"inputs": [
 			{
 				"indexed": true,
-				"internalType": "address",
-				"name": "guardian",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint8",
-				"name": "approvals",
-				"type": "uint8"
-			}
-		],
-		"name": "DeployerRecoveryApproved",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "proposer",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "proposed",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "deadline",
-				"type": "uint256"
-			}
-		],
-		"name": "DeployerRecoveryProposed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
 				"internalType": "bytes32",
-				"name": "council",
+				"name": "councilId",
 				"type": "bytes32"
 			},
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "uint8",
 				"name": "idx",
 				"type": "uint8"
@@ -689,6 +670,87 @@
 			}
 		],
 		"name": "ProposalMarkedExecuted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "councilId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "oldAddress",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "newAddress",
+				"type": "address"
+			}
+		],
+		"name": "Recovered",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "councilId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "guardian",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint8",
+				"name": "approvals",
+				"type": "uint8"
+			}
+		],
+		"name": "RecoveryApproved",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "councilId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "proposer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "proposed",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "deadline",
+				"type": "uint256"
+			}
+		],
+		"name": "RecoveryProposed",
 		"type": "event"
 	},
 	{
@@ -982,32 +1044,6 @@
 	},
 	{
 		"inputs": [],
-		"name": "ADMIN_GCOUNT",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "ADMIN_THRESHOLD",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "BP_DENOM",
 		"outputs": [
 			{
@@ -1066,32 +1102,6 @@
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "DEPLOYER_GCOUNT",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "DEPLOYER_THRESHOLD",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
 			}
 		],
 		"stateMutability": "view",
@@ -1209,72 +1219,6 @@
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "adminGuardians",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "adminHasApproved",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "adminRecovery",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "proposed",
-				"type": "address"
-			},
-			{
-				"internalType": "uint8",
-				"name": "approvals",
-				"type": "uint8"
-			},
-			{
-				"internalType": "uint256",
-				"name": "deadline",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "executed",
-				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -1405,7 +1349,39 @@
 	},
 	{
 		"inputs": [],
+		"name": "collectionCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "collectionRegistrationFee",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "collection",
+				"type": "address"
+			}
+		],
+		"name": "collectionTotalStaked",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -1443,72 +1419,6 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "deployerGuardians",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "deployerHasApproved",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "deployerRecovery",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "proposed",
-				"type": "address"
-			},
-			{
-				"internalType": "uint8",
-				"name": "approvals",
-				"type": "uint8"
-			},
-			{
-				"internalType": "uint256",
-				"name": "deadline",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "executed",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "enrollBluechip",
 		"outputs": [],
@@ -1540,6 +1450,25 @@
 		"name": "executeProposal",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "collection",
+				"type": "address"
+			}
+		],
+		"name": "getCollectionTier",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -1717,14 +1646,24 @@
 						"type": "uint256"
 					},
 					{
-						"internalType": "address[7]",
+						"internalType": "address[]",
 						"name": "deployerGuardians",
-						"type": "address[7]"
+						"type": "address[]"
 					},
 					{
-						"internalType": "address[7]",
+						"internalType": "uint256",
+						"name": "deployerThreshold",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
 						"name": "adminGuardians",
-						"type": "address[7]"
+						"type": "address[]"
+					},
+					{
+						"internalType": "uint256",
+						"name": "adminThreshold",
+						"type": "uint256"
 					},
 					{
 						"internalType": "uint256",
@@ -1746,11 +1685,11 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "",
+				"name": "collection",
 				"type": "address"
 			}
 		],
-		"name": "isAdminGuardian",
+		"name": "isBluechipCollection",
 		"outputs": [
 			{
 				"internalType": "bool",
@@ -1765,11 +1704,16 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "",
+				"name": "collection",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "wallet",
 				"type": "address"
 			}
 		],
-		"name": "isDeployerGuardian",
+		"name": "isBluechipEnrolled",
 		"outputs": [
 			{
 				"internalType": "bool",
