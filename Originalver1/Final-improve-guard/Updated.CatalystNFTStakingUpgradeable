@@ -182,7 +182,13 @@ contract CatalystNFTStakingUpgradeable is
         _;
     }
 
-    // [All other modifiers remain unchanged]
+/// @notice Ensures the collection is registered
+modifier onlyRegistered(address collection) {
+    if (registeredIndex[collection] == 0) revert NotRegistered();
+    _;
+}
+
+
 
     // -------- Guardians: admin setters --------
     function setDeployerGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
