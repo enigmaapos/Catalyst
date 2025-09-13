@@ -1,0 +1,69 @@
+🧾 Feature Backlog for DApp → Full Whitepaper Compliance
+
+Priority	Feature / Gap	UI Component Proposal	Developer Notes (Contract Integration)
+
+🔴 High	Guardian Council Dashboard	New Tab Section:<br>• Table of Guardian Addresses (Deployer + Admin)<br>• Quorum Threshold Display<br>• Pending Recovery Proposal with Approval Count (progress bar)<br>• Buttons: Approve / Reject / Execute	Read gu.deployerCouncil.guardians[], gu.adminCouncil.guardians[], gu.deployerCouncil.threshold, gu.adminCouncil.threshold. Display GuardianLib.RecoveryProposal data.
+(currently working) 🔴 High	User Portfolio View	Stake Tab Add-on:<br>• Table per user stake: collection, tokenId, term/permanent, stake block, remaining term, last harvest block<br>• “Harvest All” batch button	Read s.stakePortfolioByUser[collection][user], loop tokenIds, call s.stakeLog[...] for details.
+🔴 High	Proposal Lifecycle Visualization	Governance Tab Upgrade:<br>• Proposal cards with status (Active, Executed, Expired)<br>• Progress bar: current votes / required votes<br>• Countdown until expiration<br>• History filter (active / executed / failed)	Read proposals from g.proposals mapping and display minVotesRequiredScaled, votesCast. Calculate remaining blocks from votingDurationBlocks.
+🟠 Medium	Treasury Analytics Dashboard	Admin Tab Add-on:<br>• Line chart of treasury balance over time<br>• Event log: deposits (fees) & withdrawals (addresses, amount)<br>• Running 90/9/1 burn summary	Subscribe to TreasuryDeposit + TreasuryWithdrawal events and aggregate off-chain for graph display.
+🟠 Medium	Per-Collection Stats View	Collections Dashboard:<br>• Show total staked per collection<br>• Show total CATA burned per collection (governance weight proxy)<br>• APR estimate per collection	Read s.collectionTotalStaked, burnedCatalystByAddress filtered by collection (needs event indexer or off-chain aggregation).
+🟠 Medium	Blue-Chip Wallet Insights	Blue-Chip Tab Add-on:<br>• Table of enrolled wallets (for current user, show last harvest block)<br>• Total rewards earned so far	Read b.bluechipWallets[collection][wallet] and compute next eligible harvest block.
+🟡 Low	Tier Upgrade Proposal Support	Governance Tab → Proposal Types Dropdown:<br>• Add option: Tier Upgrade (Verified → Bluechip)<br>• Display result once executed	Contract already has ProposalType.TIER_UPGRADE hook — currently does nothing; consider implementing real effect (setBluechipCollection) or governance trigger.
+🟡 Low	Contract Version & Proxy Info	Footer Component:<br>• Show current proxy + implementation address<br>• Display version tag	Use UUPSUpgradeable + Etherscan API to resolve proxy implementation.
+
+
+
+---
+
+🎨 Wireframe Suggestions
+
+1. Guardian Dashboard (Critical)
+
+
+
+-----------------------------------------------------
+| Guardian Council Overview                          |
+-----------------------------------------------------
+| Deployer Council (Threshold: 3/5)                  |
+| [0xabc...]  ✅ Approved | [0xdef...] ❌ Not Voted  |
+| [0xghi...]  ✅ Approved | ...                     |
+| Pending Recovery: newDeployer = 0x123...           |
+| Progress: █████░░░ (3/5 approvals)                 |
+| [Approve] [Reject] [Execute]                       |
+-----------------------------------------------------
+
+2. User Portfolio Table
+
+
+
+-----------------------------------------------------
+| Your Staked NFTs                                   |
+-----------------------------------------------------
+| Collection | TokenId | Type | Stake Block | Harvest |
+| CoolCats   | 1234    | Term | #123456     | [⛏ Harvest] |
+| Doodles    | 99      | Perm | #123460     | [⛏ Harvest] |
+| [Harvest All] [Unstake Selected]                   |
+-----------------------------------------------------
+
+3. Governance Proposal Card
+
+
+
+-----------------------------------------------------
+| Proposal #45: Change Base Reward Rate              |
+-----------------------------------------------------
+| Status: Active (2000/3000 votes, 3d 4h left)       |
+| Progress: ███████░░ (66%)                          |
+| [Vote YES] [Vote NO]                               |
+-----------------------------------------------------
+
+
+---
+
+🧠 Why This Matters
+
+High priority items are whitepaper promises: governance transparency, guardian recoverability, stake visibility.
+
+Medium priority improves user trust and analytics — helps community see sustainability in action.
+
+Low priority is about future-proofing and nice-to-have technical transparency.
