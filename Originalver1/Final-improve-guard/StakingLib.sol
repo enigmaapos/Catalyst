@@ -16,12 +16,20 @@ library StakingLib {
         uint256 unstakeDeadlineBlock;
     }
 
-    struct CollectionConfig {
-        uint256 totalStaked;
-        uint256 totalStakers;
-        bool registered;
-        uint256 declaredSupply;
-    }
+    enum Tier {
+    NONE,       // Not registered
+    UNVERIFIED, // Registered by someone not owner/admin
+    VERIFIED,   // Registered by collection owner or contract admin
+    BLUECHIP    // Upgraded by governance
+}
+
+struct CollectionConfig {
+    uint256 totalStaked;
+    uint256 totalStakers;
+    bool registered;
+    uint256 declaredSupply;
+    Tier tier; // 👈 Add this line
+}
 
     struct Storage {
         // Counters for staked NFTs
