@@ -1150,15 +1150,14 @@ function toWei(val, decimals = 18) {
 async function isRegisteredCollection(addr) {
   try {
     const idx = await READ_CONTRACT.registeredIndex(addr);
-    return idx > 0n; // BigInt safe comparison
+    return idx > 0n;  // BigInt compare
   } catch (e) {
-    log(`Failed to check registration: ${e.message || e}`, "err");
+    log(e.message || e, "err");
     return false;
   }
 }
-
-// ✅ Live status indicator on input change
-$("colRegister").addEventListener("input", debounce(async () => {
+    
+    $("colRegister").addEventListener("input", async () => {
   const col = $("colRegister").value.trim();
   if (!col || !ethers.isAddress(col)) {
     $("colRegisterStatus").textContent = "—";
@@ -1174,55 +1173,28 @@ $("colRegister").addEventListener("input", debounce(async () => {
     $("colRegisterStatus").textContent = "⚠️ Error checking";
     log(e.message || e, "err");
   }
-}, 300)); // debounce to avoid spamming RPC on every keystroke
+});
 
-// ✅ Register Collection Button Handler
-$("btnRegister").onclick = async () => {
+    $("btnRegister").onclick = async () => {
   try {
     requireWallet();
     await initWriteContract();
-
     const col = parseAddress($("colRegister").value);
     const declaredSupply = parseUint($("declaredSupply").value);
 
-    // Validation
-    if (!ethers.isAddress(col)) {
-      log("Invalid collection address", "warn");
-      $("colRegisterStatus").textContent = "⚠️ Invalid address";
-      return;
-    }
-
-    if (declaredSupply <= 0n || declaredSupply > 20000n) {
-      log("Declared supply must be between 1 and 20000", "warn");
-      return;
-    }
-
     if (await isRegisteredCollection(col)) {
-      log("Collection already registered", "warn");
+      log("Collection is already registered", "warn");
       $("colRegisterStatus").textContent = "✅ Already registered";
       return;
     }
 
-    // Send transaction
     const tx = await WRITE_CONTRACT.registerCollection(col, declaredSupply);
-    log(`📤 Tx sent: ${tx.hash}`, "info");
-
-    $("btnRegister").disabled = true;
-    $("colRegisterStatus").textContent = "⏳ Registering…";
-
-    const receipt = await tx.wait();
-    if (receipt.status === 1) {
-      log("Collection registered ✅", "ok");
-      $("colRegisterStatus").textContent = "✅ Registered just now";
-    } else {
-      log("⚠️ Tx failed or reverted", "err");
-      $("colRegisterStatus").textContent = "❌ Tx failed";
-    }
+    log(`Register collection sent: ${tx.hash}`);
+    await tx.wait();
+    log("Collection registered ✅", "ok");
+    $("colRegisterStatus").textContent = "✅ Registered just now";
   } catch (e) {
     log(e.message || e, "err");
-    $("colRegisterStatus").textContent = "❌ Error";
-  } finally {
-    $("btnRegister").disabled = false;
   }
 };
 
