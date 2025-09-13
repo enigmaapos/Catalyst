@@ -695,6 +695,29 @@ function isBluechipEnrolled(address collection, address wallet) external view re
     return b.bluechipWallets[collection][wallet].enrolled;
 }
 
+/// @notice Returns true if a collection is flagged as Blue-chip
+function isBluechipCollection(address collection) public view returns (bool) {
+    return bluechipCollections[collection];
+}
+
+/// @notice Returns the total number of NFTs staked in a given collection
+function collectionTotalStaked(address collection) public view returns (uint256) {
+    return s.collectionTotals[collection];
+}
+
+/// @notice Returns the tier of a collection: 
+/// 0 = Not Registered, 1 = Unverified (future), 2 = Verified, 3 = Blue-chip
+function getCollectionTier(address collection) external view returns (uint8) {
+    if (registeredIndex[collection] == 0) {
+        return 0; // Not registered
+    }
+    if (isBluechipCollection(collection)) {
+        return 3; // Blue-chip
+    }
+    // Currently treating all registered collections as Verified
+    return 2;
+}
+
     // ERC721 Receiver / Pause / UUPS
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return this.onERC721Received.selector;
