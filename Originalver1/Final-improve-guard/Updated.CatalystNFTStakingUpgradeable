@@ -191,55 +191,58 @@ event AdminRecovered(address indexed newAdmin);
     }
 
     modifier onlyDeployerGuardian() {
-        if (!gu.isGuardian(gu, GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender())) revert Unauthorized();
-        _;
-    }
+    if (!gu.isGuardian(GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender())) revert Unauthorized();
+    _;
+}
 
-    modifier onlyAdminGuardian() {
-        if (!gu.isGuardian(gu, GuardianLib.ADMIN_COUNCIL_ID, _msgSender())) revert Unauthorized();
-        _;
-    }
+modifier onlyAdminGuardian() {
+    if (!gu.isGuardian(GuardianLib.ADMIN_COUNCIL_ID, _msgSender())) revert Unauthorized();
+    _;
+}
 
+// -------- Guardians: admin setters --------
+function setDeployerGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    gu.setGuardian(GuardianLib.DEPLOYER_COUNCIL_ID, idx, guardian);
+}
 
+function setAdminGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    gu.setGuardian(GuardianLib.ADMIN_COUNCIL_ID, idx, guardian);
+}
 
-    // -------- Guardians: admin setters --------
-    function setDeployerGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        gu.setGuardian(gu, GuardianLib.DEPLOYER_COUNCIL_ID, idx, guardian);
-    }
-    function setAdminGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        gu.setGuardian(gu, GuardianLib.ADMIN_COUNCIL_ID, idx, guardian);
-    }
-    
-    // -------- Deployer recovery --------
-    function proposeDeployerRecovery(address newDeployer) external whenNotPaused onlyDeployerGuardian {
-        gu.proposeRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID, newDeployer, RECOVERY_WINDOW, _msgSender());
-    }
-    function approveDeployerRecovery() external whenNotPaused onlyDeployerGuardian {
-        if (gu.approveRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender()) < gu.deployerCouncil.threshold) {
-            revert Threshold();
-        }
-    }
-    function executeDeployerRecovery() external whenNotPaused {
-        address old = deployerAddress;
-        address newDeployer = gu.executeRecovery(gu, GuardianLib.DEPLOYER_COUNCIL_ID);
-        deployerAddress = newDeployer;
-        emit DeployerRecovered(old, newDeployer);
-    }
+// -------- Deployer recovery --------
+function proposeDeployerRecovery(address newDeployer) external whenNotPaused onlyDeployerGuardian {
+    gu.proposeRecovery(GuardianLib.DEPLOYER_COUNCIL_ID, newDeployer, RECOVERY_WINDOW, _msgSender());
+}
 
-    // -------- Admin recovery --------
-    function proposeAdminRecovery(address newAdmin) external whenNotPaused onlyAdminGuardian {
-        gu.proposeRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID, newAdmin, RECOVERY_WINDOW, _msgSender());
+function approveDeployerRecovery() external whenNotPaused onlyDeployerGuardian {
+    if (gu.approveRecovery(GuardianLib.DEPLOYER_COUNCIL_ID, _msgSender()) < gu.deployerCouncil.threshold) {
+        revert Threshold();
     }
-    function approveAdminRecovery() external whenNotPaused onlyAdminGuardian {
-        if (gu.approveRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID, _msgSender()) < gu.adminCouncil.threshold) {
-            revert Threshold();
-        }
+}
+
+function executeDeployerRecovery() external whenNotPaused {
+    address old = deployerAddress;
+    address newDeployer = gu.executeRecovery(GuardianLib.DEPLOYER_COUNCIL_ID);
+    deployerAddress = newDeployer;
+    emit DeployerRecovered(old, newDeployer);
+}
+
+// -------- Admin recovery --------
+function proposeAdminRecovery(address newAdmin) external whenNotPaused onlyAdminGuardian {
+    gu.proposeRecovery(GuardianLib.ADMIN_COUNCIL_ID, newAdmin, RECOVERY_WINDOW, _msgSender());
+}
+
+function approveAdminRecovery() external whenNotPaused onlyAdminGuardian {
+    if (gu.approveRecovery(GuardianLib.ADMIN_COUNCIL_ID, _msgSender()) < gu.adminCouncil.threshold) {
+        revert Threshold();
     }
-    function executeAdminRecovery() external whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) {
-        address newAdmin = gu.executeRecovery(gu, GuardianLib.ADMIN_COUNCIL_ID);
-        _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
-        emit AdminRecovered(newAdmin);
-    }
+}
+
+function executeAdminRecovery() external whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) {
+    address newAdmin = gu.executeRecovery(GuardianLib.ADMIN_COUNCIL_ID);
+    _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
+    emit AdminRecovered(newAdmin);
+}
 
     // -------- Registration (permissionless with fee guard) --------
     function registerCollection(address collection, uint256 declaredMaxSupply) external whenNotPaused nonReentrant {
