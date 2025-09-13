@@ -511,11 +511,6 @@ function setBluechipCollection(address collection, bool isBluechip)
     emit BluechipCollectionSet(collection, isBluechip); // ✅ now works
 }
 
-// Getter to check if a collection is marked as bluechip
-function isBluechipCollection(address collection) external view returns (bool) {
-    return b.isBluechipCollection[collection];
-}
-
     function enrollBluechip() external whenNotPaused nonReentrant {
         address wallet = _msgSender();
         // check already enrolled global slot
@@ -700,7 +695,12 @@ function collectionTotalStaked(address collection) public view returns (uint256)
     return s.collectionTotals[collection];
 }
 
-/// @notice Returns the tier of a collection: 
+/// @notice Returns true if a collection is flagged as blue-chip
+function isBluechipCollection(address collection) public view returns (bool) {
+    return b.isBluechipCollection[collection]; // ✅ use your BluechipLib storage mapping
+}
+
+/// @notice Returns the tier of a collection:
 /// 0 = Not Registered, 1 = Unverified (future), 2 = Verified, 3 = Blue-chip
 function getCollectionTier(address collection) external view returns (uint8) {
     if (registeredIndex[collection] == 0) {
