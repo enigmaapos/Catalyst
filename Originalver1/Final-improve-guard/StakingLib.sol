@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 /// @notice Lightweight staking library (bookkeeping only).
 library StakingLib {
     // Staking caps declared at the library level
     uint256 public constant GLOBAL_CAP = 1_000_000_000;
-    uint256 public constant TERM_CAP   = 750_000_000;
-    uint256 public constant PERM_CAP   = 250_000_000;
+    uint256 public constant TERM_CAP = 750_000_000;
+    uint256 public constant PERM_CAP = 250_000_000;
 
     struct StakeInfo {
         uint256 stakeBlock;
@@ -17,19 +19,19 @@ library StakingLib {
     }
 
     enum Tier {
-    NONE,       // Not registered
-    UNVERIFIED, // Registered by someone not owner/admin
-    VERIFIED,   // Registered by collection owner or contract admin
-    BLUECHIP    // Upgraded by governance
-}
+        NONE,
+        UNVERIFIED,
+        VERIFIED,
+        BLUECHIP
+    }
 
-struct CollectionConfig {
-    uint256 totalStaked;
-    uint256 totalStakers;
-    bool registered;
-    uint256 declaredSupply;
-    Tier tier; // 👈 Add this line
-}
+    struct CollectionConfig {
+        uint256 totalStaked;
+        uint256 totalStakers;
+        bool registered;
+        uint256 declaredSupply;
+        Tier tier;
+    }
 
     struct Storage {
         // Counters for staked NFTs
@@ -37,7 +39,7 @@ struct CollectionConfig {
         uint256 totalStakedTerm;
         uint256 totalStakedPermanent;
 
- mapping(address => uint256) collectionTotalStaked;
+        mapping(address => uint256) collectionTotalStaked;
         mapping(address => CollectionConfig) collectionConfigs;
         mapping(address => mapping(address => mapping(uint256 => StakeInfo))) stakeLog;
         mapping(address => mapping(address => uint256[])) stakePortfolioByUser;
@@ -49,35 +51,38 @@ struct CollectionConfig {
     event InternalStakeRecorded(address indexed owner, address indexed collection, uint256 indexed tokenId);
     event InternalUnstakeRecorded(address indexed owner, address indexed collection, uint256 indexed tokenId);
 
+    // 👈 Add this line to declare the event
+    event CollectionRegistered(address indexed collection, address indexed registerer, Tier tier, uint256 declaredSupply);
+
     function initCollection(Storage storage s, address collection, uint256 declaredSupply) internal {
-    require(collection != address(0), "StakingLib: zero address");
-    CollectionConfig storage cfg = s.collectionConfigs[collection];
-    require(!cfg.registered, "StakingLib: already registered");
-    require(declaredSupply > 0 && declaredSupply <= s.maxSupply, "StakingLib: invalid supply");
+        require(collection != address(0), "StakingLib: zero address");
+        CollectionConfig storage cfg = s.collectionConfigs[collection];
+        require(!cfg.registered, "StakingLib: already registered");
+        require(declaredSupply > 0 && declaredSupply <= s.maxSupply, "StakingLib: invalid supply");
 
-    cfg.registered = true;
-    cfg.declaredSupply = declaredSupply;
-    cfg.totalStaked = 0;
-    cfg.totalStakers = 0;
+        cfg.registered = true;
+        cfg.declaredSupply = declaredSupply;
+        cfg.totalStaked = 0;
+        cfg.totalStakers = 0;
 
-    // Determine tier based on caller identity
-    bool isVerified = false;
-    try Ownable(collection).owner() returns (address owner) {
-        if (owner == msg.sender) {
-            isVerified = true;
+        // Determine tier based on caller identity
+        bool isVerified = false;
+        try Ownable(collection).owner() returns (address owner) {
+            if (owner == msg.sender) {
+                isVerified = true;
+            }
+        } catch {
+            // If collection is not Ownable, leave isVerified = false
         }
-    } catch {
-        // If collection is not Ownable, leave isVerified = false
-    }
 
-    if (msg.sender == s.admin || isVerified) {
-        cfg.tier = Tier.VERIFIED;
-    } else {
-        cfg.tier = Tier.UNVERIFIED;
-    }
+        if (msg.sender == s.admin || isVerified) {
+            cfg.tier = Tier.VERIFIED;
+        } else {
+            cfg.tier = Tier.UNVERIFIED;
+        }
 
-    emit CollectionRegistered(collection, msg.sender, cfg.tier, declaredSupply);
-}
+        emit CollectionRegistered(collection, msg.sender, cfg.tier, declaredSupply);
+    }
 
     function recordTermStake(
         Storage storage s,
@@ -233,7 +238,10 @@ struct CollectionConfig {
         if (y > 3) {
             z = y;
             uint256 x = y / 2 + 1;
-            while (x < z) { z = x; x = (y / x + x) / 2; }
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
         } else if (y != 0) z = 1;
     }
 }
