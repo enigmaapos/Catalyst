@@ -1166,45 +1166,79 @@ function toWei(val, decimals = 18) {
   }
 };
 
+
+// ✅ Utility: render a colored badge into colRegisterStatus
+function setStatusBadge(text, colorClass) {
+  $("colRegisterStatus").innerHTML =
+    `<span class="px-2 py-0.5 rounded-lg text-xs font-medium ${colorClass}">${text}</span>`;
+}
+
 // ✅ Utility: Check if a collection is already registered
 async function isRegisteredCollection(addr) {
   try {
     const idx = await READ_CONTRACT.registeredIndex(addr);
-    return idx > 0n;  // BigInt compare
+    return idx > 0n;
   } catch (e) {
     log(e.message || e, "err");
     return false;
   }
 }
-    
-    $("colRegister").addEventListener("input", async () => {
+
+// ✅ Utility: read and format tier label + color
+async function getCollectionTierAndColor(addr) {
+  try {
+    const cfg = await READ_CONTRACT.collectionConfigs(addr);
+    switch (Number(cfg.tier)) {
+      case 1:
+        return { text: "❓ Unverified", color: "bg-yellow-500 text-black" };
+      case 2:
+        return { text: "✅ Verified", color: "bg-green-600 text-white" };
+      case 3:
+        return { text: "💎 Bluechip", color: "bg-blue-600 text-white" };
+      default:
+        return { text: "— Not Registered —", color: "bg-gray-700 text-gray-200" };
+    }
+  } catch (e) {
+    log(e.message || e, "err");
+    return { text: "⚠️ Unable to read tier", color: "bg-orange-600 text-white" };
+  }
+}
+
+// ✅ Input listener: check registration + tier dynamically
+$("colRegister").addEventListener("input", async () => {
   const col = $("colRegister").value.trim();
   if (!col || !ethers.isAddress(col)) {
-    $("colRegisterStatus").textContent = "—";
+    setStatusBadge("—", "bg-gray-700 text-gray-200");
     return;
   }
 
   try {
     const registered = await isRegisteredCollection(col);
-    $("colRegisterStatus").textContent = registered
-      ? "✅ Already registered"
-      : "❌ Not registered";
+    if (!registered) {
+      setStatusBadge("❌ Not registered", "bg-red-600 text-white");
+    } else {
+      const { text, color } = await getCollectionTierAndColor(col);
+      setStatusBadge(`✅ Already registered (${text})`, color);
+    }
   } catch (e) {
-    $("colRegisterStatus").textContent = "⚠️ Error checking";
+    setStatusBadge("⚠️ Error checking", "bg-orange-600 text-white");
     log(e.message || e, "err");
   }
 });
 
-    $("btnRegister").onclick = async () => {
+// ✅ Button: register and display tier badge after tx
+$("btnRegister").onclick = async () => {
   try {
     requireWallet();
     await initWriteContract();
+
     const col = parseAddress($("colRegister").value);
     const declaredSupply = parseUint($("declaredSupply").value);
 
     if (await isRegisteredCollection(col)) {
       log("Collection is already registered", "warn");
-      $("colRegisterStatus").textContent = "✅ Already registered";
+      const { text, color } = await getCollectionTierAndColor(col);
+      setStatusBadge(`✅ Already registered (${text})`, color);
       return;
     }
 
@@ -1212,8 +1246,11 @@ async function isRegisteredCollection(addr) {
     log(`Register collection sent: ${tx.hash}`);
     await tx.wait();
     log("Collection registered ✅", "ok");
-    $("colRegisterStatus").textContent = "✅ Registered just now";
+
+    const { text, color } = await getCollectionTierAndColor(col);
+    setStatusBadge(`✅ Registered just now (${text})`, color);
   } catch (e) {
+    setStatusBadge("⚠️ Registration failed", "bg-orange-600 text-white");
     log(e.message || e, "err");
   }
 };
