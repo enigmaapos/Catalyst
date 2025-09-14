@@ -420,46 +420,43 @@ function setBluechipCollection(address collection, bool isBluechip)
     }
 
     function executeProposal(bytes32 id) external whenNotPaused nonReentrant {
-        GovernanceLib.Proposal memory p = GovernanceLib.validateForExecution(g, id);
-        GovernanceLib.markExecuted(g, id);
+    GovernanceLib.Proposal memory p = GovernanceLib.validateForExecution(g, id);
+    GovernanceLib.markExecuted(g, id);
 
-        if (p.pType == GovernanceLib.ProposalType.BASE_REWARD) {
-            uint256 old = s.baseRewardRate;
-            s.baseRewardRate = p.newValue > maxBaseRewardRate ? maxBaseRewardRate : p.newValue;
-            emit BaseRewardRateUpdated(old, s.baseRewardRate);
-        } else if (p.pType == GovernanceLib.ProposalType.HARVEST_FEE) {
-            uint256 old = initialHarvestBurnFeeRate;
-            initialHarvestBurnFeeRate = p.newValue; // expect 0..100
-            emit HarvestFeeUpdated(old, p.newValue);
-        } else if (p.pType == GovernanceLib.ProposalType.UNSTAKE_FEE) {
-            uint256 old = unstakeBurnFee;
-            unstakeBurnFee = p.newValue;
-            emit UnstakeFeeUpdated(old, p.newValue);
-        } else if (p.pType == GovernanceLib.ProposalType.REGISTRATION_FEE_FALLBACK) {
-            uint256 old = collectionRegistrationFee;
-            collectionRegistrationFee = p.newValue;
-            emit RegistrationFeeUpdated(old, p.newValue);
-        } else if (p.pType == GovernanceLib.ProposalType.VOTING_PARAM) {
-            uint8 t = p.paramTarget;
-            if (t == 0) { uint256 old = g.minVotesRequiredScaled; g.minVotesRequiredScaled = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
-            else if (t == 1) { uint256 old = g.votingDurationBlocks; g.votingDurationBlocks = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
-            else if (t == 2) { uint256 old = g.collectionVoteCapPercent; g.collectionVoteCapPercent = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
-            else revert BadParam();
-        } else if (p.pType == GovernanceLib.ProposalType.TIER_UPGRADE) {
-            // hook for future upgrades
-        } else {
-            revert BadParam();
-        }
-
-        emit ProposalExecuted(id, p.newValue);
+    if (p.pType == GovernanceLib.ProposalType.BASE_REWARD) {
+        uint256 old = s.baseRewardRate;
+        s.baseRewardRate = p.newValue > maxBaseRewardRate ? maxBaseRewardRate : p.newValue;
+        emit BaseRewardRateUpdated(old, s.baseRewardRate);
+    } else if (p.pType == GovernanceLib.ProposalType.HARVEST_FEE) {
+        uint256 old = initialHarvestBurnFeeRate;
+        initialHarvestBurnFeeRate = p.newValue; // expect 0..100
+        emit HarvestFeeUpdated(old, p.newValue);
+    } else if (p.pType == GovernanceLib.ProposalType.UNSTAKE_FEE) {
+        uint256 old = unstakeBurnFee;
+        unstakeBurnFee = p.newValue;
+        emit UnstakeFeeUpdated(old, p.newValue);
+    } else if (p.pType == GovernanceLib.ProposalType.REGISTRATION_FEE_FALLBACK) {
+        uint256 old = collectionRegistrationFee;
+        collectionRegistrationFee = p.newValue;
+        emit RegistrationFeeUpdated(old, p.newValue);
+    } else if (p.pType == GovernanceLib.ProposalType.VOTING_PARAM) {
+        uint8 t = p.paramTarget;
+        if (t == 0) { uint256 old = g.minVotesRequiredScaled; g.minVotesRequiredScaled = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
+        else if (t == 1) { uint256 old = g.votingDurationBlocks; g.votingDurationBlocks = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
+        else if (t == 2) { uint256 old = g.collectionVoteCapPercent; g.collectionVoteCapPercent = p.newValue; emit VotingParamUpdated(t, old, p.newValue); }
+        else revert BadParam();
+    } else if (p.pType == GovernanceLib.ProposalType.TIER_UPGRADE) {
+        // Correctly placed logic inside the function
+        StakingLib.CollectionConfig storage cfg = s.collectionConfigs[p.collectionAddress];
+        require(cfg.registered, "Not registered");
+        cfg.tier = StakingLib.Tier.BLUECHIP;
+        b.isBluechipCollection[p.collectionAddress] = true; // Keep BluechipLib in sync
+        emit CollectionTierUpgraded(p.collectionAddress, StakingLib.Tier.BLUECHIP);
+    } else {
+        revert BadParam();
     }
 
-if (p.pType == GovernanceLib.ProposalType.TIER_UPGRADE) {
-    StakingLib.CollectionConfig storage cfg = s.collectionConfigs[p.collectionAddress];
-    require(cfg.registered, "Not registered");
-    cfg.tier = StakingLib.Tier.BLUECHIP;
-    b.isBluechipCollection[p.collectionAddress] = true; // Keep BluechipLib in sync
-    emit CollectionTierUpgraded(p.collectionAddress, StakingLib.Tier.BLUECHIP);
+    emit ProposalExecuted(id, p.newValue);
 }
 
     function _votingWeight(address voter) internal view returns (uint256 weight, address attributedCollection) {
