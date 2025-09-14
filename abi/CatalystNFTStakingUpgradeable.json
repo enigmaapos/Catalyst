@@ -38,27 +38,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "AlreadyApproved",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "AlreadyEnrolled",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "AlreadyExists",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "BadParam",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "BadParam",
+		"name": "Bad",
 		"type": "error"
 	},
 	{
@@ -69,16 +49,6 @@
 	{
 		"inputs": [],
 		"name": "Cooldown",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "DuplicateGuardian",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "DuplicateGuardian",
 		"type": "error"
 	},
 	{
@@ -185,7 +155,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "Expired",
+		"name": "Exists",
 		"type": "error"
 	},
 	{
@@ -220,17 +190,12 @@
 	},
 	{
 		"inputs": [],
-		"name": "NoRequest",
+		"name": "NotFound",
 		"type": "error"
 	},
 	{
 		"inputs": [],
 		"name": "NotInitializing",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "NotRegistered",
 		"type": "error"
 	},
 	{
@@ -245,12 +210,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "Threshold",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "ThresholdNotMet",
+		"name": "Throttled",
 		"type": "error"
 	},
 	{
@@ -276,24 +236,14 @@
 	},
 	{
 		"inputs": [],
-		"name": "Unauthorized",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "ZeroAddress",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "ZeroAddress",
+		"name": "ZeroAddr",
 		"type": "error"
 	},
 	{
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
+				"indexed": false,
 				"internalType": "address",
 				"name": "newAdmin",
 				"type": "address"
@@ -331,25 +281,6 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "oldValue",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "newValue",
-				"type": "uint256"
-			}
-		],
-		"name": "BaseRewardRateUpdated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
 				"indexed": true,
 				"internalType": "address",
 				"name": "collection",
@@ -363,6 +294,44 @@
 			}
 		],
 		"name": "BluechipCollectionSet",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "wallet",
+				"type": "address"
+			}
+		],
+		"name": "BluechipEnrolled",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "wallet",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "collection",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "reward",
+				"type": "uint256"
+			}
+		],
+		"name": "BluechipHarvested",
 		"type": "event"
 	},
 	{
@@ -394,63 +363,19 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
+				"indexed": false,
 				"internalType": "address",
 				"name": "oldDeployer",
 				"type": "address"
 			},
 			{
-				"indexed": true,
+				"indexed": false,
 				"internalType": "address",
 				"name": "newDeployer",
 				"type": "address"
 			}
 		],
 		"name": "DeployerRecovered",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "bytes32",
-				"name": "councilId",
-				"type": "bytes32"
-			},
-			{
-				"indexed": true,
-				"internalType": "uint8",
-				"name": "idx",
-				"type": "uint8"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "guardian",
-				"type": "address"
-			}
-		],
-		"name": "GuardianSet",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "oldValue",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "newValue",
-				"type": "uint256"
-			}
-		],
-		"name": "HarvestFeeUpdated",
 		"type": "event"
 	},
 	{
@@ -464,56 +389,6 @@
 			}
 		],
 		"name": "Initialized",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "collection",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "InternalStakeRecorded",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "collection",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "InternalUnstakeRecorded",
 		"type": "event"
 	},
 	{
@@ -577,6 +452,31 @@
 		"inputs": [
 			{
 				"indexed": false,
+				"internalType": "string",
+				"name": "param",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "oldVal",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "newVal",
+				"type": "uint256"
+			}
+		],
+		"name": "ParamUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
 				"internalType": "address",
 				"name": "account",
 				"type": "address"
@@ -589,51 +489,27 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
+				"indexed": false,
 				"internalType": "bytes32",
 				"name": "id",
 				"type": "bytes32"
 			},
 			{
 				"indexed": false,
-				"internalType": "enum GovernanceLib.ProposalType",
-				"name": "pType",
-				"type": "uint8"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint8",
-				"name": "paramTarget",
-				"type": "uint8"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "collection",
-				"type": "address"
-			},
-			{
-				"indexed": true,
 				"internalType": "address",
 				"name": "proposer",
 				"type": "address"
 			},
 			{
 				"indexed": false,
+				"internalType": "uint8",
+				"name": "pType",
+				"type": "uint8"
+			},
+			{
+				"indexed": false,
 				"internalType": "uint256",
 				"name": "newValue",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "startBlock",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "endBlock",
 				"type": "uint256"
 			}
 		],
@@ -644,7 +520,7 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
+				"indexed": false,
 				"internalType": "bytes32",
 				"name": "id",
 				"type": "bytes32"
@@ -657,119 +533,6 @@
 			}
 		],
 		"name": "ProposalExecuted",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "bytes32",
-				"name": "id",
-				"type": "bytes32"
-			}
-		],
-		"name": "ProposalMarkedExecuted",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "bytes32",
-				"name": "councilId",
-				"type": "bytes32"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "oldAddress",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "newAddress",
-				"type": "address"
-			}
-		],
-		"name": "Recovered",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "bytes32",
-				"name": "councilId",
-				"type": "bytes32"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "guardian",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint8",
-				"name": "approvals",
-				"type": "uint8"
-			}
-		],
-		"name": "RecoveryApproved",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "bytes32",
-				"name": "councilId",
-				"type": "bytes32"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "proposer",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "proposed",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "deadline",
-				"type": "uint256"
-			}
-		],
-		"name": "RecoveryProposed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "oldValue",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "newValue",
-				"type": "uint256"
-			}
-		],
-		"name": "RegistrationFeeUpdated",
 		"type": "event"
 	},
 	{
@@ -958,25 +721,6 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "oldValue",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "newValue",
-				"type": "uint256"
-			}
-		],
-		"name": "UnstakeFeeUpdated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
 				"indexed": true,
 				"internalType": "address",
 				"name": "implementation",
@@ -990,56 +734,31 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
+				"indexed": false,
 				"internalType": "bytes32",
 				"name": "id",
 				"type": "bytes32"
 			},
 			{
-				"indexed": true,
+				"indexed": false,
 				"internalType": "address",
 				"name": "voter",
 				"type": "address"
 			},
 			{
 				"indexed": false,
-				"internalType": "uint256",
-				"name": "weightScaled",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "attributedCollection",
-				"type": "address"
-			}
-		],
-		"name": "VoteCast",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint8",
-				"name": "target",
-				"type": "uint8"
+				"internalType": "bool",
+				"name": "support",
+				"type": "bool"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "oldValue",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "newValue",
+				"name": "weight",
 				"type": "uint256"
 			}
 		],
-		"name": "VotingParamUpdated",
+		"name": "Voted",
 		"type": "event"
 	},
 	{
@@ -1089,6 +808,32 @@
 				"internalType": "bytes32",
 				"name": "",
 				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "DEFAULT_GCOUNT",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "DEFAULT_THRESHOLD",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
 			}
 		],
 		"stateMutability": "view",
@@ -1306,6 +1051,19 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "baseRewardRate",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -1326,6 +1084,48 @@
 		"name": "batchStake",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "bluechipWalletFee",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "bluechipWallets",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "enrolled",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "enrolledAtBlock",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -1377,11 +1177,24 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "collection",
+				"name": "",
 				"type": "address"
 			}
 		],
 		"name": "collectionTotalStaked",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "collectionVoteCapPercent",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -1564,6 +1377,30 @@
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "hasVoted",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "initialHarvestBurnFeeRate",
 		"outputs": [
@@ -1646,24 +1483,24 @@
 						"type": "uint256"
 					},
 					{
-						"internalType": "address[]",
+						"internalType": "address[7]",
 						"name": "deployerGuardians",
-						"type": "address[]"
+						"type": "address[7]"
 					},
 					{
-						"internalType": "uint256",
+						"internalType": "uint8",
 						"name": "deployerThreshold",
-						"type": "uint256"
+						"type": "uint8"
 					},
 					{
-						"internalType": "address[]",
+						"internalType": "address[7]",
 						"name": "adminGuardians",
-						"type": "address[]"
+						"type": "address[7]"
 					},
 					{
-						"internalType": "uint256",
+						"internalType": "uint8",
 						"name": "adminThreshold",
-						"type": "uint256"
+						"type": "uint8"
 					},
 					{
 						"internalType": "uint256",
@@ -1685,11 +1522,30 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "collection",
+				"name": "",
 				"type": "address"
 			}
 		],
 		"name": "isBluechipCollection",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "collection",
+				"type": "address"
+			}
+		],
+		"name": "isBluechipCollectionView",
 		"outputs": [
 			{
 				"internalType": "bool",
@@ -1732,6 +1588,25 @@
 				"type": "address"
 			}
 		],
+		"name": "lastProposalBlock",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
 		"name": "lastStakingBlock",
 		"outputs": [
 			{
@@ -1759,6 +1634,19 @@
 	{
 		"inputs": [],
 		"name": "minStakeAgeForVoting",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "minVotesRequiredScaled",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -1881,7 +1769,71 @@
 	{
 		"inputs": [
 			{
-				"internalType": "enum GovernanceLib.ProposalType",
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "proposals",
+		"outputs": [
+			{
+				"internalType": "enum CatalystNFTStakingUpgradeable.PType",
+				"name": "pType",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint8",
+				"name": "paramTarget",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint256",
+				"name": "newValue",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "collectionContext",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "proposer",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "startBlock",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "endBlock",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "forWeight",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "againstWeight",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "executed",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint8",
 				"name": "pType",
 				"type": "uint8"
 			},
@@ -2083,7 +2035,7 @@
 			},
 			{
 				"internalType": "bool",
-				"name": "isBluechip",
+				"name": "flag",
 				"type": "bool"
 			}
 		],
@@ -2131,6 +2083,89 @@
 		"name": "stake",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "stakeLog",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "currentlyStaked",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "isPermanent",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stakeBlock",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "unstakeDeadlineBlock",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "rewardRateSnapshot",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lastHarvestBlock",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "stakePortfolioByUser",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -2219,6 +2254,45 @@
 	{
 		"inputs": [],
 		"name": "termDurationBlocks",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalStakedAll",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalStakedPermanent",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalStakedTerm",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -2383,11 +2457,29 @@
 				"internalType": "bytes32",
 				"name": "id",
 				"type": "bytes32"
+			},
+			{
+				"internalType": "bool",
+				"name": "support",
+				"type": "bool"
 			}
 		],
 		"name": "vote",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "votingDurationBlocks",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
