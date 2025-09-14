@@ -46,6 +46,8 @@ library StakingLib {
         mapping(address => mapping(uint256 => uint256)) indexOfTokenIdInStakePortfolio;
         uint256 totalStakedNFTsCount;
         uint256 baseRewardRate;
+uint256 maxSupply;
+address admin;
     }
 
     event InternalStakeRecorded(address indexed owner, address indexed collection, uint256 indexed tokenId);
