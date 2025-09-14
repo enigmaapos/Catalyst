@@ -94,7 +94,6 @@ contract CatalystNFTStakingUpgradeable is
 
     // -------- Events (kept) --------
 	event CollectionTierUpgraded(address indexed collection, StakingLib.Tier newTier);
-event CollectionRegistered(address indexed collection, address indexed registrar, Tier tier, uint256 declaredSupply);
 event BluechipCollectionSet(address indexed collection, bool isBluechip);
     event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 paid);
     event NFTStaked(address indexed owner, address indexed collection, uint256 indexed tokenId, bool permanent);
