@@ -613,6 +613,9 @@ contract CatalystNFTStakingUpgradeable is
         return 2;
     }
 
+function isCollectionRegistered(address collection) external view returns (bool) {
+    return s.collectionConfigs[collection].registered;
+
     // ERC721 Receiver / Pause / UUPS
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return this.onERC721Received.selector;
