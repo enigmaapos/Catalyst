@@ -25,7 +25,7 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// ========== Compact errors ==========
 error Unauthorized();
-error Bad();
+error BadParam();
 error Exists();
 error NotFound();
 error Throttled();
@@ -250,7 +250,7 @@ contract CatalystNFTStakingUpgradeable is
 
     /* ======== Guardian internal helpers ======== */
     function _initCouncil(GuardianCouncil storage c, address[DEFAULT_GCOUNT] memory arr, uint8 threshold) internal {
-        if (threshold == 0 || threshold > DEFAULT_GCOUNT) revert Bad();
+        if (threshold == 0 || threshold > DEFAULT_GCOUNT) revert BadParam();
         c.threshold = threshold;
         uint8 cnt = 0;
         for (uint8 i = 0; i < DEFAULT_GCOUNT; ++i) {
@@ -258,7 +258,7 @@ contract CatalystNFTStakingUpgradeable is
             if (a == address(0)) continue;
             // prevent duplicates
             for (uint8 j = 0; j < i; ++j) {
-                if (arr[j] == a) revert Bad();
+                if (arr[j] == a) revert BadParam();
             }
             c.guardians[i] = a;
             cnt++;
@@ -275,7 +275,7 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     function _setGuardian(GuardianCouncil storage c, uint8 idx, address who) internal {
-        if (idx >= DEFAULT_GCOUNT) revert Bad();
+        if (idx >= DEFAULT_GCOUNT) revert BadParam();
         if (who == address(0)) revert ZeroAddr();
         // ensure not duplicate
         for (uint8 i = 0; i < DEFAULT_GCOUNT; ++i) {
@@ -314,7 +314,7 @@ contract CatalystNFTStakingUpgradeable is
     function _executeRecovery(GuardianCouncil storage c) internal returns (address) {
         if (c.proposed == address(0)) revert NoRequest();
         if (block.timestamp > c.deadline) revert Expired();
-        if (c.approvals < c.threshold) revert Bad();
+        if (c.approvals < c.threshold) revert BadParam();
         address out = c.proposed;
         c.proposed = address(0);
         c.approvals = 0;
@@ -341,13 +341,13 @@ contract CatalystNFTStakingUpgradeable is
     function registerCollection(address collection, uint256 declaredMaxSupply) external whenNotPaused nonReentrant {
         if (collection == address(0)) revert ZeroAddr();
         if (registeredIndex[collection] != 0) revert Exists();
-        if (declaredMaxSupply == 0 || declaredMaxSupply > MAX_STAKE_PER_COLLECTION) revert Bad();
+        if (declaredMaxSupply == 0 || declaredMaxSupply > MAX_STAKE_PER_COLLECTION) revert BadParam();
 
         // sanity check: must be ERC721 (via ERC165)
         try IERC165(collection).supportsInterface(type(IERC721).interfaceId) returns (bool ok) {
             if (!ok) revert Bad();
         } catch {
-            revert Bad();
+            revert BadParam();
         }
 
         uint256 fee = collectionRegistrationFee;
@@ -435,7 +435,7 @@ contract CatalystNFTStakingUpgradeable is
 
     function harvestBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
         uint256 n = tokenIds.length;
-        if (n == 0 || n > 200) revert BadParam(); // safety cap for front-end
+        if (n == 0 || n > 200) error BadParam(); // safety cap for front-end
         for (uint256 i = 0; i < n; ++i) {
             // use external harvest to keep accounting consistent
             harvest(collection, tokenIds[i]);
@@ -552,7 +552,7 @@ contract CatalystNFTStakingUpgradeable is
     function vote(bytes32 id, bool support) external whenNotPaused {
         Proposal storage p = proposals[id];
         if (p.proposer == address(0)) revert NotFound();
-        if (block.number < p.startBlock) revert Bad();
+        if (block.number < p.startBlock) revert BadParam();
         if (block.number > p.endBlock) revert Expired();
         if (hasVoted[id][msg.sender]) revert AlreadyApproved();
 
@@ -570,7 +570,7 @@ contract CatalystNFTStakingUpgradeable is
         if (block.number <= p.endBlock) revert Expired();
         if (p.executed) revert AlreadyApproved();
         uint256 totalVotes = p.forWeight + p.againstWeight;
-        if (totalVotes < minVotesRequiredScaled) revert Bad();
+        if (totalVotes < minVotesRequiredScaled) revert BadParam();
 
         // Apply changes compactly; use ParamUpdated for logging when possible
         if (p.pType == PType.BASE_REWARD) {
@@ -602,10 +602,10 @@ contract CatalystNFTStakingUpgradeable is
                 uint256 old = collectionVoteCapPercent;
                 collectionVoteCapPercent = p.newValue;
                 emit ParamUpdated("collectionVoteCapPercent", old, p.newValue);
-            } else revert Bad();
+            } else revert BadParam();
         } else if (p.pType == PType.TIER_UPGRADE) {
             // placeholder for future hook
-        } else revert Bad();
+        } else revert BadParam();
 
         p.executed = true;
         emit ProposalExecuted(id, p.newValue);
@@ -677,10 +677,6 @@ contract CatalystNFTStakingUpgradeable is
         remainingGlobal = GLOBAL_CAP > totalAll ? GLOBAL_CAP - totalAll : 0;
         remainingTerm = TERM_CAP > totalTerm ? TERM_CAP - totalTerm : 0;
         remainingPermanent = PERM_CAP > totalPermanent ? PERM_CAP - totalPermanent : 0;
-    }
-
-    function collectionTotalStaked(address collection) external view returns (uint256) {
-        return collectionTotalStaked[collection];
     }
 
     function isBluechipCollectionView(address collection) external view returns (bool) {
