@@ -248,9 +248,6 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     // -------- Registration (permissionless with fee guard) --------
-    function isCollectionRegistered(address collection) external view returns (bool) {
-    return s.collectionConfigs[collection].registered;
-
 function registerCollection(address collection, uint256 declaredMaxSupply) external whenNotPaused nonReentrant {
         if (collection == address(0)) revert ZeroAddress();
         if (registeredIndex[collection] != 0) revert AlreadyExists();
@@ -265,6 +262,10 @@ function registerCollection(address collection, uint256 declaredMaxSupply) exter
 
         emit CollectionAdded(collection, declaredMaxSupply, fee);
     }
+
+function isCollectionRegistered(address collection) external view returns (bool) {
+    return s.collectionConfigs[collection].registered;
+}
 
    // -------- Custodial Staking --------
     modifier notInCooldown() {
