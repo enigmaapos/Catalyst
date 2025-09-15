@@ -263,28 +263,39 @@ contract CatalystNFTStakingUpgradeable is
         emit CollectionAdded(collection, declaredMaxSupply, fee);
     }
 
-/* ======== Staking (custodial) ======== */
+   /* ======== Staking (custodial) ======== */
     modifier notInCooldown() {
-        if (stakingCooldownBlocks > 0 && block.number < lastStakingBlock[_msgSender()] + stakingCooldownBlocks) revert Cooldown();
+        if (stakingCooldownBlocks > 0 && block.number < lastStakingBlock[msg.sender] + stakingCooldownBlocks) revert Cooldown();
         _;
     }
 
     function stake(address collection, uint256 tokenId, bool permanent) public whenNotPaused nonReentrant notInCooldown {
         if (collection == address(0)) revert ZeroAddress();
-        if (!s.collectionConfigs[collection].registered) revert NotRegistered();
-        if (s.stakeLog[collection][_msgSender()][tokenId].currentlyStaked) revert AlreadyExists();
+        if (registeredIndex[collection] == 0) revert NotRegistered();
 
         // transfer NFT (requires approval)
-        IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
+        IERC721(collection).safeTransferFrom(msg.sender, address(this), tokenId);
 
-        if (permanent) {
-            s.recordPermanentStake(s, collection, _msgSender(), tokenId, block.number, rewardRateIncrementPerNFT);
-        } else {
-            s.recordTermStake(s, collection, _msgSender(), tokenId, block.number, termDurationBlocks, rewardRateIncrementPerNFT);
-        }
+        StakingLib.StakeInfo storage si = s.stakeLog[collection][_msgSender()][tokenId];
+        if (si.currentlyStaked) revert Exists();
 
-        lastStakingBlock[_msgSender()] = block.number;
-        emit NFTStaked(_msgSender(), collection, tokenId, permanent);
+        si.currentlyStaked = true;
+        si.isPermanent = permanent;
+        si.stakeBlock = block.number;
+        si.lastHarvestBlock = block.number;
+        si.rewardRateSnapshot = rewardRateIncrementPerNFT;
+        if (!permanent) si.unstakeDeadlineBlock = block.number + termDurationBlocks;
+
+        // portfolio
+        stakePortfolioByUser[collection][msg.sender].push(tokenId);
+
+        // totals
+        collectionTotalStaked[collection] += 1;
+        totalStakedAll += 1;
+        if (permanent) totalStakedPermanent += 1; else totalStakedTerm += 1;
+
+        lastStakingBlock[msg.sender] = block.number;
+        emit NFTStaked(msg.sender, collection, tokenId, permanent);
     }
 
     function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external whenNotPaused nonReentrant notInCooldown {
@@ -294,72 +305,83 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     function _pendingRewardInternal(address collection, address owner, uint256 tokenId) internal view returns (uint256) {
-        return s.pendingRewards(s, collection, owner, tokenId, numberOfBlocksPerRewardUnit);
+        StakeInfo storage si = stakeLog[collection][owner][tokenId];
+        if (!si.currentlyStaked) return 0;
+        uint256 blocksElapsed = block.number - si.lastHarvestBlock;
+        uint256 rate = baseRewardRate + si.rewardRateSnapshot;
+        // guard: avoid division by zero
+        uint256 denom = numberOfBlocksPerRewardUnit == 0 ? 1 : numberOfBlocksPerRewardUnit;
+        return (blocksElapsed * rate) / denom;
     }
 
     function pendingRewardsView(address collection, address owner, uint256 tokenId) external view returns (uint256) {
         return _pendingRewardInternal(collection, owner, tokenId);
     }
 
-    function harvest(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
-        StakingLib.StakeInfo storage si = s.stakeLog[collection][_msgSender()][tokenId];
+     function harvest(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
+        StakeInfo storage si = stakeLog[collection][msg.sender][tokenId];
         if (!si.currentlyStaked) revert NotStaked();
-
-        uint256 reward = _pendingRewardInternal(collection, _msgSender(), tokenId);
+        uint256 reward = _pendingRewardInternal(collection, msg.sender, tokenId);
         if (reward == 0) return;
-
-        uint256 harvestBurnFee = initialHarvestBurnFeeRate;
-        uint256 burnAmt = (reward * harvestBurnFee) / BP_DENOM;
-        uint256 mintAmount = reward - burnAmt;
-
-        _mint(_msgSender(), mintAmount);
+        uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
+        _mint(msg.sender, reward);
         if (burnAmt > 0) {
-            _burn(_msgSender(), burnAmt);
-            burnedCatalystByAddress[_msgSender()] += burnAmt;
+            _burn(msg.sender, burnAmt);
+            burnedCatalystByAddress[msg.sender] += burnAmt;
         }
-        s.updateLastHarvest(s, collection, _msgSender(), tokenId);
-        emit RewardsHarvested(_msgSender(), collection, mintAmount, burnAmt);
+        si.lastHarvestBlock = block.number;
+        emit RewardsHarvested(msg.sender, collection, reward, burnAmt);
     }
 
     function harvestBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
         uint256 n = tokenIds.length;
         if (n == 0 || n > 200) revert BadParam(); // safety cap for front-end
         for (uint256 i = 0; i < n; ++i) {
+            // use external harvest to keep accounting consistent
             harvest(collection, tokenIds[i]);
         }
     }
 
     function unstake(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
-        StakingLib.StakeInfo storage info = s.stakeLog[collection][_msgSender()][tokenId];
+        StakeInfo memory info = stakeLog[collection][msg.sender][tokenId];
         if (!info.currentlyStaked) revert NotStaked();
         if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
 
         // harvest pending
-        uint256 reward = _pendingRewardInternal(collection, _msgSender(), tokenId);
+        uint256 reward = _pendingRewardInternal(collection, msg.sender, tokenId);
         if (reward > 0) {
-            uint256 harvestBurnFee = initialHarvestBurnFeeRate;
-            uint256 burnAmt = (reward * harvestBurnFee) / BP_DENOM;
-            uint256 mintAmount = reward - burnAmt;
-            _mint(_msgSender(), mintAmount);
+            uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
+            _mint(msg.sender, reward);
             if (burnAmt > 0) {
-                _burn(_msgSender(), burnAmt);
-                burnedCatalystByAddress[_msgSender()] += burnAmt;
+                _burn(msg.sender, burnAmt);
+                burnedCatalystByAddress[msg.sender] += burnAmt;
             }
-            s.updateLastHarvest(s, collection, _msgSender(), tokenId);
-            emit RewardsHarvested(_msgSender(), collection, mintAmount, burnAmt);
+            stakeLog[collection][msg.sender][tokenId].lastHarvestBlock = block.number;
+            emit RewardsHarvested(msg.sender, collection, reward, burnAmt);
         }
 
         if (unstakeBurnFee > 0) {
-            if (balanceOf(_msgSender()) < unstakeBurnFee) revert Insufficient();
-            _burn(_msgSender(), unstakeBurnFee);
-            burnedCatalystByAddress[_msgSender()] += unstakeBurnFee;
+            if (balanceOf(msg.sender) < unstakeBurnFee) revert Insufficient();
+            _splitFeeFromSender(msg.sender, unstakeBurnFee);
         }
 
-        s.recordUnstake(s, collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
+        // remove stake record and portfolio
+        delete stakeLog[collection][msg.sender][tokenId];
+        uint256[] storage arr = stakePortfolioByUser[collection][msg.sender];
+        for (uint256 i = 0; i < arr.length; ++i) {
+            if (arr[i] == tokenId) {
+                arr[i] = arr[arr.length - 1];
+                arr.pop();
+                break;
+            }
+        }
+
+        if (collectionTotalStaked[collection] > 0) collectionTotalStaked[collection] -= 1;
+        if (info.isPermanent) { totalStakedPermanent -= 1; totalStakedAll -= 1; } else { totalStakedTerm -= 1; totalStakedAll -= 1; }
 
         // transfer NFT back
-        IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
-        emit NFTUnstaked(_msgSender(), collection, tokenId);
+        IERC721(collection).safeTransferFrom(address(this), msg.sender, tokenId);
+        emit NFTUnstaked(msg.sender, collection, tokenId);
     }
 
     function unstakeBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
