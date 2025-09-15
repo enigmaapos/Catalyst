@@ -1850,6 +1850,25 @@
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "collection",
+				"type": "address"
+			}
+		],
+		"name": "isCollectionRegistered",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "",
 				"type": "address"
 			}
