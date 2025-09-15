@@ -276,10 +276,15 @@ contract CatalystNFTStakingUpgradeable is
         notInCooldown
     {
         if (collection == address(0)) revert ZeroAddress();
+        if (!s.collectionConfigs[collection].registered) revert NotRegistered();
+        if (s.stakeLog[collection][_msgSender()][tokenId].currentlyStaked) revert AlreadyExists();
+
+        // transfer NFT (requires approval)
         IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
 
         if (permanent) {
             s.recordPermanentStake(
+                s,
                 collection,
                 _msgSender(),
                 tokenId,
@@ -288,6 +293,7 @@ contract CatalystNFTStakingUpgradeable is
             );
         } else {
             s.recordTermStake(
+                s,
                 collection,
                 _msgSender(),
                 tokenId,
@@ -297,14 +303,11 @@ contract CatalystNFTStakingUpgradeable is
             );
         }
 
-        // ✅ increment per-collection counter
-        s.collectionTotalStaked[collection] += 1;
-
         lastStakingBlock[_msgSender()] = block.number;
         emit NFTStaked(_msgSender(), collection, tokenId, permanent);
     }
 
-    function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external whenNotPaused {
+    function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external whenNotPaused nonReentrant {
         uint256 n = tokenIds.length;
         if (n == 0 || n > MAX_HARVEST_BATCH) revert BatchTooLarge();
         for (uint256 i = 0; i < n; ++i) {
@@ -312,71 +315,78 @@ contract CatalystNFTStakingUpgradeable is
         }
     }
 
-    function harvest(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
-        uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
+    function _pendingRewardInternal(address collection, address owner, uint256 tokenId) internal view returns (uint256) {
+        return s.pendingRewards(s, collection, owner, tokenId, numberOfBlocksPerRewardUnit);
+    }
+    
+    function harvest(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
+        StakingLib.StakeInfo storage si = s.stakeLog[collection][_msgSender()][tokenId];
+        if (!si.currentlyStaked) revert NotStaked();
+
+        uint256 reward = _pendingRewardInternal(collection, _msgSender(), tokenId);
         if (reward == 0) return;
 
-        uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
-        _mint(_msgSender(), reward);
+        uint256 harvestBurnFee = initialHarvestBurnFeeRate;
+        uint256 burnAmt = (reward * harvestBurnFee) / BP_DENOM;
+        uint256 mintAmount = reward - burnAmt;
+
+        _mint(_msgSender(), mintAmount);
         if (burnAmt > 0) {
             _burn(_msgSender(), burnAmt);
             burnedCatalystByAddress[_msgSender()] += burnAmt;
         }
-        s.updateLastHarvest(collection, _msgSender(), tokenId);
-
-        emit RewardsHarvested(_msgSender(), collection, reward, burnAmt);
+        s.updateLastHarvest(s, collection, _msgSender(), tokenId);
+        emit RewardsHarvested(_msgSender(), collection, mintAmount, burnAmt);
     }
-
-function harvestBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
+    
+    function harvestBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
         uint256 n = tokenIds.length;
         if (n == 0 || n > 200) revert BadParam(); // safety cap for front-end
         for (uint256 i = 0; i < n; ++i) {
             harvest(collection, tokenIds[i]);
         }
-}
+    }
 
-    function unstake(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
+    function unstake(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
         StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
         if (!info.currentlyStaked) revert NotStaked();
         if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
 
-        // harvest pending first
-        uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
+        // harvest pending
+        uint256 reward = _pendingRewardInternal(collection, _msgSender(), tokenId);
         if (reward > 0) {
-            uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
-            _mint(_msgSender(), reward);
+            uint256 harvestBurnFee = initialHarvestBurnFeeRate;
+            uint256 burnAmt = (reward * harvestBurnFee) / BP_DENOM;
+            uint256 mintAmount = reward - burnAmt;
+            _mint(_msgSender(), mintAmount);
             if (burnAmt > 0) {
                 _burn(_msgSender(), burnAmt);
                 burnedCatalystByAddress[_msgSender()] += burnAmt;
             }
-            s.updateLastHarvest(collection, _msgSender(), tokenId);
-            emit RewardsHarvested(_msgSender(), collection, reward, burnAmt);
+            s.updateLastHarvest(s, collection, _msgSender(), tokenId);
+            emit RewardsHarvested(_msgSender(), collection, mintAmount, burnAmt);
         }
 
-        // unstake burn fee (flat)
         if (unstakeBurnFee > 0) {
             if (balanceOf(_msgSender()) < unstakeBurnFee) revert Insufficient();
-            _splitFeeFromSender(_msgSender(), unstakeBurnFee);
+            _burn(_msgSender(), unstakeBurnFee);
+            burnedCatalystByAddress[_msgSender()] += unstakeBurnFee;
         }
 
-        s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
+        s.recordUnstake(s, collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
 
-        // ✅ decrement counter
-        if (s.collectionTotalStaked[collection] > 0) {
-            s.collectionTotalStaked[collection] -= 1;
-        }
-
+        // transfer NFT back
         IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
         emit NFTUnstaked(_msgSender(), collection, tokenId);
     }
 
-function unstakeBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
+    function unstakeBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
         uint256 n = tokenIds.length;
         if (n == 0 || n > 200) revert BadParam();
         for (uint256 i = 0; i < n; ++i) {
             unstake(collection, tokenIds[i]);
         }
-}
+    }
 
 
     // -------- Blue-chip (non-custodial) --------
