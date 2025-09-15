@@ -376,6 +376,11 @@ contract CatalystNFTStakingUpgradeable is
 
         s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
 
+// ✅ decrement counter
+        if (s.collectionTotalStaked[collection] > 0) {
+            s.collectionTotalStaked[collection] -= 1;
+        }
+
         // transfer NFT back
         IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
         emit NFTUnstaked(_msgSender(), collection, tokenId);
