@@ -1,0 +1,749 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/*
+  CatalystNFTStakingUpgradeable.sol (optimized single-file)
+
+  - Compact guardian council implementation (7 seats, threshold configurable)
+  - Simplified governance (proposal lifecycle)
+  - Custodial staking (term/permanent)
+  - Blue-chip non-custodial enrollment & harvest
+  - Treasury + immutable fee-split (90% burn / 9% treasury / 1% deployer)
+  - UUPS upgradeable + AccessControl
+  - Keep function names compatible with UI expectations where possible
+*/
+
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
+/// ========== Compact errors ==========
+error Unauthorized();
+error Bad();
+error Exists();
+error NotFound();
+error Throttled();
+error Insufficient();
+error Cooldown();
+error NotStaked();
+error TermNotExpired();
+error Ineligible();
+error ZeroAddr();
+error BatchTooLarge();
+error NoRequest();
+error Expired();
+error AlreadyApproved();
+
+contract CatalystNFTStakingUpgradeable is
+    Initializable,
+    UUPSUpgradeable,
+    ERC20Upgradeable,
+    AccessControlUpgradeable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
+    IERC721Receiver
+{
+    /* ======== Roles ======== */
+    bytes32 public constant CONTRACT_ADMIN_ROLE = keccak256("CONTRACT_ADMIN_ROLE");
+
+    /* ======== Immutable-ish constants ======== */
+    uint256 public constant BURN_BP = 9000;    // 90%
+    uint256 public constant TREASURY_BP = 900; // 9%
+    uint256 public constant DEPLOYER_BP = 100; // 1%
+    uint256 public constant BP_DENOM = 10000;
+
+    uint256 public constant GLOBAL_CAP = 1_000_000_000;
+    uint256 public constant TERM_CAP = 750_000_000;
+    uint256 public constant PERM_CAP = 250_000_000;
+    uint256 public constant MAX_HARVEST_BATCH = 50;
+    uint256 public constant MAX_STAKE_PER_COLLECTION = 20_000;
+    uint256 public constant WEIGHT_SCALE = 1e18;
+
+    uint8 public constant DEFAULT_GCOUNT = 7;
+    uint8 public constant DEFAULT_THRESHOLD = 5;
+    uint256 public constant RECOVERY_WINDOW = 3 days;
+
+    /* ======== Storage: protocol params ======== */
+    uint256 public numberOfBlocksPerRewardUnit;
+    uint256 public termDurationBlocks;
+    uint256 public stakingCooldownBlocks;
+    uint256 public rewardRateIncrementPerNFT;
+    uint256 public initialHarvestBurnFeeRate; // percentage 0..100
+    uint256 public unstakeBurnFee; // flat CATA
+
+    uint256 public collectionRegistrationFee;
+
+    address public treasuryAddress;
+    address public deployerAddress;
+    uint256 public treasuryBalance;
+
+    uint256 public minStakeAgeForVoting;
+    uint256 public maxBaseRewardRate;
+
+    /* ======== Registered Collections registry ======== */
+    address[] public registeredCollections; // auto-generates registeredCollections(uint256)
+    mapping(address => uint256) public registeredIndex; // 1-based index (0 means not registered)
+
+    /* ======== Burn bookkeeping ======== */
+    mapping(address => uint256) public burnedCatalystByAddress;
+
+    /* ======== Cooldowns ======== */
+    mapping(address => uint256) public lastStakingBlock;
+
+    /* ======== Events (kept compact) ======== */
+    event CollectionAdded(address indexed collection, uint256 declaredSupply, uint256 paid);
+    event NFTStaked(address indexed owner, address indexed collection, uint256 indexed tokenId, bool permanent);
+    event NFTUnstaked(address indexed owner, address indexed collection, uint256 indexed tokenId);
+    event RewardsHarvested(address indexed owner, address indexed collection, uint256 gross, uint256 burned);
+    event TreasuryDeposit(address indexed from, uint256 amount);
+    event TreasuryWithdrawal(address indexed to, uint256 amount);
+    event BluechipCollectionSet(address indexed collection, bool isBluechip);
+    event BluechipEnrolled(address indexed wallet);
+    event BluechipHarvested(address indexed wallet, address indexed collection, uint256 reward);
+    event ProposalCreated(bytes32 id, address proposer, uint8 pType, uint256 newValue);
+    event Voted(bytes32 id, address voter, bool support, uint256 weight);
+    event ProposalExecuted(bytes32 id, uint256 appliedValue);
+    event DeployerRecovered(address oldDeployer, address newDeployer);
+    event AdminRecovered(address newAdmin);
+    event ParamUpdated(string param, uint256 oldVal, uint256 newVal);
+
+    /* ============================
+       Staking storage & helpers
+       ============================ */
+    struct StakeInfo {
+        bool currentlyStaked;
+        bool isPermanent;
+        uint256 stakeBlock;
+        uint256 unstakeDeadlineBlock;
+        uint256 rewardRateSnapshot;
+        uint256 lastHarvestBlock;
+    }
+    // collection => owner => tokenId => StakeInfo
+    mapping(address => mapping(address => mapping(uint256 => StakeInfo))) public stakeLog;
+    // collection => owner => portfolio
+    mapping(address => mapping(address => uint256[])) public stakePortfolioByUser;
+    // collection totals
+    mapping(address => uint256) public collectionTotalStaked;
+    uint256 public totalStakedAll;
+    uint256 public totalStakedTerm;
+    uint256 public totalStakedPermanent;
+    uint256 public baseRewardRate;
+
+    /* ============================
+       Blue-chip (non-custodial)
+       ============================ */
+    mapping(address => bool) public isBluechipCollection;
+    struct WalletEnroll { bool enrolled; uint256 enrolledAtBlock; }
+    // key: collection => wallet => WalletEnroll
+    mapping(address => mapping(address => WalletEnroll)) public bluechipWallets;
+    uint256 public bluechipWalletFee;
+
+    /* ============================
+       Governance (simplified)
+       ============================ */
+    enum PType { BASE_REWARD, HARVEST_FEE, UNSTAKE_FEE, REGISTRATION_FEE_FALLBACK, VOTING_PARAM, TIER_UPGRADE }
+
+    struct Proposal {
+        PType pType;
+        uint8 paramTarget;
+        uint256 newValue;
+        address collectionContext;
+        address proposer;
+        uint256 startBlock;
+        uint256 endBlock;
+        uint256 forWeight;
+        uint256 againstWeight;
+        bool executed;
+    }
+    mapping(bytes32 => Proposal) public proposals;
+    mapping(bytes32 => mapping(address => bool)) public hasVoted;
+    uint256 public votingDurationBlocks;
+    uint256 public minVotesRequiredScaled;
+    uint256 public collectionVoteCapPercent;
+    mapping(address => uint256) public lastProposalBlock;
+
+    /* ============================
+       Guardian council compact impl
+       ============================ */
+    struct GuardianCouncil {
+        address[DEFAULT_GCOUNT] guardians;
+        uint8 count;
+        uint8 threshold;
+        // recovery state
+        address proposed;
+        uint8 approvals;
+        uint256 deadline;
+        mapping(address => bool) approvedBy;
+    }
+    // Two councils: deployer & admin
+    GuardianCouncil private deployerCouncil;
+    GuardianCouncil private adminCouncil;
+
+    /* ============================
+       Constructor / initializer
+       ============================ */
+    struct InitConfig {
+        address owner;
+        uint256 rewardRateIncrementPerNFT;
+        uint256 initialHarvestBurnFeeRate;
+        uint256 unstakeBurnFee;
+        uint256 termDurationBlocks;
+        uint256 numberOfBlocksPerRewardUnit;
+        uint256 collectionRegistrationFee;
+        uint256 stakingCooldownBlocks;
+        uint256 votingDurationBlocks;
+        uint256 minVotesRequiredScaled;
+        uint256 collectionVoteCapPercent;
+        uint256 minStakeAgeForVoting;
+        uint256 maxBaseRewardRate;
+        address[DEFAULT_GCOUNT] deployerGuardians;
+        uint8 deployerThreshold;
+        address[DEFAULT_GCOUNT] adminGuardians;
+        uint8 adminThreshold;
+        uint256 bluechipWalletFee;
+    }
+
+    function initialize(InitConfig calldata cfg) external initializer {
+        if (cfg.owner == address(0)) revert ZeroAddr();
+
+        __ERC20_init("Catalyst", "CATA");
+        __AccessControl_init();
+        __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
+        __Pausable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, cfg.owner);
+        _grantRole(CONTRACT_ADMIN_ROLE, cfg.owner);
+
+        deployerAddress = cfg.owner;
+        treasuryAddress = address(this);
+
+        rewardRateIncrementPerNFT = cfg.rewardRateIncrementPerNFT;
+        initialHarvestBurnFeeRate = cfg.initialHarvestBurnFeeRate;
+        unstakeBurnFee = cfg.unstakeBurnFee;
+        termDurationBlocks = cfg.termDurationBlocks;
+        numberOfBlocksPerRewardUnit = cfg.numberOfBlocksPerRewardUnit;
+        collectionRegistrationFee = cfg.collectionRegistrationFee;
+        stakingCooldownBlocks = cfg.stakingCooldownBlocks;
+
+        votingDurationBlocks = cfg.votingDurationBlocks;
+        minVotesRequiredScaled = cfg.minVotesRequiredScaled;
+        collectionVoteCapPercent = cfg.collectionVoteCapPercent;
+        minStakeAgeForVoting = cfg.minStakeAgeForVoting;
+        maxBaseRewardRate = cfg.maxBaseRewardRate == 0 ? type(uint256).max : cfg.maxBaseRewardRate;
+
+        // init councils
+        _initCouncil(deployerCouncil, cfg.deployerGuardians, cfg.deployerThreshold);
+        _initCouncil(adminCouncil, cfg.adminGuardians, cfg.adminThreshold);
+
+        bluechipWalletFee = cfg.bluechipWalletFee;
+
+        // optional genesis mint to supply initial user fees (UI often expects balances)
+        _mint(cfg.owner, 100_000_000 * 1e18);
+    }
+
+    /* ======== Guardian internal helpers ======== */
+    function _initCouncil(GuardianCouncil storage c, address[DEFAULT_GCOUNT] memory arr, uint8 threshold) internal {
+        if (threshold == 0 || threshold > DEFAULT_GCOUNT) revert Bad();
+        c.threshold = threshold;
+        uint8 cnt = 0;
+        for (uint8 i = 0; i < DEFAULT_GCOUNT; ++i) {
+            address a = arr[i];
+            if (a == address(0)) continue;
+            // prevent duplicates
+            for (uint8 j = 0; j < i; ++j) {
+                if (arr[j] == a) revert Bad();
+            }
+            c.guardians[i] = a;
+            cnt++;
+        }
+        c.count = cnt;
+    }
+
+    function _isGuardian(GuardianCouncil storage c, address who) internal view returns (bool) {
+        if (who == address(0)) return false;
+        for (uint8 i = 0; i < DEFAULT_GCOUNT; ++i) {
+            if (c.guardians[i] == who) return true;
+        }
+        return false;
+    }
+
+    function _setGuardian(GuardianCouncil storage c, uint8 idx, address who) internal {
+        if (idx >= DEFAULT_GCOUNT) revert Bad();
+        if (who == address(0)) revert ZeroAddr();
+        // ensure not duplicate
+        for (uint8 i = 0; i < DEFAULT_GCOUNT; ++i) {
+            if (c.guardians[i] == who) revert Exists();
+        }
+        address old = c.guardians[idx];
+        if (old != address(0)) {
+            // clear any previous approvals by old (defensive)
+            if (c.approvedBy[old]) c.approvedBy[old] = false;
+        }
+        c.guardians[idx] = who;
+    }
+
+    function _proposeRecovery(GuardianCouncil storage c, address proposed, uint256 window) internal {
+        if (proposed == address(0)) revert ZeroAddr();
+        c.proposed = proposed;
+        c.approvals = 0;
+        c.deadline = block.timestamp + window;
+        // reset approvals map for known guardians
+        for (uint8 i = 0; i < DEFAULT_GCOUNT; ++i) {
+            address g = c.guardians[i];
+            if (g != address(0)) c.approvedBy[g] = false;
+        }
+    }
+
+    function _approveRecovery(GuardianCouncil storage c, address who) internal returns (uint8) {
+        if (!_isGuardian(c, who)) revert Unauthorized();
+        if (c.proposed == address(0)) revert NoRequest();
+        if (block.timestamp > c.deadline) revert Expired();
+        if (c.approvedBy[who]) revert AlreadyApproved();
+        c.approvedBy[who] = true;
+        c.approvals += 1;
+        return c.approvals;
+    }
+
+    function _executeRecovery(GuardianCouncil storage c) internal returns (address) {
+        if (c.proposed == address(0)) revert NoRequest();
+        if (block.timestamp > c.deadline) revert Expired();
+        if (c.approvals < c.threshold) revert Bad();
+        address out = c.proposed;
+        c.proposed = address(0);
+        c.approvals = 0;
+        c.deadline = 0;
+        // clear approvals mapping for all guardians
+        for (uint8 i = 0; i < DEFAULT_GCOUNT; ++i) {
+            address g = c.guardians[i];
+            if (g != address(0)) c.approvedBy[g] = false;
+        }
+        return out;
+    }
+
+    /* ======== Modifiers for guardians ======== */
+    modifier onlyDeployerGuardian() {
+        if (!_isGuardian(deployerCouncil, msg.sender)) revert Unauthorized();
+        _;
+    }
+    modifier onlyAdminGuardian() {
+        if (!_isGuardian(adminCouncil, msg.sender)) revert Unauthorized();
+        _;
+    }
+
+    /* ======== Registration ======== */
+    function registerCollection(address collection, uint256 declaredMaxSupply) external whenNotPaused nonReentrant {
+        if (collection == address(0)) revert ZeroAddr();
+        if (registeredIndex[collection] != 0) revert Exists();
+        if (declaredMaxSupply == 0 || declaredMaxSupply > MAX_STAKE_PER_COLLECTION) revert Bad();
+
+        // sanity check: must be ERC721 (via ERC165)
+        try IERC165(collection).supportsInterface(type(IERC721).interfaceId) returns (bool ok) {
+            if (!ok) revert Bad();
+        } catch {
+            revert Bad();
+        }
+
+        uint256 fee = collectionRegistrationFee;
+        if (fee > 0) _splitFeeFromSender(msg.sender, fee);
+
+        registeredCollections.push(collection);
+        registeredIndex[collection] = registeredCollections.length; // 1-based
+
+        emit CollectionAdded(collection, declaredMaxSupply, fee);
+    }
+
+    function collectionCount() external view returns (uint256) {
+        return registeredCollections.length;
+    }
+
+    /* ======== Staking (custodial) ======== */
+    modifier notInCooldown() {
+        if (stakingCooldownBlocks > 0 && block.number < lastStakingBlock[msg.sender] + stakingCooldownBlocks) revert Cooldown();
+        _;
+    }
+
+    function stake(address collection, uint256 tokenId, bool permanent) public whenNotPaused nonReentrant notInCooldown {
+        if (collection == address(0)) revert ZeroAddr();
+        if (registeredIndex[collection] == 0) revert NotFound();
+
+        // transfer NFT (requires approval)
+        IERC721(collection).safeTransferFrom(msg.sender, address(this), tokenId);
+
+        StakeInfo storage si = stakeLog[collection][msg.sender][tokenId];
+        if (si.currentlyStaked) revert Exists();
+
+        si.currentlyStaked = true;
+        si.isPermanent = permanent;
+        si.stakeBlock = block.number;
+        si.lastHarvestBlock = block.number;
+        si.rewardRateSnapshot = rewardRateIncrementPerNFT;
+        if (!permanent) si.unstakeDeadlineBlock = block.number + termDurationBlocks;
+
+        // portfolio
+        stakePortfolioByUser[collection][msg.sender].push(tokenId);
+
+        // totals
+        collectionTotalStaked[collection] += 1;
+        totalStakedAll += 1;
+        if (permanent) totalStakedPermanent += 1; else totalStakedTerm += 1;
+
+        lastStakingBlock[msg.sender] = block.number;
+        emit NFTStaked(msg.sender, collection, tokenId, permanent);
+    }
+
+    function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external whenNotPaused nonReentrant notInCooldown {
+        uint256 n = tokenIds.length;
+        if (n == 0 || n > MAX_HARVEST_BATCH) revert BatchTooLarge();
+        for (uint256 i = 0; i < n; ++i) stake(collection, tokenIds[i], permanent);
+    }
+
+    function _pendingRewardInternal(address collection, address owner, uint256 tokenId) internal view returns (uint256) {
+        StakeInfo storage si = stakeLog[collection][owner][tokenId];
+        if (!si.currentlyStaked) return 0;
+        uint256 blocksElapsed = block.number - si.lastHarvestBlock;
+        uint256 rate = baseRewardRate + si.rewardRateSnapshot;
+        // guard: avoid division by zero
+        uint256 denom = numberOfBlocksPerRewardUnit == 0 ? 1 : numberOfBlocksPerRewardUnit;
+        return (blocksElapsed * rate) / denom;
+    }
+
+    function pendingRewardsView(address collection, address owner, uint256 tokenId) external view returns (uint256) {
+        return _pendingRewardInternal(collection, owner, tokenId);
+    }
+
+     function harvest(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
+        StakeInfo storage si = stakeLog[collection][msg.sender][tokenId];
+        if (!si.currentlyStaked) revert NotStaked();
+        uint256 reward = _pendingRewardInternal(collection, msg.sender, tokenId);
+        if (reward == 0) return;
+        uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
+        _mint(msg.sender, reward);
+        if (burnAmt > 0) {
+            _burn(msg.sender, burnAmt);
+            burnedCatalystByAddress[msg.sender] += burnAmt;
+        }
+        si.lastHarvestBlock = block.number;
+        emit RewardsHarvested(msg.sender, collection, reward, burnAmt);
+    }
+
+    function harvestBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
+        uint256 n = tokenIds.length;
+        if (n == 0 || n > 200) revert BadParam(); // safety cap for front-end
+        for (uint256 i = 0; i < n; ++i) {
+            // use external harvest to keep accounting consistent
+            harvest(collection, tokenIds[i]);
+        }
+    }
+
+    function unstake(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
+        StakeInfo memory info = stakeLog[collection][msg.sender][tokenId];
+        if (!info.currentlyStaked) revert NotStaked();
+        if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
+
+        // harvest pending
+        uint256 reward = _pendingRewardInternal(collection, msg.sender, tokenId);
+        if (reward > 0) {
+            uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
+            _mint(msg.sender, reward);
+            if (burnAmt > 0) {
+                _burn(msg.sender, burnAmt);
+                burnedCatalystByAddress[msg.sender] += burnAmt;
+            }
+            stakeLog[collection][msg.sender][tokenId].lastHarvestBlock = block.number;
+            emit RewardsHarvested(msg.sender, collection, reward, burnAmt);
+        }
+
+        if (unstakeBurnFee > 0) {
+            if (balanceOf(msg.sender) < unstakeBurnFee) revert Insufficient();
+            _splitFeeFromSender(msg.sender, unstakeBurnFee);
+        }
+
+        // remove stake record and portfolio
+        delete stakeLog[collection][msg.sender][tokenId];
+        uint256[] storage arr = stakePortfolioByUser[collection][msg.sender];
+        for (uint256 i = 0; i < arr.length; ++i) {
+            if (arr[i] == tokenId) {
+                arr[i] = arr[arr.length - 1];
+                arr.pop();
+                break;
+            }
+        }
+
+        if (collectionTotalStaked[collection] > 0) collectionTotalStaked[collection] -= 1;
+        if (info.isPermanent) { totalStakedPermanent -= 1; totalStakedAll -= 1; } else { totalStakedTerm -= 1; totalStakedAll -= 1; }
+
+        // transfer NFT back
+        IERC721(collection).safeTransferFrom(address(this), msg.sender, tokenId);
+        emit NFTUnstaked(msg.sender, collection, tokenId);
+    }
+
+    function unstakeBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
+        uint256 n = tokenIds.length;
+        if (n == 0 || n > 200) revert BadParam();
+        for (uint256 i = 0; i < n; ++i) {
+            unstake(collection, tokenIds[i]);
+        }
+    }
+
+    /* ======== Blue-chip functions ======== */
+    function setBluechipCollection(address collection, bool flag) external onlyRole(CONTRACT_ADMIN_ROLE) whenNotPaused {
+        if (collection == address(0)) revert ZeroAddr();
+        if (registeredIndex[collection] == 0) revert NotFound();
+        isBluechipCollection[collection] = flag;
+        emit BluechipCollectionSet(collection, flag);
+    }
+
+    function enrollBluechip() external whenNotPaused nonReentrant {
+        WalletEnroll storage we = bluechipWallets[address(0)][msg.sender];
+        if (we.enrolled) revert Exists();
+        if (bluechipWalletFee > 0) _splitFeeFromSender(msg.sender, bluechipWalletFee);
+        we.enrolled = true;
+        we.enrolledAtBlock = block.number;
+        emit BluechipEnrolled(msg.sender);
+    }
+
+    function isBluechipEnrolled(address collection, address wallet) external view returns (bool) {
+        return bluechipWallets[collection][wallet].enrolled || bluechipWallets[address(0)][wallet].enrolled;
+    }
+
+    function harvestBluechip(address collection) external whenNotPaused nonReentrant {
+        if (!isBluechipCollection[collection]) revert Ineligible();
+        // require ownership of at least one token in collection
+        if (IERC721(collection).balanceOf(msg.sender) == 0) revert Ineligible();
+        // simple reward model: baseRewardRate for wallet (can be improved)
+        uint256 reward = baseRewardRate;
+        if (reward == 0) return;
+        _mint(msg.sender, reward);
+        emit BluechipHarvested(msg.sender, collection, reward);
+    }
+
+    /* ======== Governance flow ======== */
+    function propose(uint8 pType, uint8 paramTarget, uint256 newValue, address collectionContext) external whenNotPaused returns (bytes32) {
+        // require voting weight
+        (uint256 weight,) = _votingWeight(msg.sender);
+        if (weight == 0) revert Ineligible();
+        if (lastProposalBlock[msg.sender] == block.number) revert Throttled();
+        lastProposalBlock[msg.sender] = block.number;
+
+        bytes32 id = keccak256(abi.encodePacked(msg.sender, block.number, pType, paramTarget, newValue, collectionContext));
+        Proposal storage p = proposals[id];
+        p.pType = PType(pType);
+        p.paramTarget = paramTarget;
+        p.newValue = newValue;
+        p.collectionContext = collectionContext;
+        p.proposer = msg.sender;
+        p.startBlock = block.number;
+        p.endBlock = block.number + votingDurationBlocks;
+        p.forWeight = 0;
+        p.againstWeight = 0;
+        p.executed = false;
+
+        emit ProposalCreated(id, msg.sender, pType, newValue);
+        return id;
+    }
+
+    function vote(bytes32 id, bool support) external whenNotPaused {
+        Proposal storage p = proposals[id];
+        if (p.proposer == address(0)) revert NotFound();
+        if (block.number < p.startBlock) revert Bad();
+        if (block.number > p.endBlock) revert Expired();
+        if (hasVoted[id][msg.sender]) revert AlreadyApproved();
+
+        (uint256 weight, ) = _votingWeight(msg.sender);
+        if (weight == 0) revert Ineligible();
+
+        hasVoted[id][msg.sender] = true;
+        if (support) p.forWeight += weight; else p.againstWeight += weight;
+        emit Voted(id, msg.sender, support, weight);
+    }
+
+    function executeProposal(bytes32 id) external whenNotPaused nonReentrant {
+        Proposal storage p = proposals[id];
+        if (p.proposer == address(0)) revert NotFound();
+        if (block.number <= p.endBlock) revert Expired();
+        if (p.executed) revert AlreadyApproved();
+        uint256 totalVotes = p.forWeight + p.againstWeight;
+        if (totalVotes < minVotesRequiredScaled) revert Bad();
+
+        // Apply changes compactly; use ParamUpdated for logging when possible
+        if (p.pType == PType.BASE_REWARD) {
+            uint256 old = baseRewardRate;
+            baseRewardRate = p.newValue > maxBaseRewardRate ? maxBaseRewardRate : p.newValue;
+            emit ParamUpdated("baseRewardRate", old, baseRewardRate);
+        } else if (p.pType == PType.HARVEST_FEE) {
+            uint256 old = initialHarvestBurnFeeRate;
+            initialHarvestBurnFeeRate = p.newValue;
+            emit ParamUpdated("harvestFee", old, p.newValue);
+        } else if (p.pType == PType.UNSTAKE_FEE) {
+            uint256 old = unstakeBurnFee;
+            unstakeBurnFee = p.newValue;
+            emit ParamUpdated("unstakeFee", old, p.newValue);
+        } else if (p.pType == PType.REGISTRATION_FEE_FALLBACK) {
+            uint256 old = collectionRegistrationFee;
+            collectionRegistrationFee = p.newValue;
+            emit ParamUpdated("registrationFee", old, p.newValue);
+        } else if (p.pType == PType.VOTING_PARAM) {
+            if (p.paramTarget == 0) {
+                uint256 old = minVotesRequiredScaled;
+                minVotesRequiredScaled = p.newValue;
+                emit ParamUpdated("minVotesRequiredScaled", old, p.newValue);
+            } else if (p.paramTarget == 1) {
+                uint256 old = votingDurationBlocks;
+                votingDurationBlocks = p.newValue;
+                emit ParamUpdated("votingDurationBlocks", old, p.newValue);
+            } else if (p.paramTarget == 2) {
+                uint256 old = collectionVoteCapPercent;
+                collectionVoteCapPercent = p.newValue;
+                emit ParamUpdated("collectionVoteCapPercent", old, p.newValue);
+            } else revert Bad();
+        } else if (p.pType == PType.TIER_UPGRADE) {
+            // placeholder for future hook
+        } else revert Bad();
+
+        p.executed = true;
+        emit ProposalExecuted(id, p.newValue);
+    }
+
+    function _votingWeight(address voter) internal view returns (uint256 weight, address attributedCollection) {
+        // 1) custodial stake older than minStakeAge
+        uint256 len = registeredCollections.length;
+        for (uint256 i = 0; i < len; ++i) {
+            address coll = registeredCollections[i];
+            uint256[] storage port = stakePortfolioByUser[coll][voter];
+            if (port.length == 0) continue;
+            for (uint256 j = 0; j < port.length; ++j) {
+                StakeInfo storage si = stakeLog[coll][voter][port[j]];
+                if (si.currentlyStaked && block.number >= si.stakeBlock + minStakeAgeForVoting) {
+                    return (WEIGHT_SCALE, coll);
+                }
+            }
+        }
+        // 2) enrolled blue-chip + own at least one token
+        if (bluechipWallets[address(0)][voter].enrolled) {
+            for (uint256 i = 0; i < len; ++i) {
+                address coll = registeredCollections[i];
+                if (isBluechipCollection[coll] && IERC721(coll).balanceOf(voter) > 0) {
+                    return (WEIGHT_SCALE, coll);
+                }
+            }
+        }
+        return (0, address(0));
+    }
+
+    /* ======== Fee splitting + treasury ======== */
+    function _splitFeeFromSender(address payer, uint256 amount) internal {
+        if (amount == 0) return;
+        if (balanceOf(payer) < amount) revert Insufficient();
+        uint256 burnAmt = (amount * BURN_BP) / BP_DENOM;
+        uint256 treasuryAmt = (amount * TREASURY_BP) / BP_DENOM;
+        uint256 deployerAmt = amount - burnAmt - treasuryAmt;
+
+        if (burnAmt > 0) _burn(payer, burnAmt);
+        if (treasuryAmt > 0) {
+            _transfer(payer, address(this), treasuryAmt);
+            treasuryBalance += treasuryAmt;
+            emit TreasuryDeposit(payer, treasuryAmt);
+        }
+        if (deployerAmt > 0) _transfer(payer, deployerAddress, deployerAmt);
+    }
+
+    function withdrawTreasury(address to, uint256 amount) external onlyRole(CONTRACT_ADMIN_ROLE) whenNotPaused nonReentrant {
+        if (to == address(0)) revert ZeroAddr();
+        if (amount > treasuryBalance) revert Insufficient();
+        treasuryBalance -= amount;
+        _transfer(address(this), to, amount);
+        emit TreasuryWithdrawal(to, amount);
+    }
+
+    /* ======== Views helpers ======== */
+    function stakingStats() external view returns (
+        uint256 totalAll,
+        uint256 totalTerm,
+        uint256 totalPermanent,
+        uint256 remainingGlobal,
+        uint256 remainingTerm,
+        uint256 remainingPermanent
+    ) {
+        totalAll = totalStakedAll;
+        totalTerm = totalStakedTerm;
+        totalPermanent = totalStakedPermanent;
+        remainingGlobal = GLOBAL_CAP > totalAll ? GLOBAL_CAP - totalAll : 0;
+        remainingTerm = TERM_CAP > totalTerm ? TERM_CAP - totalTerm : 0;
+        remainingPermanent = PERM_CAP > totalPermanent ? PERM_CAP - totalPermanent : 0;
+    }
+
+    function collectionTotalStaked(address collection) external view returns (uint256) {
+        return collectionTotalStaked[collection];
+    }
+
+    function isBluechipCollectionView(address collection) external view returns (bool) {
+        return isBluechipCollection[collection];
+    }
+
+    /// @notice Returns the tier of a collection:
+    /// 0 = Not Registered, 1 = Unverified (future), 2 = Verified, 3 = Blue-chip
+    function getCollectionTier(address collection) external view returns (uint8) {
+        if (registeredIndex[collection] == 0) return 0;
+        if (isBluechipCollection[collection]) return 3;
+        // Currently all registered considered Verified (2)
+        return 2;
+    }
+
+    /* ======== Guardian recovery wrappers (external-facing) ======== */
+    function setDeployerGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setGuardian(deployerCouncil, idx, guardian);
+        emit ParamUpdated("deployerGuardianSet", idx, uint256(uint160(guardian)));
+    }
+    function setAdminGuardian(uint8 idx, address guardian) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setGuardian(adminCouncil, idx, guardian);
+        emit ParamUpdated("adminGuardianSet", idx, uint256(uint160(guardian)));
+    }
+
+    function proposeDeployerRecovery(address newDeployer) external whenNotPaused onlyDeployerGuardian {
+        _proposeRecovery(deployerCouncil, newDeployer, RECOVERY_WINDOW);
+    }
+    function approveDeployerRecovery() external whenNotPaused onlyDeployerGuardian {
+        uint8 approvals = _approveRecovery(deployerCouncil, msg.sender);
+        // approval count returned and stored internally
+        emit ParamUpdated("deployerRecoveryApproval", approvals, 0);
+    }
+    function executeDeployerRecovery() external whenNotPaused {
+        address old = deployerAddress;
+        address newD = _executeRecovery(deployerCouncil);
+        deployerAddress = newD;
+        emit DeployerRecovered(old, newD);
+    }
+
+    function proposeAdminRecovery(address newAdmin) external whenNotPaused onlyAdminGuardian {
+        _proposeRecovery(adminCouncil, newAdmin, RECOVERY_WINDOW);
+    }
+    function approveAdminRecovery() external whenNotPaused onlyAdminGuardian {
+        uint8 approvals = _approveRecovery(adminCouncil, msg.sender);
+        emit ParamUpdated("adminRecoveryApproval", approvals, 0);
+    }
+    function executeAdminRecovery() external whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) {
+        address newA = _executeRecovery(adminCouncil);
+        _grantRole(DEFAULT_ADMIN_ROLE, newA);
+        emit AdminRecovered(newA);
+    }
+
+    /* ======== ERC721 Receiver, Pause/Unpause, Upgrade ======== */
+    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
+    function pause() external onlyRole(CONTRACT_ADMIN_ROLE) { _pause(); }
+    function unpause() external onlyRole(CONTRACT_ADMIN_ROLE) { _unpause(); }
+
+    function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+
+    // reserve storage gap for upgradeability
+    uint256[48] private __gap;
+}
