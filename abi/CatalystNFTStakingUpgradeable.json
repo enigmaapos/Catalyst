@@ -38,7 +38,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "Bad",
+		"name": "BadParam",
 		"type": "error"
 	},
 	{
@@ -1345,6 +1345,24 @@
 				"internalType": "address",
 				"name": "collection",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "tokenIds",
+				"type": "uint256[]"
+			}
+		],
+		"name": "harvestBatch",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "collection",
+				"type": "address"
 			}
 		],
 		"name": "harvestBluechip",
@@ -2416,6 +2434,24 @@
 			}
 		],
 		"name": "unstake",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "collection",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "tokenIds",
+				"type": "uint256[]"
+			}
+		],
+		"name": "unstakeBatch",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
