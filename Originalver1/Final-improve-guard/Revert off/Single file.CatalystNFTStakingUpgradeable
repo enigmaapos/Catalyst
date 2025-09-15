@@ -345,7 +345,7 @@ contract CatalystNFTStakingUpgradeable is
 
         // sanity check: must be ERC721 (via ERC165)
         try IERC165(collection).supportsInterface(type(IERC721).interfaceId) returns (bool ok) {
-            if (!ok) revert Bad();
+            if (!ok) revert BadParam();
         } catch {
             revert BadParam();
         }
