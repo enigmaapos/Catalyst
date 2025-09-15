@@ -248,7 +248,10 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     // -------- Registration (permissionless with fee guard) --------
-    function registerCollection(address collection, uint256 declaredMaxSupply) external whenNotPaused nonReentrant {
+    function isCollectionRegistered(address collection) external view returns (bool) {
+    return s.collectionConfigs[collection].registered;
+
+function registerCollection(address collection, uint256 declaredMaxSupply) external whenNotPaused nonReentrant {
         if (collection == address(0)) revert ZeroAddress();
         if (registeredIndex[collection] != 0) revert AlreadyExists();
         if (declaredMaxSupply == 0 || declaredMaxSupply > MAX_STAKE_PER_COLLECTION) revert BadParam();
@@ -612,9 +615,6 @@ contract CatalystNFTStakingUpgradeable is
         // Currently treating all registered collections as Verified
         return 2;
     }
-
-function isCollectionRegistered(address collection) external view returns (bool) {
-    return s.collectionConfigs[collection].registered;
 
     // ERC721 Receiver / Pause / UUPS
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
