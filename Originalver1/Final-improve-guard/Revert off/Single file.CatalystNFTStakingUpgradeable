@@ -435,7 +435,7 @@ contract CatalystNFTStakingUpgradeable is
 
     function harvestBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
         uint256 n = tokenIds.length;
-        if (n == 0 || n > 200) error BadParam(); // safety cap for front-end
+        if (n == 0 || n > 200) revert BadParam(); // safety cap for front-end
         for (uint256 i = 0; i < n; ++i) {
             // use external harvest to keep accounting consistent
             harvest(collection, tokenIds[i]);
