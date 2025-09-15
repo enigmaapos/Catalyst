@@ -278,13 +278,12 @@ contract CatalystNFTStakingUpgradeable is
         if (collection == address(0)) revert ZeroAddress();
         if (!s.collectionConfigs[collection].registered) revert NotRegistered();
         if (s.stakeLog[collection][_msgSender()][tokenId].currentlyStaked) revert AlreadyExists();
-
+        
         // transfer NFT (requires approval)
         IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
 
         if (permanent) {
             s.recordPermanentStake(
-                s,
                 collection,
                 _msgSender(),
                 tokenId,
@@ -293,7 +292,6 @@ contract CatalystNFTStakingUpgradeable is
             );
         } else {
             s.recordTermStake(
-                s,
                 collection,
                 _msgSender(),
                 tokenId,
@@ -302,6 +300,9 @@ contract CatalystNFTStakingUpgradeable is
                 rewardRateIncrementPerNFT
             );
         }
+
+        // ✅ increment per-collection counter
+        s.collectionTotalStaked[collection] += 1;
 
         lastStakingBlock[_msgSender()] = block.number;
         emit NFTStaked(_msgSender(), collection, tokenId, permanent);
@@ -316,9 +317,9 @@ contract CatalystNFTStakingUpgradeable is
     }
 
     function _pendingRewardInternal(address collection, address owner, uint256 tokenId) internal view returns (uint256) {
-        return s.pendingRewards(s, collection, owner, tokenId, numberOfBlocksPerRewardUnit);
+        return s.pendingRewards(collection, owner, tokenId, numberOfBlocksPerRewardUnit);
     }
-    
+
     function harvest(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
         StakingLib.StakeInfo storage si = s.stakeLog[collection][_msgSender()][tokenId];
         if (!si.currentlyStaked) revert NotStaked();
@@ -335,7 +336,7 @@ contract CatalystNFTStakingUpgradeable is
             _burn(_msgSender(), burnAmt);
             burnedCatalystByAddress[_msgSender()] += burnAmt;
         }
-        s.updateLastHarvest(s, collection, _msgSender(), tokenId);
+        s.updateLastHarvest(collection, _msgSender(), tokenId);
         emit RewardsHarvested(_msgSender(), collection, mintAmount, burnAmt);
     }
     
@@ -363,7 +364,7 @@ contract CatalystNFTStakingUpgradeable is
                 _burn(_msgSender(), burnAmt);
                 burnedCatalystByAddress[_msgSender()] += burnAmt;
             }
-            s.updateLastHarvest(s, collection, _msgSender(), tokenId);
+            s.updateLastHarvest(collection, _msgSender(), tokenId);
             emit RewardsHarvested(_msgSender(), collection, mintAmount, burnAmt);
         }
 
@@ -373,7 +374,7 @@ contract CatalystNFTStakingUpgradeable is
             burnedCatalystByAddress[_msgSender()] += unstakeBurnFee;
         }
 
-        s.recordUnstake(s, collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
+        s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
 
         // transfer NFT back
         IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
