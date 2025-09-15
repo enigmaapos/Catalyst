@@ -263,104 +263,135 @@ contract CatalystNFTStakingUpgradeable is
         emit CollectionAdded(collection, declaredMaxSupply, fee);
     }
 
-    // -------- Custodial Staking --------
+   /* ======== Staking (custodial) ======== */
     modifier notInCooldown() {
-        if (block.number < lastStakingBlock[_msgSender()] + stakingCooldownBlocks) revert Cooldown();
+        if (stakingCooldownBlocks > 0 && block.number < lastStakingBlock[msg.sender] + stakingCooldownBlocks) revert Cooldown();
         _;
     }
 
-    function stake(address collection, uint256 tokenId, bool permanent)
-        public
-        whenNotPaused
-        nonReentrant
-        notInCooldown
-    {
-        if (collection == address(0)) revert ZeroAddress();
-        IERC721(collection).safeTransferFrom(_msgSender(), address(this), tokenId);
+    function stake(address collection, uint256 tokenId, bool permanent) public whenNotPaused nonReentrant notInCooldown {
+        if (collection == address(0)) revert ZeroAddr();
+        if (registeredIndex[collection] == 0) revert NotFound();
 
-        if (permanent) {
-            s.recordPermanentStake(
-                collection,
-                _msgSender(),
-                tokenId,
-                block.number,
-                rewardRateIncrementPerNFT
-            );
-        } else {
-            s.recordTermStake(
-                collection,
-                _msgSender(),
-                tokenId,
-                block.number,
-                termDurationBlocks,
-                rewardRateIncrementPerNFT
-            );
-        }
+        // transfer NFT (requires approval)
+        IERC721(collection).safeTransferFrom(msg.sender, address(this), tokenId);
 
-        // ✅ increment per-collection counter
-        s.collectionTotalStaked[collection] += 1;
+        StakeInfo storage si = stakeLog[collection][msg.sender][tokenId];
+        if (si.currentlyStaked) revert Exists();
 
-        lastStakingBlock[_msgSender()] = block.number;
-        emit NFTStaked(_msgSender(), collection, tokenId, permanent);
+        si.currentlyStaked = true;
+        si.isPermanent = permanent;
+        si.stakeBlock = block.number;
+        si.lastHarvestBlock = block.number;
+        si.rewardRateSnapshot = rewardRateIncrementPerNFT;
+        if (!permanent) si.unstakeDeadlineBlock = block.number + termDurationBlocks;
+
+        // portfolio
+        stakePortfolioByUser[collection][msg.sender].push(tokenId);
+
+        // totals
+        collectionTotalStaked[collection] += 1;
+        totalStakedAll += 1;
+        if (permanent) totalStakedPermanent += 1; else totalStakedTerm += 1;
+
+        lastStakingBlock[msg.sender] = block.number;
+        emit NFTStaked(msg.sender, collection, tokenId, permanent);
     }
 
-    function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external whenNotPaused {
+    function batchStake(address collection, uint256[] calldata tokenIds, bool permanent) external whenNotPaused nonReentrant notInCooldown {
         uint256 n = tokenIds.length;
         if (n == 0 || n > MAX_HARVEST_BATCH) revert BatchTooLarge();
-        for (uint256 i = 0; i < n; ++i) {
-            stake(collection, tokenIds[i], permanent);
-        }
+        for (uint256 i = 0; i < n; ++i) stake(collection, tokenIds[i], permanent);
     }
 
-    function harvest(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
-        uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
+    function _pendingRewardInternal(address collection, address owner, uint256 tokenId) internal view returns (uint256) {
+        StakeInfo storage si = stakeLog[collection][owner][tokenId];
+        if (!si.currentlyStaked) return 0;
+        uint256 blocksElapsed = block.number - si.lastHarvestBlock;
+        uint256 rate = baseRewardRate + si.rewardRateSnapshot;
+        // guard: avoid division by zero
+        uint256 denom = numberOfBlocksPerRewardUnit == 0 ? 1 : numberOfBlocksPerRewardUnit;
+        return (blocksElapsed * rate) / denom;
+    }
+
+    function pendingRewardsView(address collection, address owner, uint256 tokenId) external view returns (uint256) {
+        return _pendingRewardInternal(collection, owner, tokenId);
+    }
+
+     function harvest(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
+        StakeInfo storage si = stakeLog[collection][msg.sender][tokenId];
+        if (!si.currentlyStaked) revert NotStaked();
+        uint256 reward = _pendingRewardInternal(collection, msg.sender, tokenId);
         if (reward == 0) return;
-
         uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
-        _mint(_msgSender(), reward);
+        _mint(msg.sender, reward);
         if (burnAmt > 0) {
-            _burn(_msgSender(), burnAmt);
-            burnedCatalystByAddress[_msgSender()] += burnAmt;
+            _burn(msg.sender, burnAmt);
+            burnedCatalystByAddress[msg.sender] += burnAmt;
         }
-        s.updateLastHarvest(collection, _msgSender(), tokenId);
-
-        emit RewardsHarvested(_msgSender(), collection, reward, burnAmt);
+        si.lastHarvestBlock = block.number;
+        emit RewardsHarvested(msg.sender, collection, reward, burnAmt);
     }
 
-    function unstake(address collection, uint256 tokenId) external whenNotPaused nonReentrant {
-        StakingLib.StakeInfo memory info = s.stakeLog[collection][_msgSender()][tokenId];
+    function harvestBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
+        uint256 n = tokenIds.length;
+        if (n == 0 || n > 200) revert BadParam(); // safety cap for front-end
+        for (uint256 i = 0; i < n; ++i) {
+            // use external harvest to keep accounting consistent
+            harvest(collection, tokenIds[i]);
+        }
+    }
+
+    function unstake(address collection, uint256 tokenId) public whenNotPaused nonReentrant {
+        StakeInfo memory info = stakeLog[collection][msg.sender][tokenId];
         if (!info.currentlyStaked) revert NotStaked();
         if (!info.isPermanent && block.number < info.unstakeDeadlineBlock) revert TermNotExpired();
 
-        // harvest pending first
-        uint256 reward = s.pendingRewards(collection, _msgSender(), tokenId, numberOfBlocksPerRewardUnit);
+        // harvest pending
+        uint256 reward = _pendingRewardInternal(collection, msg.sender, tokenId);
         if (reward > 0) {
             uint256 burnAmt = (reward * initialHarvestBurnFeeRate) / 100;
-            _mint(_msgSender(), reward);
+            _mint(msg.sender, reward);
             if (burnAmt > 0) {
-                _burn(_msgSender(), burnAmt);
-                burnedCatalystByAddress[_msgSender()] += burnAmt;
+                _burn(msg.sender, burnAmt);
+                burnedCatalystByAddress[msg.sender] += burnAmt;
             }
-            s.updateLastHarvest(collection, _msgSender(), tokenId);
-            emit RewardsHarvested(_msgSender(), collection, reward, burnAmt);
+            stakeLog[collection][msg.sender][tokenId].lastHarvestBlock = block.number;
+            emit RewardsHarvested(msg.sender, collection, reward, burnAmt);
         }
 
-        // unstake burn fee (flat)
         if (unstakeBurnFee > 0) {
-            if (balanceOf(_msgSender()) < unstakeBurnFee) revert Insufficient();
-            _splitFeeFromSender(_msgSender(), unstakeBurnFee);
+            if (balanceOf(msg.sender) < unstakeBurnFee) revert Insufficient();
+            _splitFeeFromSender(msg.sender, unstakeBurnFee);
         }
 
-        s.recordUnstake(collection, _msgSender(), tokenId, rewardRateIncrementPerNFT);
-
-        // ✅ decrement counter
-        if (s.collectionTotalStaked[collection] > 0) {
-            s.collectionTotalStaked[collection] -= 1;
+        // remove stake record and portfolio
+        delete stakeLog[collection][msg.sender][tokenId];
+        uint256[] storage arr = stakePortfolioByUser[collection][msg.sender];
+        for (uint256 i = 0; i < arr.length; ++i) {
+            if (arr[i] == tokenId) {
+                arr[i] = arr[arr.length - 1];
+                arr.pop();
+                break;
+            }
         }
 
-        IERC721(collection).safeTransferFrom(address(this), _msgSender(), tokenId);
-        emit NFTUnstaked(_msgSender(), collection, tokenId);
+        if (collectionTotalStaked[collection] > 0) collectionTotalStaked[collection] -= 1;
+        if (info.isPermanent) { totalStakedPermanent -= 1; totalStakedAll -= 1; } else { totalStakedTerm -= 1; totalStakedAll -= 1; }
+
+        // transfer NFT back
+        IERC721(collection).safeTransferFrom(address(this), msg.sender, tokenId);
+        emit NFTUnstaked(msg.sender, collection, tokenId);
     }
+
+    function unstakeBatch(address collection, uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
+        uint256 n = tokenIds.length;
+        if (n == 0 || n > 200) revert BadParam();
+        for (uint256 i = 0; i < n; ++i) {
+            unstake(collection, tokenIds[i]);
+        }
+    }
+
 
     // -------- Blue-chip (non-custodial) --------
     function setBluechipCollection(address collection, bool isBluechip)
