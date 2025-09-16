@@ -105,6 +105,46 @@ contract CatalystNFTStakingUpgradeable is
     function getDeployerAddress() external view returns (address) { return deployerAddress; }
     function getTreasuryBalance() external view returns (uint256) { return treasuryBalance; }
     function getBurnedBy(address who) external view returns (uint256) { return burnedCatalystByAddress[who]; }
+/// @notice Get all token IDs a user has staked in a collection
+function getPortfolio(address user, address collection) 
+    external 
+    view 
+    returns (uint256[] memory) 
+{
+    return s.portfolio[user][collection];
+}
+
+/// @notice Check if a specific tokenId is staked by a user
+function isStaked(address user, address collection, uint256 tokenId) 
+    external 
+    view 
+    returns (bool) 
+{
+    return s.stakeLog[user][collection][tokenId].startTs > 0;
+}
+
+/// @notice Get details for a specific staked token
+function getStakeLog(address user, address collection, uint256 tokenId)
+    external
+    view
+    returns (
+        uint64 startTs,
+        bool permanent,
+        uint256 rewardDebt
+    )
+{
+    StakingLib.StakeLog storage log = s.stakeLog[user][collection][tokenId];
+    return (log.startTs, log.permanent, log.rewardDebt);
+}
+
+/// @notice Get total number of tokens user staked in a collection
+function getPortfolioLength(address user, address collection)
+    external
+    view
+    returns (uint256)
+{
+    return s.portfolio[user][collection].length;
+}
 
     // -------- Events (kept) --------
     event CollectionTierUpgraded(address indexed collection, StakingLib.Tier newTier);
