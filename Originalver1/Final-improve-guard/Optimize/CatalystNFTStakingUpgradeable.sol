@@ -470,7 +470,9 @@ contract CatalystNFTStakingUpgradeable is
 
         if (p.pType == GovernanceLib.ProposalType.BASE_REWARD) {
             uint256 old = s.baseRewardRate;
-            s.baseRewardRate = p.newValue > maxBaseRewardRate ? maxBaseRewardRate : p.newValue;
+            s.baseRewardRate = uint64(
+    p.newValue > maxBaseRewardRate ? maxBaseRewardRate : p.newValue
+);
             emit BaseRewardRateUpdated(old, s.baseRewardRate);
         } else if (p.pType == GovernanceLib.ProposalType.HARVEST_FEE) {
             uint256 old = initialHarvestBurnFeeRate;
