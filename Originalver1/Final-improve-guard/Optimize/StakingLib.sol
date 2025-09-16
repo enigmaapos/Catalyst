@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+// --- Minimal interface to detect ownership without importing OZ Ownable ---
+    interface IOwnable { function owner() external view returns (address); }
+
 /// @notice Lightweight staking library (bookkeeping only) — optimized (packed structs, custom errors).
 library StakingLib {
     // Staking caps declared at the library level (keep as uint256 constants for clarity)
     uint256 public constant GLOBAL_CAP = 1_000_000_000;
     uint256 public constant TERM_CAP = 750_000_000;
     uint256 public constant PERM_CAP = 250_000_000;
-
-    // --- Minimal interface to detect ownership without importing OZ Ownable ---
-    interface IOwnable { function owner() external view returns (address); }
 
     // --- Custom errors (short) ---
     error SL_ZeroAddress();
