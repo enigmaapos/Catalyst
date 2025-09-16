@@ -1184,7 +1184,7 @@ async function isRegisteredCollection(addr) {
   }
 }
 
-// ✅ Utility: read and format tier label + color
+// ✅ Utility: read and format tier label + color (with icons)
 async function getCollectionTierAndColor(addr) {
   try {
     const cfg = await READ_CONTRACT.collectionConfigs(addr);
@@ -1218,7 +1218,7 @@ $("colRegister").addEventListener("input", async () => {
       setStatusBadge("❌ Not registered", "bg-red-600 text-white");
     } else {
       const { text, color } = await getCollectionTierAndColor(col);
-      setStatusBadge(`✅ Already registered (${text})`, color);
+      setStatusBadge(text, color);
     }
   } catch (e) {
     setStatusBadge("⚠️ Error checking", "bg-orange-600 text-white");
@@ -1238,7 +1238,7 @@ $("btnRegister").onclick = async () => {
     if (await isRegisteredCollection(col)) {
       log("Collection is already registered", "warn");
       const { text, color } = await getCollectionTierAndColor(col);
-      setStatusBadge(`✅ Already registered (${text})`, color);
+      setStatusBadge(text, color);
       return;
     }
 
@@ -1248,7 +1248,7 @@ $("btnRegister").onclick = async () => {
     log("Collection registered ✅", "ok");
 
     const { text, color } = await getCollectionTierAndColor(col);
-    setStatusBadge(`✅ Registered just now (${text})`, color);
+    setStatusBadge(text, color);
   } catch (e) {
     setStatusBadge("⚠️ Registration failed", "bg-orange-600 text-white");
     log(e.message || e, "err");
