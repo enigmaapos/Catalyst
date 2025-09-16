@@ -105,46 +105,68 @@ contract CatalystNFTStakingUpgradeable is
     function getDeployerAddress() external view returns (address) { return deployerAddress; }
     function getTreasuryBalance() external view returns (uint256) { return treasuryBalance; }
     function getBurnedBy(address who) external view returns (uint256) { return burnedCatalystByAddress[who]; }
-/// @notice Get all token IDs a user has staked in a collection
-function getPortfolio(address user, address collection) 
-    external 
-    view 
-    returns (uint256[] memory) 
-{
-    return s.portfolio[user][collection];
-}
-
-/// @notice Check if a specific tokenId is staked by a user
-function isStaked(address user, address collection, uint256 tokenId) 
-    external 
-    view 
-    returns (bool) 
-{
-    return s.stakeLog[user][collection][tokenId].startTs > 0;
-}
-
-/// @notice Get details for a specific staked token
-function getStakeLog(address user, address collection, uint256 tokenId)
-    external
-    view
-    returns (
-        uint64 startTs,
-        bool permanent,
-        uint256 rewardDebt
-    )
-{
-    StakingLib.StakeLog storage log = s.stakeLog[user][collection][tokenId];
-    return (log.startTs, log.permanent, log.rewardDebt);
-}
-
-/// @notice Get total number of tokens user staked in a collection
-function getPortfolioLength(address user, address collection)
+/// @notice How many NFTs a user has staked in a collection
+function getPortfolioLength(address collection, address user)
     external
     view
     returns (uint256)
 {
-    return s.portfolio[user][collection].length;
+    return s.stakePortfolioByUser[collection][user].length;
 }
+
+/// @notice TokenId at a given index in a user's portfolio
+function getPortfolioTokenId(address collection, address user, uint256 index)
+    external
+    view
+    returns (uint256)
+{
+    return s.stakePortfolioByUser[collection][user][index];
+}
+
+/// @notice Full stake info for a specific NFT
+function getStakeInfo(address collection, address user, uint256 tokenId)
+    external
+    view
+    returns (
+        uint32 stakeBlock,
+        uint32 lastHarvestBlock,
+        uint32 unstakeDeadlineBlock,
+        bool currentlyStaked,
+        bool isPermanent
+    )
+{
+    StakingLib.StakeInfo storage info = s.stakeLog[collection][user][tokenId];
+    return (
+        info.stakeBlock,
+        info.lastHarvestBlock,
+        info.unstakeDeadlineBlock,
+        info.currentlyStaked,
+        info.isPermanent
+    );
+}
+
+/// @notice Collection-level config (lightweight view)
+function getCollectionConfig(address collection)
+    external
+    view
+    returns (
+        uint32 totalStaked,
+        uint32 totalStakers,
+        bool registered,
+        uint32 declaredSupply,
+        StakingLib.Tier tier
+    )
+{
+    StakingLib.CollectionConfig storage cfg = s.collectionConfigs[collection];
+    return (
+        cfg.totalStaked,
+        cfg.totalStakers,
+        cfg.registered,
+        cfg.declaredSupply,
+        cfg.tier
+    );
+}
+
 
     // -------- Events (kept) --------
     event CollectionTierUpgraded(address indexed collection, StakingLib.Tier newTier);
