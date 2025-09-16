@@ -209,6 +209,7 @@
             <div>
               <div class="text-xs muted mb-1">Collection</div>
               <input id="vCol" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm" placeholder="0xCollection" />
+            <div id="pendingStatus" class="mt-2"></div>
             </div>
             <div>
               <div class="text-xs muted mb-1">Owner (leave blank → connected)</div>
@@ -281,6 +282,7 @@
             <div>
               <div class="text-xs muted mb-1">Collection</div>
               <input id="colStake" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              <div id="stakeStatus" class="mt-2"></div>
             </div>
             <div>
               <div class="text-xs muted mb-1">Token ID</div>
@@ -316,6 +318,7 @@
             <div>
               <div class="text-xs muted mb-1">Collection</div>
               <input id="colBatch" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            <div id="batchStakeStatus" class="mt-2"></div>
             </div>
             <div>
               <div class="text-xs muted mb-1">Token IDs (CSV)</div>
@@ -331,6 +334,7 @@
             <div class="flex items-end">
               <button id="btnApprove721Batch" class="btn btn-ghost w-full">Approve (Batch)</button>
             </div>
+            <div id="batchApproveStatus" class="mt-2"></div>
           </div>
           <button id="btnBatchStake" class="btn btn-primary">Batch Stake</button>
           <div class="text-xs muted">
@@ -1033,8 +1037,12 @@ function toWei(val, decimals = 18) {
     /* =========================
        WRITE/READ ACTIONS
        ========================= */
-
-    // --- Stake: Approvals ---
+function setBadge(elId, text, colorClass) {
+  $(elId).innerHTML =
+    `<span class="px-2 py-0.5 rounded-lg text-xs font-medium ${colorClass}">${text}</span>`;
+}
+    
+	  // --- Stake: Approvals ---
     $("btnApprove721").onclick = async ()=>{
       try{
         requireWallet();
@@ -1059,68 +1067,105 @@ function toWei(val, decimals = 18) {
     };
 
     // --- Stake: Single ---
-    $("btnStake").onclick = async ()=>{
-      try{
-        requireWallet();
-        const isPerm = $("permanent").value === "true";
-        if(isPerm){
-          const ok = await confirmModal({
-            title: "Confirm Permanent Stake",
-            body: "Permanent stake locks the NFT forever and cannot be unstaked. Proceed?",
-            icon: "♾️",
-            danger: true
-          });
-          if(!ok){ log("Permanent stake cancelled", "warn"); return; }
-        }
-        await initWriteContract();
-        const col = parseAddress($("colStake").value);
-        const id = parseUint($("tidStake").value);
-        const tx = await WRITE_CONTRACT.stake(col, id, isPerm);
-        log(`Stake sent: ${tx.hash}`);
-        await tx.wait();
-        log("Stake confirmed ✅", "ok");
-      }catch(e){ log(e.message||e, "err"); }
-    };
+$("btnStake").onclick = async ()=>{
+  try {
+    requireWallet();
+    const isPerm = $("permanent").value === "true";
+    if(isPerm){
+      const ok = await confirmModal({
+        title: "Confirm Permanent Stake",
+        body: "Permanent stake locks the NFT forever and cannot be unstaked. Proceed?",
+        icon: "♾️",
+        danger: true
+      });
+      if(!ok){ 
+        log("Permanent stake cancelled", "warn");
+        setBadge("stakeStatus", "❌ Cancelled", "bg-red-600 text-white");
+        return; 
+      }
+    }
+    await initWriteContract();
+    const col = parseAddress($("colStake").value);
+    const id = parseUint($("tidStake").value);
+
+    setBadge("stakeStatus", "⏳ Staking...", "bg-yellow-500 text-black");
+
+    const tx = await WRITE_CONTRACT.stake(col, id, isPerm);
+    log(`Stake sent: ${tx.hash}`);
+    await tx.wait();
+
+    log("Stake confirmed ✅", "ok");
+    setBadge("stakeStatus", "✅ Staked", "bg-green-600 text-white");
+  } catch(e){
+    log(e.message||e, "err");
+    setBadge("stakeStatus", "⚠️ Stake failed", "bg-orange-600 text-white");
+  }
+};
 
     // --- Stake: Harvest ---
     $("btnHarvestOne").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const col = parseAddress($("colStake").value);
-        const id = parseUint($("tidStake").value);
-        const tx = await WRITE_CONTRACT.harvestOne(col, id);
-        log(`Harvest sent: ${tx.hash}`);
-        await tx.wait();
-        log("Harvest confirmed ✅", "ok");
-      }catch(e){ log(e.message||e, "err"); }
-    };
+  try{
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colStake").value);
+    const id = parseUint($("tidStake").value);
 
+    setBadge("stakeStatus", "⏳ Harvesting...", "bg-yellow-500 text-black");
+
+    const tx = await WRITE_CONTRACT.harvestOne(col, id);
+    log(`Harvest sent: ${tx.hash}`);
+    await tx.wait();
+
+    log("Harvest confirmed ✅", "ok");
+    setBadge("stakeStatus", "🌾 Harvested", "bg-green-600 text-white");
+  }catch(e){
+    log(e.message||e, "err");
+    setBadge("stakeStatus", "⚠️ Harvest failed", "bg-orange-600 text-white");
+  }
+};
+    
 // --- Stake: Unstake ---
     $("btnUnstake").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const col = parseAddress($("colStake").value);
-        const id = parseUint($("tidStake").value);
-        const tx = await WRITE_CONTRACT.unstake(col, id);
-        log(`Unstake sent: ${tx.hash}`);
-        await tx.wait();
-        log("Unstake confirmed ✅", "ok");
-      }catch(e){ log(e.message||e,"err"); }
-    };
+  try{
+    requireWallet();
+    await initWriteContract();
+    const col = parseAddress($("colStake").value);
+    const id = parseUint($("tidStake").value);
+
+    setBadge("stakeStatus", "⏳ Unstaking...", "bg-yellow-500 text-black");
+
+    const tx = await WRITE_CONTRACT.unstake(col, id);
+    log(`Unstake sent: ${tx.hash}`);
+    await tx.wait();
+
+    log("Unstake confirmed ✅", "ok");
+    setBadge("stakeStatus", "🔓 Unstaked", "bg-green-600 text-white");
+  }catch(e){
+    log(e.message||e,"err");
+    setBadge("stakeStatus", "⚠️ Unstake failed", "bg-orange-600 text-white");
+  }
+};
 
     // --- Stake: View Pending Rewards ---
-    $("btnViewPending").onclick = async ()=>{
-      try{
-        requireWallet();
-        const col = parseAddress($("colStake").value);
-        const id = parseUint($("tidStake").value);
-        const pending = await READ_CONTRACT.pendingRewardOf(col, id);
-        $("pendingView").textContent = ethers.formatUnits(pending, 18) + " CATA";
-      }catch(e){ log(e.message||e,"err"); }
-    };
+    $("btnViewPending").onclick = async () => {
+  try {
+    requireWallet();
+    const col = parseAddress($("colStake").value);
+    const id = parseUint($("tidStake").value);
 
+    setBadge("pendingStatus", "⏳ Checking rewards...", "bg-yellow-500 text-black");
+
+    const pending = await READ_CONTRACT.pendingRewardOf(col, id);
+    const formatted = ethers.formatUnits(pending, 18) + " CATA";
+
+    $("pendingView").textContent = formatted;
+    setBadge("pendingStatus", `💰 Pending: ${formatted}`, "bg-green-600 text-white");
+  } catch (e) {
+    log(e.message || e, "err");
+    setBadge("pendingStatus", "⚠️ Unable to fetch rewards", "bg-orange-600 text-white");
+  }
+};
+    
     $("btnBatchStake").onclick = async () => {
   try {
     requireWallet();
@@ -1135,12 +1180,17 @@ function toWei(val, decimals = 18) {
 
     const permanent = $("permanentBatch").value === "true";
 
+    setBadge("batchStakeStatus", "⏳ Batch staking...", "bg-yellow-500 text-black");
+
     const tx = await WRITE_CONTRACT.batchStake(col, tids, permanent);
     log(`Batch stake sent: ${tx.hash}`);
     await tx.wait();
+
     log("Batch stake confirmed ✅", "ok");
+    setBadge("batchStakeStatus", "✅ Batch staked", "bg-green-600 text-white");
   } catch (e) {
     log(e.message || e, "err");
+    setBadge("batchStakeStatus", "⚠️ Batch stake failed", "bg-orange-600 text-white");
   }
 };
 
@@ -1152,26 +1202,33 @@ function toWei(val, decimals = 18) {
 
     // Minimal ERC721 ABI for approvals
     const ERC721_ABI = [
-      { "inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],
-        "name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function" }
+      {
+        "inputs":[
+          {"internalType":"address","name":"operator","type":"address"},
+          {"internalType":"bool","name":"approved","type":"bool"}
+        ],
+        "name":"setApprovalForAll",
+        "outputs":[],
+        "stateMutability":"nonpayable",
+        "type":"function"
+      }
     ];
+
+    setBadge("batchApproveStatus", "⏳ Approving...", "bg-yellow-500 text-black");
 
     const nft = new ethers.Contract(col, ERC721_ABI, WRITE_CONTRACT.runner);
     const tx = await nft.setApprovalForAll(CONTRACT_ADDRESS, true);
     log(`Approval sent: ${tx.hash}`);
     await tx.wait();
+
     log("Approval confirmed ✅", "ok");
+    setBadge("batchApproveStatus", "✅ Approved", "bg-green-600 text-white");
   } catch (e) {
     log(e.message || e, "err");
+    setBadge("batchApproveStatus", "⚠️ Approval failed", "bg-orange-600 text-white");
   }
 };
 
-
-// ✅ Utility: render a colored badge into colRegisterStatus
-function setStatusBadge(text, colorClass) {
-  $("colRegisterStatus").innerHTML =
-    `<span class="px-2 py-0.5 rounded-lg text-xs font-medium ${colorClass}">${text}</span>`;
-}
 
 // ✅ Utility: Check if a collection is already registered
 async function isRegisteredCollection(addr) {
