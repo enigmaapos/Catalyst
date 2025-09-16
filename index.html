@@ -1132,7 +1132,7 @@ $("btnStake").onclick = async ()=>{
       });
       if(!ok){ 
         log("Permanent stake cancelled", "warn");
-        setBadge("stakeStatus", "❌ Cancelled", "bg-red-600 text-white");
+        setBadge("colStakeStatus", "❌ Cancelled", "bg-red-600 text-white");
         return; 
       }
     }
@@ -1140,17 +1140,17 @@ $("btnStake").onclick = async ()=>{
     const col = parseAddress($("colStake").value);
     const id = parseUint($("tidStake").value);
 
-    setBadge("stakeStatus", "⏳ Staking...", "bg-yellow-500 text-black");
+    setBadge("colStakeStatus", "⏳ Staking...", "bg-yellow-500 text-black");
 
     const tx = await WRITE_CONTRACT.stake(col, id, isPerm);
     log(`Stake sent: ${tx.hash}`);
     await tx.wait();
 
     log("Stake confirmed ✅", "ok");
-    setBadge("stakeStatus", "✅ Staked", "bg-green-600 text-white");
+    setBadge("colStakeStatus", "✅ Staked", "bg-green-600 text-white");
   } catch(e){
     log(e.message||e, "err");
-    setBadge("stakeStatus", "⚠️ Stake failed", "bg-orange-600 text-white");
+    setBadge("colStakeStatus", "⚠️ Stake failed", "bg-orange-600 text-white");
   }
 };
 
@@ -1162,17 +1162,17 @@ $("btnStake").onclick = async ()=>{
     const col = parseAddress($("colStake").value);
     const id = parseUint($("tidStake").value);
 
-    setBadge("stakeStatus", "⏳ Harvesting...", "bg-yellow-500 text-black");
+    setBadge("colStakeStatus", "⏳ Harvesting...", "bg-yellow-500 text-black");
 
     const tx = await WRITE_CONTRACT.harvestOne(col, id);
     log(`Harvest sent: ${tx.hash}`);
     await tx.wait();
 
     log("Harvest confirmed ✅", "ok");
-    setBadge("stakeStatus", "🌾 Harvested", "bg-green-600 text-white");
+    setBadge("colStakeStatus", "🌾 Harvested", "bg-green-600 text-white");
   }catch(e){
     log(e.message||e, "err");
-    setBadge("stakeStatus", "⚠️ Harvest failed", "bg-orange-600 text-white");
+    setBadge("colStakeStatus", "⚠️ Harvest failed", "bg-orange-600 text-white");
   }
 };
     
@@ -1184,17 +1184,17 @@ $("btnStake").onclick = async ()=>{
     const col = parseAddress($("colStake").value);
     const id = parseUint($("tidStake").value);
 
-    setBadge("stakeStatus", "⏳ Unstaking...", "bg-yellow-500 text-black");
+    setBadge("colStakeStatus", "⏳ Unstaking...", "bg-yellow-500 text-black");
 
     const tx = await WRITE_CONTRACT.unstake(col, id);
     log(`Unstake sent: ${tx.hash}`);
     await tx.wait();
 
     log("Unstake confirmed ✅", "ok");
-    setBadge("stakeStatus", "🔓 Unstaked", "bg-green-600 text-white");
+    setBadge("colStakeStatus", "🔓 Unstaked", "bg-green-600 text-white");
   }catch(e){
     log(e.message||e,"err");
-    setBadge("stakeStatus", "⚠️ Unstake failed", "bg-orange-600 text-white");
+    setBadge("colStakeStatus", "⚠️ Unstake failed", "bg-orange-600 text-white");
   }
 };
 
@@ -1232,17 +1232,17 @@ $("btnStake").onclick = async ()=>{
 
     const permanent = $("permanentBatch").value === "true";
 
-    setBadge("batchStakeStatus", "⏳ Batch staking...", "bg-yellow-500 text-black");
+    setBadge("colBatchStatus", "⏳ Batch staking...", "bg-yellow-500 text-black");
 
     const tx = await WRITE_CONTRACT.batchStake(col, tids, permanent);
     log(`Batch stake sent: ${tx.hash}`);
     await tx.wait();
 
     log("Batch stake confirmed ✅", "ok");
-    setBadge("batchStakeStatus", "✅ Batch staked", "bg-green-600 text-white");
+    setBadge("colBatchStatus", "✅ Batch staked", "bg-green-600 text-white");
   } catch (e) {
     log(e.message || e, "err");
-    setBadge("batchStakeStatus", "⚠️ Batch stake failed", "bg-orange-600 text-white");
+    setBadge("colSatchStatus", "⚠️ Batch stake failed", "bg-orange-600 text-white");
   }
 };
 
@@ -1282,7 +1282,10 @@ $("btnStake").onclick = async ()=>{
 };
 
 // ✅ Utility: render a colored badge into colRegisterStatus
-
+function setStatusBadge(text, colorClass) {
+  $("colRegisterStatus").innerHTML =
+    `<span class="px-2 py-0.5 rounded-lg text-xs font-medium ${colorClass}">${text}</span>`;
+		  }
 	  
 // ✅ Utility: Check if a collection is already registered
 async function isRegisteredCollection(addr) {
