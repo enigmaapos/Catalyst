@@ -31,6 +31,7 @@ library StakingLib {
         uint32 unstakeDeadlineBlock; // 4 bytes; 0 if permanent
         uint8 flags;                 // 1 byte: bit0 currentlyStaked, bit1 isPermanent
         // packed into one 32-byte slot + remainder unused
+ bool currentlyStaked;
     }
 
     enum Tier {
