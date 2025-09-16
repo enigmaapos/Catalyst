@@ -917,12 +917,12 @@ function toWei(val, decimals = 18) {
         $("st_remainingPermanent").textContent = s.remainingPermanent?.toString?.() || s[5]?.toString?.() || "—";
 
         try{
-          const tb = await READ_CONTRACT.treasuryBalance();
+          const tb = await READ_CONTRACT.getTreasuryBalance();
           $("st_treasury").textContent = toReadable(tb);
         }catch{ $("st_treasury").textContent = "n/a"; }
 
         try{
-          const dep = await READ_CONTRACT.deployerAddress();
+          const dep = await READ_CONTRACT.getDeployerAddress();
           $("st_deployer").textContent = dep;
         }catch{ $("st_deployer").textContent = "n/a"; }
 
