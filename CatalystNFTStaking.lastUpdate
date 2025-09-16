@@ -415,7 +415,7 @@ contract CatalystNFTStakingUpgradeable is
 
     function vote(bytes32 id) external whenNotPaused {
         (uint256 weight, address attributedCollection) = _votingWeight(_msgSender());
-        if (weight == 0) revert NotEligible();
+        if (weight == 0) revert ThresholdNotMet();
         GovernanceLib.castVote(g, id, _msgSender(), weight, attributedCollection);
     }
 
@@ -516,7 +516,7 @@ contract CatalystNFTStakingUpgradeable is
     // --------- Treasury ----------
     function withdrawTreasury(address to, uint256 amount) external onlyRole(CONTRACT_ADMIN_ROLE) nonReentrant whenNotPaused {
         if (to == address(0)) revert ZeroAddr();
-        if (amount > treasuryBalance) revert BalanceLow();
+        if (amount > treasuryBalance) revert InsufficientBalance();
         unchecked { treasuryBalance -= amount; }
         _transfer(address(this), to, amount);
         emit TreasuryWithdrawal(to, amount);
