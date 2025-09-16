@@ -96,6 +96,10 @@ contract CatalystNFTStakingUpgradeable is
     mapping(address => uint256) internal burnedCatalystByAddress;
     mapping(address => uint256) internal lastStakingBlock;
 
+    // -------- Proposal indexing for frontend (thin, low-overhead) --------
+    bytes32[] public proposalIds;
+    mapping(bytes32 => uint256) private proposalIndex; // 1-based index (0 == missing)
+
     // small explicit getters for fields we expect external users might call
     function getTreasuryAddress() external view returns (address) { return treasuryAddress; }
     function getDeployerAddress() external view returns (address) { return deployerAddress; }
@@ -447,7 +451,7 @@ contract CatalystNFTStakingUpgradeable is
         (uint256 weight,) = _votingWeight(_msgSender());
         if (weight == 0) revert Ineligible();
 
-        return GovernanceLib.createProposal(
+        bytes32 id = GovernanceLib.createProposal(
             g,
             pType,
             paramTarget,
@@ -456,6 +460,14 @@ contract CatalystNFTStakingUpgradeable is
             _msgSender(),
             block.number
         );
+
+        // store index for frontend listing
+        if (proposalIndex[id] == 0) {
+            proposalIds.push(id);
+            proposalIndex[id] = proposalIds.length; // 1-based
+        }
+
+        return id;
     }
 
     function vote(bytes32 id) external whenNotPaused {
@@ -471,8 +483,8 @@ contract CatalystNFTStakingUpgradeable is
         if (p.pType == GovernanceLib.ProposalType.BASE_REWARD) {
             uint256 old = s.baseRewardRate;
             s.baseRewardRate = uint64(
-    p.newValue > maxBaseRewardRate ? maxBaseRewardRate : p.newValue
-);
+                p.newValue > maxBaseRewardRate ? maxBaseRewardRate : p.newValue
+            );
             emit BaseRewardRateUpdated(old, s.baseRewardRate);
         } else if (p.pType == GovernanceLib.ProposalType.HARVEST_FEE) {
             uint256 old = initialHarvestBurnFeeRate;
@@ -590,6 +602,76 @@ contract CatalystNFTStakingUpgradeable is
         return registeredCollections.length;
     }
 
+    function registeredCollectionAt(uint256 idx) external view returns (address) {
+        return registeredCollections[idx];
+    }
+
+    function proposalCount() external view returns (uint256) {
+        return proposalIds.length;
+    }
+
+    function proposalByIndex(uint256 idx)
+        external
+        view
+        returns (
+            bytes32 id,
+            GovernanceLib.ProposalType pType,
+            uint8 paramTarget,
+            uint256 newValue,
+            address collectionAddress,
+            address proposer,
+            uint256 startBlock,
+            uint256 endBlock,
+            uint256 votesScaled,
+            bool executed
+        )
+    {
+        require(idx < proposalIds.length, "OOB");
+        id = proposalIds[idx];
+        GovernanceLib.Proposal memory p = g.proposals[id];
+        return (
+            id,
+            p.pType,
+            p.paramTarget,
+            p.newValue,
+            p.collectionAddress,
+            p.proposer,
+            p.startBlock,
+            p.endBlock,
+            p.votesScaled,
+            p.executed
+        );
+    }
+
+    function getProposal(bytes32 id)
+        external
+        view
+        returns (
+            GovernanceLib.ProposalType pType,
+            uint8 paramTarget,
+            uint256 newValue,
+            address collectionAddress,
+            address proposer,
+            uint256 startBlock,
+            uint256 endBlock,
+            uint256 votesScaled,
+            bool executed
+        )
+    {
+        GovernanceLib.Proposal memory p = g.proposals[id];
+        return (
+            p.pType,
+            p.paramTarget,
+            p.newValue,
+            p.collectionAddress,
+            p.proposer,
+            p.startBlock,
+            p.endBlock,
+            p.votesScaled,
+            p.executed
+        );
+    }
+
     function pendingRewardsView(address collection, address owner, uint256 tokenId)
         external
         view
@@ -623,6 +705,10 @@ contract CatalystNFTStakingUpgradeable is
         }
         // Currently treating all registered collections as Verified
         return 2;
+    }
+
+    function isGuardianOf(bytes32 councilId, address who) external view returns (bool) {
+        return gu.isGuardian(councilId, who);
     }
 
     // ERC721 Receiver / Pause / UUPS
