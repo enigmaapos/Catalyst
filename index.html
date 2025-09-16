@@ -768,47 +768,48 @@
        DOM HELPERS & LOG
        ========================= */
     // existing
-const $ = (id) => document.getElementById(id);
-function now(){ return new Date().toLocaleTimeString(); }
-function log(msg, cls=""){
-  const wrap = $("log");
-  const div = document.createElement("div");
-  div.className = "logline " + (cls||"");
-  div.textContent = `[${now()}] ${msg}`;
-  wrap.prepend(div);
-}
-function setYear(){ $("year").textContent = new Date().getFullYear(); }
-setYear();
+    const $ = (id) => document.getElementById(id);
+    const $$ = (sel) => document.querySelectorAll(sel);
+    function now(){ return new Date().toLocaleTimeString(); }
+    function log(msg, cls=""){
+      const wrap = $("log");
+      const div = document.createElement("div");
+      div.className = "logline " + (cls||"");
+      div.textContent = `[${now()}] ${msg}`;
+      wrap.prepend(div);
+    }
+    function setYear(){ $("year").textContent = new Date().getFullYear(); }
+    setYear();
 
-// ✅ new helpers for numbers
-function toReadable(raw, decimals = 18) {
-  try {
-    return ethers.formatUnits(raw, decimals); // BigInt -> human
-  } catch {
-    return raw?.toString?.() || "—";
-  }
-}
+    // ✅ new helpers for numbers
+    function toReadable(raw, decimals = 18) {
+      try {
+        return ethers.formatUnits(raw, decimals); // BigInt -> human
+      } catch {
+        return raw?.toString?.() || "—";
+      }
+    }
 
-function toWei(val, decimals = 18) {
-  try {
-    return ethers.parseUnits(val.toString(), decimals); // human -> BigInt
-  } catch {
-    return 0n;
-  }
-}
+    function toWei(val, decimals = 18) {
+      try {
+        return ethers.parseUnits(val.toString(), decimals); // human -> BigInt
+      } catch {
+        return 0n;
+      }
+    }
 
     function groupSelectedByCollection() {
-  const grouped = {};
-  const checkboxes = $$("input[type=checkbox][data-token]:checked");
-  checkboxes.forEach(cb => {
-    const col = cb.dataset.collection;
-    const token = BigInt(cb.dataset.token);
-    if (!grouped[col]) grouped[col] = [];
-    grouped[col].push(token);
-  });
-  return grouped;
-}
-    
+      const grouped = {};
+      const checkboxes = $$("input[type=checkbox][data-token]:checked");
+      checkboxes.forEach(cb => {
+        const col = cb.dataset.collection;
+        const token = BigInt(cb.dataset.token);
+        if (!grouped[col]) grouped[col] = [];
+        grouped[col].push(token);
+      });
+      return grouped;
+    }
+
     /* =========================
        MODAL (CONFIRMATIONS)
        ========================= */
@@ -957,6 +958,9 @@ function toWei(val, decimals = 18) {
       document.querySelector(`[data-tab='${key}']`)?.classList.add("tab-active");
       document.getElementById(`tab-${key}`)?.classList.remove("hidden");
       if(key === "whitepaper"){ location.hash = "tab-whitepaper"; }
+      if(key === "portfolio" && USER_ADDR) {
+          renderPortfolio();
+      }
     }
 
     document.addEventListener("DOMContentLoaded", ()=>{
@@ -985,27 +989,27 @@ function toWei(val, decimals = 18) {
 
       $("saveContractBtn").onclick = ()=>{ try{ saveContractAddress($("contractAddress").value.trim()); }catch(e){ log(e.message||e,"err"); } };
       $("saveContractBtn_m").onclick = ()=>{ try{ saveContractAddress($("contractAddress_m").value.trim()); }catch(e){ log(e.message||e,"err"); } };
-
       $("walletBtn").onclick = async ()=>{
         try{
           if(!USER_ADDR){
             await connectWallet();
             $("walletBtn").textContent = "Disconnect";
+            renderPortfolio();
           }else{
-            USER_ADDR = null; SIGNER = null; WRITE_CONTRACT = null; WALLET_PROVIDER = null;
+            USER_ADDR = null;
+            SIGNER = null; WRITE_CONTRACT = null; WALLET_PROVIDER = null;
             $("acct").textContent = "Not connected";
             $("walletBtn").textContent = "Connect";
             log("Wallet disconnected (local)", "warn");
+            renderPortfolio();
           }
         }catch(e){ log(e.message||e, "err"); }
       };
-
       $("btnRefresh").onclick = refreshStats;
       $("autoRefresh").onchange = (e)=> toggleAutoRefresh(e.target.checked);
 
       log("UI ready — background init starting…", "ok");
     });
-
     window.addEventListener("load", async ()=>{
       try{
         const savedRpc = localStorage.getItem("catalyst_rpc") || DEFAULT_RPC;
@@ -1092,7 +1096,6 @@ function toWei(val, decimals = 18) {
         log("Stake confirmed ✅", "ok");
       }catch(e){ log(e.message||e, "err"); }
     };
-
     // --- Stake: Harvest ---
     $("btnHarvestOne").onclick = async ()=>{
       try{
@@ -1106,8 +1109,7 @@ function toWei(val, decimals = 18) {
         log("Harvest confirmed ✅", "ok");
       }catch(e){ log(e.message||e, "err"); }
     };
-
-// --- Stake: Unstake ---
+    // --- Stake: Unstake ---
     $("btnUnstake").onclick = async ()=>{
       try{
         requireWallet();
@@ -1120,7 +1122,6 @@ function toWei(val, decimals = 18) {
         log("Unstake confirmed ✅", "ok");
       }catch(e){ log(e.message||e,"err"); }
     };
-
     // --- Stake: View Pending Rewards ---
     $("btnViewPending").onclick = async ()=>{
       try{
@@ -1131,874 +1132,371 @@ function toWei(val, decimals = 18) {
         $("pendingView").textContent = ethers.formatUnits(pending, 18) + " CATA";
       }catch(e){ log(e.message||e,"err"); }
     };
-
     $("btnBatchStake").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-    const col = parseAddress($("colBatch").value);
+      try {
+        requireWallet();
+        await initWriteContract();
+        const col = parseAddress($("colBatch").value);
+        // parse CSV into array of numbers
+        const tids = $("tidsBatch").value
+          .split(",")
+          .map(s => parseUint(s.trim()))
+          .filter(n => !isNaN(n));
+        const permanent = $("permanentBatch").value === "true";
 
-    // parse CSV into array of numbers
-    const tids = $("tidsBatch").value
-      .split(",")
-      .map(s => parseUint(s.trim()))
-      .filter(n => !isNaN(n));
-
-    const permanent = $("permanentBatch").value === "true";
-
-    const tx = await WRITE_CONTRACT.batchStake(col, tids, permanent);
-    log(`Batch stake sent: ${tx.hash}`);
-    await tx.wait();
-    log("Batch stake confirmed ✅", "ok");
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
+        const tx = await WRITE_CONTRACT.batchStake(col, tids, permanent);
+        log(`Batch stake sent: ${tx.hash}`);
+        await tx.wait();
+        log("Batch stake confirmed ✅", "ok");
+      } catch (e) {
+        log(e.message || e, "err");
+      }
+    };
     $("btnApprove721Batch").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-    const col = parseAddress($("colBatch").value);
-
-    // Minimal ERC721 ABI for approvals
-    const ERC721_ABI = [
-      { "inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],
-        "name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function" }
-    ];
-
-    const nft = new ethers.Contract(col, ERC721_ABI, WRITE_CONTRACT.runner);
-    const tx = await nft.setApprovalForAll(CONTRACT_ADDRESS, true);
-    log(`Approval sent: ${tx.hash}`);
-    await tx.wait();
-    log("Approval confirmed ✅", "ok");
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
-
-// ✅ Utility: render a colored badge into colRegisterStatus
-function setStatusBadge(text, colorClass) {
-  $("colRegisterStatus").innerHTML =
-    `<span class="px-2 py-0.5 rounded-lg text-xs font-medium ${colorClass}">${text}</span>`;
-}
-
-// ✅ Utility: Check if a collection is already registered
-async function isRegisteredCollection(addr) {
-  try {
-    const idx = await READ_CONTRACT.registeredIndex(addr);
-    return idx > 0n;
-  } catch (e) {
-    log(e.message || e, "err");
-    return false;
-  }
-}
-
-// ✅ Utility: read and format tier label + color
-async function getCollectionTierAndColor(addr) {
-  try {
-    const cfg = await READ_CONTRACT.collectionConfigs(addr);
-    switch (Number(cfg.tier)) {
-      case 1:
-        return { text: "❓ Unverified", color: "bg-yellow-500 text-black" };
-      case 2:
-        return { text: "✅ Verified", color: "bg-green-600 text-white" };
-      case 3:
-        return { text: "💎 Bluechip", color: "bg-blue-600 text-white" };
-      default:
-        return { text: "— Not Registered —", color: "bg-gray-700 text-gray-200" };
-    }
-  } catch (e) {
-    log(e.message || e, "err");
-    return { text: "⚠️ Unable to read tier", color: "bg-orange-600 text-white" };
-  }
-}
-
-// ✅ Input listener: check registration + tier dynamically
-$("colRegister").addEventListener("input", async () => {
-  const col = $("colRegister").value.trim();
-  if (!col || !ethers.isAddress(col)) {
-    setStatusBadge("—", "bg-gray-700 text-gray-200");
-    return;
-  }
-
-  try {
-    const registered = await isRegisteredCollection(col);
-    if (!registered) {
-      setStatusBadge("❌ Not registered", "bg-red-600 text-white");
-    } else {
-      const { text, color } = await getCollectionTierAndColor(col);
-      setStatusBadge(`✅ Already registered (${text})`, color);
-    }
-  } catch (e) {
-    setStatusBadge("⚠️ Error checking", "bg-orange-600 text-white");
-    log(e.message || e, "err");
-  }
-});
-
-// ✅ Button: register and display tier badge after tx
-$("btnRegister").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-
-    const col = parseAddress($("colRegister").value);
-    const declaredSupply = parseUint($("declaredSupply").value);
-
-    if (await isRegisteredCollection(col)) {
-      log("Collection is already registered", "warn");
-      const { text, color } = await getCollectionTierAndColor(col);
-      setStatusBadge(`✅ Already registered (${text})`, color);
-      return;
+      try {
+        requireWallet();
+        await initWriteContract();
+        const col = parseAddress($("colBatch").value);
+        // Minimal ERC721 ABI for approvals
+        const ERC721_ABI = [
+          { "inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],
+            "name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function" }
+        ];
+        const nft = new ethers.Contract(col, ERC721_ABI, WRITE_CONTRACT.runner);
+        const tx = await nft.setApprovalForAll(CONTRACT_ADDRESS, true);
+        log(`Approval sent: ${tx.hash}`);
+        await tx.wait();
+        log("Approval confirmed ✅", "ok");
+      } catch (e) {
+        log(e.message || e, "err");
+      }
+    };
+    // ✅ Utility: render a colored badge into colRegisterStatus
+    function setStatusBadge(text, colorClass) {
+      $("colRegisterStatus").innerHTML =
+        `<span class="px-2 py-0.5 rounded-lg text-xs font-medium ${colorClass}">${text}</span>`;
     }
 
-    const tx = await WRITE_CONTRACT.registerCollection(col, declaredSupply);
-    log(`Register collection sent: ${tx.hash}`);
-    await tx.wait();
-    log("Collection registered ✅", "ok");
-
-    const { text, color } = await getCollectionTierAndColor(col);
-    setStatusBadge(`✅ Registered just now (${text})`, color);
-  } catch (e) {
-    setStatusBadge("⚠️ Registration failed", "bg-orange-600 text-white");
-    log(e.message || e, "err");
-  }
-};
-
-   // ---------- Portfolio Helpers ----------
-async function fetchUserPortfolio(userAddr) {
-  try {
-    // Ensure we have collections list (from contract or local cache)
-    const collectionCount = Number(await READ_CONTRACT.registeredCollectionsLength());
-    const stakes = [];
-
-    for (let i = 0; i < collectionCount; i++) {
-      const colAddr = await READ_CONTRACT.registeredCollections(i);
-      const portfolio = await READ_CONTRACT.stakePortfolioByUser(colAddr, userAddr);
-
-      // portfolio is an array of tokenIds (BigInt)
-      for (const tokenId of portfolio) {
-        const log = await READ_CONTRACT.stakeLog(colAddr, tokenId);
-        stakes.push({
-          collection: colAddr,
-          tokenId: tokenId,
-          permanent: log.permanent,
-          stakeBlock: log.stakeBlock,
-          remaining: await computeRemainingTerm(log),  // helper below
-          lastHarvest: log.lastHarvestBlock,
-          pending: await READ_CONTRACT.pendingRewardOf(userAddr, colAddr, tokenId)
-        });
+    // ✅ Utility: Check if a collection is already registered
+    async function isRegisteredCollection(addr) {
+      try {
+        const idx = await READ_CONTRACT.registeredIndex(addr);
+        return idx > 0n;
+      } catch (e) {
+        log(e.message || e, "err");
+        return false;
       }
     }
-    return stakes;
-  } catch (e) {
-    log(`Failed to fetch portfolio: ${e.message || e}`, "err");
-    return [];
-  }
-}
 
-// Compute remaining time until end of term (or "—" for permanent)
-async function computeRemainingTerm(log) {
-  if (log.permanent) return "—";
-  const currentBlock = await PROVIDER.getBlockNumber();
-  const endBlock = Number(log.stakeBlock) + Number(log.termBlocks);
-  const remainingBlocks = endBlock - currentBlock;
-  if (remainingBlocks <= 0) return "Ended";
-  // Approximate days (adjust if your chain has different block time)
-  const days = Math.floor((remainingBlocks * 12) / 86400); // 12s per block
-  return `${days}d`;
-}
-
-function updateSelectionCounters() {
-  const selected = document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]:checked");
-  $("harvestCount").textContent = selected.length;
-  $("unstakeCount").textContent = selected.length;
-}
-
-function attachSelectAll() {
-  const selectAllBox = document.getElementById("selectAll");
-  if (!selectAllBox) return;
-
-  selectAllBox.addEventListener("change", () => {
-    const allRows = document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]");
-    allRows.forEach(cb => cb.checked = selectAllBox.checked);
-    updateSelectionCounters();
-  });
-
-  // Keep selectAll in sync + update counters when rows are clicked
-  document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]").forEach(cb => {
-    cb.addEventListener("change", () => {
-      const allRows = document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]");
-      const allChecked = Array.from(allRows).every(box => box.checked);
-      selectAllBox.checked = allChecked;
-      updateSelectionCounters();
-    });
-  });
-
-  updateSelectionCounters(); // initialize counter on load
-}
-
-// Modify renderPortfolio to re-bind after loading rows
-async function renderPortfolio() {
-  try {
-    requireWallet();
-    const user = window.CURRENT_ACCOUNT;
-    $("portfolioRows").innerHTML = "Loading...";
-
-    const stakes = await fetchUserPortfolio(user);
-    $("portfolioRows").innerHTML = "";
-
-    if (stakes.length === 0) {
-      $("portfolioRows").innerHTML =
-        `<tr><td colspan="9" class="text-center py-4 text-sm muted">No NFTs staked.</td></tr>`;
-      return;
+    // ✅ Utility: read and format tier label + color
+    async function getCollectionTierAndColor(addr) {
+      try {
+        const cfg = await READ_CONTRACT.collectionConfigs(addr);
+        switch (Number(cfg.tier)) {
+          case 1:
+            return { text: "❓ Unverified", color: "bg-yellow-500 text-black" };
+          case 2:
+            return { text: "✅ Verified", color: "bg-green-600 text-white" };
+          case 3:
+            return { text: "💎 Bluechip", color: "bg-blue-600 text-white" };
+          default:
+            return { text: "— Not Registered —", color: "bg-gray-700 text-gray-200" };
+        }
+      } catch (e) {
+        log(e.message || e, "err");
+        return { text: "⚠️ Unable to read tier", color: "bg-orange-600 text-white" };
+      }
     }
 
-    stakes.forEach((s) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="px-3 py-2"><input type="checkbox" data-collection="${s.collection}" data-token="${s.tokenId}" /></td>
-        <td class="px-3 py-2 font-mono">${s.collection}</td>
-        <td class="px-3 py-2">${s.tokenId}</td>
-        <td class="px-3 py-2">${s.permanent ? "Permanent" : "Term"}</td>
-        <td class="px-3 py-2">#${s.stakeBlock}</td>
-        <td class="px-3 py-2">${s.remaining}</td>
-        <td class="px-3 py-2">${s.lastHarvest || "—"}</td>
-        <td class="px-3 py-2">${formatCata(s.pending)}</td>
-        <td class="px-3 py-2 flex gap-2">
-          <button class="btn btn-ghost btn-xs" data-action="harvest" data-collection="${s.collection}" data-token="${s.tokenId}">Harvest</button>
-          <button class="btn btn-ghost btn-xs" data-action="unstake" data-collection="${s.collection}" data-token="${s.tokenId}">Unstake</button>
-        </td>
-      `;
-      $("portfolioRows").appendChild(tr);
+    // ✅ Input listener: check registration + tier dynamically
+    $("colRegister").addEventListener("input", async () => {
+      const col = $("colRegister").value.trim();
+      if (!col || !ethers.isAddress(col)) {
+        setStatusBadge("—", "bg-gray-700 text-gray-200");
+        return;
+      }
+
+      try {
+        const registered = await isRegisteredCollection(col);
+        if (!registered) {
+          setStatusBadge("❌ Not registered", "bg-red-600 text-white");
+        } else {
+          const { text, color } = await getCollectionTierAndColor(col);
+          setStatusBadge(`✅ Already registered (${text})`, color);
+        }
+      } catch (e) {
+        setStatusBadge("⚠️ Error checking", "bg-orange-600 text-white");
+        log(e.message || e, "err");
+      }
     });
 
-    attachSelectAll(); // 👈 re-bind after table rows are inserted
-  } catch (e) {
-    $("portfolioRows").innerHTML =
-      `<tr><td colspan="9" class="text-center py-4 text-sm text-red-500">Error loading portfolio</td></tr>`;
-    log(e.message || e, "err");
-  }
-}
-
-// ---------- Button Handlers ----------
-    
-$("btnHarvestAll").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-
-    const grouped = groupSelectedByCollection();
-    if (Object.keys(grouped).length === 0)
-      return log("Select at least one NFT to harvest", "warn");
-
-    for (const [collection, tokenIds] of Object.entries(grouped)) {
-      log(`Harvesting ${tokenIds.length} NFTs in ${collection}…`, "info");
-      const tx = await WRITE_CONTRACT.harvestBatch(collection, tokenIds);
-      await tx.wait();
-      log(`✅ Harvested ${tokenIds.length} NFTs in ${collection}`, "ok");
-    }
-
-    await renderPortfolio();
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
-$("btnUnstakeSel").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-
-    const grouped = groupSelectedByCollection();
-    if (Object.keys(grouped).length === 0)
-      return log("Select at least one NFT to unstake", "warn");
-
-    for (const [collection, tokenIds] of Object.entries(grouped)) {
-      log(`Unstaking ${tokenIds.length} NFTs from ${collection}…`, "info");
-      const tx = await WRITE_CONTRACT.unstakeBatch(collection, tokenIds);
-      await tx.wait();
-      log(`✅ Unstaked ${tokenIds.length} NFTs from ${collection}`, "ok");
-    }
-
-    await renderPortfolio();
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
-
-// Single-row buttons (event delegation)
-document.getElementById("portfolioRows").addEventListener("click", async (e) => {
-  const btn = e.target.closest("button[data-action]");
-  if (!btn) return;
-  try {
-    requireWallet();
-    await initWriteContract();
-
-    const col = btn.dataset.collection;
-    const token = btn.dataset.token;
-
-    if (btn.dataset.action === "harvest") {
-      const tx = await WRITE_CONTRACT.harvest(col, token);
-      log(`Harvest tx: ${tx.hash}`);
-      await tx.wait();
-    }
-    if (btn.dataset.action === "unstake") {
-      const tx = await WRITE_CONTRACT.unstake(col, token);
-      log(`Unstake tx: ${tx.hash}`);
-      await tx.wait();
-    }
-    await renderPortfolio();
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-});
-
-// ---------- Helpers ----------
-function formatCata(value) {
-  try {
-    return (Number(value) / 1e18).toFixed(2);
-  } catch {
-    return "0.00";
-  }
-}
-
-// Render portfolio on page load / wallet connect
-window.addEventListener("load", () => {
-  if (window.CURRENT_ACCOUNT) renderPortfolio();
-}); 
-    
-    /* ============================
-     * BLUE-CHIP (NON-CUSTODIAL)
-     * ============================ */
-    // ✅ Check enrollment status
-// 🔹 Check if wallet is enrolled (always address(0) slot)
-async function checkEnrollment() {
-  try {
-    await initReadContract();
-
-    const info = await READ_CONTRACT.bluechipWallets(
-      "0x0000000000000000000000000000000000000000", // ✅ global slot
-      walletAddress
-    );
-
-    $("blueEnrollStatus").textContent = info.enrolled
-      ? `✅ Enrolled at block ${info.enrolledAtBlock}`
-      : "❌ Not enrolled";
-  } catch (e) {
-    $("blueEnrollStatus").textContent = "⚠️ Error checking";
-    log(e.message || e, "err");
-  }
-}
-
-// 🔹 Enroll the wallet
-$("btnEnrollBlue").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-    const tx = await WRITE_CONTRACT.enrollBluechip();
-    log(`Blue-chip enrollment sent: ${tx.hash}`);
-    await tx.wait();
-    log("Enrollment confirmed ✅", "ok");
-
-    // refresh status
-    checkEnrollment();
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
-// 🔹 Manual check
-$("btnCheckEnroll").onclick = () => {
-  checkEnrollment();
-};
-
-    $("btnHarvestBlue").onclick = async ()=>{
-      try{
+    // ✅ Button: register and display tier badge after tx
+    $("btnRegister").onclick = async () => {
+      try {
         requireWallet();
         await initWriteContract();
-        const col = parseAddress($("colBlueHarvest").value);
-        const tx = await WRITE_CONTRACT.harvestBluechip(col);
-        log(`Blue-chip harvest sent: ${tx.hash}`);
+
+        const col = parseAddress($("colRegister").value);
+        const declaredSupply = parseUint($("declaredSupply").value);
+        if (await isRegisteredCollection(col)) {
+          log("Collection is already registered", "warn");
+          const { text, color } = await getCollectionTierAndColor(col);
+          setStatusBadge(`✅ Already registered (${text})`, color);
+          return;
+        }
+
+        const tx = await WRITE_CONTRACT.registerCollection(col, declaredSupply);
+        log(`Register collection sent: ${tx.hash}`);
         await tx.wait();
-        log("Blue-chip harvest confirmed ✅","ok");
-      }catch(e){ log(e.message||e,"err"); }
+        log("Collection registered ✅", "ok");
+        const { text, color } = await getCollectionTierAndColor(col);
+        setStatusBadge(`✅ Registered just now (${text})`, color);
+      } catch (e) {
+        setStatusBadge("⚠️ Registration failed", "bg-orange-600 text-white");
+        log(e.message || e, "err");
+      }
     };
 
-    // Admin: flag/unflag blue-chip
-    // Auto-check if collection is already Blue-Chip
-$("colFlagBlue").addEventListener("input", async () => {
-  const col = $("colFlagBlue").value.trim();
-  if (!col || !ethers.isAddress(col)) {
-    $("colBlueStatus").textContent = "—";
-    return;
-  }
+    // ---------- Portfolio Helpers ----------
+    async function fetchUserPortfolio(userAddr) {
+      try {
+        // Ensure we have collections list (from contract or local cache)
+        const collectionCount = Number(await READ_CONTRACT.registeredCollectionsLength());
+        const stakes = [];
 
-  try {
-    await initReadContract();
-    const isBlue = await READ_CONTRACT.isBluechipCollection(col);
-    $("colBlueStatus").textContent = isBlue
-      ? "✅ Already Blue-Chip"
-      : "❌ Not Blue-Chip";
-  } catch (e) {
-    $("colBlueStatus").textContent = "⚠️ Error checking";
-    log(e.message || e, "err");
-  }
-});
+        for (let i = 0; i < collectionCount; i++) {
+          const colAddr = await READ_CONTRACT.registeredCollections(i);
+          const portfolio = await READ_CONTRACT.stakePortfolioByUser(colAddr, userAddr);
 
-// Admin button (already in your code)
-$("btnSetBlue").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-    const col = parseAddress($("colFlagBlue").value);
-    const flag = $("isBlueFlag").value === "true";
-    const tx = await WRITE_CONTRACT.setBluechipCollection(col, flag);
-    log(`Set blue-chip sent: ${tx.hash}`);
-    await tx.wait();
-    log(`Blue-chip ${flag ? "flagged" : "cleared"} ✅`, "ok");
+          // portfolio is an array of tokenIds (BigInt)
+          for (const tokenId of portfolio) {
+            const log = await READ_CONTRACT.stakeLog(colAddr, tokenId);
+            stakes.push({
+              collection: colAddr,
+              tokenId: tokenId,
+              permanent: log.permanent,
+              stakeBlock: log.stakeBlock,
+              remaining: await computeRemainingTerm(log),  // helper below
+              lastHarvest: log.lastHarvestBlock,
+              pending: await READ_CONTRACT.pendingRewardOf(userAddr, colAddr, tokenId)
+            });
+          }
+        }
+        return stakes;
+      } catch (e) {
+        log(`Failed to fetch portfolio: ${e.message || e}`, "err");
+        return [];
+      }
+    }
 
-    // 🔄 refresh status after transaction
-    const isBlue = await READ_CONTRACT.isBluechipCollection(col);
-    $("colBlueStatus").textContent = isBlue
-      ? "✅ Already Blue-Chip"
-      : "❌ Not Blue-Chip";
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
+    // Compute remaining time until end of term (or "—" for permanent)
+    async function computeRemainingTerm(log) {
+      if (log.permanent) return "—";
+      const currentBlock = await READ_PROVIDER.getBlockNumber();
+      const endBlock = Number(log.stakeBlock) + Number(log.termBlocks);
+      const remainingBlocks = endBlock - currentBlock;
+      if (remainingBlocks <= 0) return "Ended";
+      // Approximate days (adjust if your chain has different block time)
+      const days = Math.floor((remainingBlocks * 12) / 86400); // 12s per block
+      return `${days}d`;
+    }
 
-    /* ============================
-     * GOVERNANCE: PROPOSE / VOTE / EXECUTE
-     * ============================ */
-    $("btnPropose").onclick = async ()=>{
+    function updateSelectionCounters() {
+      const selected = document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]:checked");
+      $("harvestCount").textContent = selected.length;
+      $("unstakeCount").textContent = selected.length;
+    }
+
+    function attachSelectAll() {
+      const selectAllBox = document.getElementById("selectAll");
+      if (!selectAllBox) return;
+      selectAllBox.addEventListener("change", () => {
+        const allRows = document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]");
+        allRows.forEach(cb => cb.checked = selectAllBox.checked);
+        updateSelectionCounters();
+      });
+      // Keep selectAll in sync + update counters when rows are clicked
+      document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]").forEach(cb => {
+        cb.addEventListener("change", () => {
+          const allRows = document.querySelectorAll("#portfolioRows input[type=checkbox][data-token]");
+          const allChecked = Array.from(allRows).every(box => box.checked);
+          selectAllBox.checked = allChecked;
+          updateSelectionCounters();
+        });
+      });
+      updateSelectionCounters(); // initialize counter on load
+    }
+
+    async function renderPortfolio() {
+      try {
+        requireWallet();
+        const user = USER_ADDR;
+        $("portfolioRows").innerHTML = "Loading...";
+        const stakes = await fetchUserPortfolio(user);
+        $("portfolioRows").innerHTML = "";
+        if (stakes.length === 0) {
+          $("portfolioRows").innerHTML = `<tr><td colspan="9" class="text-center py-4 text-sm muted">No NFTs staked.</td></tr>`;
+          return;
+        }
+        stakes.forEach((s) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="px-3 py-2"><input type="checkbox" data-collection="${s.collection}" data-token="${s.tokenId}" /></td>
+            <td class="px-3 py-2 font-mono">${s.collection}</td>
+            <td class="px-3 py-2">${s.tokenId}</td>
+            <td class="px-3 py-2">${s.permanent ? "Permanent" : "Term"}</td>
+            <td class="px-3 py-2">#${s.stakeBlock}</td>
+            <td class="px-3 py-2">${s.remaining}</td>
+            <td class="px-3 py-2">${s.lastHarvest || "—"}</td>
+            <td class="px-3 py-2">${formatCata(s.pending)}</td>
+            <td class="px-3 py-2 flex gap-2">
+              <button class="btn btn-ghost btn-xs" data-action="harvest" data-collection="${s.collection}" data-token="${s.tokenId}">Harvest</button>
+              <button class="btn btn-ghost btn-xs" data-action="unstake" data-collection="${s.collection}" data-token="${s.tokenId}">Unstake</button>
+            </td>
+          `;
+          $("portfolioRows").appendChild(tr);
+        });
+        attachSelectAll(); // 👈 re-bind after table rows are inserted
+      } catch (e) {
+        $("portfolioRows").innerHTML = `<tr><td colspan="9" class="text-center py-4 text-sm text-red-500">Error loading portfolio</td></tr>`;
+        log(e.message || e, "err");
+      }
+    }
+
+    // ---------- Button Handlers ----------
+    $("btnHarvestAll").onclick = async () => {
       try {
         requireWallet();
         await initWriteContract();
-        const pType = parseUint($("pType").value);
-        const paramTarget = parseUint($("paramTarget").value || 0n);
-        const newValue = parseUint($("newValue").value);
-        const ctx = $("collCtx").value.trim() || ethers.ZeroAddress;
-        const tx = await WRITE_CONTRACT.propose(pType, paramTarget, newValue, ctx);
-        log(`Propose sent: ${tx.hash}`);
-        const rc = await tx.wait();
-        log("Proposal created ✅ (check logs for ID)", "ok");
-        // Optional: try to parse event for ID
-        try {
-          const ev = rc.logs?.find(l => (l.fragment && l.fragment.name === "ProposalCreated"));
-          if (ev) log(`Proposal ID: ${ev.args?.id}`, "ok");
-        } catch(_){}
-      } catch(e){ log(e.message||e, "err"); }
+        const grouped = groupSelectedByCollection();
+        if (Object.keys(grouped).length === 0) return log("Select at least one NFT to harvest", "warn");
+        for (const [collection, tokenIds] of Object.entries(grouped)) {
+          log(`Harvesting ${tokenIds.length} NFTs in ${collection}…`, "info");
+          const tx = await WRITE_CONTRACT.harvestBatch(collection, tokenIds);
+          await tx.wait();
+          log(`✅ Harvested ${tokenIds.length} NFTs in ${collection}`, "ok");
+        }
+        await renderPortfolio();
+      } catch (e) {
+        log(e.message || e, "err");
+      }
     };
 
-    $("btnVote").onclick = async ()=>{
+    $("btnUnstakeSel").onclick = async () => {
       try {
         requireWallet();
         await initWriteContract();
-        const id = $("propId").value.trim();
-        if (!id) throw new Error("Proposal ID required");
-        const tx = await WRITE_CONTRACT.vote(id);
+        const grouped = groupSelectedByCollection();
+        if (Object.keys(grouped).length === 0) return log("Select at least one NFT to unstake", "warn");
+        for (const [collection, tokenIds] of Object.entries(grouped)) {
+          log(`Unstaking ${tokenIds.length} NFTs from ${collection}…`, "info");
+          const tx = await WRITE_CONTRACT.unstakeBatch(collection, tokenIds);
+          await tx.wait();
+          log(`✅ Unstaked ${tokenIds.length} NFTs from ${collection}`, "ok");
+        }
+        await renderPortfolio();
+      } catch (e) {
+        log(e.message || e, "err");
+      }
+    };
+
+    // Single-row buttons (event delegation)
+    document.getElementById("portfolioRows").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      try {
+        requireWallet();
+        await initWriteContract();
+        const col = btn.dataset.collection;
+        const token = btn.dataset.token;
+        if (btn.dataset.action === "harvest") {
+          const tx = await WRITE_CONTRACT.harvest(col, token);
+          log(`Harvest tx: ${tx.hash}`);
+          await tx.wait();
+        }
+        if (btn.dataset.action === "unstake") {
+          const tx = await WRITE_CONTRACT.unstake(col, token);
+          log(`Unstake tx: ${tx.hash}`);
+          await tx.wait();
+        }
+        await renderPortfolio();
+      } catch (e) {
+        log(e.message || e, "err");
+      }
+    });
+
+    // ---------- Helpers ----------
+    function formatCata(value) {
+      try {
+        return (Number(value) / 10**18).toFixed(4) + " CATA";
+      } catch {
+        return "—";
+      }
+    }
+
+    // ---------- Admin Actions ----------
+
+    // Governance: Create proposal
+    $("btnCreateProposal").onclick = async () => {
+      try {
+        requireWallet();
+        const propType = parseUint($("propType").value);
+        const paramTarget = parseUint($("paramTarget").value);
+        const col = parseAddress($("propCollection").value);
+        const val = parseUint($("propValue").value);
+        const duration = parseUint($("propDuration").value);
+
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.createProposal(propType, paramTarget, col, val, duration);
+        log(`Proposal sent: ${tx.hash}`);
+        await tx.wait();
+        log("Proposal created ✅", "ok");
+      } catch (e) { log(e.message || e, "err"); }
+    };
+
+    // Governance: Vote
+    $("btnVote").onclick = async () => {
+      try {
+        requireWallet();
+        const id = $("propIdVote").value.trim();
+        const col = parseAddress($("propColVote").value);
+
+        if(!id || !col) throw new Error("ID and Collection required");
+
+        await initWriteContract();
+        const tx = await WRITE_CONTRACT.vote(id, col);
         log(`Vote sent: ${tx.hash}`);
         await tx.wait();
         log("Vote confirmed ✅", "ok");
-      } catch(e){ log(e.message||e, "err"); }
+      } catch (e) { log(e.message || e, "err"); }
     };
 
-    $("btnExecute").onclick = async ()=>{
+    // Governance: Execute
+    $("btnExecute").onclick = async () => {
       try {
         requireWallet();
+        const id = $("propIdExec").value.trim();
+
+        if(!id) throw new Error("ID required");
+
         await initWriteContract();
-        const id = $("propId").value.trim();
-        if (!id) throw new Error("Proposal ID required");
-        const tx = await WRITE_CONTRACT.execute(id);
+        const tx = await WRITE_CONTRACT.executeProposal(id);
         log(`Execute sent: ${tx.hash}`);
         await tx.wait();
-        log("Proposal executed ✅", "ok");
-      } catch(e){ log(e.message||e, "err"); }
+        log("Execution confirmed ✅", "ok");
+      } catch (e) { log(e.message || e, "err"); }
     };
 
-    /* ============================
-     * GUARDIANS (DRS): DEPLOYER COUNCIL
-     * ============================ */
-    $("btnPropDep").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const addr = parseAddress($("newDeployer").value);
-        const tx = await WRITE_CONTRACT.proposeDeployer(addr);
-        log(`Propose new deployer sent: ${tx.hash}`);
-        await tx.wait();
-        log("New deployer proposed ✅", "ok");
-      }catch(e){ log(e.message||e,"err"); }
-    };
-
-    $("btnApproveDep").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const addr = parseAddress($("newDeployer").value);
-        const tx = await WRITE_CONTRACT.approveDeployer(addr);
-        log(`Approve new deployer sent: ${tx.hash}`);
-        await tx.wait();
-        log("Approval recorded ✅", "ok");
-      }catch(e){ log(e.message||e,"err"); }
-    };
-
-    $("btnExecDep").onclick = async ()=>{
-      try{
-        requireWallet();
-        const addr = parseAddress($("newDeployer").value);
-        const ok = await confirmAction("⚠️ Execute Deployer Recovery", [
-          "This will transfer the Deployer role.",
-          "Make sure approvals ≥ threshold.",
-          "",
-          `New Deployer: ${addr}`,
-          "",
-          "Proceed?"
-        ]);
-        if (!ok) return;
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.executeDeployer(addr);
-        log(`Execute deployer recovery sent: ${tx.hash}`);
-        await tx.wait();
-        log("Deployer recovery executed ✅", "ok");
-      }catch(e){ log(e.message||e,"err"); }
-    };
-
-    /* ============================
-     * GUARDIANS (DRS): ADMIN COUNCIL
-     * ============================ */
-    $("btnPropAdm").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const addr = parseAddress($("newAdmin").value);
-        const tx = await WRITE_CONTRACT.proposeAdmin(addr);
-        log(`Propose new admin sent: ${tx.hash}`);
-        await tx.wait();
-        log("New admin proposed ✅", "ok");
-      }catch(e){ log(e.message||e,"err"); }
-    };
-
-    $("btnApproveAdm").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const addr = parseAddress($("newAdmin").value);
-        const tx = await WRITE_CONTRACT.approveAdmin(addr);
-        log(`Approve new admin sent: ${tx.hash}`);
-        await tx.wait();
-        log("Approval recorded ✅", "ok");
-      }catch(e){ log(e.message||e,"err"); }
-    };
-
-    $("btnExecAdm").onclick = async ()=>{
-      try{
-        requireWallet();
-        const addr = parseAddress($("newAdmin").value);
-        const ok = await confirmAction("⚠️ Execute Admin Recovery", [
-          "This will transfer the Admin role.",
-          "Make sure approvals ≥ threshold.",
-          "",
-          `New Admin: ${addr}`,
-          "",
-          "Proceed?"
-        ]);
-        if (!ok) return;
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.executeAdmin(addr);
-        log(`Execute admin recovery sent: ${tx.hash}`);
-        await tx.wait();
-        log("Admin recovery executed ✅", "ok");
-      }catch(e){ log(e.message||e,"err"); }
-    };
-
-    $("btnSetDepGuardian").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-    const idx = parseUint($("depIdx").value);
-    const guardian = parseAddress($("depGuardian").value);
-
-    const tx = await WRITE_CONTRACT.setDeployerGuardian(idx, guardian);
-    log(`Set deployer guardian sent: ${tx.hash}`);
-    await tx.wait();
-    log("Deployer guardian updated ✅", "ok");
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
-    $("btnSetAdmGuardian").onclick = async () => {
-  try {
-    requireWallet();
-    await initWriteContract();
-    const idx = parseUint($("admIdx").value);
-    const guardian = parseAddress($("admGuardian").value);
-
-    const tx = await WRITE_CONTRACT.setAdminGuardian(idx, guardian);
-    log(`Set admin guardian sent: ${tx.hash}`);
-    await tx.wait();
-    log("Admin guardian updated ✅", "ok");
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
-    /* ============================
-     * ADMIN: PAUSE / UNPAUSE / WITHDRAW
-     * ============================ */
-    $("btnPause").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.pause();
-        log(`Pause sent: ${tx.hash}`);
-        await tx.wait();
-        log("Contract paused ✅", "ok");
-        // refresh stat
-        try { $("st_paused").textContent = "true"; } catch(_){}
-      }catch(e){ log(e.message||e,"err"); }
-    };
-
-    $("btnUnpause").onclick = async ()=>{
-      try{
-        requireWallet();
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.unpause();
-        log(`Unpause sent: ${tx.hash}`);
-        await tx.wait();
-        log("Contract unpaused ✅", "ok");
-        try { $("st_paused").textContent = "false"; } catch(_){}
-      }catch(e){ log(e.message||e,"err"); }
-    };
-
-    $("btnWithdraw").onclick = async ()=>{
-      try{
-        requireWallet();
-        const to = parseAddress($("toTreasury").value);
-        const amt = parseUint($("amtTreasury").value);
-        const ok = await confirmAction("⚠️ Treasury Withdraw", [
-          "Withdrawing from treasury is a privileged action.",
-          "Double-check the recipient and amount.",
-          "",
-          `Recipient: ${to}`,
-          `Amount (wei): ${amt}`,
-          "",
-          "Proceed?"
-        ]);
-        if (!ok) return;
-        await initWriteContract();
-        const tx = await WRITE_CONTRACT.withdrawTreasury(to, amt);
-        log(`Withdraw sent: ${tx.hash}`);
-        await tx.wait();
-        log("Treasury withdrawn ✅", "ok");
-        // stats refresh (treasury)
-        try { await refreshStats(); } catch(_){}
-      }catch(e){ log(e.message||e,"err"); }
-    };
-
-    /* ============================
-     * NICE LOGGING FOR NETWORK CHANGES
-     * ============================ */
-    if (window.ethereum) {
-      window.ethereum.on?.("accountsChanged", (accs)=>{
-        if (!accs || accs.length === 0) {
-          USER_ADDR = null; SIGNER = null; WRITE_CONTRACT = null;
-          $("acct").textContent = "Not connected";
-          $("walletBtn").textContent = "Connect";
-          log("Wallet disconnected (accountsChanged)", "warn");
-        } else {
-          USER_ADDR = accs[0];
-          $("acct").textContent = USER_ADDR;
-          $("walletBtn").textContent = "Disconnect";
-          log(`Account switched → ${USER_ADDR}`, "ok");
-        }
-      });
-      window.ethereum.on?.("chainChanged", ()=>{
-        // clear signer cache; require re-init write
-        WRITE_CONTRACT = null; SIGNER = null;
-        log("Chain changed — reinitializing signer on next write", "warn");
-      });
-    }
-
-    /* ============================
-     * FINAL TOUCHES
-     * ============================ */
-    log("Action wiring complete — DApp ready ✅", "ok");
-
-/* ============================
-     * READ HELPERS (lists & info)
-     * ============================ */
-
-    // Pending (read tab; owner optional)
-    $("btnViewPending2").onclick = async ()=>{
-      try{
-        await initReadContract();
-        const col = parseAddress($("vCol").value);
-        const ownerRaw = ($("vOwner").value||"").trim();
-        const idStr = ($("vTokenId").value||"").trim();
-
-        let out = "";
-        if (idStr) {
-          const id = parseUint(idStr);
-          // preferred: pendingRewardOf(collection, tokenId)
-          try{
-            const v = await READ_CONTRACT.pendingRewardOf(col, id);
-            out += `pendingRewardOf(${col}, #${id}) = ${ethers.formatUnits(v,18)} CATA\n`;
-          }catch(e){
-            out += `pendingRewardOf not available (${e.message||e})\n`;
-          }
-        }
-
-        if (ownerRaw) {
-          const owner = parseAddress(ownerRaw);
-          // optional alt: pendingRewardOfOwner(collection, owner)
-          try{
-            const v2 = await READ_CONTRACT.pendingRewardOfOwner(col, owner);
-            out += `pendingRewardOfOwner(${col}, ${owner}) = ${ethers.formatUnits(v2,18)} CATA\n`;
-          }catch(e){
-            out += `pendingRewardOfOwner not available (${e.message||e})\n`;
-          }
-        }
-
-        if (!out) out = "Provide a token ID and/or Owner address.";
-        $("pendingOut").textContent = out.trim();
-      }catch(e){ log(e.message||e, "err"); }
-    };
-
-// List all registered collections
-$("btnListCollections").onclick = async () => {
-  try {
-    await initReadContract();
-    let lines = [];
-    const n = await READ_CONTRACT.collectionCount();
-    lines.push(`count = ${n}`);
-
-    for (let i = 0; i < n && i < 200; i++) {
-      const addr = await READ_CONTRACT.registeredCollections(i);
-      lines.push(`${i}. ${addr}`);
-    }
-    $("collectionsOut").textContent = lines.length
-      ? lines.join("\n")
-      : "(none registered)";
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
-// List all flagged blue-chips
-$("btnListBlue").onclick = async () => {
-  try {
-    await initReadContract();
-    let lines = [];
-    const n = await READ_CONTRACT.collectionCount();
-
-    for (let i = 0; i < n && i < 200; i++) {
-      const addr = await READ_CONTRACT.registeredCollections(i);
-      const flag = await READ_CONTRACT.isBluechipCollection(addr);
-      if (flag) lines.push(`${i}. ${addr}`);
-    }
-    $("collectionsOut").textContent = lines.length
-      ? lines.join("\n")
-      : "(none flagged as blue-chip)";
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
-    // User info (tries userInfo(address) / balances)
-    $("btnUserInfo").onclick = async ()=>{
-      try{
-        await initReadContract();
-        const who = ($("infoUser").value||"").trim() || USER_ADDR;
-        if (!who) throw new Error("Provide user or connect wallet");
-        const addr = parseAddress(who);
-
-        let out = [`User: ${addr}`];
-
-        // common views, guarded with try/catch so it works across ABI variants
-        try{
-          const bal = await READ_CONTRACT.balanceOf(addr);
-          out.push(`CATA balanceOf = ${ethers.formatUnits(bal,18)}`);
-        }catch{}
-        try{
-          const st = await READ_CONTRACT.userStakeCount(addr);
-          out.push(`userStakeCount = ${st}`);
-        }catch{}
-        try{
-          const en = await READ_CONTRACT.isBluechipEnrolled(addr);
-          out.push(`bluechip enrolled = ${en}`);
-        }catch{}
-
-        $("infoOut").textContent = out.join("\n");
-      }catch(e){ log(e.message||e, "err"); }
-    };
-
-    // Collection info (tries collectionInfo(struct) / isRegistered / caps)
-    // 🔹 Helper: Get human-readable tier
-function mapTier(tierNum) {
-  switch (tierNum) {
-    case 3: return "💎 Blue-Chip";
-    case 2: return "✅ Verified Collection";
-    case 1: return "⚠️ Unverified Collection"; // reserved for future
-    case 0: default: return "❌ Not Registered";
-  }
-}
-
-$("btnColInfo").onclick = async () => {
-  try {
-    await initReadContract();
-    const col = parseAddress($("infoCol").value);
-    let out = [`Collection: ${col}`];
-
-    // ✅ Registered index check
-    try {
-      const idx = await READ_CONTRACT.registeredIndex(col);
-      out.push(`registered = ${idx > 0}`);
-    } catch {
-      out.push("registered = (not supported)");
-    }
-
-    // ✅ Tier detection
-    try {
-      const tierNum = await READ_CONTRACT.getCollectionTier(col);
-      const tierLabel = mapTier(Number(tierNum));
-      out.push(`tier = ${tierNum} (${tierLabel})`);
-    } catch {
-      out.push("tier = (not supported in ABI?)");
-    }
-
-    // ✅ Total staked
-    try {
-      const total = await READ_CONTRACT.collectionTotalStaked(col);
-      out.push(`totalStaked = ${total}`);
-    } catch {
-      out.push("totalStaked = (not available)");
-    }
-
-    $("infoOut").textContent = out.join("\n");
-  } catch (e) {
-    log(e.message || e, "err");
-  }
-};
-
-    /* ============================
-     * ADMIN (safe confirm wrappers)
-     * ============================ */
-
-    // Re-bind Pause with confirm (optional – comment out if you prefer no confirm)
+    // Admin: Pause
     $("btnPause").onclick = async ()=>{
       try{
         requireWallet();
         const ok = await confirmModal({
-          title: "Pause Protocol?",
-          body: "Pausing blocks write paths (stake/harvest/register/governance). Continue?",
+          title: "Pause Contract",
+          body: "This will pause the contract, preventing most interactions. Proceed?",
           icon: "⏸️", danger: true
         });
-        if (!ok) return;
+        if (!ok) { log("Pause cancelled", "warn"); return; }
         await initWriteContract();
         const tx = await WRITE_CONTRACT.pause();
         log(`Pause sent: ${tx.hash}`);
@@ -2007,9 +1505,16 @@ $("btnColInfo").onclick = async () => {
       }catch(e){ log(e.message||e,"err"); }
     };
 
-    $("btnUnpause").onclick = async ()=>{
+    // Admin: Unpause
+    $("btnUnpause").onclick = async ()=> {
       try{
         requireWallet();
+        const ok = await confirmModal({
+          title: "Unpause Contract",
+          body: "This will unpause the contract, allowing all interactions. Proceed?",
+          icon: "▶️"
+        });
+        if (!ok) { log("Unpause cancelled", "warn"); return; }
         await initWriteContract();
         const tx = await WRITE_CONTRACT.unpause();
         log(`Unpause sent: ${tx.hash}`);
@@ -2019,7 +1524,7 @@ $("btnColInfo").onclick = async () => {
     };
 
     // Safe Treasury Withdraw (uses the visible ids from Admin tab)
-    $("btnWithdraw").onclick = async ()=>{
+    $("btnWithdraw").onclick = async ()=> {
       try{
         requireWallet();
         const to = parseAddress($("toTreasury").value);
