@@ -1242,7 +1242,7 @@ $("btnStake").onclick = async ()=>{
     setBadge("colBatchStatus", "✅ Batch staked", "bg-green-600 text-white");
   } catch (e) {
     log(e.message || e, "err");
-    setBadge("colSatchStatus", "⚠️ Batch stake failed", "bg-orange-600 text-white");
+    setBadge("colBatchStatus", "⚠️ Batch stake failed", "bg-orange-600 text-white");
   }
 };
 
