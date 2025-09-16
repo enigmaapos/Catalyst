@@ -1037,8 +1037,12 @@ function toWei(val, decimals = 18) {
     /* =========================
        WRITE/READ ACTIONS
        ========================= */
+// Safe $ helper
+function $(id) { return document.getElementById(id); }
+
+// Generic badge
 function setBadge(elId, text, colorClass) {
-  const el = typeof elId === "string" ? document.getElementById(elId) : elId;
+  const el = $(elId);
   if (!el) {
     console.warn(`setBadge: element '${elId}' not found`);
     return;
