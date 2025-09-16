@@ -161,6 +161,7 @@ contract CatalystNFTStakingUpgradeable is
 
         deployerAddress = cfg.owner;
         treasuryAddress = address(this);
+   s.admin = cfg.owner;
         rewardRateIncrementPerNFT = cfg.rewardRateIncrementPerNFT;
         initialHarvestBurnFeeRate = cfg.initialHarvestBurnFeeRate;
         unstakeBurnFee = cfg.unstakeBurnFee;
@@ -260,37 +261,21 @@ contract CatalystNFTStakingUpgradeable is
     }
 
 // -------- Registration (permissionless with fee guard) --------
-    function registerCollection(address collection, uint256 declaredMaxSupply) external whenNotPaused nonReentrant {
+    function registerCollection(address collection, uint256 declaredMaxSupply) 
+        external 
+        whenNotPaused 
+        nonReentrant 
+    {
         if (collection == address(0)) revert ZeroAddress();
         if (registeredIndex[collection] != 0) revert AlreadyExists();
         if (declaredMaxSupply == 0 || declaredMaxSupply > MAX_STAKE_PER_COLLECTION) revert BadParam();
 
-        // Check if the caller is a privileged role
-        bool isAdmin = hasRole(CONTRACT_ADMIN_ROLE, msg.sender);
-        
-        StakingLib.Tier initialTier;
-        if (isAdmin) {
-            // Registration by a trusted admin
-            initialTier = StakingLib.Tier.VERIFIED;
-        } else {
-            // Permissionless registration
-            // Check that the caller is the owner of the collection contract
-            address collectionOwner = IERC165(collection).supportsInterface(type(IERC721).interfaceId)
-                ? IERC721(collection).owner() // Assumes an ERC721 with an owner() function
-                : address(0);
-
-            if (collectionOwner == msg.sender) {
-                initialTier = StakingLib.Tier.VERIFIED;
-            } else {
-                initialTier = StakingLib.Tier.UNVERIFIED;
-            }
-        }
-        
         uint256 fee = collectionRegistrationFee;
         if (fee > 0) _splitFeeFromSender(_msgSender(), fee);
 
-        // Assign the determined tier during initialization
-        s.initCollection(collection, declaredMaxSupply, initialTier); // You would need to update this init function to accept the tier
+        // Library decides VERIFIED vs UNVERIFIED
+        s.initCollection(collection, declaredMaxSupply);
+
         registeredCollections.push(collection);
         registeredIndex[collection] = registeredCollections.length;
 
