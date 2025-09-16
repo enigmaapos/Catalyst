@@ -106,8 +106,7 @@
   </header>
 
   <main class="max-w-7xl mx-auto px-4 py-6 grid-2 gap-6">
-
-    <section class="space-y-6">
+<section class="space-y-6">
 
       <div class="glass ring-1 rounded-2xl p-2 flex flex-wrap gap-2">
         <button data-tab="overview" class="tabbtn btn btn-ghost tab-active">Overview</button>
@@ -132,7 +131,6 @@
             </p>
           </div>
         </div>
-
         <div class="grid md:grid-cols-3 gap-4">
           <div class="card rounded-xl p-4 ring-1">
             <div class="text-sm muted mb-1">Mission</div>
@@ -338,72 +336,69 @@
           </div>
         </div>
 
-      <div class="card rounded-xl p-4 ring-1 space-y-3">
-  <h3 class="font-semibold">Register Collection (permissionless)</h3>
-  <div class="grid md:grid-cols-2 gap-3">
-    <div>
-      <div class="text-xs muted mb-1">Collection</div>
-      <input id="colRegister" placeholder="0x…" 
-        class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-      <div id="colRegisterStatus" class="text-xs mt-1 muted">—</div> <!-- ✅ status output -->
-    </div>
-    <div>
-      <div class="text-xs muted mb-1">Declared Max Supply (≤ 20000)</div>
-      <input id="declaredSupply" type="number" placeholder="10000"
-        class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-    </div>
-  </div>
-  <button id="btnRegister" class="btn btn-primary">Register</button>
+        <div class="card rounded-xl p-4 ring-1 space-y-3">
+          <h3 class="font-semibold">Register Collection (permissionless)</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs muted mb-1">Collection</div>
+              <input id="colRegister" placeholder="0x…"
+                class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+              <div id="colRegisterStatus" class="text-xs mt-1 muted">—</div>
+            </div>
+            <div>
+              <div class="text-xs muted mb-1">Declared Max Supply (≤ 20000)</div>
+              <input id="declaredSupply" type="number" placeholder="10000"
+                class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+            </div>
+          </div>
+          <button id="btnRegister" class="btn btn-primary">Register</button>
           <div class="text-xs muted">
             <span class="tooltip" data-tip="Unverified collections incur surcharges until they upgrade.">ⓘ</span> Verified collections (usually owner-registered) enjoy normal fees.
-        </div>
-          <!-- ✅ NEW Portfolio Table Section -->
-  <div class="card rounded-xl p-4 ring-1 space-y-3">
-    <div class="flex items-center justify-between mb-4">
-  <h3 class="font-semibold">Your Staked NFTs</h3>
-  <div class="flex gap-2">
-    <button id="btnHarvestAll" class="btn btn-primary">
-      Harvest All
-      <span id="harvestCount" class="ml-1 text-xs bg-[#1a2d50] px-1.5 py-0.5 rounded-md">0</span>
-    </button>
-    <button id="btnUnstakeSel" class="btn btn-ghost">
-      Unstake Selected
-      <span id="unstakeCount" class="ml-1 text-xs bg-[#1a2d50] px-1.5 py-0.5 rounded-md">0</span>
-    </button>
-  </div>
-</div>
+          </div>
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Your Staked NFTs</h3>
+              <div class="flex gap-2">
+                <button id="btnHarvestAll" class="btn btn-primary">
+                  Harvest All
+                  <span id="harvestCount" class="ml-1 text-xs bg-[#1a2d50] px-1.5 py-0.5 rounded-md">0</span>
+                </button>
+                <button id="btnUnstakeSel" class="btn btn-ghost">
+                  Unstake Selected
+                  <span id="unstakeCount" class="ml-1 text-xs bg-[#1a2d50] px-1.5 py-0.5 rounded-md">0</span>
+                </button>
+              </div>
+            </div>
 
-    <div class="overflow-auto">
-      <table class="min-w-full border-collapse text-sm">
-        <thead>
-  <tr class="bg-[#0b1220] text-gray-300">
-    <th class="px-3 py-2 text-left">
-      <input type="checkbox" id="selectAll" />
-    </th>
-    <th class="px-3 py-2 text-left">Collection</th>
-    <th class="px-3 py-2 text-left">Token ID</th>
-    <th class="px-3 py-2 text-left">Type</th>
-    <th class="px-3 py-2 text-left">Stake Block</th>
-    <th class="px-3 py-2 text-left">Remaining</th>
-    <th class="px-3 py-2 text-left">Last Harvest</th>
-    <th class="px-3 py-2 text-left">Pending CATA</th>
-    <th class="px-3 py-2 text-left">Actions</th>
-  </tr>
-</thead>
-        <tbody id="portfolioRows" class="divide-y divide-[#1a2d50]">
-          <!-- JS will populate rows dynamically -->
-        </tbody>
-      </table>
-    </div>
+            <div class="overflow-auto">
+              <table class="min-w-full border-collapse text-sm">
+                <thead>
+                  <tr class="bg-[#0b1220] text-gray-300">
+                    <th class="px-3 py-2 text-left">
+                      <input type="checkbox" id="selectAll" />
+                    </th>
+                    <th class="px-3 py-2 text-left">Collection</th>
+                    <th class="px-3 py-2 text-left">Token ID</th>
+                    <th class="px-3 py-2 text-left">Type</th>
+                    <th class="px-3 py-2 text-left">Stake Block</th>
+                    <th class="px-3 py-2 text-left">Remaining</th>
+                    <th class="px-3 py-2 text-left">Last Harvest</th>
+                    <th class="px-3 py-2 text-left">Pending CATA</th>
+                    <th class="px-3 py-2 text-left">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="portfolioRows" class="divide-y divide-[#1a2d50]">
+                  </tbody>
+              </table>
+            </div>
 
-    <p class="text-xs muted mt-3">
-      💡 Use "Harvest All" to batch harvest where supported by contract.
-      Gas estimates will show before sending the transaction.
-    </p>
-  </div>
-</div>
+            <p class="text-xs muted mt-3">
+              💡 Use "Harvest All" to batch harvest where supported by contract.
+              Gas estimates will show before sending the transaction.
+            </p>
+          </div>
         </div>
-    </div>
+      </div>
 
       <div id="tab-bluechip" class="glass ring-1 rounded-2xl p-5 space-y-6 hidden">
         <div class="flex items-start gap-3">
@@ -424,17 +419,17 @@
 
         <div class="card rounded-xl p-4 ring-1 space-y-3">
           <div class="grid md:grid-cols-2 gap-3">
-            
-  <div>
-    <div class="text-xs muted mb-1">Enroll Wallet (one-time)</div>
-    <button id="btnEnrollBlue" class="btn btn-primary w-full">Enroll</button>
-  </div>
 
-  <div class="flex gap-2 mt-2">
-    <button id="btnCheckEnroll" class="btn btn-ghost w-full">Check Enrollment</button>
-  </div>
+            <div>
+              <div class="text-xs muted mb-1">Enroll Wallet (one-time)</div>
+              <button id="btnEnrollBlue" class="btn btn-primary w-full">Enroll</button>
+            </div>
 
-  <div id="blueEnrollStatus" class="text-xs muted mt-1">—</div>
+            <div class="flex gap-2 mt-2">
+              <button id="btnCheckEnroll" class="btn btn-ghost w-full">Check Enrollment</button>
+            </div>
+
+            <div id="blueEnrollStatus" class="text-xs muted mt-1">—</div>
 
             <div>
               <div class="text-xs muted mb-1">Harvest for Collection</div>
@@ -448,25 +443,25 @@
 
           <details class="rounded-lg ring-1 p-3">
             <summary class="cursor-pointer">Admin: Flag / Unflag Collection</summary>
-<div class="grid md:grid-cols-3 gap-3 mt-3">
-  <div>
-    <div class="text-xs muted mb-1">Collection</div>
-    <input id="colFlagBlue" placeholder="0x…" 
-      class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
-    <div id="colBlueStatus" class="text-xs mt-1 muted">—</div> <!-- ✅ added -->
-  </div>
-  <div>
-    <div class="text-xs muted mb-1">Status</div>
-    <select id="isBlueFlag" 
-      class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
-      <option value="true">Flag as Blue-Chip</option>
-      <option value="false">Remove Blue-Chip</option>
-    </select>
-  </div>
-  <div class="flex items-end">
-    <button id="btnSetBlue" class="btn btn-primary w-full">Set Blue-Chip</button>
-  </div>
-</div>
+            <div class="grid md:grid-cols-3 gap-3 mt-3">
+              <div>
+                <div class="text-xs muted mb-1">Collection</div>
+                <input id="colFlagBlue" placeholder="0x…"
+                  class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                <div id="colBlueStatus" class="text-xs mt-1 muted">—</div>
+              </div>
+              <div>
+                <div class="text-xs muted mb-1">Status</div>
+                <select id="isBlueFlag"
+                  class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm">
+                  <option value="true">Flag as Blue-Chip</option>
+                  <option value="false">Remove Blue-Chip</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button id="btnSetBlue" class="btn btn-primary w-full">Set Blue-Chip</button>
+              </div>
+            </div>
           </details>
         </div>
       </div>
@@ -527,6 +522,22 @@
               </div>
             </div>
             <div class="text-xs muted">Ensure quorum + endBlock passed before execution.</div>
+          </div>
+          
+          <div class="card rounded-xl p-4 ring-1 space-y-3">
+            <h3 class="font-semibold">Get Proposal Info</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+                <div>
+                    <div class="text-xs muted mb-1">Proposal ID (bytes32)</div>
+                    <input id="propIdRead" placeholder="0x…" class="w-full bg-[#0b1220] border border-[#1b2640] rounded-lg px-3 py-2 text-sm"/>
+                </div>
+                <div class="flex items-end">
+                    <button id="btnGetProposal" class="btn btn-primary w-full">Get Info</button>
+                </div>
+            </div>
+            <div id="proposalInfoOut" class="mono text-sm muted mt-3">
+              Enter a Proposal ID to get detailed info here.
+            </div>
           </div>
         </div>
       </div>
