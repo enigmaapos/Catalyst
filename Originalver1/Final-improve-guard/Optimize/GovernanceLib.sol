@@ -33,6 +33,19 @@ library GovernanceLib {
         uint256 collectionVoteCapPercent; // percent 0..100
     }
 
+    // --- Custom errors (save bytecode & gas) ---
+    error ProposalExists();
+    error ProposalNotFound();
+    error VotingClosed();
+    error AlreadyExecuted();
+    error AlreadyVoted();
+    error ZeroWeight();
+    error CapExceeded();
+    error VotingNotEnded();
+    error QuorumNotMet();
+    error CapTooHigh();
+
+    // --- Events ---
     event ProposalCreated(
         bytes32 indexed id,
         ProposalType pType,
@@ -46,18 +59,20 @@ library GovernanceLib {
     event VoteCast(bytes32 indexed id, address indexed voter, uint256 weightScaled, address attributedCollection);
     event ProposalMarkedExecuted(bytes32 indexed id);
 
+    // --- Init ---
     function initGov(
         Storage storage g,
         uint256 votingDurationBlocks_,
         uint256 minVotesRequiredScaled_,
         uint256 collectionVoteCapPercent_
     ) internal {
-        require(collectionVoteCapPercent_ <= 100, "GovernanceLib: cap>100");
+        if (collectionVoteCapPercent_ > 100) revert CapTooHigh();
         g.votingDurationBlocks = votingDurationBlocks_;
         g.minVotesRequiredScaled = minVotesRequiredScaled_;
         g.collectionVoteCapPercent = collectionVoteCapPercent_;
     }
 
+    // --- Proposal creation ---
     function createProposal(
         Storage storage g,
         ProposalType pType,
@@ -66,12 +81,12 @@ library GovernanceLib {
         address collection,
         address proposer,
         uint256 currentBlock
-    ) internal returns (bytes32) {
-        bytes32 id = keccak256(
+    ) internal returns (bytes32 id) {
+        id = keccak256(
             abi.encodePacked(uint256(pType), paramTarget, newValue, collection, currentBlock, proposer)
         );
         Proposal storage p = g.proposals[id];
-        require(p.startBlock == 0, "GovernanceLib: exists");
+        if (p.startBlock != 0) revert ProposalExists();
 
         p.pType = pType;
         p.paramTarget = paramTarget;
@@ -80,13 +95,11 @@ library GovernanceLib {
         p.proposer = proposer;
         p.startBlock = currentBlock;
         p.endBlock = currentBlock + g.votingDurationBlocks;
-        p.votesScaled = 0;
-        p.executed = false;
 
         emit ProposalCreated(id, pType, paramTarget, collection, proposer, newValue, p.startBlock, p.endBlock);
-        return id;
     }
 
+    // --- Voting ---
     function castVote(
         Storage storage g,
         bytes32 id,
@@ -95,18 +108,15 @@ library GovernanceLib {
         address attributedCollection
     ) internal {
         Proposal storage p = g.proposals[id];
-        require(p.startBlock != 0, "GovernanceLib: not found");
-        require(block.number >= p.startBlock && block.number <= p.endBlock, "GovernanceLib: closed");
-        require(!p.executed, "GovernanceLib: executed");
-        require(!g.hasVoted[id][voter], "GovernanceLib: voted");
-        require(weightScaled > 0, "GovernanceLib: zero weight");
+        if (p.startBlock == 0) revert ProposalNotFound();
+        if (block.number < p.startBlock || block.number > p.endBlock) revert VotingClosed();
+        if (p.executed) revert AlreadyExecuted();
+        if (g.hasVoted[id][voter]) revert AlreadyVoted();
+        if (weightScaled == 0) revert ZeroWeight();
 
-        uint256 collectionVoteCapPercent = g.collectionVoteCapPercent;
-        uint256 minVotesRequiredScaled = g.minVotesRequiredScaled;
-        uint256 cap = (minVotesRequiredScaled * collectionVoteCapPercent) / 100;
+        uint256 cap = (g.minVotesRequiredScaled * g.collectionVoteCapPercent) / 100;
         uint256 cur = g.proposalCollectionVotesScaled[id][attributedCollection];
-
-        require(cur + weightScaled <= cap, "GovernanceLib: cap");
+        if (cur + weightScaled > cap) revert CapExceeded();
 
         g.hasVoted[id][voter] = true;
         p.votesScaled += weightScaled;
@@ -115,19 +125,20 @@ library GovernanceLib {
         emit VoteCast(id, voter, weightScaled, attributedCollection);
     }
 
-    /// @notice Validate execution conditions; does not mark executed
-    function validateForExecution(Storage storage g, bytes32 id) internal view returns (Proposal memory) {
-        Proposal memory p = g.proposals[id];
-        require(p.startBlock != 0, "GovernanceLib: not found");
-        require(block.number > p.endBlock, "GovernanceLib: voting");
-        require(!p.executed, "GovernanceLib: executed");
-        require(p.votesScaled >= g.minVotesRequiredScaled, "GovernanceLib: quorum");
-        return p;
+    // --- Execution validation ---
+    function validateForExecution(Storage storage g, bytes32 id) internal view returns (Proposal memory p) {
+        p = g.proposals[id];
+        if (p.startBlock == 0) revert ProposalNotFound();
+        if (block.number <= p.endBlock) revert VotingNotEnded();
+        if (p.executed) revert AlreadyExecuted();
+        if (p.votesScaled < g.minVotesRequiredScaled) revert QuorumNotMet();
     }
 
-    /// @notice Mark executed separately
+    // --- Mark executed ---
     function markExecuted(Storage storage g, bytes32 id) internal {
-        g.proposals[id].executed = true;
+        Proposal storage p = g.proposals[id];
+        if (p.executed) revert AlreadyExecuted();
+        p.executed = true;
         emit ProposalMarkedExecuted(id);
     }
 }
