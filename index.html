@@ -1047,6 +1047,52 @@ function setBadge(elId, text, colorClass) {
   el.innerHTML =
     `<span class="px-2 py-0.5 rounded-lg text-xs font-medium ${colorClass}">${text}</span>`;
 }
+
+	  // --- Single Stake Address Checker ---
+$("colStake").addEventListener("input", async () => {
+  const col = $("colStake").value.trim();
+  if (!col || !ethers.isAddress(col)) {
+    setBadge("colStakeStatus", "—", "bg-gray-700 text-gray-200");
+    return;
+  }
+
+  try {
+    setBadge("colStakeStatus", "⏳ Checking...", "bg-yellow-500 text-black");
+    const registered = await isRegisteredCollection(col);
+    if (!registered) {
+      setBadge("colStakeStatus", "❌ Not registered", "bg-red-600 text-white");
+    } else {
+      const { text, color } = await getCollectionTierAndColor(col);
+      setBadge("colStakeStatus", text, color);
+    }
+  } catch (e) {
+    setBadge("colStakeStatus", "⚠️ Error checking", "bg-orange-600 text-white");
+    log(e.message || e, "err");
+  }
+});
+
+// --- Batch Stake Address Checker ---
+$("colBatch").addEventListener("input", async () => {
+  const col = $("colBatch").value.trim();
+  if (!col || !ethers.isAddress(col)) {
+    setBadge("colBatchStatus", "—", "bg-gray-700 text-gray-200");
+    return;
+  }
+
+  try {
+    setBadge("colBatchStatus", "⏳ Checking...", "bg-yellow-500 text-black");
+    const registered = await isRegisteredCollection(col);
+    if (!registered) {
+      setBadge("colBatchStatus", "❌ Not registered", "bg-red-600 text-white");
+    } else {
+      const { text, color } = await getCollectionTierAndColor(col);
+      setBadge("colBatchStatus", text, color);
+    }
+  } catch (e) {
+    setBadge("colBatchStatus", "⚠️ Error checking", "bg-orange-600 text-white");
+    log(e.message || e, "err");
+  }
+});
     
 	  // --- Stake: Approvals ---
     $("btnApprove721").onclick = async ()=>{
