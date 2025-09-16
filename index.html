@@ -1038,7 +1038,12 @@ function toWei(val, decimals = 18) {
        WRITE/READ ACTIONS
        ========================= */
 function setBadge(elId, text, colorClass) {
-  $(elId).innerHTML =
+  const el = typeof elId === "string" ? document.getElementById(elId) : elId;
+  if (!el) {
+    console.warn(`setBadge: element '${elId}' not found`);
+    return;
+  }
+  el.innerHTML =
     `<span class="px-2 py-0.5 rounded-lg text-xs font-medium ${colorClass}">${text}</span>`;
 }
     
