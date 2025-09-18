@@ -26,198 +26,183 @@
       </div>
     </header>
 
-    <main class="grid grid-cols-1 md:grid-cols-3 gap-6">      
-      <!-- Left -->
-      <section class="glass p-4 rounded-lg">
-        <h2 class="font-semibold mb-2">Quick Status</h2>
-        <div class="space-y-2 text-sm text-slate-200">
-          <div>Connected: <strong id="addr">Not connected</strong></div>
-          <div>Network: <strong id="networkText">—</strong></div>
-          <div>CATA Balance: <strong id="cataBal">—</strong></div>
-          <div>Staked NFTs (global): <strong id="globalStaked">—</strong></div>
-          <div>Roles (CATA / Staking): <small id="roles">—</small></div>
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- Tab Buttons -->
+  <div class="glass ring-1 rounded-2xl p-2 flex flex-wrap gap-2">
+    <button data-tab="quickstatus" class="tabbtn btn btn-ghost tab-active">Quick Status</button>
+    <button data-tab="registration" class="tabbtn btn btn-ghost">Collection Registration</button>
+    <button data-tab="bluechip" class="tabbtn btn btn-ghost">Bluechip</button>
+    <button data-tab="staking" class="tabbtn btn btn-ghost">Staking</button>
+    <button data-tab="governance" class="tabbtn btn btn-ghost">Governance & Council</button>
+  </div>
+
+  <!-- Tab Contents -->
+  <div id="tabContents" class="glass rounded-2xl p-4">
+
+    <!-- Quick Status -->
+    <section id="quickstatus" class="tab-content">
+      <h2 class="font-semibold mb-2">Quick Status</h2>
+      <div class="space-y-2 text-sm text-slate-200">
+        <div>Connected: <strong id="addr">Not connected</strong></div>
+        <div>Network: <strong id="networkText">—</strong></div>
+        <div>CATA Balance: <strong id="cataBal">—</strong></div>
+        <div>Staked NFTs (global): <strong id="globalStaked">—</strong></div>
+        <div>Roles (CATA / Staking): <small id="roles">—</small></div>
+      </div>
+
+      <hr class="my-3 border-slate-700" />
+      <div class="text-xs text-slate-300">Contract Addresses (defaults & localStorage)</div>
+      <div class="mt-2 space-y-2">
+        <input id="addrCata" placeholder="CATA Token Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <input id="addrStaking" placeholder="Staking Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <input id="addrGovernance" placeholder="Governance Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <input id="addrCouncil" placeholder="GuardianCouncil Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <div class="flex gap-2">
+          <button id="saveAddrs" class="px-3 py-1 bg-slate-700 rounded text-sm">Save</button>
+          <button id="loadAddrs" class="px-3 py-1 bg-slate-700/50 rounded text-sm">Load</button>
         </div>
+      </div>
 
-        <hr class="my-3 border-slate-700" />
-        <div class="text-xs text-slate-300">Contract Addresses (defaults & localStorage)</div>
-        <div class="mt-2 space-y-2">
-          <input id="addrCata" placeholder="CATA Token Address" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <input id="addrStaking" placeholder="Staking Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <input id="addrGovernance" placeholder="Governance Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <input id="addrCouncil" placeholder="GuardianCouncil Address" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <div class="flex gap-2">
-            <button id="saveAddrs" class="px-3 py-1 bg-slate-700 rounded text-sm">Save</button>
-            <button id="loadAddrs" class="px-3 py-1 bg-slate-700/50 rounded text-sm">Load</button>
-          </div>
+      <hr class="my-3 border-slate-700" />
+      <div class="text-xs text-slate-400">CATA Actions</div>
+      <div class="mt-2 space-y-2">
+        <input id="cataMintTo" placeholder="Mint to address" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <input id="cataMintAmt" placeholder="Amount (wei or integer string)" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <div class="flex gap-2">
+          <button id="cataMintBtn" class="flex-1 p-2 bg-indigo-600 rounded">Mint (MINTER_ROLE)</button>
+          <button id="cataBurnBtn" class="flex-1 p-2 bg-red-600 rounded">Burn (self)</button>
         </div>
-
-        <hr class="my-3 border-slate-700" />
-        <div class="text-xs text-slate-400">CATA Actions</div>
-        <div class="mt-2 space-y-2">
-          <input id="cataMintTo" placeholder="Mint to address" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <input id="cataMintAmt" placeholder="Amount (wei or integer string)" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <div class="flex gap-2">
-            <button id="cataMintBtn" class="flex-1 p-2 bg-indigo-600 rounded">Mint (MINTER_ROLE)</button>
-            <button id="cataBurnBtn" class="flex-1 p-2 bg-red-600 rounded">Burn (self)</button>
-          </div>
-          <div class="flex gap-2 mt-2">
-            <input id="swapNewAdmin" placeholder="New admin address" class="flex-1 p-2 rounded bg-black/20 text-sm" />
-            <input id="swapOldAdmin" placeholder="Old admin address (optional)" class="flex-1 p-2 rounded bg-black/20 text-sm" />
-          </div>
-          <div class="mt-2">
-            <button id="swapAdminBtn" class="p-2 bg-yellow-500 text-black rounded w-full">Swap Admin (council only)</button>
-          </div>
+        <div class="flex gap-2 mt-2">
+          <input id="swapNewAdmin" placeholder="New admin address" class="flex-1 p-2 rounded bg-black/20 text-sm" />
+          <input id="swapOldAdmin" placeholder="Old admin address (optional)" class="flex-1 p-2 rounded bg-black/20 text-sm" />
         </div>
-      </section>
-
-		<!-- Collection Registration (permissionless) & Admin Upgrade -->
-<hr class="border-slate-700 my-2" />
-<div class="mt-3">
-  <h3 class="font-semibold mb-2">Collection Registration</h3>
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-    <input id="regCollectionAddr" placeholder="Collection address (ERC721)" class="p-2 rounded bg-black/20 text-sm" />
-    <input id="regDeclaredSupply" placeholder="Declared max supply (integer >=1)" class="p-2 rounded bg-black/20 text-sm" />
-  </div>
-
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-    <select id="regTier" class="p-2 rounded bg-black/20 text-sm">
-      <option value="0">UNVERIFIED (0)</option>
-      <option value="1">VERIFIED (1)</option>
-      <option value="2">BLUECHIP (2)</option>
-    </select>
-
-    <button id="calcRegFeeBtn" class="p-2 bg-slate-600 rounded text-sm">Calculate Fee</button>
-    <div id="regFeeInfo" class="p-2 text-xs text-slate-300">Fee: —</div>
-  </div>
-
-  <div class="flex gap-2 mt-2">
-    <button id="approveRegCataBtn" class="flex-1 p-2 bg-amber-600 rounded text-sm">Approve CATA for registration</button>
-    <button id="registerCollectionBtn" class="flex-1 p-2 bg-indigo-600 rounded text-sm">Register (permissionless)</button>
-  </div>
-
-  <div class="mt-3">
-    <h4 class="font-semibold">Admin: Set / Upgrade Collection Tier</h4>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-      <input id="adminCollAddr" placeholder="Collection address (admin action)" class="p-2 rounded bg-black/20 text-sm" />
-      <input id="adminDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
-    </div>
-    <div class="flex gap-2 mt-2">
-      <select id="adminTier" class="p-2 rounded bg-black/20 text-sm">
-        <option value="0">UNVERIFIED (0)</option>
-        <option value="1">VERIFIED (1)</option>
-        <option value="2">BLUECHIP (2)</option>
-      </select>
-      <button id="adminSetConfigBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded text-sm">Set Collection Config (admin)</button>
-    </div>
-  </div>
-</div>
-
-	<section class="glass p-4 rounded-lg">
-  <h2 class="font-semibold mb-2">Bluechip</h2>
-  <p class="text-sm text-slate-300 mb-3">
-    Enroll as a Bluechip wallet and harvest rewards from Bluechip collections.
-  </p>
-
-  <div class="space-y-2 text-sm">
-    <!-- Enroll -->
-    <div class="flex gap-2">
-      <button id="enrollBluechipBtn" class="flex-1 p-2 bg-amber-500 text-black rounded">
-        Enroll Bluechip Wallet
-      </button>
-    </div>
-
-    <!-- Harvest -->
-    <div class="grid grid-cols-2 gap-2">
-      <input
-        id="bluechipCollectionInput"
-        placeholder="Bluechip Collection Address"
-        class="p-2 rounded bg-black/20"
-      />
-      <button
-        id="harvestBluechipBtn"
-        class="p-2 bg-sky-600 rounded"
-      >
-        Harvest Bluechip
-      </button>
-    </div>
-  </div>
-</section>
-
-      <!-- Middle -->
-      <section class="glass p-4 rounded-lg">
-        <h2 class="font-semibold mb-2">Staking</h2>
-        <p class="text-sm text-slate-300 mb-3">Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake</p>
-
-        <div class="space-y-2 text-sm">
-          <div class="grid grid-cols-2 gap-2">
-            <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
-            <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
-          </div>
-
-          <div class="flex gap-2">
-            <button id="approveNFTBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve Staking Contract</button>
-            <button id="termStakeBtn" class="flex-1 p-2 bg-indigo-600 rounded">Term Stake</button>
-          </div>
-
-          <div class="flex gap-2">
-            <button id="permApproveFeeBtn" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee (CATA)</button>
-            <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">Permanent Stake</button>
-          </div>
-
-          <div class="flex gap-2">
-            <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest</button>
-            <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
-          </div>
-
-          <hr class="border-slate-700 my-2" />
-          <h3 class="text-sm font-semibold mb-1">Batch Operations</h3>
-          <textarea id="batchNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
-          <div class="flex gap-2 mt-2">
-            <button id="batchTermStakeBtn" class="flex-1 p-2 bg-indigo-500 rounded text-sm">Batch Term Stake</button>
-            <button id="batchPermStakeBtn" class="flex-1 p-2 bg-emerald-500 rounded text-sm">Batch Permanent Stake</button>
-            <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-500 rounded text-sm">Batch Unstake</button>
-          </div>
+        <div class="mt-2">
+          <button id="swapAdminBtn" class="p-2 bg-yellow-500 text-black rounded w-full">Swap Admin (council only)</button>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- Right -->
-      <section class="glass p-4 rounded-lg">
-        <h2 class="font-semibold mb-2">Governance & Council</h2>
-        <div class="text-sm text-slate-300 mb-2">Create proposal, vote, execute • Council reseed</div>
-
-        <div class="space-y-2">
-          <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
-            <option value="BASE_REWARD">Base Reward</option>
-            <option value="HARVEST_FEE">Harvest Fee</option>
-            <option value="UNSTAKE_FEE">Unstake Fee</option>
-            <option value="REGISTRATION_FEE_FALLBACK">Registration Fee</option>
-            <option value="COUNCIL_RESEED_ACTIVE">Council Reseed (Active)</option>
+    <!-- Collection Registration -->
+    <section id="registration" class="tab-content hidden">
+      <h3 class="font-semibold mb-2">Collection Registration</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+        <input id="regCollectionAddr" placeholder="Collection address (ERC721)" class="p-2 rounded bg-black/20 text-sm" />
+        <input id="regDeclaredSupply" placeholder="Declared max supply (integer >=1)" class="p-2 rounded bg-black/20 text-sm" />
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <select id="regTier" class="p-2 rounded bg-black/20 text-sm">
+          <option value="0">UNVERIFIED (0)</option>
+          <option value="1">VERIFIED (1)</option>
+          <option value="2">BLUECHIP (2)</option>
+        </select>
+        <button id="calcRegFeeBtn" class="p-2 bg-slate-600 rounded text-sm">Calculate Fee</button>
+        <div id="regFeeInfo" class="p-2 text-xs text-slate-300">Fee: —</div>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button id="approveRegCataBtn" class="flex-1 p-2 bg-amber-600 rounded text-sm">Approve CATA for registration</button>
+        <button id="registerCollectionBtn" class="flex-1 p-2 bg-indigo-600 rounded text-sm">Register (permissionless)</button>
+      </div>
+      <div class="mt-3">
+        <h4 class="font-semibold">Admin: Set / Upgrade Collection Tier</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+          <input id="adminCollAddr" placeholder="Collection address (admin action)" class="p-2 rounded bg-black/20 text-sm" />
+          <input id="adminDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+        </div>
+        <div class="flex gap-2 mt-2">
+          <select id="adminTier" class="p-2 rounded bg-black/20 text-sm">
+            <option value="0">UNVERIFIED (0)</option>
+            <option value="1">VERIFIED (1)</option>
+            <option value="2">BLUECHIP (2)</option>
           </select>
-
-          <input id="proposalValue" placeholder="New numeric value (if applicable)" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <input id="proposalCollectionCtx" placeholder="Collection/Ctx address (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <div class="flex gap-2">
-            <button id="createProposalBtn" class="flex-1 p-2 bg-violet-600 rounded">Create Proposal</button>
-            <button id="voteProposalBtn" class="flex-1 p-2 bg-blue-600 rounded">Vote</button>
-          </div>
-
-          <input id="proposalId" placeholder="Proposal ID (hex) for voting/execution" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <div class="flex gap-2 mt-2">
-            <button id="execProposalBtn" class="flex-1 p-2 bg-green-700 rounded">Execute Proposal</button>
-            <button id="fetchProposalBtn" class="flex-1 p-2 bg-slate-600 rounded">Fetch Proposal</button>
-          </div>
-
-          <hr class="border-slate-700 my-2" />
-          <div class="text-xs text-slate-400">Council tools</div>
-          <input id="councilBatch" placeholder="Comma-separated 7 addresses" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <div class="flex gap-2 mt-2">
-            <button id="proposeReseedBtn" class="flex-1 p-2 bg-rose-600 rounded">Propose Reseed</button>
-            <button id="execReseedBtn" class="flex-1 p-2 bg-rose-400 rounded">Execute Reseed</button>
-          </div>
+          <button id="adminSetConfigBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded text-sm">Set Collection Config (admin)</button>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
+
+    <!-- Bluechip -->
+    <section id="bluechip" class="tab-content hidden">
+      <h2 class="font-semibold mb-2">Bluechip</h2>
+      <p class="text-sm text-slate-300 mb-3">Enroll as a Bluechip wallet and harvest rewards from Bluechip collections.</p>
+      <div class="space-y-2 text-sm">
+        <div class="flex gap-2">
+          <button id="enrollBluechipBtn" class="flex-1 p-2 bg-amber-500 text-black rounded">Enroll Bluechip Wallet</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <input id="bluechipCollectionInput" placeholder="Bluechip Collection Address" class="p-2 rounded bg-black/20" />
+          <button id="harvestBluechipBtn" class="p-2 bg-sky-600 rounded">Harvest Bluechip</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Staking -->
+    <section id="staking" class="tab-content hidden">
+      <h2 class="font-semibold mb-2">Staking</h2>
+      <p class="text-sm text-slate-300 mb-3">Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake</p>
+      <div class="space-y-2 text-sm">
+        <div class="grid grid-cols-2 gap-2">
+          <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
+          <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
+        </div>
+        <div class="flex gap-2">
+          <button id="approveNFTBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve Staking Contract</button>
+          <button id="termStakeBtn" class="flex-1 p-2 bg-indigo-600 rounded">Term Stake</button>
+        </div>
+        <div class="flex gap-2">
+          <button id="permApproveFeeBtn" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee (CATA)</button>
+          <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">Permanent Stake</button>
+        </div>
+        <div class="flex gap-2">
+          <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest</button>
+          <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
+        </div>
+        <hr class="border-slate-700 my-2" />
+        <h3 class="text-sm font-semibold mb-1">Batch Operations</h3>
+        <textarea id="batchNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
+        <div class="flex gap-2 mt-2">
+          <button id="batchTermStakeBtn" class="flex-1 p-2 bg-indigo-500 rounded text-sm">Batch Term Stake</button>
+          <button id="batchPermStakeBtn" class="flex-1 p-2 bg-emerald-500 rounded text-sm">Batch Permanent Stake</button>
+          <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-500 rounded text-sm">Batch Unstake</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Governance -->
+    <section id="governance" class="tab-content hidden">
+      <h2 class="font-semibold mb-2">Governance & Council</h2>
+      <div class="text-sm text-slate-300 mb-2">Create proposal, vote, execute • Council reseed</div>
+      <div class="space-y-2">
+        <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
+          <option value="BASE_REWARD">Base Reward</option>
+          <option value="HARVEST_FEE">Harvest Fee</option>
+          <option value="UNSTAKE_FEE">Unstake Fee</option>
+          <option value="REGISTRATION_FEE_FALLBACK">Registration Fee</option>
+          <option value="COUNCIL_RESEED_ACTIVE">Council Reseed (Active)</option>
+        </select>
+        <input id="proposalValue" placeholder="New numeric value (if applicable)" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <input id="proposalCollectionCtx" placeholder="Collection/Ctx address (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <div class="flex gap-2">
+          <button id="createProposalBtn" class="flex-1 p-2 bg-violet-600 rounded">Create Proposal</button>
+          <button id="voteProposalBtn" class="flex-1 p-2 bg-blue-600 rounded">Vote</button>
+        </div>
+        <input id="proposalId" placeholder="Proposal ID (hex) for voting/execution" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <div class="flex gap-2 mt-2">
+          <button id="execProposalBtn" class="flex-1 p-2 bg-green-700 rounded">Execute Proposal</button>
+          <button id="fetchProposalBtn" class="flex-1 p-2 bg-slate-600 rounded">Fetch Proposal</button>
+        </div>
+        <hr class="border-slate-700 my-2" />
+        <div class="text-xs text-slate-400">Council tools</div>
+        <input id="councilBatch" placeholder="Comma-separated 7 addresses" class="w-full p-2 rounded bg-black/20 text-sm" />
+        <div class="flex gap-2 mt-2">
+          <button id="proposeReseedBtn" class="flex-1 p-2 bg-rose-600 rounded">Propose Reseed</button>
+          <button id="execReseedBtn" class="flex-1 p-2 bg-rose-400 rounded">Execute Reseed</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+
 
     <section class="glass p-4 rounded-lg mt-6">
       <h3 class="font-semibold mb-2">Advanced / Logs</h3>
@@ -1003,6 +988,22 @@ $('harvestBluechipBtn').onclick = harvestBluechip;
 
     log('UI ready');
   });
+
+	 // Tab switching
+document.querySelectorAll('.tabbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.getAttribute('data-tab');
+
+    // Toggle active button
+    document.querySelectorAll('.tabbtn').forEach(b => b.classList.remove('tab-active'));
+    btn.classList.add('tab-active');
+
+    // Toggle tab content
+    document.querySelectorAll('.tab-content').forEach(sec => sec.classList.add('hidden'));
+    document.getElementById(tab).classList.remove('hidden');
+  });
+}); 
+	  
   </script>
 </body>
 </html>
