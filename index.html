@@ -431,6 +431,23 @@
     <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 rounded">Execute</button>
     <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 rounded">Veto</button>
   </div>
+
+	<hr class="border-slate-700 my-3" />
+
+<!-- Recovery Info Panel -->
+<div id="recoveryInfo" class="p-3 rounded bg-black/20 text-sm space-y-1">
+  <h4 class="font-semibold text-slate-200">Recovery Status</h4>
+  <p><span class="font-medium">Proposed:</span> <span id="riProposed">-</span></p>
+  <p><span class="font-medium">Approvals:</span> <span id="riApprovals">-</span></p>
+  <p><span class="font-medium">Deadline:</span> <span id="riDeadline">-</span></p>
+  <p><span class="font-medium">Executed:</span> <span id="riExecuted">-</span></p>
+  <p><span class="font-medium">Call Target:</span> <span id="riCallTarget">-</span></p>
+  <p><span class="font-medium">Call Data:</span> <span id="riCallData">-</span></p>
+  <p><span class="font-medium">Last Honest Guardian:</span> <span id="riGuardian">-</span></p>
+  <p><span class="font-medium">Veto Expiry:</span> <span id="riVetoExpiry">-</span></p>
+
+  <button id="refreshRecoveryBtn" class="mt-2 w-full p-2 bg-slate-700 rounded">🔄 Refresh Recovery Info</button>
+</div>
 </div>
 </section>
 
@@ -1531,6 +1548,27 @@ async function vetoRecovery(){
   }
 }
 
+	  async function refreshRecoveryInfo(){
+  try {
+    const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
+    const [proposed, approvals, deadline, executed, callTarget, callData] =
+      await contracts.council.getRecoveryState(kind);
+
+    const [guardian, expiry] = await contracts.council.getTempVeto();
+
+    $('riProposed').innerText = proposed;
+    $('riApprovals').innerText = approvals;
+    $('riDeadline').innerText = new Date(deadline * 1000).toLocaleString();
+    $('riExecuted').innerText = executed ? "✅ Yes" : "❌ No";
+    $('riCallTarget').innerText = callTarget;
+    $('riCallData').innerText = callData;
+    $('riGuardian').innerText = guardian;
+    $('riVetoExpiry').innerText = expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "-";
+  } catch (e) {
+    alert("Error loading recovery info: " + (e.message || e));
+  }
+}
+
 	  // Encode calldata helper
 async function encodeCallData() {
   try {
@@ -1644,7 +1682,8 @@ $('proposeRecoveryBtn').onclick = proposeRecovery;
 $('approveRecoveryBtn').onclick = approveRecovery;
 $('executeRecoveryBtn').onclick = executeRecovery;
 $('vetoRecoveryBtn').onclick = vetoRecovery;
-
+$('refreshRecoveryBtn').onclick = refreshRecoveryInfo;
+  
 $('encodeCallDataBtn').onclick = encodeCallData;
 	  
     log('UI ready');
