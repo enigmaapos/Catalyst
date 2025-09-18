@@ -124,9 +124,9 @@
         <div class="text-sm text-slate-400 mb-1">Docs</div>
         <div class="space-y-1 text-sm text-slate-300">
           <div>
-            <span class="badge">Whitepaper</span> 
-            See the 
-            <a href="#tab-whitepaper" class="link" onclick="selectTab('whitepaper')">summary</a> tab.
+            <span class="badge">See the</span> 
+     		Whitepaper
+            <a href="javascript:void(0)" class="link" onclick="selectTab('whitepaper')">summary</a>
           </div>
           <div>
             <span class="badge">Views</span> Inspect pending rewards, collections, and governance data.
@@ -1563,7 +1563,7 @@ $('vetoRecoveryBtn').onclick = vetoRecovery;
     log('UI ready');
   });
 
-	 // Tab switching
+	// Tab switching for top nav buttons
 document.querySelectorAll('.tabbtn').forEach(btn => {
   btn.addEventListener('click', () => {
     const tab = btn.getAttribute('data-tab');
@@ -1576,7 +1576,20 @@ document.querySelectorAll('.tabbtn').forEach(btn => {
     document.querySelectorAll('.tab-content').forEach(sec => sec.classList.add('hidden'));
     document.getElementById(tab).classList.remove('hidden');
   });
-}); 
+});
+
+// Global function for internal links
+function selectTab(tabId) {
+  // Toggle active button
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.remove('tab-active'));
+  const btn = document.querySelector(`[data-tab="${tabId}"]`);
+  if (btn) btn.classList.add('tab-active');
+
+  // Toggle tab content
+  document.querySelectorAll('.tab-content').forEach(sec => sec.classList.add('hidden'));
+  const section = document.getElementById(tabId);
+  if (section) section.classList.remove('hidden');
+		}
 	  
   </script>
 </body>
