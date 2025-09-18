@@ -71,13 +71,6 @@
             <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest (single token)</button>
             <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
           </div>
-          <hr class="border-slate-700 my-2" />
-          <h3 class="text-sm font-semibold mb-1">Batch Operations</h3>
-          <textarea id="batchNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-24"></textarea>
-          <div class="flex gap-2">
-            <button id="batchTermStake" class="flex-1 p-2 bg-indigo-500 rounded">Batch Term Stake</button>
-            <button id="batchPermStake" class="flex-1 p-2 bg-emerald-500 text-black rounded">Batch Permanent Stake</button>
-          </div>
         </div>
       </section>
 
@@ -124,7 +117,7 @@
     </footer>
   </div>
 
-  <!-- Ethers.js -->
+  <!-- Ethers.js loads before app -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 
   <script>
@@ -160,16 +153,18 @@
     function log(...args) {
       console.log(...args);
       const el = $('logs');
-      el.innerText = new Date().toISOString() + ' • ' + args.map(a => typeof a==='object' ? JSON.stringify(a) : a).join(' ') + '\n' + el.innerText;
+      el.innerText = new Date().toISOString() + ' • ' +
+        args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ') +
+        '\n' + el.innerText;
     }
 
-    // Load ABIs from external files
+    // Load ABIs
     async function loadABIs() {
       for (const key in ABI_URLS) {
         const res = await fetch(ABI_URLS[key]);
         abis[key] = await res.json();
       }
-      log("Loaded ABIs");
+      log("ABIs loaded");
     }
 
     async function connect() {
@@ -190,10 +185,8 @@
       } catch (e) { log("connect err", e); }
     }
 
-    async function disconnect() {
-      provider = null;
-      signer = null;
-      userAddr = null;
+    function disconnect() {
+      provider = null; signer = null; userAddr = null;
       contracts = { cata: null, staking: null, governance: null, council: null };
       $('addr').innerText = "Not connected";
       $('networkName').innerText = "—";
@@ -210,7 +203,6 @@
     function loadSavedAddrs() {
       const raw = localStorage.getItem('catalyst_addrs');
       if (!raw) {
-        // no local storage → use defaults
         $('addrCata').value = DEFAULT_ADDRS.cata;
         $('addrStaking').value = DEFAULT_ADDRS.staking;
         $('addrGovernance').value = DEFAULT_ADDRS.governance;
@@ -219,9 +211,11 @@
       }
       try {
         const obj = JSON.parse(raw);
-        ['addrCata','addrStaking','addrGovernance','addrCouncil'].forEach(k=>{ if(obj[k]) $(k).value = obj[k]; });
+        ['addrCata','addrStaking','addrGovernance','addrCouncil'].forEach(k => {
+          if (obj[k]) $(k).value = obj[k];
+        });
         log('Loaded addresses from localStorage');
-      } catch(e) { }
+      } catch (e) { }
     }
 
     function attachContractsIfSet() {
@@ -246,7 +240,6 @@
 
     window.addEventListener("load", async () => {
       await loadABIs();
-
       $('connectBtn').onclick = connect;
       $('disconnectBtn').onclick = disconnect;
       $('saveAddrs').onclick = () => {
