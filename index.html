@@ -277,19 +277,42 @@
     <hr class="border-slate-700 my-3" />
 
     <!-- Wallet Info -->
-    <h3 class="text-sm font-semibold mb-1">My Bluechip Status</h3>
-    <div class="space-y-1 text-xs text-slate-300">
-      <div>Status: <span id="bluechipStatus">—</span></div>
-      <div>Pending Rewards: <span id="pendingBluechipRewards">—</span></div>
-      <div>Last Harvest Block: <span id="bluechipLastBlock">—</span></div>
-      <div>Enrollment Fee: <span id="bluechipFee">—</span></div>
-    </div>
-    <button
-      id="refreshBluechipBtn"
-      class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded text-sm"
-    >
-      🔄 Refresh Bluechip Info
-    </button>
+<h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
+  🌟 My Bluechip Status
+</h3>
+
+<div class="grid grid-cols-2 gap-3 text-center">
+  <!-- Enrollment Status -->
+  <div class="p-3 rounded-xl bg-slate-800/60 shadow-md">
+    <div class="text-slate-400 text-xs">Status</div>
+    <div id="bluechipStatus" class="font-bold text-sm text-slate-100">—</div>
+  </div>
+
+  <!-- Pending Rewards -->
+  <div class="p-3 rounded-xl bg-slate-800/60 shadow-md">
+    <div class="text-slate-400 text-xs">Pending Rewards</div>
+    <div id="pendingBluechipRewards" class="font-bold text-sm text-emerald-400">—</div>
+  </div>
+
+  <!-- Last Harvest Block -->
+  <div class="p-3 rounded-xl bg-slate-800/60 shadow-md">
+    <div class="text-slate-400 text-xs">Last Harvest</div>
+    <div id="bluechipLastBlock" class="font-mono text-xs text-indigo-400">—</div>
+  </div>
+
+  <!-- Enrollment Fee -->
+  <div class="p-3 rounded-xl bg-slate-800/60 shadow-md">
+    <div class="text-slate-400 text-xs">Enrollment Fee</div>
+    <div id="bluechipFee" class="font-bold text-sm text-amber-400">—</div>
+  </div>
+</div>
+
+<button
+  id="refreshBluechipBtn"
+  class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium text-sm transition"
+>
+  🔄 Refresh Bluechip Info
+</button>
   </div>
 </section>
 
