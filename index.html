@@ -1329,57 +1329,122 @@ function startGovernanceListeners(){
 	  // Guardian Council contract functions
 // ---------- DAO ----------
 async function proposeDao(){
-  const newDao = $('newDaoAddr').value.trim();
-  const tx = await contracts.council.proposeNewDAO(newDao);
-  await tx.wait();
-  log('DAO proposal submitted');
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const newDao = $('newDaoAddr').value.trim();
+    if(!newDao) return alert("Enter DAO address");
+    const tx = await contracts.council.proposeNewDAO(newDao);
+    log('propose DAO tx', tx.hash);
+    await tx.wait();
+    log('DAO proposal submitted');
+    alert("✅ DAO proposal submitted");
+  } catch(e){
+    log('proposeDao err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function commitDao(){
-  const tx = await contracts.council.commitNewDAO();
-  await tx.wait();
-  log('DAO committed');
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.commitNewDAO();
+    log('commit DAO tx', tx.hash);
+    await tx.wait();
+    log('DAO committed');
+    alert("✅ DAO committed");
+  } catch(e){
+    log('commitDao err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 // Active Batch
 async function proposeActiveBatch(){
-  const arr = parse7($('activeBatchInput').value);
-  const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
-  await tx.wait();
-  log('proposeActiveBatch done');
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const arr = parse7($('activeBatchInput').value);
+    const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
+    log('propose active batch tx', tx.hash);
+    await tx.wait();
+    log('proposeActiveBatch done');
+    alert("✅ Active batch proposed");
+  } catch(e){
+    log('proposeActiveBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function commitActiveBatch(){
-  const tx = await contracts.council.daoCommitSeedActiveBatch();
-  await tx.wait();
-  log('commitActiveBatch done');
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.daoCommitSeedActiveBatch();
+    log('commit active batch tx', tx.hash);
+    await tx.wait();
+    log('commitActiveBatch done');
+    alert("✅ Active batch committed");
+  } catch(e){
+    log('commitActiveBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 // Standby Batch
 async function proposeStandbyBatch(){
-  const arr = parse7($('standbyBatchInput').value);
-  const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
-  await tx.wait();
-  log('proposeStandbyBatch done');
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const arr = parse7($('standbyBatchInput').value);
+    const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
+    log('propose standby batch tx', tx.hash);
+    await tx.wait();
+    log('proposeStandbyBatch done');
+    alert("✅ Standby batch proposed");
+  } catch(e){
+    log('proposeStandbyBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function commitStandbyBatch(){
-  const tx = await contracts.council.daoCommitSeedStandbyBatch();
-  await tx.wait();
-  log('commitStandbyBatch done');
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.daoCommitSeedStandbyBatch();
+    log('commit standby batch tx', tx.hash);
+    await tx.wait();
+    log('commitStandbyBatch done');
+    alert("✅ Standby batch committed");
+  } catch(e){
+    log('commitStandbyBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function activateStandby(){
-  const tx = await contracts.council.daoActivateStandby();
-  await tx.wait();
-  log('activateStandby done');
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.daoActivateStandby();
+    log('activate standby tx', tx.hash);
+    await tx.wait();
+    log('activateStandby done');
+    alert("✅ Standby batch activated");
+  } catch(e){
+    log('activateStandby err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 // Lock
 async function clearLock(){
-  const tx = await contracts.council.daoClearLockAndWarning();
-  await tx.wait();
-  log('clearLock done');
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.daoClearLockAndWarning();
+    log('clear lock tx', tx.hash);
+    await tx.wait();
+    log('clearLock done');
+    alert("✅ Lock cleared");
+  } catch(e){
+    log('clearLock err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 // Parse helper
@@ -1388,7 +1453,7 @@ function parse7(txt){
   if(arr.length !== 7) throw new Error("Need exactly 7 addresses");
   return arr;
 }
-
+	  
 // Recovery
 async function proposeRecovery(){
   const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
