@@ -318,7 +318,7 @@ An immutable 1% deployer fee exists to ensure founder sustainability, but beyond
 Catalyst = NFT-neutral utility + sustainable deflation + decentralized recovery.
 
 
-Technical Appendix — Catalyst Smart Contract Architecture (Aligned with Current Contracts)
+🔧 Technical Appendix — Catalyst Smart Contract Architecture (Aligned with Current Contracts)
 
 
 ---
@@ -326,79 +326,143 @@ Technical Appendix — Catalyst Smart Contract Architecture (Aligned with Curren
 1. Overview
 
 Catalyst is deployed as a modular, upgradeable protocol using the UUPS proxy standard.
-Each major function (staking, governance, council, token) is separated into its own contract to maximize upgrade flexibility, minimize attack surface, and ensure decentralized control.
+Each major function — staking, governance, council, and token — is separated into its own contract.
+This modularity maximizes upgrade flexibility, minimizes attack surface, and ensures decentralized control.
 
 Immutable Rule:
-All fees follow the 90% Burn / 9% Treasury / 1% Deployer split, hard-coded at contract level.
+All fees follow the 90% Burn / 9% Treasury / 1% Deployer split, enforced at the contract level and unchangeable by governance.
 
-Key upgrades we’ve integrated:
+Key Upgrades:
 
 Blue-chip non-custodial enrollment (per-wallet one-time fee).
 
-Verified/Unverified custodial staking (via StakingLib).
+Verified/Unverified custodial staking (on-chain, capped).
 
-Guardian Councils upgraded to 7 members, 5 approvals threshold.
+Batch Guardian Council (dual-batch, 7 members each, failover security).
 
-Custom errors instead of strings (deploy-size optimized).
+DAO-managed reseeding and council upgrades.
+
+Dynamic rewards and automatic top-collection tracking.
 
 
 
 ---
 
-2. Core Contracts (modular breakdown)
+2. Core Contracts
 
 CataERC20Upgradeable.sol
-- ERC20 Utility & Governance token.
-- Max supply: 1,000,000,000 CATA.
-- Premint: 100,000,000 CATA allocated to initial admin.
-- Minting restricted to CatalystStakingUpgradeable (holds MINTER_ROLE).
-- Upgradeable and council-controlled (BatchGuardianCouncil may swap admins).
+
+ERC20 utility & governance token.
+
+Max Supply: 1,000,000,000 CATA (hard cap).
+
+Premint: 100,000,000 CATA minted to the initial admin.
+
+Minting: Restricted to the CatalystStakingUpgradeable contract (MINTER_ROLE).
+
+Governance Control: BatchGuardianCouncil can swap admins.
+
+Fully UUPS upgradeable.
+
+
+
+---
 
 CatalystStakingUpgradeable.sol
-- Custodial NFT staking (term + permanent).
-- Caps:
-  • Global: 500,000,000 NFTs
-  • Term: 375,000,000 NFTs
-  • Permanent: 125,000,000 NFTs
-- Collection Tiers: Unverified, Verified, Blue-Chip.
-- Fee Split: 90% burn, 9% treasury, 1% deployer.
-- Supports escrow forfeits, proof-of-burn legitimacy, and automatic Top % collection tracking.
-- Blue-chip wallets may enroll via non-custodial one-time fee.
+
+Custodial NFT staking contract for Verified and Unverified collections.
+
+Supply Caps:
+
+Global: 500,000,000 NFTs
+
+Term: 375,000,000 NFTs
+
+Permanent: 125,000,000 NFTs
+
+
+Collection Tiers:
+
+Unverified (escrow required, subject to forfeits).
+
+Verified (custodial, reduced fees).
+
+Blue-Chip (non-custodial, per-wallet one-time enrollment fee).
+
+
+Fee Split: 90% burned, 9% treasury, 1% deployer.
+
+Supports:
+
+Escrow forfeits for unverified collections.
+
+Proof-of-burn via fee enforcement.
+
+Top % collections tracking (default 10%).
+
+
+Rewards scale dynamically with stake participation.
+
+
+
+---
 
 CatalystGovernanceUpgradeable.sol
-- On-chain proposal and voting system.
-- Proposal Types include:
-  • Base reward, harvest fee, unstake fee
-  • Registration fallback
-  • Voting parameter changes
-  • Tier upgrades
-  • Guardian Council reseed/activation
-  • DAO upgrades (two-step commit)
-  • Guardian Council implementation upgrades
-  • Lock clearing
-- Voting Weight: Derived from staking participation (scaled).
-- Per-Collection Vote Cap prevents monopoly.
+
+On-chain Burn-Weighted Collection Governance (BWCG).
+
+Proposal Types include:
+
+Base reward, harvest fee, and unstake fee updates.
+
+Registration fallback and voting parameter changes.
+
+Collection tier upgrades.
+
+Guardian Council reseeding and activation.
+
+DAO upgrades (two-step commit process).
+
+Guardian Council contract upgrades (UUPS).
+
+Lock clearing.
+
+
+Voting Weight: Derived from staking contributions and burn activity.
+
+Per-Collection Vote Cap: Prevents monopolization by any single collection.
+
+Fully UUPS upgradeable, governed by BatchGuardianCouncil.
+
+
+
+---
 
 BatchGuardianCouncilUpgradeable.sol
-- Dual-batch guardian council (Active + Standby).
-- 7 guardians per batch, 5-of-7 threshold for recovery.
-- Security layers:
-  • 6/7 approvals → Warning + 48h Last Honest Guardian veto.
-  • 7/7 approvals → Auto-lock + standby activation.
-- DAO-Managed Reseeding: Governance may rotate batches with two-step commit and expiry window.
-- Can execute recovery proposals (arbitrary callTarget + calldata).
-- UUPS upgradeable with DAO authorization.
+
+Security backbone of Catalyst.
+
+Dual-Batch Model:
+
+Active Batch (7 guardians) controls authority.
+
+Standby Batch (7 guardians) pre-seeded for automatic failover.
 
 
-Whitepaper alignment:
+Threshold Rules:
 
-Implements universal staking & earning (blue-chip, verified, unverified).
+5 of 7 approvals → Recovery valid.
 
-Enforces immutable 90/9/1 distribution.
+6 of 7 approvals → Warning triggered + Last Honest Guardian veto (48h).
 
-Upgradeable via UUPS proxy pattern.
+7 of 7 approvals → Auto-lock + standby activation.
 
-Governance cannot override immutable economics.
+
+DAO-Managed Reseeding: Governance can commit new guardian batches (two-step commit, expiry enforced).
+
+Recovery Proposals: Guardians can execute arbitrary calls (target + calldata) for upgrades or emergency recovery.
+
+UUPS upgradeable under DAO authority.
 
 
 
@@ -406,211 +470,36 @@ Governance cannot override immutable economics.
 
 3. Security & Upgradeability
 
-Custodial staking only (for verified & unverified collections).
+All contracts: UUPSUpgradeable + AccessControlUpgradeable.
 
-Features:
+Guardian-managed admin swaps prevent single points of failure.
 
-Records term & permanent stakes.
+ReentrancyGuard and Pausable applied across modules.
 
-Caps:
+Immutable Economics: 90/9/1 fee split hard-coded at contract level, not subject to governance change.
 
-Global cap: 500,000,000 NFTs
-
-Term: 375M
-
-Permanent: 125M
-
-Per-collection cap: 20,000 NFTs
-
-
-Calculates pending rewards.
-
-Tracks stake portfolios per user.
-
-- All contracts: UUPSUpgradeable + AccessControlUpgradeable.
-- Guardian-managed admin swaps ensure no single point of failure.
-- ReentrancyGuard and Pausable used across contracts.
-- Immutable economics (90/9/1 split) cannot be altered by governance or upgrades.
-
-
-Whitepaper alignment:
-
-Matches Section 6 (Tokenomics) with capped emissions.
-
-Implements Verified/Unverified tier model.
-
-Proof-of-burn is enforced through fees + surcharges.
+Failover Mechanism: Standby guardian batch ensures automatic continuity in case of compromise.
 
 
 
 ---
 
-4. Bluechip Library — BluechipLib.sol
+4. Whitepaper Alignment
 
-Non-custodial staking for trusted collections.
+This modular architecture replaces the older monolithic + library design.
+Instead of embedding all functionality in a single contract, Catalyst now operates as a suite of interoperable modules:
 
-Features:
+Custodial staking → Verified/Unverified collections.
 
-One-time per-wallet enrollment fee (uniform, governance-adjustable).
+Non-custodial staking → Blue-chip enrollment.
 
-Enrolled wallets earn rewards by simply holding blue-chip NFTs (no custody).
+Immutable fee split → 90% Burn / 9% Treasury / 1% Deployer.
 
-Rewards scale with time elapsed + base reward rate.
+Governance → Burn-weighted with collection vote caps.
 
+Council → BatchGuardianCouncil (dual-batch, auto-failover).
 
-Whitepaper alignment:
+Treasury → 9% allocation, supporting grants, audits, ecosystem growth.
 
-Matches Section 7 (Collection Tiers) → Verified = custodial staking, Blue-chip = optional non-custodial.
-
-Provides low-friction legitimacy for blue-chip holders.
-
-Still respects the deflationary fee model.
-
-
-
----
-
-5. Governance Library — GovernanceLib.sol
-
-Implements Burn-Weighted Collection Governance (BWCG).
-
-Features:
-
-Proposal lifecycle: create → vote → execute.
-
-Weighted by:
-
-Burns,
-
-Stake-age,
-
-Verified blue-chip ownership.
-
-
-Per-collection vote cap to prevent monopolization.
-
-Quorum + time-based execution.
-
-
-Whitepaper alignment:
-
-Matches Section 8 (Governance Model).
-
-Enforces fairness: no single collection or whale dominance.
-
-Immutable safeguard: governance cannot change 90/9/1 rule.
-
-
-
----
-
-6. Treasury Logic
-
-Treasury is part of the core contract, no separate lib.
-
-Receives 9% of every fee.
-
-Withdrawals only via governance/admin role.
-
-Allocations:
-
-Top 1% Burner Bonus.
-
-Grants, audits, integrations (governance-approved).
-
-
-
-Whitepaper alignment:
-
-Matches Section 6 (Treasury Usage).
-
-Enables bonus cycles, grants, and ecosystem support.
-
-
-
----
-
-7. Immutable Economics (Deflationary)
-
-Harvest burns: Dynamic % of every reward.
-
-Unstake burns: Flat CATA fee.
-
-Registration fees: Required to onboard new collections.
-
-Voluntary burns: Users may burn extra CATA (recorded for bonus eligibility).
-
-
-Immutable fee distribution enforced in _splitFeeFromSender:
-
-90% burned,
-
-9% treasury,
-
-1% deployer.
-
-
-Whitepaper alignment:
-
-Matches Section 5 & 6 (Deflationary Economics).
-
-Continuous burn ensures long-term scarcity.
-
-
-
----
-
-8. Security, Scalability, Upgradeability
-
-Security:
-
-OpenZeppelin contracts.
-
-ReentrancyGuard.
-
-Pausable emergency halt.
-
-
-Scalability:
-
-1B global NFT cap.
-
-20k per collection cap.
-
-
-Upgradeability:
-
-UUPS proxy.
-
-Admin recovery by AGC (7:5).
-
-Deployer recovery by GCSS (7:5).
-
-
-
-Whitepaper alignment:
-
-Matches Section 9 (Security, Scalability, Sustainability).
-
-Governance-approved upgrades preserve immutables.
-
-
-
----
-
-✅ Final Alignment
-This updated whitepaper now directly matches the deployed CatalystNFTStakingUpgradeable architecture.
-
-Custodial = Verified/Unverified.
-
-Non-custodial = Blue-chip (per-wallet fee).
-
-Immutable 90/9/1 deflationary model.
-
-Burn-weighted governance with vote caps.
-
-Guardian recovery councils (7:5).
-
-Treasury bonus system.
-
-Upgradeable & scalable.
+Upgradeable → via UUPS standard, governed by council + DAO.
+  
