@@ -196,12 +196,16 @@
 
     <!-- Governance -->
     <section id="governance" class="tab-content hidden">
-      <!-- Extended Governance Controls -->
-<div class="mt-4 border-t border-slate-700 pt-3 space-y-2">
-  <h3 class="font-semibold">Full Proposal Creator</h3>
+  <h2 class="font-semibold mb-2">Governance DAO</h2>
+  <p class="text-sm text-slate-300 mb-3">
+    Create proposals, vote, execute them, and monitor governance activity.
+  </p>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-    <select id="fullProposalType" class="p-2 rounded bg-black/20 text-sm">
+  <!-- Proposal Creator -->
+  <div class="glass p-4 rounded-lg space-y-3">
+    <h3 class="font-semibold">Create Proposal</h3>
+
+    <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
       <option value="BASE_REWARD">Base Reward</option>
       <option value="HARVEST_FEE">Harvest Fee</option>
       <option value="UNSTAKE_FEE">Unstake Fee</option>
@@ -211,52 +215,59 @@
       <option value="COUNCIL_RESEED_ACTIVE">Council Reseed (Active)</option>
     </select>
 
-    <!-- paramTarget (only used for some types) -->
-    <input id="fullParamTarget" placeholder="paramTarget (uint8)" class="p-2 rounded bg-black/20 text-sm" />
+    <!-- Generic proposal fields -->
+    <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
 
-    <input id="fullNewValue" placeholder="newValue (uint256)" class="p-2 rounded bg-black/20 text-sm" />
+    <!-- Tier Upgrade special fields -->
+    <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
+      <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
+        <option value="0">UNVERIFIED (0)</option>
+        <option value="1">VERIFIED (1)</option>
+        <option value="2">BLUECHIP (2)</option>
+      </select>
+      <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
+      <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+    </div>
+
+    <button id="createProposalBtn" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
   </div>
 
-  <input id="fullCollectionCtx" placeholder="collectionContext address (optional)" class="p-2 rounded bg-black/20 text-sm mt-2" />
+  <!-- Voting / Execution -->
+  <div class="glass p-4 rounded-lg space-y-3 mt-4">
+    <h3 class="font-semibold">Vote & Execute</h3>
 
-  <!-- Tier Upgrade extra fields -->
-  <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden mt-2">
-    <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
-      <option value="0">UNVERIFIED (0)</option>
-      <option value="1">VERIFIED (1)</option>
-      <option value="2">BLUECHIP (2)</option>
-    </select>
-    <input id="tierCollection" placeholder="Collection address (for Tier Upgrade)" class="p-2 rounded bg-black/20 text-sm" />
-    <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+    <input id="proposalId" placeholder="Proposal ID (hex)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <div class="flex gap-2">
+      <button id="voteProposalBtn" class="flex-1 p-2 bg-blue-600 rounded">Vote</button>
+      <button id="execProposalBtn" class="flex-1 p-2 bg-green-700 rounded">Execute</button>
+    </div>
+    <button id="fetchProposalBtn" class="w-full p-2 bg-slate-600 rounded">Fetch Proposal Details</button>
   </div>
 
-  <div class="flex gap-2 mt-2">
-    <button id="createFullProposalBtn" class="flex-1 p-2 bg-violet-600 rounded">Create Full Proposal</button>
-    <button id="fetchProposalDetailsBtn" class="flex-1 p-2 bg-slate-600 rounded">Fetch Proposal Details</button>
+  <!-- Proposals Explorer -->
+  <div class="glass p-4 rounded-lg mt-4">
+    <h3 class="font-semibold mb-2">Proposals Explorer</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-slate-400">
+          <tr>
+            <th class="p-2">ID</th>
+            <th class="p-2">Type</th>
+            <th class="p-2">Value</th>
+            <th class="p-2">Context</th>
+            <th class="p-2">Proposer</th>
+            <th class="p-2">Votes</th>
+            <th class="p-2">Executed</th>
+            <th class="p-2">Action</th>
+          </tr>
+        </thead>
+        <tbody id="proposalsTbody"></tbody>
+      </table>
+    </div>
   </div>
-</div>
-
-<!-- Proposals Table -->
-<div class="mt-4">
-  <h3 class="font-semibold mb-2">Recent Proposals (events + reads)</h3>
-  <div class="overflow-x-auto">
-    <table id="proposalsTable" class="w-full text-sm">
-      <thead class="text-xs text-slate-400">
-        <tr>
-          <th class="p-2">ID</th>
-          <th class="p-2">Type</th>
-          <th class="p-2">Value / Context</th>
-          <th class="p-2">Proposer</th>
-          <th class="p-2">Votes</th>
-          <th class="p-2">Executed</th>
-          <th class="p-2">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="proposalsTbody"></tbody>
-    </table>
-  </div>
-</div>     
-    </section>
+</section>
 
 	<section id="council" class="tab-content hidden">
   <h2 class="font-semibold mb-2">DRS Guardian Council</h2>
@@ -1022,230 +1033,150 @@ async function batchHarvest() {
   }
 }
 
-  // ---------- Governance ----------
-// ---------- Governance Dashboard helpers & wiring ----------
-
-// ensure governance-specific UI behavior
-$('fullProposalType').addEventListener('change', () => {
-  const v = $('fullProposalType').value;
-  // show tier fields only for TIER_UPGRADE
-  if (v === 'TIER_UPGRADE') $('tierUpgradeRow').classList.remove('hidden');
-  else $('tierUpgradeRow').classList.add('hidden');
-});
-
-// safe attach that also wires council
-async function attachContractsIfSet(){
-  try {
-    // assume provider/signer already set by your wallet connect logic
-    if(!window.ethereum) return;
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    window.signer = signer;
-
-    window.contracts = window.contracts || {};
-
-    // addresses from inputs
-    const addrG = $('addrGovernance').value.trim();
-    const addrS = $('addrStaking').value.trim();
-    const addrC = $('addrCouncil').value.trim();
-    const addrT = $('addrCata').value.trim();
-
-    // load ABIs (you must have these variables or replace with your ABI variables)
-    // e.g., GOVERNANCE_ABI, STAKING_ABI, COUNCIL_ABI, CATA_ABI
-    if(addrG && !contracts.governance){
-      contracts.governance = new ethers.Contract(addrG, GOVERNANCE_ABI, signer);
-      log('governance attached', addrG);
-    }
-    if(addrS && !contracts.staking){
-      contracts.staking = new ethers.Contract(addrS, STAKING_ABI, signer);
-      log('staking attached', addrS);
-    }
-    if(addrC && !contracts.council){
-      contracts.council = new ethers.Contract(addrC, COUNCIL_ABI, signer);
-      log('council attached', addrC);
-    }
-    if(addrT && !contracts.cata){
-      contracts.cata = new ethers.Contract(addrT, CATA_ABI, signer);
-      log('cata attached', addrT);
-    }
-  } catch(err){
-    console.error('attachContractsIfSet err', err);
-    log('attachContractsIfSet err', err && err.message ? err.message : err);
-  }
-}
-
-// Mapping used previously (keep consistent)
+  // ---------- Governance Section ----------
 const PROPOSAL_MAPPING = {
-  BASE_REWARD:0, HARVEST_FEE:1, UNSTAKE_FEE:2, REGISTRATION_FEE_FALLBACK:3,
-  VOTING_PARAM:4, TIER_UPGRADE:5, COUNCIL_RESEED_ACTIVE:6
+  BASE_REWARD:0,
+  HARVEST_FEE:1,
+  UNSTAKE_FEE:2,
+  REGISTRATION_FEE_FALLBACK:3,
+  VOTING_PARAM:4,
+  TIER_UPGRADE:5,
+  COUNCIL_RESEED_ACTIVE:6
 };
 
-// Create full proposal (handles VOTING_PARAM and TIER_UPGRADE special cases)
-async function createFullProposal(){
+// Toggle TierUpgrade fields
+$('proposalType').addEventListener('change', () => {
+  if ($('proposalType').value === 'TIER_UPGRADE') {
+    $('tierUpgradeRow').classList.remove('hidden');
+  } else {
+    $('tierUpgradeRow').classList.add('hidden');
+  }
+});
+
+// Create Proposal
+async function createProposal(){
   try {
-    if(!contracts.governance) { await attachContractsIfSet(); if(!contracts.governance) return alert('Set governance contract'); }
+    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
 
-    const typeStr = $('fullProposalType').value;
+    const typeStr = $('proposalType').value;
     const pType = PROPOSAL_MAPPING[typeStr];
-    let paramTarget = parseInt($('fullParamTarget').value || '0'); // default 0
-    let newValueRaw = $('fullNewValue').value.trim() || '0';
-    let newValue;
-    try { newValue = ethers.BigNumber.from(newValueRaw); } catch(e){ newValue = ethers.BigNumber.from('0'); }
 
-    let ctx = $('fullCollectionCtx').value.trim() || ethers.constants.AddressZero;
+    let paramTarget = parseInt($('paramTarget').value || '0');
+    let newValueRaw = $('proposalValue').value.trim() || '0';
+    let newValue = ethers.BigNumber.from(newValueRaw);
+    let ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
 
-    // TIER_UPGRADE: create a payload in the format your governance expects.
-    // If your governance.propose expects (pType,uint8,param,uint256,ctx),
-    // but for tier upgrade you might need to encode declared supply and tier.
+    // Handle Tier Upgrade
     if(typeStr === 'TIER_UPGRADE'){
-      const coll = $('tierCollection').value.trim();
-      const tier = parseInt($('tierTo').value);
-      const declared = parseInt($('tierDeclaredSupply').value || '0');
-      if(!coll) return alert('Enter collection address for Tier Upgrade');
-      // Use newValue to carry declared supply OR keep numeric field; adjust if governance expects different shape
-      // We'll set ctx = collection address and newValue = declared, paramTarget = tier (so contract receives the right fields).
-      ctx = coll;
-      paramTarget = tier;
-      newValue = ethers.BigNumber.from(String(declared));
+      ctx = $('tierCollection').value.trim();
+      paramTarget = parseInt($('tierTo').value);
+      newValue = ethers.BigNumber.from($('tierDeclaredSupply').value || '0');
     }
 
-    // For VOTING_PARAM allow paramTarget selection (e.g. which voting param to change)
-    // paramTarget already taken from UI.
-
     const tx = await contracts.governance.propose(pType, paramTarget, newValue, ctx);
-    log('createFullProposal tx', tx.hash);
+    log('propose tx', tx.hash);
     await tx.wait();
     log('proposal created');
-  } catch(e){
-    console.error('createFullProposal err', e);
-    log('createFullProposal err', e && e.message ? e.message : e);
-    alert(e && e.message ? e.message : e);
-  }
+  } catch(e){ log('createProposal err', e.message || e); }
 }
 
-// Fetch one proposal details (attempt multiple reads)
-async function fetchProposalDetails(){
+// Vote
+async function voteProposal(){
   try {
-    if(!contracts.governance) { await attachContractsIfSet(); if(!contracts.governance) return alert('Set governance contract'); }
+    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
     const id = $('proposalId').value.trim();
-    if(!id) return alert('Enter proposal ID (bytes32/hex)');
+    if(!id) return alert('Proposal ID required');
+    const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
+    const tx = await contracts.governance.vote(id, ctx);
+    log('vote tx', tx.hash);
+    await tx.wait();
+    log('voted');
+  } catch(e){ log('voteProposal err', e.message || e); }
+}
+
+// Execute
+async function execProposal(){
+  try {
+    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
+    const id = $('proposalId').value.trim();
+    if(!id) return alert('Proposal ID required');
+    const tx = await contracts.governance.executeProposal(id);
+    log('exec tx', tx.hash);
+    await tx.wait();
+    log('executed');
+  } catch(e){ log('execProposal err', e.message || e); }
+}
+
+// Fetch Proposal Details
+async function fetchProposal(){
+  try {
+    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
+    const id = $('proposalId').value.trim();
+    if(!id) return alert('Proposal ID required');
     let info = null;
     try { info = await contracts.governance.proposals(id); } catch(e){ /* ignore */ }
-    // fallback: try proposalPayloads or other view names (depends on ABI)
-    let payload = null;
-    try { payload = await contracts.governance.proposalPayloads(id); } catch(e){ /* ignore */ }
-
-    log('proposal details', info ? info : payload ? payload : 'no data');
-  } catch(e){
-    log('fetchProposalDetails err', e && e.message ? e.message : e);
-    alert(e && e.message ? e.message : e);
-  }
+    try { if(!info) info = await contracts.governance.proposalPayloads(id); } catch(e){}
+    log('proposal fetch', info || 'no data');
+  } catch(e){ log('fetchProposal err', e.message || e); }
 }
 
-// --------- Proposals table + events ----------
-const proposalsMap = {}; // id -> meta
+// ---------- Proposal Explorer ----------
+const proposalsMap = {};
 
-// Render proposalsMap to table
 function renderProposalsTable(){
   const tbody = $('proposalsTbody');
   tbody.innerHTML = '';
-  const rows = Object.values(proposalsMap).sort((a,b)=> (b.timestamp||0)-(a.timestamp||0));
-  for(const p of rows){
+  Object.values(proposalsMap).forEach(p=>{
     const tr = document.createElement('tr');
     tr.className = 'border-t border-slate-700';
     tr.innerHTML = `
       <td class="p-2 font-mono text-xs">${p.id}</td>
-      <td class="p-2">${p.type || '-'}</td>
-      <td class="p-2 font-mono">${p.value || p.ctx || '-'}</td>
+      <td class="p-2">${p.type}</td>
+      <td class="p-2">${p.value}</td>
+      <td class="p-2">${p.ctx}</td>
       <td class="p-2">${p.proposer || '-'}</td>
       <td class="p-2">${p.votes || 0}</td>
-      <td class="p-2">${p.executed ? 'Yes' : 'No'}</td>
+      <td class="p-2">${p.executed ? 'Yes':'No'}</td>
       <td class="p-2">
-        <button class="p-1 bg-slate-600 rounded text-xs" onclick="copyToClipboard('${p.id}')">Copy ID</button>
-        <button class="p-1 bg-sky-600 rounded text-xs ml-1" onclick="loadProposalIntoForm('${p.id}')">Load</button>
-      </td>
-    `;
+        <button class="p-1 bg-slate-600 rounded text-xs" onclick="$('proposalId').value='${p.id}'">Load</button>
+      </td>`;
     tbody.appendChild(tr);
-  }
+  });
 }
 
-// Convenience: copy id
-function copyToClipboard(text){ navigator.clipboard?.writeText(text).then(()=>log('copied')) }
-
-// load proposal into form (populate id & ctx)
-function loadProposalIntoForm(id){
-  $('proposalId').value = id;
-  const p = proposalsMap[id];
-  if(!p) return;
-  if(p.ctx) $('proposalCollectionCtx').value = p.ctx;
-  if(p.value) $('proposalValue').value = p.value.toString ? p.value.toString() : p.value;
-}
-
-// Event listeners: subscribe to governance events (you must have the ABI event signatures)
-function startGovernanceEventListeners(){
+// Governance Event Listeners
+function startGovernanceListeners(){
   if(!contracts.governance) return;
-  try {
-    // Example event names — adapt to your exact ABI event names if different
-    contracts.governance.on && contracts.governance.on('ProposalCreated', (id, proposer, pType, timestamp, event)=> {
-      // normalize id (bytes32 -> hex)
-      const hexId = id && id.toString ? id.toString() : id;
-      proposalsMap[hexId] = {
-        id: hexId, proposer, type: pType && pType.toString ? pType.toString() : pType, timestamp: Date.now()/1000
-      };
-      renderProposalsTable();
-      log('ProposalCreated', hexId);
-    });
+  const g = contracts.governance;
 
-    contracts.governance.on && contracts.governance.on('VoteCast', (voter, proposalId, support, votes, event) => {
-      const id = proposalId && proposalId.toString ? proposalId.toString() : proposalId;
-      proposalsMap[id] = proposalsMap[id] || { id };
-      proposalsMap[id].votes = (proposalsMap[id].votes || 0) + (votes ? Number(votes.toString ? votes.toString() : votes) : 0);
-      renderProposalsTable();
-      log('VoteCast', id, voter, support, votes);
-    });
-
-    contracts.governance.on && contracts.governance.on('ProposalExecuted', (id, event) => {
-      const hexId = id && id.toString ? id.toString() : id;
-      proposalsMap[hexId] = proposalsMap[hexId] || { id: hexId };
-      proposalsMap[hexId].executed = true;
-      renderProposalsTable();
-      log('ProposalExecuted', hexId);
-    });
-
-  } catch(e){
-    console.error('startGovernanceEventListeners err', e);
-  }
-}
-
-// Quick bootstrap: query last N events (if provider supports getLogs) — optional
-async function bootstrapRecentProposals(){
-  try {
-    if(!contracts.governance) return;
-    const provider = contracts.governance.provider;
-    if(!provider || !provider.getLogs) return;
-    // adapt the event signature to your ABI: example 'ProposalCreated(bytes32,address,uint8,uint256)'
-    const iface = new ethers.Interface(GOVERNANCE_ABI);
-    const topic = iface.getEventTopic('ProposalCreated');
-    const filter = { address: contracts.governance.target || contracts.governance.address, topics: [topic], fromBlock: Math.max(0, (await provider.getBlockNumber()) - 50000) };
-    const logs = await provider.getLogs(filter);
-    for(const l of logs.slice(-50)){ // cap to last 50 for speed
-      const parsed = iface.parseLog(l);
-      const id = parsed.args[0].toString();
-      proposalsMap[id] = { id, proposer: parsed.args[1], type: parsed.args[2].toString(), timestamp: Date.now()/1000 };
-    }
+  g.on("ProposalCreated", (id, proposer, pType, evt) => {
+    const pid = id.toString();
+    proposalsMap[pid] = {id: pid, proposer, type:pType.toString(), value:'—', ctx:'—', votes:0, executed:false};
     renderProposalsTable();
-  } catch(e){
-    console.warn('bootstrapRecentProposals skipped', e && e.message ? e.message : e);
-  }
+  });
+
+  g.on("VoteCast", (voter, id, support, votes, evt) => {
+    const pid = id.toString();
+    proposalsMap[pid] = proposalsMap[pid] || {id:pid};
+    proposalsMap[pid].votes = (proposalsMap[pid].votes||0) + parseInt(votes.toString());
+    renderProposalsTable();
+  });
+
+  g.on("ProposalExecuted", (id, evt) => {
+    const pid = id.toString();
+    proposalsMap[pid] = proposalsMap[pid] || {id:pid};
+    proposalsMap[pid].executed = true;
+    renderProposalsTable();
+  });
 }
 
-// Start listeners after attaching contracts
-(async function initGov(){
+// Start event listeners once contracts are attached
+(async function(){
   await attachContractsIfSet();
-  startGovernanceEventListeners();
-  await bootstrapRecentProposals();
+  startGovernanceListeners();
 })();
 
+    
 	  // Guardian Council contract functions
 async function proposeDao(){
   const newDao = $('newDaoAddr').value.trim();
@@ -1472,9 +1403,10 @@ $('harvestBluechipBtn').onclick = harvestBluechip;
 $('batchHarvestBtn').onclick = batchHarvest;
 
     // Governance
-$('createFullProposalBtn').onclick = createFullProposal;
-$('fetchProposalDetailsBtn').onclick = fetchProposalDetails;
-
+$('createProposalBtn').onclick = createProposal;
+$('voteProposalBtn').onclick = voteProposal;
+$('execProposalBtn').onclick = execProposal;
+$('fetchProposalBtn').onclick = fetchProposal;
 
 	  // DRS Guardian Council 
 $('proposeDaoBtn').onclick = proposeDao;
