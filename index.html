@@ -31,30 +31,111 @@
 
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
-  <!-- Tab Buttons -->
-<div class="glass ring-1 rounded-2xl p-3 flex flex-wrap gap-3">
-  <button data-tab="quickstatus" class="tabbtn px-4 py-2 rounded-lg bg-slate-700 text-white tab-active">
-    Quick Status
+<!-- Tab Buttons -->
+<div class="glass ring-1 rounded-2xl p-4 flex flex-wrap gap-3 justify-center">
+  <button data-tab="overview" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-sky-700 text-white hover:bg-sky-600 transition tab-active">
+    📖 Overview
   </button>
-  <button data-tab="registration" class="tabbtn px-4 py-2 rounded-lg bg-indigo-700 text-white">
-    Collection Registration
+
+  <button data-tab="quickstatus" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-slate-700 text-white hover:bg-slate-600 transition">
+    🧭 Quick Status
   </button>
-  <button data-tab="bluechip" class="tabbtn px-4 py-2 rounded-lg bg-amber-600 text-black">
-    Bluechip
+
+  <button data-tab="registration" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-indigo-700 text-white hover:bg-indigo-600 transition">
+    📝 Collection Registration
   </button>
-  <button data-tab="staking" class="tabbtn px-4 py-2 rounded-lg bg-emerald-700 text-white">
-    Staking
+
+  <button data-tab="bluechip" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-amber-600 text-black hover:bg-amber-500 transition">
+    💎 Bluechip
   </button>
-  <button data-tab="governance" class="tabbtn px-4 py-2 rounded-lg bg-violet-700 text-white">
-    Governance DAO
+
+  <button data-tab="staking" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 transition">
+    📦 Staking
   </button>
-  <button data-tab="council" class="tabbtn px-4 py-2 rounded-lg bg-rose-700 text-white">
-    DRS Guardian Council
+
+  <button data-tab="governance" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-violet-700 text-white hover:bg-violet-600 transition">
+    🏛️ Governance DAO
+  </button>
+
+  <button data-tab="council" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-rose-700 text-white hover:bg-rose-600 transition">
+    🛡️ DRS Guardian Council
+  </button>
+
+  <button data-tab="whitepaper" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-teal-700 text-white hover:bg-teal-600 transition">
+    📜 Whitepaper
   </button>
 </div>
 
   <!-- Tab Contents -->
   <div id="tabContents" class="glass rounded-2xl p-4">
+
+	  <div id="overview" class="tab-content">
+  <div class="glass ring-1 rounded-2xl p-5 space-y-6">
+    <!-- Header -->
+    <div class="flex items-start gap-4">
+      <div class="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 grid place-items-center text-2xl">
+        🧭
+      </div>
+      <div class="space-y-2">
+        <h2 class="text-xl font-semibold">Catalyst at a Glance</h2>
+        <p class="text-slate-300 leading-relaxed">
+          Catalyst is a universal NFT staking & governance protocol. Stake ERC-721s for CATA rewards, 
+          participate in burn-weighted governance, and use the Guardian Council recovery system. 
+          The system is designed for 
+          <span class="chip">security</span>, <span class="chip">scalability</span>, and 
+          <span class="chip">sustainability</span>.
+        </p>
+      </div>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="grid md:grid-cols-3 gap-4">
+      <!-- Mission -->
+      <div class="glass ring-1 rounded-xl p-4">
+        <div class="text-sm text-slate-400 mb-1">Mission</div>
+        <div class="font-semibold">Non-profit R&amp;D</div>
+        <p class="text-slate-300 text-sm mt-2">
+          Immutable fee split 
+          <span class="mono">90% burn / 9% treasury / 1% deployer</span>. 
+          Community-governed treasury. Deflationary incentives.
+        </p>
+      </div>
+
+      <!-- Usage -->
+      <div class="glass ring-1 rounded-xl p-4">
+        <div class="text-sm text-slate-400 mb-1">Usage</div>
+        <ol class="text-sm list-decimal ml-5 space-y-1 text-slate-300">
+          <li>Save your proxy contract address.</li>
+          <li>Optionally set a custom read RPC.</li>
+          <li>Connect wallet for write actions; reads work without it.</li>
+        </ol>
+      </div>
+
+      <!-- Docs -->
+      <div class="glass ring-1 rounded-xl p-4">
+        <div class="text-sm text-slate-400 mb-1">Docs</div>
+        <div class="space-y-1 text-sm text-slate-300">
+          <div>
+            <span class="badge">Whitepaper</span> 
+            See the 
+            <a href="#tab-whitepaper" class="link" onclick="selectTab('whitepaper')">summary</a> tab.
+          </div>
+          <div>
+            <span class="badge">Views</span> Inspect pending rewards, collections, and governance data.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
     <!-- Quick Status -->
     <section id="quickstatus" class="tab-content">
@@ -328,6 +409,62 @@
     </div>
   </div> 
 </section> 
+
+	  <div id="whitepaper" class="tab-content hidden">
+  <div class="glass ring-1 rounded-2xl p-5 space-y-6">
+    <h2 class="text-xl font-semibold">Whitepaper Summary</h2>
+
+    <!-- Vision & Mission -->
+    <details class="glass ring-1 rounded-lg p-4" open>
+      <summary class="cursor-pointer font-medium text-slate-200">
+        Vision &amp; Mission
+      </summary>
+      <p class="text-slate-300 text-sm mt-2 leading-relaxed">
+        Catalyst aims to be the universal utility layer for NFTs: every ERC-721 can stake, burn, 
+        and participate in governance. The protocol balances incentives between blue-chip collections 
+        and unverified projects, using proof-of-burn for legitimacy.
+      </p>
+    </details>
+
+    <!-- Tokenomics -->
+    <details class="glass ring-1 rounded-lg p-4">
+      <summary class="cursor-pointer font-medium text-slate-200">
+        Tokenomics (CATA)
+      </summary>
+      <ul class="mt-2 text-sm text-slate-300 list-disc ml-5 space-y-1">
+        <li>Immutable fee split: <span class="mono">90% Burn / 9% Treasury / 1% Deployer</span></li>
+        <li>Global stake cap: 1B NFTs (750M term, 250M permanent)</li>
+        <li>Per-collection cap: 20k NFTs</li>
+      </ul>
+    </details>
+
+    <!-- Governance -->
+    <details class="glass ring-1 rounded-lg p-4">
+      <summary class="cursor-pointer font-medium text-slate-200">
+        Governance
+      </summary>
+      <p class="text-slate-300 text-sm mt-2 leading-relaxed">
+        Burn-weighted voting with per-collection caps and stake-age requirements. 
+        The <span class="mono">90 / 9 / 1</span> split is immutable.
+      </p>
+    </details>
+
+    <!-- Guardian Recovery -->
+    <details class="glass ring-1 rounded-lg p-4">
+      <summary class="cursor-pointer font-medium text-slate-200">
+        Guardian Recovery (DRS)
+      </summary>
+      <p class="text-slate-300 text-sm mt-2 leading-relaxed">
+        Deployer and Admin councils (7 seats, 5-of-7 approvals by default). 
+        Recovery proposals allow safe rotation of keys and roles.
+      </p>
+    </details>
+
+    <div class="text-xs text-slate-400">
+      Read the full paper for math, proofs, and edge cases.
+    </div>
+  </div>
+</div>
 </main>
 
 
