@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catalyst Protocol — DApp (Production-ready UI)</title>
+  <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Small polished tweaks */
+    body { background: linear-gradient(180deg,#041024 0%, #061426 100%); }
+    .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
+  </style>
+</head>
+<body class="min-h-screen text-white font-sans">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Catalyst Protocol</h1>
+        <p class="text-sm text-slate-300">Staking · Governance · Guardian Council</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="networkBadge" class="px-3 py-1 rounded-md text-sm glass">Network: <span id="networkName">—</span></div>
+        <button id="connectBtn" class="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-400 rounded-md font-semibold text-black">Connect Wallet</button>
+      </div>
+    </header>
+
+    <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Left: Quick Status -->
+      <section class="glass p-4 rounded-lg">
+        <h2 class="font-semibold mb-2">Quick Status</h2>
+        <div class="space-y-2 text-sm text-slate-200">
+          <div>Connected: <strong id="addr">Not connected</strong></div>
+          <div>CATA Balance: <strong id="cataBal">—</strong></div>
+          <div>Staked NFTs (global): <strong id="globalStaked">—</strong></div>
+          <div>Roles (CATA / Staking): <small id="roles">—</small></div>
+        </div>
+
+        <hr class="my-3 border-slate-700" />
+        <div class="text-xs text-slate-300">Contract Addresses (fill & Save)</div>
+        <div class="mt-2 space-y-2">
+          <input id="addrCata" placeholder="CATA Token Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <input id="addrStaking" placeholder="Staking Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <input id="addrGovernance" placeholder="Governance Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <input id="addrCouncil" placeholder="GuardianCouncil Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <div class="flex gap-2">
+            <button id="saveAddrs" class="px-3 py-1 bg-slate-700 rounded text-sm">Save</button>
+            <button id="loadAddrs" class="px-3 py-1 bg-slate-700/50 rounded text-sm">Load from local</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Middle: Staking Actions -->
+      <section class="glass p-4 rounded-lg">
+        <h2 class="font-semibold mb-2">Staking</h2>
+        <p class="text-sm text-slate-300 mb-3">Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake</p>
+
+        <div class="space-y-2 text-sm">
+          <div class="grid grid-cols-2 gap-2">
+            <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
+            <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
+          </div>
+          <div class="flex gap-2">
+            <button id="approveNFT" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve Staking Contract</button>
+            <button id="termStakeBtn" class="flex-1 p-2 bg-indigo-600 rounded">Term Stake</button>
+          </div>
+          <div class="flex gap-2">
+            <button id="permApproveFee" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee (CATA)</button>
+            <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">Permanent Stake</button>
+          </div>
+
+          <div class="flex gap-2">
+            <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest (single token)</button>
+            <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
+          </div>
+
+          <div class="text-xs text-slate-400 mt-2">Batch operations available via batch forms in advanced panel.</div>
+        </div>
+      </section>
+
+      <!-- Right: Governance & Council -->
+      <section class="glass p-4 rounded-lg">
+        <h2 class="font-semibold mb-2">Governance & Council</h2>
+        <div class="text-sm text-slate-300 mb-2">Create proposal, vote, execute (governance) • Council reseed (council only)</div>
+
+        <div class="space-y-2">
+          <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
+            <option value="BASE_REWARD">Base Reward</option>
+            <option value="HARVEST_FEE">Harvest Fee</option>
+            <option value="UNSTAKE_FEE">Unstake Fee</option>
+            <option value="REGISTRATION_FEE_FALLBACK">Registration Fee</option>
+          </select>
+          <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <input id="proposalCollectionCtx" placeholder="Collection address (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <div class="flex gap-2">
+            <button id="createProposal" class="flex-1 p-2 bg-violet-600 rounded">Create Proposal</button>
+            <button id="voteProposal" class="flex-1 p-2 bg-blue-600 rounded">Vote</button>
+          </div>
+          <input id="proposalId" placeholder="Proposal ID (hex) for voting/execution" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <div class="flex gap-2">
+            <button id="execProposal" class="flex-1 p-2 bg-green-700 rounded">Execute (after voting)</button>
+            <button id="fetchProp" class="flex-1 p-2 bg-slate-600 rounded">Fetch Proposal</button>
+          </div>
+
+          <hr class="border-slate-700 my-2" />
+          <div class="text-xs text-slate-400">Council tools (guardian council addresses only)</div>
+          <input id="councilBatch" placeholder="Comma-separated 7 addresses" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <div class="flex gap-2">
+            <button id="proposeReseed" class="flex-1 p-2 bg-rose-600 rounded">Propose Reseed (active)</button>
+            <button id="execReseed" class="flex-1 p-2 bg-rose-400 text-black rounded">Execute Reseed</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section class="glass p-4 rounded-lg mt-6">
+      <h3 class="font-semibold mb-2">Advanced / Logs</h3>
+      <div id="logs" class="h-48 overflow-auto text-xs font-mono bg-black/20 p-3 rounded"></div>
+    </section>
+
+    <footer class="mt-6 text-xs text-slate-500">© Catalyst Protocol — Use at your own risk. This UI is provided as a convenience; double-check contract addresses and approvals before transacting.</footer>
+  </div>
+
+  <!-- Ethers.js (bundle) -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
+  <script>
+    // ---------- Minimal ABIs (essential functions only) ----------
+    const ERC20_ABI = [
+      'function balanceOf(address) view returns (uint256)',
+      'function approve(address spender, uint256 amount) returns (bool)',
+      'function allowance(address owner, address spender) view returns (uint256)',
+      'function transferFrom(address from, address to, uint256 amount) returns (bool)'
+    ];
+
+    const STAKING_ABI = [
+      'function termStake(address collection, uint256 tokenId)',
+      'function permanentStake(address collection, uint256 tokenId)',
+      'function unstake(address collection, uint256 tokenId)',
+      'function setCouncil(address newCouncil)',
+      'function swapAdmin(address newAdmin, address oldAdmin)'
+    ];
+
+    const GOV_ABI = [
+      'function propose(uint8 pType, uint8 paramTarget, uint256 newValue, address collectionContext) returns (bytes32)',
+      'function proposeCouncilReseedActive(address[7] calldata newBatch) returns (bytes32)',
+      'function vote(bytes32 id, address attributedCollection)',
+      'function executeProposal(bytes32 id)'
+    ];
+
+    const ERC721_ABI = [
+      'function approve(address to, uint256 tokenId)',
+      'function setApprovalForAll(address operator, bool approved)',
+      'function isApprovedForAll(address owner, address operator) view returns (bool)'
+    ];
+
+    // ---------- App State ----------
+    let provider, signer, userAddr;
+    let contracts = { cata: null, staking: null, governance: null, council: null };
+
+    // ---------- Helpers ----------
+    const $ = id => document.getElementById(id);
+    function log(...args) {
+      console.log(...args);
+      const el = $('logs');
+      el.innerText = new Date().toISOString() + ' • ' + args.map(a=>typeof a==='object'?JSON.stringify(a):a).join(' ') + '\n' + el.innerText;
+    }
+
+    async function connect() {
+      if (!window.ethereum) return alert('No Web3 wallet detected (install MetaMask)');
+      try {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send('eth_requestAccounts', []);
+        signer = provider.getSigner();
+        userAddr = await signer.getAddress();
+        $('addr').innerText = userAddr;
+        const network = await provider.getNetwork();
+        $('networkName').innerText = network.name + ' (' + network.chainId + ')';
+        $('connectBtn').innerText = 'Connected';
+        $('connectBtn').disabled = true;
+        loadSavedAddrs();
+        attachContractsIfSet();
+        log('Connected', userAddr);
+      } catch (e) { log('connect err', e); }
+    }
+
+    function saveAddrsToLocal(addrs) {
+      localStorage.setItem('catalyst_addrs', JSON.stringify(addrs));
+      log('Saved addresses to localStorage');
+    }
+    function loadSavedAddrs() {
+      const raw = localStorage.getItem('catalyst_addrs');
+      if (!raw) return;
+      try {
+        const obj = JSON.parse(raw);
+        ['addrCata','addrStaking','addrGovernance','addrCouncil'].forEach(k=>{ if(obj[k]) $(k).value = obj[k]; });
+        log('Loaded addresses from localStorage');
+      } catch(e) { }
+    }
+
+    function attachContractsIfSet() {
+      const cataA = $('addrCata').value.trim();
+      const stakingA = $('addrStaking').value.trim();
+      const govA = $('addrGovernance').value.trim();
+      const councilA = $('addrCouncil').value.trim();
+      if (!provider) return;
+
+      if (cataA) contracts.cata = new ethers.Contract(cataA, ERC20_ABI, signer);
+      if (stakingA) contracts.staking = new ethers.Contract(stakingA, STAKING_ABI, signer);
+      if (govA) contracts.governance = new ethers.Contract(govA, GOV_ABI, signer);
+      if (councilA) contracts.council = new ethers.Contract(councilA, [], signer);
+
+      if (contracts.cata) fetchCataBalance();
+    }
+
+    async function fetchCataBalance() {
+      try {
+        const bal = await contracts.cata.balanceOf(userAddr);
+        $('cataBal').innerText = ethers.utils.formatEther(bal) + ' CATA';
+      } catch(e) { log('cata bal err', e); }
+    }
+
+    // ---------- Button bindings ----------
+    window.addEventListener('load', ()=>{
+      $('connectBtn').onclick = connect;
+      $('saveAddrs').onclick = ()=>{
+        const payload = {
+          addrCata: $('addrCata').value.trim(),
+          addrStaking: $('addrStaking').value.trim(),
+          addrGovernance: $('addrGovernance').value.trim(),
+          addrCouncil: $('addrCouncil').value.trim()
+        };
+        saveAddrsToLocal(payload);
+        attachContractsIfSet();
+      };
+      $('loadAddrs').onclick = loadSavedAddrs;
+
+      $('approveNFT').onclick = async ()=>{
+        try{
+          const collection = $('nftCollection').value.trim();
+          const tokenId = $('nftTokenId').value.trim();
+          if(!collection||!tokenId) return alert('collection & tokenId');
+          const nft = new ethers.Contract(collection, ERC721_ABI, signer);
+          const stakingAddr = $('addrStaking').value.trim();
+          if(!stakingAddr) return alert('set staking contract address');
+          // setApprovalForAll is recommended — user experience
+          const tx = await nft.setApprovalForAll(stakingAddr, true);
+          log('Approving staking contract (setApprovalForAll)', tx.hash);
+          await tx.wait();
+          log('Approved');
+        } catch(e){ log('approveNFT err', e); }
+      };
+
+      $('termStakeBtn').onclick = async ()=>{
+        try{
+          const collection = $('nftCollection').value.trim();
+          const tokenId = $('nftTokenId').value.trim();
+          if(!contracts.staking) return alert('set staking contract address & save');
+          const tx = await contracts.staking.termStake(collection, tokenId);
+          log('termStake tx', tx.hash);
+          await tx.wait();
+          log('Term stake complete');
+        } catch(e){ log('termStake err', e); }
+      };
+
+      $('permApproveFee').onclick = async ()=>{
+        try{
+          if(!contracts.cata) return alert('set CATA contract address');
+          const stakingAddr = $('addrStaking').value.trim();
+          if(!stakingAddr) return alert('set staking contract address');
+          // Approve a big amount for convenience (adjust as needed)
+          const amt = ethers.constants.MaxUint256;
+          const tx = await contracts.cata.approve(stakingAddr, amt);
+          log('approve CATA tx', tx.hash);
+          await tx.wait();
+          log('approved CATA for staking contract');
+        } catch(e){ log('permApproveFee err', e); }
+      };
+
+      $('permStakeBtn').onclick = async ()=>{
+        try{
+          const collection = $('nftCollection').value.trim();
+          const tokenId = $('nftTokenId').value.trim();
+          if(!contracts.staking) return alert('set staking contract address');
+          const tx = await contracts.staking.permanentStake(collection, tokenId);
+          log('permanentStake tx', tx.hash);
+          await tx.wait();
+          log('Permanent stake complete');
+        } catch(e){ log('permStake err', e); }
+      };
+
+      $('harvestBtn').onclick = async ()=>{
+        alert('Harvest uses internal _harvest during unstake or called by UI if a public harvest exists. Use unstake if needed.');
+      };
+
+      $('unstakeBtn').onclick = async ()=>{
+        try{
+          const collection = $('nftCollection').value.trim();
+          const tokenId = $('nftTokenId').value.trim();
+          if(!contracts.staking) return alert('set staking contract address');
+          const tx = await contracts.staking.unstake(collection, tokenId);
+          log('unstake tx', tx.hash);
+          await tx.wait();
+          log('Unstaked');
+        } catch(e){ log('unstake err', e); }
+      };
+
+      // Governance
+      $('createProposal').onclick = async ()=>{
+        try{
+          if(!contracts.governance) return alert('set governance address');
+          const type = $('proposalType').value;
+          const mapping = { 'BASE_REWARD':0, 'HARVEST_FEE':1, 'UNSTAKE_FEE':2, 'REGISTRATION_FEE_FALLBACK':3 };
+          const pType = mapping[type];
+          const newVal = ethers.BigNumber.from($('proposalValue').value||'0');
+          const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
+          const tx = await contracts.governance.propose(pType, 0, newVal, ctx);
+          log('propose tx', tx.hash);
+          await tx.wait();
+          log('Proposal created');
+        } catch(e){ log('createProposal err', e); }
+      };
+
+      $('voteProposal').onclick = async ()=>{
+        try{
+          const id = $('proposalId').value.trim();
+          const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
+          if(!id) return alert('proposal id');
+          await contracts.governance.vote(id, ctx);
+          log('Voted on', id);
+        } catch(e){ log('vote err', e); }
+      };
+
+      $('execProposal').onclick = async ()=>{
+        try{
+          const id = $('proposalId').value.trim();
+          if(!id) return alert('proposal id');
+          const tx = await contracts.governance.executeProposal(id);
+          log('exec tx', tx.hash);
+          await tx.wait();
+          log('Proposal executed');
+        } catch(e){ log('execProposal err', e); }
+      };
+
+      // Council reseed (active)
+      $('proposeReseed').onclick = async ()=>{
+        try{
+          if(!contracts.governance) return alert('set governance address');
+          const raw = $('councilBatch').value.trim();
+          const arr = raw.split(',').map(s=>s.trim());
+          if (arr.length !==7) return alert('enter 7 addresses');
+          const tx = await contracts.governance.proposeCouncilReseedActive(arr);
+          log('proposeCouncilReseedActive tx', tx.hash);
+          await tx.wait();
+          log('Council reseed proposed');
+        } catch(e){ log('proposeReseed err', e); }
+      };
+
+      $('execReseed').onclick = async ()=>{
+        try{
+          const id = $('proposalId').value.trim();
+          if(!id) return alert('proposal id');
+          const tx = await contracts.governance.executeProposal(id);
+          log('execCouncilReseed tx', tx.hash);
+          await tx.wait();
+          log('Council reseed executed');
+        } catch(e){ log('execReseed err', e); }
+      };
+
+    });
+  </script>
+</body>
+</html>
