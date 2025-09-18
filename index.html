@@ -1087,48 +1087,96 @@ async function proposeDao(){
 }
 
 async function commitDao(){
-  const tx = await contracts.council.commitNewDAO();
-  log('commit DAO tx', tx.hash);
-  await tx.wait();
-  log('DAO committed');
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.commitNewDAO();
+    log('commit DAO tx', tx.hash);
+    await tx.wait();
+    log('DAO committed');
+  } catch(e){
+    log('commitDao err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function proposeActiveBatch(){
-  const arr = parse7($('activeBatchInput').value);
-  const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
-  log('propose active batch tx', tx.hash);
-  await tx.wait();
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const arr = parse7($('activeBatchInput').value);
+    const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
+    log('propose active batch tx', tx.hash);
+    await tx.wait();
+    log('proposeActiveBatch done');
+  } catch(e){
+    log('proposeActiveBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function commitActiveBatch(){
-  const tx = await contracts.council.daoCommitSeedActiveBatch();
-  log('commit active batch tx', tx.hash);
-  await tx.wait();
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.daoCommitSeedActiveBatch();
+    log('commit active batch tx', tx.hash);
+    await tx.wait();
+    log('commitActiveBatch done');
+  } catch(e){
+    log('commitActiveBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function proposeStandbyBatch(){
-  const arr = parse7($('standbyBatchInput').value);
-  const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
-  log('propose standby batch tx', tx.hash);
-  await tx.wait();
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const arr = parse7($('standbyBatchInput').value);
+    const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
+    log('propose standby batch tx', tx.hash);
+    await tx.wait();
+    log('proposeStandbyBatch done');
+  } catch(e){
+    log('proposeStandbyBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function commitStandbyBatch(){
-  const tx = await contracts.council.daoCommitSeedStandbyBatch();
-  log('commit standby batch tx', tx.hash);
-  await tx.wait();
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.daoCommitSeedStandbyBatch();
+    log('commit standby batch tx', tx.hash);
+    await tx.wait();
+    log('commitStandbyBatch done');
+  } catch(e){
+    log('commitStandbyBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function activateStandby(){
-  const tx = await contracts.council.daoActivateStandby();
-  log('activate standby tx', tx.hash);
-  await tx.wait();
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.daoActivateStandby();
+    log('activate standby tx', tx.hash);
+    await tx.wait();
+    log('activateStandby done');
+  } catch(e){
+    log('activateStandby err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 async function clearLock(){
-  const tx = await contracts.council.daoClearLockAndWarning();
-  log('clear lock tx', tx.hash);
-  await tx.wait();
+  try {
+    if(!contracts.council) return alert("Council contract not attached");
+    const tx = await contracts.council.daoClearLockAndWarning();
+    log('clear lock tx', tx.hash);
+    await tx.wait();
+    log('clearLock done');
+  } catch(e){
+    log('clearLock err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  }
 }
 
 function parse7(txt){
