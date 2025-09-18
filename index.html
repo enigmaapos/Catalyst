@@ -27,6 +27,20 @@
     </header>
 
     <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Collection Registration -->
+<section class="glass p-4 rounded-lg mt-6">
+  <h2 class="font-semibold mb-2">Collection Registration</h2>
+  <div class="space-y-2 text-sm">
+    <input id="regCollectionAddr" placeholder="NFT Collection Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <select id="regCollectionTier" class="w-full p-2 rounded bg-black/20 text-sm">
+      <option value="0">Unverified</option>
+      <option value="1">Verified</option>
+      <option value="2">Bluechip</option>
+    </select>
+    <button id="registerCollectionBtn" class="w-full p-2 bg-purple-600 rounded">Register Collection</button>
+  </div>
+</section>
+      
       <!-- Left -->
       <section class="glass p-4 rounded-lg">
         <h2 class="font-semibold mb-2">Quick Status</h2>
@@ -329,6 +343,25 @@
     $('disconnectBtn').classList.add('hidden');
     log('Disconnected');
   }
+
+    // ---------- Register Collection ----------
+async function registerCollection(){
+  try {
+    if(!contracts.staking) { 
+      await attachContractsIfSet(); 
+      if(!contracts.staking) return alert('Set staking contract'); 
+    }
+    const addr = $('regCollectionAddr').value.trim();
+    const tierStr = $('regCollectionTier').value;
+    const tier = parseInt(tierStr, 10);
+    if(!addr) return alert('collection address required');
+
+    const tx = await contracts.staking.registerCollection(addr, tier);
+    log('registerCollection tx', tx.hash);
+    await tx.wait();
+    log('Collection registered at tier', tier);
+  } catch(e){ log('registerCollection err', e && e.message ? e.message : e); }
+}
 
   // ---------- CATA functions ----------
   async function cataMint(){
@@ -643,6 +676,9 @@
       if(signer) attachContractsIfSet();
     };
     $('loadAddrs').onclick = ()=>{ loadSavedAddrs(); if(signer) attachContractsIfSet(); };
+		
+    //Registration 
+    $('registerCollectionBtn').onclick = registerCollection;
 
     // CATA
     $('cataMintBtn').onclick = cataMint;
