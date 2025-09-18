@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catalyst Protocol — DApp (Production-ready UI)</title>
+  <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: linear-gradient(180deg,#041024 0%, #061426 100%); }
+    .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
+  </style>
+</head>
+<body class="min-h-screen text-white font-sans">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Catalyst Protocol</h1>
+        <p class="text-sm text-slate-300">Staking · Governance · Guardian Council</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="networkBadge" class="px-3 py-1 rounded-md text-sm glass">Network: <span id="networkName">—</span></div>
+        <button id="connectBtn" class="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-400 rounded-md font-semibold text-black">Connect Wallet</button>
+      </div>
+    </header>
+
+    <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Quick Status -->
+      <section class="glass p-4 rounded-lg">
+        <h2 class="font-semibold mb-2">Quick Status</h2>
+        <div class="space-y-2 text-sm text-slate-200">
+          <div>Connected: <strong id="addr">Not connected</strong></div>
+          <div>CATA Balance: <strong id="cataBal">—</strong></div>
+          <div>Staked NFTs (global): <strong id="globalStaked">—</strong></div>
+        </div>
+
+        <hr class="my-3 border-slate-700" />
+        <div class="text-xs text-slate-300">Contract Addresses</div>
+        <div class="mt-2 space-y-2">
+          <input id="addrCata" placeholder="CATA Token Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <input id="addrStaking" placeholder="Staking Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <input id="addrGovernance" placeholder="Governance Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <input id="addrCouncil" placeholder="GuardianCouncil Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <div class="flex gap-2">
+            <button id="saveAddrs" class="px-3 py-1 bg-slate-700 rounded text-sm">Save</button>
+            <button id="loadAddrs" class="px-3 py-1 bg-slate-700/50 rounded text-sm">Load</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Staking Actions -->
+      <section class="glass p-4 rounded-lg">
+        <h2 class="font-semibold mb-2">Staking</h2>
+        <div class="space-y-2 text-sm">
+          <div class="grid grid-cols-2 gap-2">
+            <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
+            <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
+          </div>
+          <div class="flex gap-2">
+            <button id="approveNFT" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve</button>
+            <button id="termStakeBtn" class="flex-1 p-2 bg-indigo-600 rounded">Term Stake</button>
+          </div>
+          <div class="flex gap-2">
+            <button id="permApproveFee" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee</button>
+            <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">Permanent Stake</button>
+          </div>
+          <div class="flex gap-2">
+            <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Governance -->
+      <section class="glass p-4 rounded-lg">
+        <h2 class="font-semibold mb-2">Governance & Council</h2>
+        <div class="space-y-2">
+          <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
+            <option value="BASE_REWARD">Base Reward</option>
+            <option value="HARVEST_FEE">Harvest Fee</option>
+            <option value="UNSTAKE_FEE">Unstake Fee</option>
+          </select>
+          <input id="proposalValue" placeholder="Value" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <button id="createProposal" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
+          <input id="proposalId" placeholder="Proposal ID" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <div class="flex gap-2">
+            <button id="voteProposal" class="flex-1 p-2 bg-blue-600 rounded">Vote</button>
+            <button id="execProposal" class="flex-1 p-2 bg-green-700 rounded">Execute</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Advanced / Batches -->
+    <section class="glass p-4 rounded-lg mt-6">
+      <h2 class="font-semibold mb-2">Advanced Batch Ops</h2>
+      <textarea id="batchCollections" rows="2" placeholder="Comma-separated NFT collection addresses" class="w-full p-2 rounded bg-black/20 text-sm"></textarea>
+      <textarea id="batchTokenIds" rows="2" placeholder="Comma-separated token IDs" class="w-full p-2 rounded bg-black/20 text-sm"></textarea>
+      <div class="flex gap-2 mt-2">
+        <button id="batchTermStakeBtn" class="flex-1 p-2 bg-indigo-700 rounded">Batch Term Stake</button>
+        <button id="batchPermStakeBtn" class="flex-1 p-2 bg-green-700 rounded">Batch Perm Stake</button>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-700 rounded">Batch Unstake</button>
+      </div>
+    </section>
+
+    <!-- Logs -->
+    <section class="glass p-4 rounded-lg mt-6">
+      <h3 class="font-semibold mb-2">Logs</h3>
+      <div id="logs" class="h-48 overflow-auto text-xs font-mono bg-black/20 p-3 rounded"></div>
+    </section>
+  </div>
+
+  <!-- Ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script>
+    // ABI URLs (adjust paths to your server or GitHub)
+    const ABI_URLS = {
+      cata: 'abi/cata.json',
+      staking: 'abi/staking.json',
+      governance: 'abi/governance.json',
+      council: 'abi/council.json'
+    };
+
+    let provider, signer, userAddr;
+    let contracts = {};
+
+    const $ = id => document.getElementById(id);
+    function log(...args) {
+      console.log(...args);
+      const el = $('logs');
+      el.innerText = new Date().toISOString() + ' • ' + args.map(a=>typeof a==='object'?JSON.stringify(a):a).join(' ') + '\n' + el.innerText;
+    }
+
+    async function loadABI(name) {
+      try {
+        const res = await fetch(ABI_URLS[name]);
+        return await res.json();
+      } catch (e) {
+        log('ABI load err for', name, e);
+        return [];
+      }
+    }
+
+    async function connect() {
+      if (!window.ethereum) return alert('No wallet found');
+      try {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send('eth_requestAccounts', []);
+        signer = provider.getSigner();
+        userAddr = await signer.getAddress();
+        $('addr').innerText = userAddr;
+        const network = await provider.getNetwork();
+        $('networkName').innerText = network.name + ' (' + network.chainId + ')';
+        $('connectBtn').innerText = 'Connected';
+        $('connectBtn').disabled = true;
+
+        // Load ABIs + attach contracts
+        const [cataABI, stakingABI, govABI] = await Promise.all([
+          loadABI('cata'), loadABI('staking'), loadABI('governance')
+        ]);
+        const cataA = $('addrCata').value.trim();
+        const stakingA = $('addrStaking').value.trim();
+        const govA = $('addrGovernance').value.trim();
+
+        if (cataA) contracts.cata = new ethers.Contract(cataA, cataABI, signer);
+        if (stakingA) contracts.staking = new ethers.Contract(stakingA, stakingABI, signer);
+        if (govA) contracts.governance = new ethers.Contract(govA, govABI, signer);
+
+        if (contracts.cata) {
+          const bal = await contracts.cata.balanceOf(userAddr);
+          $('cataBal').innerText = ethers.utils.formatEther(bal);
+        }
+
+        log('Connected', userAddr);
+      } catch (e) { log('connect err', e.message || JSON.stringify(e)); }
+    }
+
+    window.addEventListener('load', () => {
+      $('connectBtn').onclick = connect;
+
+      $('termStakeBtn').onclick = async () => {
+        try {
+          const tx = await contracts.staking.termStake($('nftCollection').value.trim(), $('nftTokenId').value.trim());
+          log('termStake tx', tx.hash);
+          await tx.wait();
+        } catch (e) { log('termStake err', e.message); }
+      };
+
+      $('permStakeBtn').onclick = async () => {
+        try {
+          const tx = await contracts.staking.permanentStake($('nftCollection').value.trim(), $('nftTokenId').value.trim());
+          log('permStake tx', tx.hash);
+          await tx.wait();
+        } catch (e) { log('permStake err', e.message); }
+      };
+
+      $('unstakeBtn').onclick = async () => {
+        try {
+          const tx = await contracts.staking.unstake($('nftCollection').value.trim(), $('nftTokenId').value.trim());
+          log('unstake tx', tx.hash);
+          await tx.wait();
+        } catch (e) { log('unstake err', e.message); }
+      };
+
+      $('batchTermStakeBtn').onclick = async () => {
+        try {
+          const colls = $('batchCollections').value.split(',').map(s => s.trim());
+          const ids = $('batchTokenIds').value.split(',').map(s => s.trim());
+          const tx = await contracts.staking.batchTermStake(colls, ids);
+          log('batchTermStake tx', tx.hash);
+          await tx.wait();
+        } catch (e) { log('batchTermStake err', e.message); }
+      };
+
+      $('batchPermStakeBtn').onclick = async () => {
+        try {
+          const colls = $('batchCollections').value.split(',').map(s => s.trim());
+          const ids = $('batchTokenIds').value.split(',').map(s => s.trim());
+          const tx = await contracts.staking.batchPermanentStake(colls, ids);
+          log('batchPermStake tx', tx.hash);
+          await tx.wait();
+        } catch (e) { log('batchPermStake err', e.message); }
+      };
+
+      $('batchUnstakeBtn').onclick = async () => {
+        try {
+          const colls = $('batchCollections').value.split(',').map(s => s.trim());
+          const ids = $('batchTokenIds').value.split(',').map(s => s.trim());
+          const tx = await contracts.staking.batchUnstake(colls, ids);
+          log('batchUnstake tx', tx.hash);
+          await tx.wait();
+        } catch (e) { log('batchUnstake err', e.message); }
+      };
+
+      $('createProposal').onclick = async () => {
+        try {
+          const mapping = { BASE_REWARD: 0, HARVEST_FEE: 1, UNSTAKE_FEE: 2 };
+          const type = mapping[$('proposalType').value];
+          const val = $('proposalValue').value.trim();
+          const tx = await contracts.governance.propose(type, 0, val, ethers.constants.AddressZero);
+          log('propose tx', tx.hash);
+          await tx.wait();
+        } catch (e) { log('proposal err', e.message); }
+      };
+
+      $('voteProposal').onclick = async () => {
+        try {
+          const tx = await contracts.governance.vote($('proposalId').value.trim(), ethers.constants.AddressZero);
+          log('vote tx', tx.hash);
+          await tx.wait();
+        } catch (e) { log('vote err', e.message); }
+      };
+
+      $('execProposal').onclick = async () => {
+        try {
+          const tx = await contracts.governance.executeProposal($('proposalId').value.trim());
+          log('exec tx', tx.hash);
+          await tx.wait();
+        } catch (e) { log('exec err', e.message); }
+      };
+    });
+  </script>
+</body>
+</html>
