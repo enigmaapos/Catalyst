@@ -309,25 +309,50 @@
     <hr class="border-slate-700 my-2" />
 
     <!-- Extra Features -->
-    <h3 class="text-sm font-semibold mb-1">Other Actions</h3>
-    <div class="flex flex-col gap-2">
-      <button id="pendingRewardsBtn" class="p-2 bg-slate-600 rounded text-sm">Check Pending Rewards</button>
-      <div id="pendingRewardsResult" class="text-xs text-slate-300">—</div>
+<h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
+  ⚡ Other Actions
+</h3>
+<div class="grid gap-3 sm:grid-cols-2">
+  <!-- Pending Rewards -->
+  <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
+    <button id="pendingRewardsBtn" class="w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+      🎁 Check Pending Rewards
+    </button>
+    <div id="pendingRewardsResult" class="mt-2 text-xs text-slate-300 font-mono">—</div>
+  </div>
 
-      <button id="viewPortfolioBtn" class="p-2 bg-slate-700 rounded text-sm">View My Staked NFTs</button>
-      <div id="portfolioResult" class="text-xs text-slate-300 break-all">—</div>
-    </div>
+  <!-- Portfolio -->
+  <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
+    <button id="viewPortfolioBtn" class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition">
+      📂 View My Staked NFTs
+    </button>
+    <div id="portfolioResult" class="mt-2 text-xs text-slate-300 font-mono break-all">—</div>
+  </div>
+</div>
 
-    <hr class="border-slate-700 my-2" />
+<hr class="border-slate-700 my-4" />
 
-    <!-- Staking Stats -->
-    <h3 class="text-sm font-semibold mb-1">Staking Stats</h3>
-    <div class="space-y-1 text-xs text-slate-300">
-      <div>Total Staked (All): <span id="stakedAll">—</span></div>
-      <div>Total Staked (Term): <span id="stakedTerm">—</span></div>
-      <div>Total Staked (Perm): <span id="stakedPerm">—</span></div>
-    </div>
-    <button id="refreshStakingStatsBtn" class="mt-2 w-full p-2 bg-slate-700 rounded text-sm">🔄 Refresh Staking Stats</button>
+<!-- Staking Stats -->
+<h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
+  📊 Staking Stats
+</h3>
+<div class="grid grid-cols-3 gap-3 text-center">
+  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+    <div class="text-slate-400 text-xs">Total</div>
+    <div id="stakedAll" class="font-bold text-lg text-slate-100">—</div>
+  </div>
+  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+    <div class="text-slate-400 text-xs">Term</div>
+    <div id="stakedTerm" class="font-bold text-lg text-indigo-400">—</div>
+  </div>
+  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+    <div class="text-slate-400 text-xs">Perm</div>
+    <div id="stakedPerm" class="font-bold text-lg text-emerald-400">—</div>
+  </div>
+</div>
+<button id="refreshStakingStatsBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+  🔄 Refresh Staking Stats
+</button>
   </div>
 </section>
 
