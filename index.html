@@ -248,19 +248,50 @@
     </section>
 
     <!-- Bluechip -->
-    <section id="bluechip" class="tab-content hidden">
-      <h2 class="font-semibold mb-2">Bluechip</h2>
-      <p class="text-sm text-slate-300 mb-3">Enroll as a Bluechip wallet and harvest rewards from Bluechip collections.</p>
-      <div class="space-y-2 text-sm">
-        <div class="flex gap-2">
-          <button id="enrollBluechipBtn" class="flex-1 p-2 bg-amber-500 text-black rounded">Enroll Bluechip Wallet</button>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <input id="bluechipCollectionInput" placeholder="Bluechip Collection Address" class="p-2 rounded bg-black/20" />
-          <button id="harvestBluechipBtn" class="p-2 bg-sky-600 rounded">Harvest Bluechip</button>
-        </div>
-      </div>
-    </section>
+<section id="bluechip" class="tab-content hidden">
+  <h2 class="font-semibold mb-2">Bluechip</h2>
+  <p class="text-sm text-slate-300 mb-3">
+    Enroll as a Bluechip wallet and harvest rewards from Bluechip collections.
+  </p>
+
+  <div class="space-y-3 text-sm">
+    <!-- Enroll -->
+    <div class="flex gap-2">
+      <button id="enrollBluechipBtn" class="flex-1 p-2 bg-amber-500 text-black rounded">
+        🌟 Enroll Bluechip Wallet
+      </button>
+    </div>
+
+    <!-- Harvest -->
+    <div class="grid grid-cols-2 gap-2">
+      <input
+        id="bluechipCollectionInput"
+        placeholder="Bluechip Collection Address"
+        class="p-2 rounded bg-black/20"
+      />
+      <button id="harvestBluechipBtn" class="p-2 bg-sky-600 hover:bg-sky-500 rounded">
+        🎁 Harvest Bluechip
+      </button>
+    </div>
+
+    <hr class="border-slate-700 my-3" />
+
+    <!-- Wallet Info -->
+    <h3 class="text-sm font-semibold mb-1">My Bluechip Status</h3>
+    <div class="space-y-1 text-xs text-slate-300">
+      <div>Status: <span id="bluechipStatus">—</span></div>
+      <div>Pending Rewards: <span id="pendingBluechipRewards">—</span></div>
+      <div>Last Harvest Block: <span id="bluechipLastBlock">—</span></div>
+      <div>Enrollment Fee: <span id="bluechipFee">—</span></div>
+    </div>
+    <button
+      id="refreshBluechipBtn"
+      class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded text-sm"
+    >
+      🔄 Refresh Bluechip Info
+    </button>
+  </div>
+</section>
 
     <!-- Staking -->
 <section id="staking" class="tab-content hidden">
@@ -1014,43 +1045,70 @@ async function handleAdminSetCollectionConfig() {
   }
 }
 
-	 // ---------------- Bluechip ----------------
-
-  async function enrollBluechip(){
-    try {
-      if(!contracts.staking){ 
-        await attachContractsIfSet(); 
-        if(!contracts.staking) return alert('Set staking contract'); 
-      }
-      if(typeof contracts.staking.enrollBluechip === 'function'){
-        const tx = await contracts.staking.enrollBluechip();
-        log('enrollBluechip tx', tx.hash);
-        await tx.wait();
-        log('enrollBluechip done');
-      } else {
-        alert('enrollBluechip not found in ABI');
-      }
-    } catch(e){ log('enrollBluechip err', e && e.message ? e.message : e); }
+// ---------- Bluechip Actions ----------
+// Enroll as Bluechip
+$('enrollBluechipBtn').onclick = async () => {
+  try {
+    const tx = await contracts.staking.enrollBluechip();
+    log("Enroll tx", tx.hash);
+    await tx.wait();
+    log("Enroll complete");
+    alert("✅ You are now a Bluechip wallet!");
+  } catch (e) {
+    alert("Error enrolling: " + (e.message || e));
   }
+};
 
-  async function harvestBluechip(){
-    try {
-      const collection = document.getElementById('bluechipCollectionInput').value.trim();
-      if(!collection) return alert('Enter a collection address');
-      if(!contracts.staking){ 
-        await attachContractsIfSet(); 
-        if(!contracts.staking) return alert('Set staking contract'); 
-      }
-      if(typeof contracts.staking.harvestBluechip === 'function'){
-        const tx = await contracts.staking.harvestBluechip(collection);
-        log('harvestBluechip tx', tx.hash);
-        await tx.wait();
-        log('harvestBluechip done');
-      } else {
-        alert('harvestBluechip not found in ABI');
-      }
-    } catch(e){ log('harvestBluechip err', e && e.message ? e.message : e); }
-  } 
+// Harvest Bluechip
+$('harvestBluechipBtn').onclick = async () => {
+  try {
+    const collection = $('bluechipCollectionInput').value.trim();
+    if (!collection) return alert("collection required");
+    const tx = await contracts.staking.harvestBluechip(collection);
+    log("Harvest tx", tx.hash);
+    await tx.wait();
+    log("Harvest complete");
+    alert("✅ Harvest complete!");
+  } catch (e) {
+    alert("Error harvesting: " + (e.message || e));
+  }
+};
+
+// Refresh Bluechip Info
+$('refreshBluechipBtn').onclick = async () => {
+  try {
+    const me = await signer.getAddress();
+
+    // 1. Enrollment status
+    const enrolled = await contracts.staking.bluechipWallets(
+      ethers.constants.AddressZero,
+      me
+    );
+    $('bluechipStatus').innerText = enrolled ? "✅ Enrolled" : "❌ Not Enrolled";
+
+    // 2. Enrollment fee
+    const fee = await contracts.staking.bluechipWalletFee();
+    $('bluechipFee').innerText = `${fee.toString()} CATA`;
+
+    // 3. Last harvest block
+    const lastBlock = await contracts.staking.bluechipLastHarvestBlock(
+      ethers.constants.AddressZero,
+      me
+    );
+    $('bluechipLastBlock').innerText =
+      lastBlock.toString() !== "0" ? lastBlock.toString() : "—";
+
+    // 4. Pending rewards (example: if your contract has helper, else computed client-side)
+    if (contracts.staking.pendingBluechipRewards) {
+      const rewards = await contracts.staking.pendingBluechipRewards(me);
+      $('pendingBluechipRewards').innerText = `${rewards.toString()} CATA`;
+    } else {
+      $('pendingBluechipRewards').innerText = "—";
+    }
+  } catch (e) {
+    alert("Error loading Bluechip info: " + (e.message || e));
+  }
+};
 	  
   // ---------- NFT approval ----------
   async function approveNFT(){
@@ -1761,9 +1819,10 @@ function wireRegistrationUIs() {
 // call this after your existing UI init (e.g., at end of window.load)
 wireRegistrationUIs();
 
-// Bluechip
+// ---------- Bluechip Binds ----------
 $('enrollBluechipBtn').onclick = enrollBluechip;
 $('harvestBluechipBtn').onclick = harvestBluechip;
+$('refreshBluechipBtn').onclick = refreshBluechipInfo;
 	  
     // Staking single
     $('approveNFTBtn').onclick = approveNFT;
