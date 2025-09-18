@@ -403,23 +403,31 @@
 
   <hr class="border-slate-700 my-2" />
 
-  <!-- Recovery -->
-  <h3 class="text-sm font-semibold mb-1">Recovery Request</h3>
-  <div class="space-y-2 text-sm">
-    <input id="recoveryProposed" placeholder="Proposed address" class="w-full p-2 rounded bg-black/20" />
-    <input id="recoveryCallTarget" placeholder="Target contract address" class="w-full p-2 rounded bg-black/20" />
-    <input id="recoveryCallData" placeholder="Calldata (0x...)" class="w-full p-2 rounded bg-black/20" />
+ <!-- Recovery -->
+<h3 class="text-sm font-semibold mb-1">Recovery Request</h3>
+<div class="space-y-2 text-sm">
+  <!-- Kind -->
+  <select id="recoveryKind" class="w-full p-2 rounded bg-black/20">
+    <option value="0">Deployer</option>
+    <option value="1">Admin</option>
+  </select>
 
-    <div class="flex gap-2">
-      <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 rounded">Propose Recovery</button>
-    </div>
+  <!-- Inputs -->
+  <input id="recoveryProposed" placeholder="Proposed address" class="w-full p-2 rounded bg-black/20" />
+  <input id="recoveryCallTarget" placeholder="Target contract address" class="w-full p-2 rounded bg-black/20" />
+  <input id="recoveryCallData" placeholder="Calldata (0x...)" class="w-full p-2 rounded bg-black/20" />
 
-    <div class="flex gap-2 mt-2">
-      <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 rounded">Approve</button>
-      <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 rounded">Execute</button>
-      <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 rounded">Veto</button>
-    </div>
+  <!-- Buttons -->
+  <div class="flex gap-2">
+    <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 rounded">Propose Recovery</button>
   </div>
+
+  <div class="flex gap-2 mt-2">
+    <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 rounded">Approve</button>
+    <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 rounded">Execute</button>
+    <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 rounded">Veto</button>
+  </div>
+</div>
 </section>
 
 	  <div id="whitepaper" class="tab-content hidden">
@@ -1456,34 +1464,67 @@ function parse7(txt){
 	  
 // Recovery
 async function proposeRecovery(){
-  const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
-  const proposed = $('recoveryProposed').value.trim();
-  const callTarget = $('recoveryCallTarget').value.trim();
-  const callData = $('recoveryCallData').value.trim();
-  const tx = await contracts.council.proposeRecovery(kind, proposed, callTarget, callData);
-  await tx.wait();
-  log('Recovery proposed');
+  try {
+    const kind = parseInt($('recoveryKind').value, 10);
+    const proposed = $('recoveryProposed').value.trim();
+    const callTarget = $('recoveryCallTarget').value.trim();
+    const callData = $('recoveryCallData').value.trim();
+
+    if(!proposed || !callTarget || !callData) {
+      return alert("Fill all recovery fields");
+    }
+
+    const tx = await contracts.council.proposeRecovery(kind, proposed, callTarget, callData);
+    log('proposeRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery proposed');
+    alert("Recovery proposal submitted!");
+  } catch(e) {
+    log('proposeRecovery err', e);
+    alert(e.message || e);
+  }
 }
 
 async function approveRecovery(){
-  const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
-  const tx = await contracts.council.approveRecovery(kind);
-  await tx.wait();
-  log('Recovery approved');
+  try {
+    const kind = parseInt($('recoveryKind').value, 10);
+    const tx = await contracts.council.approveRecovery(kind);
+    log('approveRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery approved');
+    alert("Recovery approved!");
+  } catch(e) {
+    log('approveRecovery err', e);
+    alert(e.message || e);
+  }
 }
 
 async function executeRecovery(){
-  const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
-  const tx = await contracts.council.executeRecovery(kind);
-  await tx.wait();
-  log('Recovery executed');
+  try {
+    const kind = parseInt($('recoveryKind').value, 10);
+    const tx = await contracts.council.executeRecovery(kind);
+    log('executeRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery executed');
+    alert("Recovery executed!");
+  } catch(e) {
+    log('executeRecovery err', e);
+    alert(e.message || e);
+  }
 }
 
 async function vetoRecovery(){
-  const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
-  const tx = await contracts.council.lastHonestHaltAndPromote(kind);
-  await tx.wait();
-  log('Recovery vetoed');
+  try {
+    const kind = parseInt($('recoveryKind').value, 10);
+    const tx = await contracts.council.lastHonestHaltAndPromote(kind);
+    log('vetoRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery vetoed');
+    alert("Recovery vetoed!");
+  } catch(e) {
+    log('vetoRecovery err', e);
+    alert(e.message || e);
+  }
 }
 
   // ---------- Bind UI on load ----------
