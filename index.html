@@ -128,7 +128,7 @@
         <div class="text-sm text-slate-400 mb-1">Docs</div>
         <div class="space-y-1 text-sm text-slate-300">
           <div>
-            <span class="badge">See</span> 
+            <span class="badge">See the</span> 
      		Whitepaper
             <a href="javascript:void(0)" 
    class="text-sky-400 hover:text-sky-300 underline cursor-pointer"
@@ -604,8 +604,9 @@
       </summary>
       <p class="text-slate-300 text-sm mt-2 leading-relaxed">
         Catalyst aims to be the universal utility layer for NFTs: every ERC-721 can stake, burn, 
-        and participate in governance. The protocol balances incentives between blue-chip collections 
-        and unverified projects, using proof-of-burn for legitimacy.
+        and participate in governance. The protocol balances incentives between blue-chip collections, 
+        verified custodial projects, and unverified projects — using proof-of-burn and escrow 
+        forfeits for legitimacy.
       </p>
     </details>
 
@@ -616,8 +617,10 @@
       </summary>
       <ul class="mt-2 text-sm text-slate-300 list-disc ml-5 space-y-1">
         <li>Immutable fee split: <span class="mono">90% Burn / 9% Treasury / 1% Deployer</span></li>
-        <li>Global stake cap: 1B NFTs (750M term, 250M permanent)</li>
-        <li>Per-collection cap: 20k NFTs</li>
+        <li>Global stake cap: <span class="mono">500M NFTs</span> (375M term, 125M permanent)</li>
+        <li>Per-collection cap: <span class="mono">20k NFTs</span></li>
+        <li>Token max supply: <span class="mono">1B CATA</span> (100M premint to initial admin)</li>
+        <li>Minting restricted to <span class="mono">CatalystStaking</span></li>
       </ul>
     </details>
 
@@ -627,26 +630,29 @@
         Governance
       </summary>
       <p class="text-slate-300 text-sm mt-2 leading-relaxed">
-        Burn-weighted voting with per-collection caps and stake-age requirements. 
-        The <span class="mono">90 / 9 / 1</span> split is immutable.
+        Burn-weighted voting with per-collection caps and stake-based weighting. 
+        Proposals may adjust reward rates, fees, tiers, and reseed Guardian Council batches. 
+        The <span class="mono">90 / 9 / 1</span> split is immutable by governance.
       </p>
     </details>
 
     <!-- Guardian Recovery -->
     <details class="glass ring-1 rounded-lg p-4">
       <summary class="cursor-pointer font-medium text-slate-200">
-        Guardian Recovery (DRS)
+        Guardian Recovery (Batch Guardian Council)
       </summary>
       <p class="text-slate-300 text-sm mt-2 leading-relaxed">
-        Deployer and Admin councils (7 seats, 5-of-7 approvals by default). 
-        Recovery proposals allow safe rotation of keys and roles.
+        The Batch Guardian Council secures upgrades and recovery. Two rotating batches of 7 guardians 
+        ensure failover. Recovery requires 5-of-7 approvals, 6-of-7 triggers a warning with a 
+        48h Last Honest veto, and 7-of-7 forces auto-lock with standby activation.
       </p>
     </details>
 
     <div class="text-xs text-slate-400">
-      Read the full paper for math, proofs, and edge cases.
+      Read the full paper for detailed math, proofs, and edge cases.
     </div>
   </div>
+</div>
 </div>
 </main>
 
@@ -655,9 +661,10 @@
       <div id="logs" class="h-48 overflow-auto text-xs font-mono bg-black/20 p-3 rounded"></div>
     </section>
 
-    <footer class="mt-6 text-xs text-slate-500">
-      © Catalyst Protocol — Use at your own risk.
-    </footer>
+    <footer class="mt-6 text-xs text-slate-500 text-center">
+  © Catalyst Protocol — Decentralized &amp; Community-Governed.<br />
+  <span class="block mt-1">All contracts are upgradeable via DAO &amp; Batch Guardian Council. Use at your own risk.</span>
+</footer>
   </div>
 
   <!-- load ethers first -->
