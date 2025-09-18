@@ -70,17 +70,41 @@
         </div>
       </section>
 
-		<!-- Collection Registration -->
+		<!-- =================== Collection Registration =================== -->
 <section class="glass p-4 rounded-lg mt-6">
-  <h2 class="font-semibold mb-2">Collection Registration</h2>
-  <div class="space-y-2 text-sm">
-    <input id="regCollectionAddr" placeholder="NFT Collection Address" class="w-full p-2 rounded bg-black/20 text-sm" />
-    <select id="regCollectionTier" class="w-full p-2 rounded bg-black/20 text-sm">
-      <option value="0">Unverified</option>
-      <option value="1">Verified</option>
-      <option value="2">Bluechip</option>
-    </select>
-    <button id="registerCollectionBtn" class="w-full p-2 bg-purple-600 rounded">Register Collection</button>
+  <h2 class="font-semibold mb-3">Collection Registration</h2>
+  <p class="text-sm text-slate-300 mb-4">
+    Register an ERC-721 collection into Catalyst Staking. 
+    Anyone can register (permissionless), while governance/council may later upgrade its tier.
+  </p>
+
+  <!-- Permissionless Registration -->
+  <div class="mb-6">
+    <h3 class="text-sm font-semibold mb-2">Permissionless Registration</h3>
+    <div class="space-y-2 text-sm">
+      <input id="permRegAddr" placeholder="ERC721 Collection Address" class="w-full p-2 rounded bg-black/20" />
+      <input id="permRegSupply" placeholder="Declared Max Supply" class="w-full p-2 rounded bg-black/20" />
+      <button id="permRegBtn" class="p-2 w-full bg-indigo-600 rounded">
+        Register Collection (anyone)
+      </button>
+    </div>
+  </div>
+
+  <hr class="border-slate-700 my-4" />
+
+  <!-- Admin / Governance Registration -->
+  <div>
+    <h3 class="text-sm font-semibold mb-2">Admin / Governance Tier Upgrade</h3>
+    <div class="space-y-2 text-sm">
+      <input id="adminRegAddr" placeholder="Registered Collection Address" class="w-full p-2 rounded bg-black/20" />
+      <select id="adminRegTier" class="w-full p-2 rounded bg-black/20">
+        <option value="1">Verified (Tier 1)</option>
+        <option value="2">Bluechip (Tier 2)</option>
+      </select>
+      <button id="adminRegBtn" class="p-2 w-full bg-amber-600 text-black rounded">
+        Upgrade Tier (council only)
+      </button>
+    </div>
   </div>
 </section>
 
@@ -387,23 +411,40 @@
     } catch(e){ log('cataSwapAdmin err', e && e.message ? e.message : e); }
   }
 
-// ---------- Register Collection ----------
-async function registerCollection(){
-  try {
-    if(!contracts.staking) { 
-      await attachContractsIfSet(); 
-      if(!contracts.staking) return alert('Set staking contract'); 
-    }
-    const addr = $('regCollectionAddr').value.trim();
-    const tierStr = $('regCollectionTier').value;
-    const tier = parseInt(tierStr, 10);
-    if(!addr) return alert('collection address required');
+/********************************************************************
+ * Collection Registration logic
+ ********************************************************************/
 
-    const tx = await contracts.staking.registerCollection(addr, tier);
-    log('registerCollection tx', tx.hash);
+// Permissionless registration (any user)
+async function registerCollectionPermissionless() {
+  try {
+    if (!contracts.staking) { await attachContractsIfSet(); if (!contracts.staking) return alert("Set staking contract"); }
+    const addr = $('permRegAddr').value.trim();
+    const supply = $('permRegSupply').value.trim();
+    if (!addr || !supply) return alert("Address & supply required");
+    const tx = await contracts.staking.registerCollection(addr, ethers.BigNumber.from(supply));
+    log("registerCollection tx", tx.hash);
     await tx.wait();
-    log('Collection registered at tier', tier);
-  } catch(e){ log('registerCollection err', e && e.message ? e.message : e); }
+    log("registerCollection completed");
+  } catch(e) {
+    log("registerCollection err", e && e.message ? e.message : e);
+  }
+}
+
+// Admin / governance registration (restricted by contract)
+async function upgradeCollectionTierAdmin() {
+  try {
+    if (!contracts.staking) { await attachContractsIfSet(); if (!contracts.staking) return alert("Set staking contract"); }
+    const addr = $('adminRegAddr').value.trim();
+    const tier = $('adminRegTier').value;
+    if (!addr) return alert("Collection address required");
+    const tx = await contracts.staking.upgradeCollectionTier(addr, tier);
+    log("upgradeCollectionTier tx", tx.hash);
+    await tx.wait();
+    log("upgradeCollectionTier completed");
+  } catch(e) {
+    log("upgradeCollectionTier err", e && e.message ? e.message : e);
+  }
 }
 	  
   // ---------- NFT approval ----------
@@ -682,9 +723,11 @@ async function registerCollection(){
     $('cataBurnBtn').onclick = cataBurn;
     $('swapAdminBtn').onclick = cataSwapAdmin;
 
-	  //Registration 
-    $('registerCollectionBtn').onclick = registerCollection;
-	  
+	  // Register Collection 
+window.addEventListener('load', () => {
+  if ($('permRegBtn')) $('permRegBtn').onclick = registerCollectionPermissionless;
+  if ($('adminRegBtn')) $('adminRegBtn').onclick = upgradeCollectionTierAdmin;
+});
     // Staking single
     $('approveNFTBtn').onclick = approveNFT;
     $('termStakeBtn').onclick = termStake;
