@@ -113,21 +113,36 @@
   </div>
 </div>
 
-		<div class="card">
-  <h3>Bluechip</h3>
-  <p class="muted">Enroll your wallet and harvest from Bluechip collections.</p>
+	<section class="glass p-4 rounded-lg">
+  <h2 class="font-semibold mb-2">Bluechip</h2>
+  <p class="text-sm text-slate-300 mb-3">
+    Enroll as a Bluechip wallet and harvest rewards from Bluechip collections.
+  </p>
 
-  <div class="row">
-    <button id="enrollBluechipBtn">Enroll as Bluechip Wallet</button>
+  <div class="space-y-2 text-sm">
+    <!-- Enroll -->
+    <div class="flex gap-2">
+      <button id="enrollBluechipBtn" class="flex-1 p-2 bg-amber-500 text-black rounded">
+        Enroll Bluechip Wallet
+      </button>
+    </div>
+
+    <!-- Harvest -->
+    <div class="grid grid-cols-2 gap-2">
+      <input
+        id="bluechipCollectionInput"
+        placeholder="Bluechip Collection Address"
+        class="p-2 rounded bg-black/20"
+      />
+      <button
+        id="harvestBluechipBtn"
+        class="p-2 bg-sky-600 rounded"
+      >
+        Harvest Bluechip
+      </button>
+    </div>
   </div>
-
-  <label>Collection Address (to harvest)</label>
-  <input id="bluechipCollectionInput" placeholder="0xCollection..." />
-
-  <div class="row">
-    <button id="harvestBluechipBtn">Harvest Bluechip Rewards</button>
-  </div>
-</div>
+</section>
 
       <!-- Middle -->
       <section class="glass p-4 rounded-lg">
