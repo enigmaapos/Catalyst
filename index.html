@@ -10,6 +10,9 @@
   <style>
     body { background: linear-gradient(180deg,#041024 0%, #061426 100%); }
     .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
+	  .tabbtn {transition: all 0.2s ease-in-out;}
+.tabbtn:hover {opacity: 0.85; transform: translateY(-1px);}
+.tab-active {outline: 2px solid white; outline-offset: 2px;}
   </style>
 </head>
 <body class="min-h-screen text-white font-sans">
@@ -29,13 +32,23 @@
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
   <!-- Tab Buttons -->
-  <div class="glass ring-1 rounded-2xl p-2 flex flex-wrap gap-2">
-    <button data-tab="quickstatus" class="tabbtn btn btn-ghost tab-active">Quick Status</button>
-    <button data-tab="registration" class="tabbtn btn btn-ghost">Collection Registration</button>
-    <button data-tab="bluechip" class="tabbtn btn btn-ghost">Bluechip</button>
-    <button data-tab="staking" class="tabbtn btn btn-ghost">Staking</button>
-    <button data-tab="governance" class="tabbtn btn btn-ghost">Governance & Council</button>
-  </div>
+  <div class="glass ring-1 rounded-2xl p-3 flex flex-wrap gap-3">
+  <button data-tab="quickstatus" class="tabbtn px-4 py-2 rounded-lg bg-slate-700 text-white tab-active">
+    Quick Status
+  </button>
+  <button data-tab="registration" class="tabbtn px-4 py-2 rounded-lg bg-indigo-700 text-white">
+    Collection Registration
+  </button>
+  <button data-tab="bluechip" class="tabbtn px-4 py-2 rounded-lg bg-amber-600 text-black">
+    Bluechip
+  </button>
+  <button data-tab="staking" class="tabbtn px-4 py-2 rounded-lg bg-emerald-700 text-white">
+    Staking
+  </button>
+  <button data-tab="governance" class="tabbtn px-4 py-2 rounded-lg bg-violet-700 text-white">
+    Governance & Council
+  </button>
+</div>
 
   <!-- Tab Contents -->
   <div id="tabContents" class="glass rounded-2xl p-4">
