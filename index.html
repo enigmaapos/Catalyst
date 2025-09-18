@@ -263,47 +263,74 @@
     </section>
 
     <!-- Staking -->
-    <section id="staking" class="tab-content hidden">
-      <h2 class="font-semibold mb-2">Staking</h2>
-      <p class="text-sm text-slate-300 mb-3">Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake</p>
-      <div class="space-y-2 text-sm">
-        <div class="grid grid-cols-2 gap-2">
-          <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
-          <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
-        </div>
-        <div class="flex gap-2">
-          <button id="approveNFTBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve Staking Contract</button>
-          <button id="termStakeBtn" class="flex-1 p-2 bg-indigo-600 rounded">Term Stake</button>
-        </div>
-        <div class="flex gap-2">
-          <button id="permApproveFeeBtn" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee (CATA)</button>
-          <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">Permanent Stake</button>
-        </div>
-        <div class="flex gap-2">
-          <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest</button>
-          <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
-        </div>
-        <hr class="border-slate-700 my-2" />
-        <h3 class="text-sm font-semibold mb-1">Batch Operations</h3>
-        <textarea id="batchNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
-        <div class="flex gap-2 mt-2">
-          <button id="batchTermStakeBtn" class="flex-1 p-2 bg-indigo-500 rounded text-sm">Batch Term Stake</button>
-          <button id="batchPermStakeBtn" class="flex-1 p-2 bg-emerald-500 rounded text-sm">Batch Permanent Stake</button>
-          <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-500 rounded text-sm">Batch Unstake</button>
-        </div>
-		  <hr class="border-slate-700 my-2" />
-<h3 class="text-sm font-semibold mb-1">Batch Harvest</h3>
-<textarea 
-  id="batchHarvestNFTs" 
-  placeholder="collection,tokenId per line"
-  class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"
-></textarea>
+<section id="staking" class="tab-content hidden">
+  <h2 class="font-semibold mb-2">Staking</h2>
+  <p class="text-sm text-slate-300 mb-3">Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake</p>
+  
+  <div class="space-y-2 text-sm">
+    <!-- Single NFT Stake -->
+    <div class="grid grid-cols-2 gap-2">
+      <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
+      <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
+    </div>
+    <div class="flex gap-2">
+      <button id="approveNFTBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve Staking Contract</button>
+      <button id="termStakeBtn" class="flex-1 p-2 bg-indigo-600 rounded">Term Stake</button>
+    </div>
+    <div class="flex gap-2">
+      <button id="permApproveFeeBtn" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee (CATA)</button>
+      <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">Permanent Stake</button>
+    </div>
+    <div class="flex gap-2">
+      <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest</button>
+      <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
+    </div>
 
-<div class="flex gap-2 mt-2">
-  <button id="batchHarvestBtn" class="flex-1 p-2 bg-sky-600 rounded text-sm">Batch Harvest</button>
-</div>
-      </div>
-    </section>
+    <hr class="border-slate-700 my-2" />
+
+    <!-- Batch Staking -->
+    <h3 class="text-sm font-semibold mb-1">Batch Operations</h3>
+    <textarea id="batchNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
+    <div class="flex gap-2 mt-2">
+		<button id="batchApproveNFTsBtn" class="w-full p-2 bg-yellow-600 rounded text-sm mt-2">Batch Approve NFTs</button>
+      <button id="batchTermStakeBtn" class="flex-1 p-2 bg-indigo-500 rounded text-sm">Batch Term Stake</button>
+      <button id="batchPermStakeBtn" class="flex-1 p-2 bg-emerald-500 rounded text-sm">Batch Permanent Stake</button>
+      <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-500 rounded text-sm">Batch Unstake</button>
+    </div>
+
+    <hr class="border-slate-700 my-2" />
+
+    <!-- Batch Harvest -->
+    <h3 class="text-sm font-semibold mb-1">Batch Harvest</h3>
+    <textarea id="batchHarvestNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
+    <div class="flex gap-2 mt-2">
+      <button id="batchHarvestBtn" class="flex-1 p-2 bg-sky-600 rounded text-sm">Batch Harvest</button>
+    </div>
+
+    <hr class="border-slate-700 my-2" />
+
+    <!-- Extra Features -->
+    <h3 class="text-sm font-semibold mb-1">Other Actions</h3>
+    <div class="flex flex-col gap-2">
+      <button id="pendingRewardsBtn" class="p-2 bg-slate-600 rounded text-sm">Check Pending Rewards</button>
+      <div id="pendingRewardsResult" class="text-xs text-slate-300">—</div>
+
+      <button id="viewPortfolioBtn" class="p-2 bg-slate-700 rounded text-sm">View My Staked NFTs</button>
+      <div id="portfolioResult" class="text-xs text-slate-300 break-all">—</div>
+    </div>
+
+    <hr class="border-slate-700 my-2" />
+
+    <!-- Staking Stats -->
+    <h3 class="text-sm font-semibold mb-1">Staking Stats</h3>
+    <div class="space-y-1 text-xs text-slate-300">
+      <div>Total Staked (All): <span id="stakedAll">—</span></div>
+      <div>Total Staked (Term): <span id="stakedTerm">—</span></div>
+      <div>Total Staked (Perm): <span id="stakedPerm">—</span></div>
+    </div>
+    <button id="refreshStakingStatsBtn" class="mt-2 w-full p-2 bg-slate-700 rounded text-sm">🔄 Refresh Staking Stats</button>
+  </div>
+</section>
 
     <!-- Governance -->
     <section id="governance" class="tab-content hidden">
@@ -1092,6 +1119,20 @@ async function handleAdminSetCollectionConfig() {
     return pairs;
   }
 
+	  $('batchApproveNFTsBtn').onclick = async () => {
+  try {
+    const lines = $('batchNFTs').value.trim().split("\n");
+    for (let line of lines) {
+      const [collection, tokenId] = line.split(",").map(s => s.trim());
+      const nft = new ethers.Contract(collection, erc721Abi, signer);
+      await nft.approve(contracts.staking.address, tokenId);
+    }
+    alert("Batch approvals completed!");
+  } catch (e) {
+    alert("Error batch approving NFTs: " + (e.message || e));
+  }
+};
+
   async function batchTermStake(){
     try {
       const pairs = parseBatchPairs();
@@ -1176,6 +1217,47 @@ function parseBatchHarvestPairs() {
     return { collection, tokenId };
   }).filter(Boolean);
 }
+
+	  $('pendingRewardsBtn').onclick = async () => {
+  try {
+    const collection = $('nftCollection').value.trim();
+    const tokenId = $('nftTokenId').value.trim();
+    const account = await getAccount();
+
+    const rewards = await contracts.staking.pendingRewards(collection, account, tokenId);
+    $('pendingRewardsResult').innerText = `${rewards.toString()} CATA`;
+  } catch (e) {
+    alert("Error checking rewards: " + (e.message || e));
+  }
+};
+
+	  $('refreshStakingStatsBtn').onclick = async () => {
+  try {
+    const [all, term, perm] = await Promise.all([
+      contracts.staking.totalStakedAll(),
+      contracts.staking.totalStakedTerm(),
+      contracts.staking.totalStakedPerm()
+    ]);
+
+    $('stakedAll').innerText = all.toString();
+    $('stakedTerm').innerText = term.toString();
+    $('stakedPerm').innerText = perm.toString();
+  } catch (e) {
+    alert("Error loading staking stats: " + (e.message || e));
+  }
+};
+
+	  $('viewPortfolioBtn').onclick = async () => {
+  try {
+    const collection = $('nftCollection').value.trim();
+    const account = await getAccount();
+
+    const portfolio = await contracts.staking.stakePortfolioByUser(collection, account);
+    $('portfolioResult').innerText = portfolio.length > 0 ? portfolio.join(", ") : "No NFTs staked.";
+  } catch (e) {
+    alert("Error loading portfolio: " + (e.message || e));
+  }
+};
 
 // Group by collection => { '0xCollA': ['123','124'], '0xCollB': ['555'] }
 function groupByCollection(pairs) {
@@ -1699,6 +1781,12 @@ $('harvestBluechipBtn').onclick = harvestBluechip;
     $('batchPermStakeBtn').onclick = batchPermStake;
     $('batchUnstakeBtn').onclick = batchUnstake;
 $('batchHarvestBtn').onclick = batchHarvest;
+
+	  // Extra staking binds
+$('pendingRewardsBtn').onclick = checkPendingRewards;
+$('refreshStakingStatsBtn').onclick = refreshStakingStats;
+$('viewPortfolioBtn').onclick = viewPortfolio;
+$('batchApproveNFTsBtn').onclick = batchApproveNFTs;
 
     // Governance
 $('createProposalBtn').onclick = createProposal;
