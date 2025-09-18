@@ -448,7 +448,14 @@
   <p><span class="font-medium">Last Honest Guardian:</span> <span id="riGuardian">-</span></p>
   <p><span class="font-medium">Veto Expiry:</span> <span id="riVetoExpiry">-</span></p>
 
-  <button id="refreshRecoveryBtn" class="mt-2 w-full p-2 bg-slate-700 rounded">🔄 Refresh Recovery Info</button>
+  <!-- Add a selector above Refresh button -->
+<label for="recoveryKind" class="block text-slate-300 text-sm font-medium mb-1">Recovery Kind</label>
+<select id="recoveryKind" class="w-full p-2 rounded bg-slate-800 text-slate-200">
+  <option value="0">Deployer</option>
+  <option value="1">Admin</option>
+</select>
+
+<button id="refreshRecoveryBtn" class="mt-2 w-full p-2 bg-slate-700 rounded">🔄 Refresh Recovery Info</button>
 </div>
 </div>
 </section>
@@ -1550,9 +1557,10 @@ async function vetoRecovery(){
   }
 }
 
-	  async function refreshRecoveryInfo(){
+	  async function refreshRecoveryInfo() {
   try {
-    const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
+    const kind = parseInt($('recoveryKind').value, 10);
+
     const [proposed, approvals, deadline, executed, callTarget, callData] =
       await contracts.council.getRecoveryState(kind);
 
@@ -1570,6 +1578,7 @@ async function vetoRecovery(){
     alert("Error loading recovery info: " + (e.message || e));
   }
 }
+
 
 	  // Encode calldata helper
 async function encodeCallData() {
