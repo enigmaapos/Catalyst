@@ -77,70 +77,80 @@
   <!-- Tab Contents -->
   <div id="tabContents" class="glass rounded-2xl p-4">
 
-	  <section>
-	  <div id="overview" class="tab-content">
-  <div class="glass ring-1 rounded-2xl p-5 space-y-6">
-    <!-- Header -->
-    <div class="flex items-start gap-4">
-      <div class="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 grid place-items-center text-2xl">
-        🧭
-      </div>
-      <div class="space-y-2">
-        <h2 class="text-xl font-semibold">Catalyst at a Glance</h2>
-        <p class="text-slate-300 leading-relaxed">
-          Catalyst is a universal NFT staking & governance protocol. Stake ERC-721s for CATA rewards, 
-          participate in burn-weighted governance, and use the Guardian Council recovery system. 
-          The system is designed for 
-          <span class="chip">security</span>, <span class="chip">scalability</span>, and 
-          <span class="chip">sustainability</span>.
-        </p>
-      </div>
-    </div>
-
-    <!-- Info Cards -->
-    <div class="grid md:grid-cols-3 gap-4">
-      <!-- Mission -->
-      <div class="glass ring-1 rounded-xl p-4">
-        <div class="text-sm text-slate-400 mb-1">Mission</div>
-        <div class="font-semibold">Non-profit R&amp;D</div>
-        <p class="text-slate-300 text-sm mt-2">
-          Immutable fee split 
-          <span class="mono">90% burn / 9% treasury / 1% deployer</span>. 
-          Community-governed treasury. Deflationary incentives.
-        </p>
+<section>
+  <div id="overview" class="tab-content">
+    <div class="glass ring-1 rounded-2xl p-5 space-y-6">
+      <!-- Header -->
+      <div class="flex items-start gap-4">
+        <div class="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 grid place-items-center text-2xl">
+          🧭
+        </div>
+        <div class="space-y-2">
+          <h2 class="text-xl font-semibold">Catalyst at a Glance</h2>
+          <p class="text-slate-300 leading-relaxed">
+            Catalyst is a modular NFT staking &amp; governance protocol. Stake ERC-721s for CATA rewards, 
+            participate in burn-weighted governance, and rely on the Batch Guardian Council recovery system. 
+            The design enforces 
+            <span class="chip">security</span>, <span class="chip">scalability</span>, and 
+            <span class="chip">sustainability</span> through immutable economics and DAO-managed upgrades.
+          </p>
+        </div>
       </div>
 
-      <!-- Usage -->
-<div class="card rounded-xl p-4 ring-1 glass">
-  <div class="text-sm muted mb-2 flex items-center gap-2">
-    <span class="badge">Usage</span>
-    <span>How to use Catalyst</span>
-  </div>
-  <ol class="text-sm list-decimal ml-5 space-y-2 text-slate-300 leading-relaxed">
-    <li>Save your <span class="font-mono">proxy contract</span> address.</li>
-    <li>Connect your wallet to enable <span class="chip">write actions</span>.</li>
-    <li>Use the tabs to stake NFTs, manage governance, and interact with the council.</li>
-  </ol>
-</div>
+      <!-- Info Cards -->
+      <div class="grid md:grid-cols-3 gap-4">
+        <!-- Mission -->
+        <div class="glass ring-1 rounded-xl p-4">
+          <div class="text-sm text-slate-400 mb-1">Mission</div>
+          <div class="font-semibold">Community-Governed Utility</div>
+          <p class="text-slate-300 text-sm mt-2">
+            Immutable fee split 
+            <span class="mono">90% Burn / 9% Treasury / 1% Deployer</span>. 
+            A deflationary model that aligns incentives between verified custodial, 
+            unverified escrowed, and blue-chip non-custodial collections.
+          </p>
+        </div>
 
-      <!-- Docs -->
-      <div class="glass ring-1 rounded-xl p-4">
-        <div class="text-sm text-slate-400 mb-1">Docs</div>
-        <div class="space-y-1 text-sm text-slate-300">
-          <div>
-            <span class="badge">See the</span> 
-     		Whitepaper
-            <a href="javascript:void(0)" 
-   class="text-sky-400 hover:text-sky-300 underline cursor-pointer"
-   onclick="selectTab('whitepaper')">
-   summary
-			</a>
+        <!-- Usage -->
+        <div class="card rounded-xl p-4 ring-1 glass">
+          <div class="text-sm muted mb-2 flex items-center gap-2">
+            <span class="badge">Usage</span>
+            <span>How to use Catalyst</span>
+          </div>
+          <ol class="text-sm list-decimal ml-5 space-y-2 text-slate-300 leading-relaxed">
+            <li>Locate and save your <span class="font-mono">proxy contract</span> address.</li>
+            <li>Connect your wallet to enable <span class="chip">staking</span> and <span class="chip">governance</span> actions.</li>
+            <li>Use the tabs to stake NFTs, submit votes, claim rewards, and interact with the Batch Guardian Council.</li>
+          </ol>
+        </div>
+
+        <!-- Docs -->
+        <div class="glass ring-1 rounded-xl p-4">
+          <div class="text-sm text-slate-400 mb-1">Docs</div>
+          <div class="space-y-1 text-sm text-slate-300">
+            <div>
+              <span class="badge">See the</span> 
+              Whitepaper
+              <a href="javascript:void(0)" 
+                 class="text-sky-400 hover:text-sky-300 underline cursor-pointer"
+                 onclick="selectTab('whitepaper')">
+                 summary
+              </a>
+            </div>
+            <div>
+              <span class="badge">Review the</span>
+              Technical Appendix
+              <a href="javascript:void(0)" 
+                 class="text-sky-400 hover:text-sky-300 underline cursor-pointer"
+                 onclick="selectTab('appendix')">
+                 details
+              </a>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 </section>
 	  
     <!-- Quick Status -->
