@@ -113,6 +113,22 @@
   </div>
 </div>
 
+		<div class="card">
+  <h3>Bluechip</h3>
+  <p class="muted">Enroll your wallet and harvest from Bluechip collections.</p>
+
+  <div class="row">
+    <button id="enrollBluechipBtn">Enroll as Bluechip Wallet</button>
+  </div>
+
+  <label>Collection Address (to harvest)</label>
+  <input id="bluechipCollectionInput" placeholder="0xCollection..." />
+
+  <div class="row">
+    <button id="harvestBluechipBtn">Harvest Bluechip Rewards</button>
+  </div>
+</div>
+
       <!-- Middle -->
       <section class="glass p-4 rounded-lg">
         <h2 class="font-semibold mb-2">Staking</h2>
@@ -605,6 +621,44 @@ async function handleAdminSetCollectionConfig() {
     alert('Admin set failed: ' + (e.message || e));
   }
 }
+
+	 // ---------------- Bluechip ----------------
+
+  async function enrollBluechip(){
+    try {
+      if(!contracts.staking){ 
+        await attachContractsIfSet(); 
+        if(!contracts.staking) return alert('Set staking contract'); 
+      }
+      if(typeof contracts.staking.enrollBluechip === 'function'){
+        const tx = await contracts.staking.enrollBluechip();
+        log('enrollBluechip tx', tx.hash);
+        await tx.wait();
+        log('enrollBluechip done');
+      } else {
+        alert('enrollBluechip not found in ABI');
+      }
+    } catch(e){ log('enrollBluechip err', e && e.message ? e.message : e); }
+  }
+
+  async function harvestBluechip(){
+    try {
+      const collection = document.getElementById('bluechipCollectionInput').value.trim();
+      if(!collection) return alert('Enter a collection address');
+      if(!contracts.staking){ 
+        await attachContractsIfSet(); 
+        if(!contracts.staking) return alert('Set staking contract'); 
+      }
+      if(typeof contracts.staking.harvestBluechip === 'function'){
+        const tx = await contracts.staking.harvestBluechip(collection);
+        log('harvestBluechip tx', tx.hash);
+        await tx.wait();
+        log('harvestBluechip done');
+      } else {
+        alert('harvestBluechip not found in ABI');
+      }
+    } catch(e){ log('harvestBluechip err', e && e.message ? e.message : e); }
+  } 
 	  
   // ---------- NFT approval ----------
   async function approveNFT(){
@@ -893,6 +947,10 @@ function wireRegistrationUIs() {
 
 // call this after your existing UI init (e.g., at end of window.load)
 wireRegistrationUIs();
+
+// Bluechip
+$('enrollBluechipBtn').onclick = enrollBluechip;
+$('harvestBluechipBtn').onclick = harvestBluechip;
 	  
     // Staking single
     $('approveNFTBtn').onclick = approveNFT;
