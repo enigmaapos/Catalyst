@@ -177,6 +177,17 @@
           <button id="batchPermStakeBtn" class="flex-1 p-2 bg-emerald-500 rounded text-sm">Batch Permanent Stake</button>
           <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-500 rounded text-sm">Batch Unstake</button>
         </div>
+		  <hr class="border-slate-700 my-2" />
+<h3 class="text-sm font-semibold mb-1">Batch Harvest</h3>
+<textarea 
+  id="batchHarvestNFTs" 
+  placeholder="collection,tokenId per line"
+  class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"
+></textarea>
+
+<div class="flex gap-2 mt-2">
+  <button id="batchHarvestBtn" class="flex-1 p-2 bg-sky-600 rounded text-sm">Batch Harvest</button>
+</div>
       </div>
     </section>
 
@@ -833,6 +844,91 @@ async function handleAdminSetCollectionConfig() {
     } catch(e){ log('batchUnstake err', e && e.message ? e.message : e); }
   }
 
+	  // Helper: parse textarea "collection,tokenId" lines into objects
+function parseBatchHarvestPairs() {
+  const txt = $('batchHarvestNFTs').value.trim();
+  if (!txt) return [];
+  return txt.split(/\r?\n/).map(line => {
+    const parts = line.split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length < 2) return null;
+    const collection = parts[0];
+    const tokenId = parts[1];
+    if (!collection || !tokenId) return null;
+    return { collection, tokenId };
+  }).filter(Boolean);
+}
+
+// Group by collection => { '0xCollA': ['123','124'], '0xCollB': ['555'] }
+function groupByCollection(pairs) {
+  const map = {};
+  for (const p of pairs) {
+    const col = p.collection.toLowerCase();
+    if (!map[col]) map[col] = [];
+    // keep as string or BigInt depending on how you send; strings are fine for ethers
+    map[col].push(p.tokenId.toString());
+  }
+  return map;
+}
+
+async function batchHarvest() {
+  try {
+    const pairs = parseBatchHarvestPairs();
+    if (pairs.length === 0) {
+      alert('No pairs to harvest');
+      return;
+    }
+
+    // ensure contracts.staking exists (attach if needed)
+    if (!contracts || !contracts.staking) {
+      if (typeof attachContractsIfSet === 'function') {
+        await attachContractsIfSet();
+      }
+      if (!contracts || !contracts.staking) {
+        return alert('Staking contract not set. Set addresses and attach contracts first.');
+      }
+    }
+
+    // Prefer calling harvestBatch(collection, uint256[] tokenIds)
+    const byCollection = groupByCollection(pairs);
+
+    // Detect if harvestBatch exists in ABI
+    const hasHarvestBatch = typeof contracts.staking.harvestBatch === 'function';
+    const hasHarvestSingle = typeof contracts.staking.harvest === 'function';
+
+    if (!hasHarvestBatch && !hasHarvestSingle) {
+      return alert('Contract ABI lacks harvestBatch and harvest functions.');
+    }
+
+    // Iterate groups
+    for (const colLower of Object.keys(byCollection)) {
+      const collection = colLower; // already lowercase; contract accepts checksummed address too
+      const ids = byCollection[colLower];
+
+      if (hasHarvestBatch) {
+        // call harvestBatch(collection, uint256[] tokenIds)
+        log('calling harvestBatch for', collection, 'ids:', ids);
+        const tx = await contracts.staking.harvestBatch(collection, ids);
+        log('harvestBatch tx', tx.hash);
+        await tx.wait();
+        log('harvestBatch confirmed for', collection);
+      } else {
+        // fallback: call harvest(collection, tokenId) for each id
+        for (const id of ids) {
+          log('calling harvest for', collection, id);
+          const tx = await contracts.staking.harvest(collection, id);
+          log('harvest tx', tx.hash);
+          await tx.wait();
+          log('harvest confirmed', id);
+        }
+      }
+    }
+
+    log('batchHarvest: done for all collections');
+  } catch (err) {
+    log('batchHarvest err', err && err.message ? err.message : err);
+  }
+}
+
   // ---------- Governance ----------
   async function createProposal(){
     try {
@@ -988,6 +1084,7 @@ $('harvestBluechipBtn').onclick = harvestBluechip;
     $('batchTermStakeBtn').onclick = batchTermStake;
     $('batchPermStakeBtn').onclick = batchPermStake;
     $('batchUnstakeBtn').onclick = batchUnstake;
+$('batchHarvestBtn').onclick = batchHarvest;
 
     // Governance
     $('createProposalBtn').onclick = createProposal;
