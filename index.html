@@ -70,43 +70,48 @@
         </div>
       </section>
 
-		<!-- =================== Collection Registration =================== -->
-<section class="glass p-4 rounded-lg mt-6">
-  <h2 class="font-semibold mb-3">Collection Registration</h2>
-  <p class="text-sm text-slate-300 mb-4">
-    Register an ERC-721 collection into Catalyst Staking. 
-    Anyone can register (permissionless), while governance/council may later upgrade its tier.
-  </p>
+		<!-- Collection Registration (permissionless) & Admin Upgrade -->
+<hr class="border-slate-700 my-2" />
+<div class="mt-3">
+  <h3 class="font-semibold mb-2">Collection Registration</h3>
 
-  <!-- Permissionless Registration -->
-  <div class="mb-6">
-    <h3 class="text-sm font-semibold mb-2">Permissionless Registration</h3>
-    <div class="space-y-2 text-sm">
-      <input id="permRegAddr" placeholder="ERC721 Collection Address" class="w-full p-2 rounded bg-black/20" />
-      <input id="permRegSupply" placeholder="Declared Max Supply" class="w-full p-2 rounded bg-black/20" />
-      <button id="permRegBtn" class="p-2 w-full bg-indigo-600 rounded">
-        Register Collection (anyone)
-      </button>
-    </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+    <input id="regCollectionAddr" placeholder="Collection address (ERC721)" class="p-2 rounded bg-black/20 text-sm" />
+    <input id="regDeclaredSupply" placeholder="Declared max supply (integer >=1)" class="p-2 rounded bg-black/20 text-sm" />
   </div>
 
-  <hr class="border-slate-700 my-4" />
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+    <select id="regTier" class="p-2 rounded bg-black/20 text-sm">
+      <option value="0">UNVERIFIED (0)</option>
+      <option value="1">VERIFIED (1)</option>
+      <option value="2">BLUECHIP (2)</option>
+    </select>
 
-  <!-- Admin / Governance Registration -->
-  <div>
-    <h3 class="text-sm font-semibold mb-2">Admin / Governance Tier Upgrade</h3>
-    <div class="space-y-2 text-sm">
-      <input id="adminRegAddr" placeholder="Registered Collection Address" class="w-full p-2 rounded bg-black/20" />
-      <select id="adminRegTier" class="w-full p-2 rounded bg-black/20">
-        <option value="1">Verified (Tier 1)</option>
-        <option value="2">Bluechip (Tier 2)</option>
+    <button id="calcRegFeeBtn" class="p-2 bg-slate-600 rounded text-sm">Calculate Fee</button>
+    <div id="regFeeInfo" class="p-2 text-xs text-slate-300">Fee: —</div>
+  </div>
+
+  <div class="flex gap-2 mt-2">
+    <button id="approveRegCataBtn" class="flex-1 p-2 bg-amber-600 rounded text-sm">Approve CATA for registration</button>
+    <button id="registerCollectionBtn" class="flex-1 p-2 bg-indigo-600 rounded text-sm">Register (permissionless)</button>
+  </div>
+
+  <div class="mt-3">
+    <h4 class="font-semibold">Admin: Set / Upgrade Collection Tier</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+      <input id="adminCollAddr" placeholder="Collection address (admin action)" class="p-2 rounded bg-black/20 text-sm" />
+      <input id="adminDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+    </div>
+    <div class="flex gap-2 mt-2">
+      <select id="adminTier" class="p-2 rounded bg-black/20 text-sm">
+        <option value="0">UNVERIFIED (0)</option>
+        <option value="1">VERIFIED (1)</option>
+        <option value="2">BLUECHIP (2)</option>
       </select>
-      <button id="adminRegBtn" class="p-2 w-full bg-amber-600 text-black rounded">
-        Upgrade Tier (council only)
-      </button>
+      <button id="adminSetConfigBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded text-sm">Set Collection Config (admin)</button>
     </div>
   </div>
-</section>
+</div>
 
       <!-- Middle -->
       <section class="glass p-4 rounded-lg">
@@ -414,36 +419,190 @@
 /********************************************************************
  * Collection Registration logic
  ********************************************************************/
+// ---------- Minimal ERC20 ABI fallback (allowance/approve) ----------
+const MIN_ERC20_ABI = [
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function approve(address spender, uint256 amount) returns (bool)'
+];
 
-// Permissionless registration (any user)
-async function registerCollectionPermissionless() {
-  try {
-    if (!contracts.staking) { await attachContractsIfSet(); if (!contracts.staking) return alert("Set staking contract"); }
-    const addr = $('permRegAddr').value.trim();
-    const supply = $('permRegSupply').value.trim();
-    if (!addr || !supply) return alert("Address & supply required");
-    const tx = await contracts.staking.registerCollection(addr, ethers.BigNumber.from(supply));
-    log("registerCollection tx", tx.hash);
-    await tx.wait();
-    log("registerCollection completed");
-  } catch(e) {
-    log("registerCollection err", e && e.message ? e.message : e);
+// BigNumber helpers & fee constants (match contract constants)
+const ONE = ethers.BigNumber.from("1000000000000000000");
+const SMALL_MIN_FEE = ONE.mul(1);
+const SMALL_MAX_FEE = ONE.mul(10);
+const MED_MIN_FEE = ONE.mul(11);
+const MED_MAX_FEE = ONE.mul(50);
+const LARGE_MIN_FEE = ONE.mul(51);
+const LARGE_MAX_FEE_CAP = ONE.mul(200);
+const BP_DENOM = 10000;
+
+/** calculate baseFee using same curve logic as the contract (BigNumber safe) */
+function calculateRegistrationBaseFeeBN(declaredSupplyInt) {
+  if (!Number.isInteger(declaredSupplyInt) || declaredSupplyInt < 1) {
+    throw new Error('declaredSupply must be integer >= 1');
+  }
+  const dsBN = ethers.BigNumber.from(String(declaredSupplyInt));
+  if (declaredSupplyInt <= 5000) {
+    const numer = dsBN.mul(SMALL_MAX_FEE.sub(SMALL_MIN_FEE));
+    return SMALL_MIN_FEE.add(numer.div(5000));
+  } else if (declaredSupplyInt <= 10000) {
+    const numer = dsBN.sub(5000).mul(MED_MAX_FEE.sub(MED_MIN_FEE));
+    return MED_MIN_FEE.add(numer.div(5000));
+  } else {
+    const extra = declaredSupplyInt - 10000;
+    const range = 10000;
+    if (extra >= range) return LARGE_MAX_FEE_CAP;
+    const numer = ethers.BigNumber.from(String(extra)).mul(LARGE_MAX_FEE_CAP.sub(LARGE_MIN_FEE));
+    return LARGE_MIN_FEE.add(numer.div(range));
   }
 }
 
-// Admin / governance registration (restricted by contract)
-async function upgradeCollectionTierAdmin() {
+/** compute total fee (baseFeeBN) for tier (uint8). reads unverified surcharge BP from contract if needed */
+async function computeTotalFeeBN(baseFeeBN, tier) {
+  let multBP = BP_DENOM; // default (no surcharge)
   try {
-    if (!contracts.staking) { await attachContractsIfSet(); if (!contracts.staking) return alert("Set staking contract"); }
-    const addr = $('adminRegAddr').value.trim();
-    const tier = $('adminRegTier').value;
-    if (!addr) return alert("Collection address required");
-    const tx = await contracts.staking.upgradeCollectionTier(addr, tier);
-    log("upgradeCollectionTier tx", tx.hash);
+    if (tier === 0) {
+      // try reading from contract (public variable)
+      if (contracts.staking && typeof contracts.staking.unverifiedSurchargeBP === 'function') {
+        const bp = await contracts.staking.unverifiedSurchargeBP();
+        multBP = bp.toNumber(); // fall back if fails
+      } else {
+        // fallback default used in your code
+        multBP = 12000;
+      }
+    }
+  } catch (e) {
+    log('computeTotalFeeBN: could not read unverifiedSurchargeBP, using fallback 12000', e);
+    if (tier === 0) multBP = 12000;
+  }
+  const total = baseFeeBN.mul(ethers.BigNumber.from(String(multBP))).div(ethers.BigNumber.from(String(BP_DENOM)));
+  const surcharge = total.gt(baseFeeBN) ? total.sub(baseFeeBN) : ethers.BigNumber.from("0");
+  return { totalFeeBN: total, surchargeBN: surcharge, multBP };
+}
+
+/** Format BigNumber wei to readable Ether string */
+function fmtCata(bn) { return ethers.utils.formatEther(bn) + ' CATA'; }
+
+/** Ensure we have an ERC20 contract instance for CATA (ABI might be in abis.cata or fallback) */
+function getCataERC20ContractInstance() {
+  const cataAddr = $('addrCata').value.trim();
+  if (!cataAddr) throw new Error('CATA address not set in UI');
+  if (contracts.cata && typeof contracts.cata.allowance === 'function') return contracts.cata;
+  // fallback to minimal ABI
+  return new ethers.Contract(cataAddr, MIN_ERC20_ABI, signer);
+}
+
+/** Calculate fee and update UI */
+async function handleCalcRegFee() {
+  try {
+    const supplyStr = $('regDeclaredSupply').value.trim();
+    const collection = $('regCollectionAddr').value.trim();
+    if (!supplyStr || !collection) return alert('collection and declared supply required for fee calc');
+    const declaredSupply = parseInt(supplyStr, 10);
+    const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
+    const tier = parseInt($('regTier').value, 10);
+    const { totalFeeBN, surchargeBN, multBP } = await computeTotalFeeBN(baseFeeBN, tier);
+    $('regFeeInfo').innerText = `Base: ${fmtCata(baseFeeBN)}  |  SurchargeBP: ${multBP}  |  Total: ${fmtCata(totalFeeBN)}  |  Surcharge: ${fmtCata(surchargeBN)}`;
+    return { baseFeeBN, totalFeeBN, surchargeBN };
+  } catch (e) {
+    log('handleCalcRegFee err', e && e.message ? e.message : e);
+    alert('Fee calc error: ' + (e.message || e));
+  }
+}
+
+/** Approve CATA to staking contract for registration (amount param optional — will use computed fee if available) */
+async function handleApproveForRegistration() {
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    const stakingAddr = $('addrStaking').value.trim();
+    if (!stakingAddr) return alert('set staking address first');
+    // compute fee
+    const supplyStr = $('regDeclaredSupply').value.trim();
+    const declaredSupply = parseInt(supplyStr, 10);
+    if (!supplyStr || isNaN(declaredSupply)) return alert('enter declared supply to compute fee before approving');
+    const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
+    const tier = parseInt($('regTier').value, 10);
+    const { totalFeeBN } = await computeTotalFeeBN(baseFeeBN, tier);
+    const cata = getCataERC20ContractInstance();
+    const tx = await cata.approve(stakingAddr, totalFeeBN);
+    log('approve tx', tx.hash);
     await tx.wait();
-    log("upgradeCollectionTier completed");
-  } catch(e) {
-    log("upgradeCollectionTier err", e && e.message ? e.message : e);
+    log('approve completed for', fmtCata(totalFeeBN));
+  } catch (e) {
+    log('handleApproveForRegistration err', e && e.message ? e.message : e);
+    alert('Approve failed: ' + (e.message || e));
+  }
+}
+
+/** Permissionless registration: approve if needed, then call registerCollection(collection, declaredSupply, tier) */
+async function handleRegisterCollection() {
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    const collection = $('regCollectionAddr').value.trim();
+    const supplyStr = $('regDeclaredSupply').value.trim();
+    if (!collection || !supplyStr) return alert('collection & declared supply required');
+    const declaredSupply = parseInt(supplyStr, 10);
+    const tier = parseInt($('regTier').value, 10);
+
+    // compute fee
+    const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
+    const { totalFeeBN } = await computeTotalFeeBN(baseFeeBN, tier);
+
+    // ensure allowance
+    const cata = getCataERC20ContractInstance();
+    const myAddr = await signer.getAddress();
+    const stakingAddr = $('addrStaking').value.trim();
+    if (!stakingAddr) return alert('Set staking contract address first');
+
+    const allowance = await cata.allowance(myAddr, stakingAddr);
+    if (allowance.lt(totalFeeBN)) {
+      const ok = confirm('You need to approve CATA for the registration fee: ' + fmtCata(totalFeeBN) + '. Approve now?');
+      if (!ok) return;
+      const txA = await cata.approve(stakingAddr, totalFeeBN);
+      log('approve tx', txA.hash);
+      await txA.wait();
+      log('approve done');
+    }
+
+    // call registerCollection(collection, declaredSupply, tier)
+    if (!contracts.staking || typeof contracts.staking.registerCollection !== 'function') {
+      // try attaching if ABI missing
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.registerCollection !== 'function') {
+        return alert('staking contract ABI missing registerCollection function or contract not attached');
+      }
+    }
+
+    const tx = await contracts.staking.registerCollection(collection, declaredSupply, tier);
+    log('registerCollection tx', tx.hash);
+    await tx.wait();
+    log('registerCollection completed — watch CollectionAdded event for details');
+  } catch (e) {
+    log('handleRegisterCollection err', e && e.message ? e.message : e);
+    alert('Register failed: ' + (e.message || e));
+  }
+}
+
+/** Admin: setCollectionConfig(collection, declaredMaxSupply, tier) — will revert if caller not admin */
+async function handleAdminSetCollectionConfig() {
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    if (!contracts.staking || typeof contracts.staking.setCollectionConfig !== 'function') {
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.setCollectionConfig !== 'function') {
+        return alert('staking contract ABI missing setCollectionConfig or contract not attached');
+      }
+    }
+    const collection = $('adminCollAddr').value.trim();
+    const declaredSupply = parseInt($('adminDeclaredSupply').value.trim(), 10);
+    const tier = parseInt($('adminTier').value, 10);
+    if (!collection || !declaredSupply) return alert('collection & declared supply required');
+    const tx = await contracts.staking.setCollectionConfig(collection, declaredSupply, tier);
+    log('setCollectionConfig tx', tx.hash);
+    await tx.wait();
+    log('setCollectionConfig completed (admin)');
+  } catch (e) {
+    log('handleAdminSetCollectionConfig err', e && e.message ? e.message : e);
+    alert('Admin set failed: ' + (e.message || e));
   }
 }
 	  
@@ -724,10 +883,17 @@ async function upgradeCollectionTierAdmin() {
     $('swapAdminBtn').onclick = cataSwapAdmin;
 
 	  // Register Collection 
-window.addEventListener('load', () => {
-  if ($('permRegBtn')) $('permRegBtn').onclick = registerCollectionPermissionless;
-  if ($('adminRegBtn')) $('adminRegBtn').onclick = upgradeCollectionTierAdmin;
-});
+/** Wire handlers to new UI elements — call this inside your window load / UI ready handler */
+function wireRegistrationUIs() {
+  $('calcRegFeeBtn').onclick = handleCalcRegFee;
+  $('approveRegCataBtn').onclick = handleApproveForRegistration;
+  $('registerCollectionBtn').onclick = handleRegisterCollection;
+  $('adminSetConfigBtn').onclick = handleAdminSetCollectionConfig;
+}
+
+// call this after your existing UI init (e.g., at end of window.load)
+wireRegistrationUIs();
+	  
     // Staking single
     $('approveNFTBtn').onclick = approveNFT;
     $('termStakeBtn').onclick = termStake;
