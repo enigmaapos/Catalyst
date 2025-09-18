@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Catalyst Protocol — DApp (Production-ready UI)</title>
   <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: linear-gradient(180deg,#041024 0%, #061426 100%); }
@@ -21,23 +20,25 @@
       </div>
       <div class="flex items-center gap-3">
         <div id="networkBadge" class="px-3 py-1 rounded-md text-sm glass">Network: <span id="networkName">—</span></div>
-        <button id="connectBtn" class="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-400 rounded-md font-semibold text-black">Connect Wallet</button>
-        <button id="disconnectBtn" class="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-400 rounded-md font-semibold text-black hidden">Disconnect</button>
+        <button id="connectBtn" class="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-400 rounded-md font-semibold text-black">Connect</button>
+        <button id="disconnectBtn" class="px-4 py-2 bg-red-500 rounded-md font-semibold text-black hidden">Disconnect</button>
       </div>
     </header>
 
     <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Left: Quick Status -->
+      <!-- Left -->
       <section class="glass p-4 rounded-lg">
         <h2 class="font-semibold mb-2">Quick Status</h2>
         <div class="space-y-2 text-sm text-slate-200">
           <div>Connected: <strong id="addr">Not connected</strong></div>
+          <div>Network: <strong id="networkText">—</strong></div>
           <div>CATA Balance: <strong id="cataBal">—</strong></div>
           <div>Staked NFTs (global): <strong id="globalStaked">—</strong></div>
           <div>Roles (CATA / Staking): <small id="roles">—</small></div>
         </div>
+
         <hr class="my-3 border-slate-700" />
-        <div class="text-xs text-slate-300">Contract Addresses (fill & Save)</div>
+        <div class="text-xs text-slate-300">Contract Addresses (defaults & localStorage)</div>
         <div class="mt-2 space-y-2">
           <input id="addrCata" placeholder="CATA Token Address" class="w-full p-2 rounded bg-black/20 text-sm" />
           <input id="addrStaking" placeholder="Staking Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
@@ -45,63 +46,99 @@
           <input id="addrCouncil" placeholder="GuardianCouncil Address" class="w-full p-2 rounded bg-black/20 text-sm" />
           <div class="flex gap-2">
             <button id="saveAddrs" class="px-3 py-1 bg-slate-700 rounded text-sm">Save</button>
-            <button id="loadAddrs" class="px-3 py-1 bg-slate-700/50 rounded text-sm">Load from local</button>
+            <button id="loadAddrs" class="px-3 py-1 bg-slate-700/50 rounded text-sm">Load</button>
+          </div>
+        </div>
+
+        <hr class="my-3 border-slate-700" />
+        <div class="text-xs text-slate-400">CATA Actions</div>
+        <div class="mt-2 space-y-2">
+          <input id="cataMintTo" placeholder="Mint to address" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <input id="cataMintAmt" placeholder="Amount (wei or integer string)" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <div class="flex gap-2">
+            <button id="cataMintBtn" class="flex-1 p-2 bg-indigo-600 rounded">Mint (MINTER_ROLE)</button>
+            <button id="cataBurnBtn" class="flex-1 p-2 bg-red-600 rounded">Burn (self)</button>
+          </div>
+          <div class="flex gap-2 mt-2">
+            <input id="swapNewAdmin" placeholder="New admin address" class="flex-1 p-2 rounded bg-black/20 text-sm" />
+            <input id="swapOldAdmin" placeholder="Old admin address (optional)" class="flex-1 p-2 rounded bg-black/20 text-sm" />
+          </div>
+          <div class="mt-2">
+            <button id="swapAdminBtn" class="p-2 bg-yellow-500 text-black rounded w-full">Swap Admin (council only)</button>
           </div>
         </div>
       </section>
 
-      <!-- Middle: Staking Actions -->
+      <!-- Middle -->
       <section class="glass p-4 rounded-lg">
         <h2 class="font-semibold mb-2">Staking</h2>
         <p class="text-sm text-slate-300 mb-3">Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake</p>
+
         <div class="space-y-2 text-sm">
           <div class="grid grid-cols-2 gap-2">
             <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
             <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
           </div>
+
           <div class="flex gap-2">
-            <button id="approveNFT" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve Staking Contract</button>
+            <button id="approveNFTBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve Staking Contract</button>
             <button id="termStakeBtn" class="flex-1 p-2 bg-indigo-600 rounded">Term Stake</button>
           </div>
+
           <div class="flex gap-2">
-            <button id="permApproveFee" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee (CATA)</button>
+            <button id="permApproveFeeBtn" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee (CATA)</button>
             <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">Permanent Stake</button>
           </div>
+
           <div class="flex gap-2">
-            <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest (single token)</button>
+            <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest</button>
             <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
+          </div>
+
+          <hr class="border-slate-700 my-2" />
+          <h3 class="text-sm font-semibold mb-1">Batch Operations</h3>
+          <textarea id="batchNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
+          <div class="flex gap-2 mt-2">
+            <button id="batchTermStakeBtn" class="flex-1 p-2 bg-indigo-500 rounded text-sm">Batch Term Stake</button>
+            <button id="batchPermStakeBtn" class="flex-1 p-2 bg-emerald-500 rounded text-sm">Batch Permanent Stake</button>
+            <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-500 rounded text-sm">Batch Unstake</button>
           </div>
         </div>
       </section>
 
-      <!-- Right: Governance & Council -->
+      <!-- Right -->
       <section class="glass p-4 rounded-lg">
         <h2 class="font-semibold mb-2">Governance & Council</h2>
-        <div class="text-sm text-slate-300 mb-2">Create proposal, vote, execute (governance) • Council reseed (council only)</div>
+        <div class="text-sm text-slate-300 mb-2">Create proposal, vote, execute • Council reseed</div>
+
         <div class="space-y-2">
           <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
             <option value="BASE_REWARD">Base Reward</option>
             <option value="HARVEST_FEE">Harvest Fee</option>
             <option value="UNSTAKE_FEE">Unstake Fee</option>
             <option value="REGISTRATION_FEE_FALLBACK">Registration Fee</option>
+            <option value="COUNCIL_RESEED_ACTIVE">Council Reseed (Active)</option>
           </select>
-          <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <input id="proposalCollectionCtx" placeholder="Collection address (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
+
+          <input id="proposalValue" placeholder="New numeric value (if applicable)" class="w-full p-2 rounded bg-black/20 text-sm" />
+          <input id="proposalCollectionCtx" placeholder="Collection/Ctx address (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
           <div class="flex gap-2">
-            <button id="createProposal" class="flex-1 p-2 bg-violet-600 rounded">Create Proposal</button>
-            <button id="voteProposal" class="flex-1 p-2 bg-blue-600 rounded">Vote</button>
+            <button id="createProposalBtn" class="flex-1 p-2 bg-violet-600 rounded">Create Proposal</button>
+            <button id="voteProposalBtn" class="flex-1 p-2 bg-blue-600 rounded">Vote</button>
           </div>
+
           <input id="proposalId" placeholder="Proposal ID (hex) for voting/execution" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <div class="flex gap-2">
-            <button id="execProposal" class="flex-1 p-2 bg-green-700 rounded">Execute (after voting)</button>
-            <button id="fetchProp" class="flex-1 p-2 bg-slate-600 rounded">Fetch Proposal</button>
+          <div class="flex gap-2 mt-2">
+            <button id="execProposalBtn" class="flex-1 p-2 bg-green-700 rounded">Execute Proposal</button>
+            <button id="fetchProposalBtn" class="flex-1 p-2 bg-slate-600 rounded">Fetch Proposal</button>
           </div>
+
           <hr class="border-slate-700 my-2" />
-          <div class="text-xs text-slate-400">Council tools (guardian council addresses only)</div>
+          <div class="text-xs text-slate-400">Council tools</div>
           <input id="councilBatch" placeholder="Comma-separated 7 addresses" class="w-full p-2 rounded bg-black/20 text-sm" />
-          <div class="flex gap-2">
-            <button id="proposeReseed" class="flex-1 p-2 bg-rose-600 rounded">Propose Reseed (active)</button>
-            <button id="execReseed" class="flex-1 p-2 bg-rose-400 text-black rounded">Execute Reseed</button>
+          <div class="flex gap-2 mt-2">
+            <button id="proposeReseedBtn" class="flex-1 p-2 bg-rose-600 rounded">Propose Reseed</button>
+            <button id="execReseedBtn" class="flex-1 p-2 bg-rose-400 rounded">Execute Reseed</button>
           </div>
         </div>
       </section>
@@ -113,147 +150,540 @@
     </section>
 
     <footer class="mt-6 text-xs text-slate-500">
-      © Catalyst Protocol — Use at your own risk. This UI is provided as a convenience; double-check contract addresses and approvals before transacting.
+      © Catalyst Protocol — Use at your own risk.
     </footer>
   </div>
 
-  <!-- Ethers.js loads before app -->
+  <!-- load ethers first -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 
   <script>
-    // ---------- ABI URLs ----------
-    const ABI_URLS = {
-      cata: "abi/CataERC20Upgradeable.json",
-      staking: "abi/CatalystStakingUpgradeable.json",
-      governance: "abi/CatalystGovernanceUpgradeable.json",
-      council: "abi/BatchGuardianCouncilUpgradeable.json"
-    };
+  /************************************************************************
+   * DApp main - dynamic ABI loading + wiring for CATA / Staking /
+   * Governance / GuardianCouncil. Uses your uploaded contracts as spec.
+   *
+   * Note: ABIs must be provided at the ABI_URLS paths (json ABI files).
+   * Put e.g. /abi/CataERC20Upgradeable.json, /abi/CatalystStakingUpgradeable.json, etc.
+   ************************************************************************/
 
-    // ---------- Hardcoded ERC721 ABI ----------
-    const ERC721_ABI = [
-      'function approve(address to, uint256 tokenId)',
-      'function setApprovalForAll(address operator, bool approved)',
-      'function isApprovedForAll(address owner, address operator) view returns (bool)'
-    ];
+  // ---------- ABI URLs (external ABI JSONs) ----------
+  const ABI_URLS = {
+    cata: "/abi/CataERC20Upgradeable.json",
+    staking: "/abi/CatalystStakingUpgradeable.json",
+    governance: "/abi/CatalystGovernanceUpgradeable.json",
+    council: "/abi/BatchGuardianCouncilUpgradeable.json"
+  };
 
-    // ---------- Default addresses ----------
-    const DEFAULT_ADDRS = {
-      cata: "0x1234567890abcdef1234567890abcdef12345678",
-      staking: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
-      governance: "0x9876543210abcdef9876543210abcdef98765432",
-      council: "0xfeedfeedfeedfeedfeedfeedfeedfeedfeedfeed"
-    };
+  // Minimal ERC-721 ABI kept inline (approval helpers)
+  const ERC721_ABI = [
+    'function approve(address to, uint256 tokenId)',
+    'function setApprovalForAll(address operator, bool approved)',
+    'function isApprovedForAll(address owner, address operator) view returns (bool)'
+  ];
 
-    // ---------- App State ----------
-    let provider, signer, userAddr;
-    let contracts = { cata: null, staking: null, governance: null, council: null };
-    let abis = {};
+  // Default addresses (replace with your deployed addresses)
+  const DEFAULT_ADDRS = {
+    cata: "0x1234567890abcdef1234567890abcdef12345678",
+    staking: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    governance: "0x9876543210abcdef9876543210abcdef98765432",
+    council: "0xfeedfeedfeedfeedfeedfeedfeedfeedfeedfeed"
+  };
 
-    const $ = id => document.getElementById(id);
-    function log(...args) {
-      console.log(...args);
-      const el = $('logs');
-      el.innerText = new Date().toISOString() + ' • ' +
-        args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ') +
-        '\n' + el.innerText;
+  // App state
+  let provider = null, signer = null, userAddr = null;
+  let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null };
+
+  const $ = id => document.getElementById(id);
+  function log(...args){
+    const el = $('logs');
+    try {
+      el.innerText = new Date().toISOString() + ' • ' + args.map(a=>typeof a==='object'?JSON.stringify(a):a).join(' ') + '\n' + el.innerText;
+    } catch(e) { console.log(...args); }
+    console.log(...args);
+  }
+
+  // Fetch JSON with error handling
+  async function fetchJSON(path){
+    try {
+      const res = await fetch(path);
+      if(!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      return await res.json();
+    } catch (e) {
+      log('fetchJSON err', path, e.message || e);
+      return null;
     }
+  }
 
-    // Load ABIs
-    async function loadABIs() {
-      for (const key in ABI_URLS) {
-        const res = await fetch(ABI_URLS[key]);
-        abis[key] = await res.json();
-      }
-      log("ABIs loaded");
+  // Load ABIs from ABI_URLS
+  async function loadABIs(){
+    for(const k of Object.keys(ABI_URLS)){
+      const j = await fetchJSON(ABI_URLS[k]);
+      abis[k] = j; // null if failed
     }
+    log('ABIs loaded', Object.keys(abis).map(k => `${k}:${abis[k]? 'ok':'missing'}`).join(' '));
+  }
 
-    async function connect() {
-      if (!window.ethereum) return alert("No Web3 wallet detected (install MetaMask)");
-      try {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
-        userAddr = await signer.getAddress();
-        $('addr').innerText = userAddr;
-        const network = await provider.getNetwork();
-        $('networkName').innerText = network.name + " (" + network.chainId + ")";
-        $('connectBtn').classList.add("hidden");
-        $('disconnectBtn').classList.remove("hidden");
-        loadSavedAddrs();
-        attachContractsIfSet();
-        log("Connected", userAddr);
-      } catch (e) { log("connect err", e); }
-    }
+  // Save/load addresses to localStorage
+  function saveAddrsToLocal(payload){
+    try {
+      localStorage.setItem('catalyst_addrs', JSON.stringify(payload));
+      log('Saved addresses');
+    } catch(e){ log('saveAddrs err', e); }
+  }
 
-    function disconnect() {
-      provider = null; signer = null; userAddr = null;
-      contracts = { cata: null, staking: null, governance: null, council: null };
-      $('addr').innerText = "Not connected";
-      $('networkName').innerText = "—";
-      $('connectBtn').classList.remove("hidden");
-      $('disconnectBtn').classList.add("hidden");
-      log("Disconnected");
-    }
-
-    function saveAddrsToLocal(addrs) {
-      localStorage.setItem('catalyst_addrs', JSON.stringify(addrs));
-      log('Saved addresses to localStorage');
-    }
-
-    function loadSavedAddrs() {
+  function loadSavedAddrs(){
+    try {
       const raw = localStorage.getItem('catalyst_addrs');
-      if (!raw) {
+      if(!raw){
+        // prefill defaults
         $('addrCata').value = DEFAULT_ADDRS.cata;
         $('addrStaking').value = DEFAULT_ADDRS.staking;
         $('addrGovernance').value = DEFAULT_ADDRS.governance;
         $('addrCouncil').value = DEFAULT_ADDRS.council;
+        log('Prefilled default addresses');
         return;
       }
-      try {
-        const obj = JSON.parse(raw);
-        ['addrCata','addrStaking','addrGovernance','addrCouncil'].forEach(k => {
-          if (obj[k]) $(k).value = obj[k];
-        });
-        log('Loaded addresses from localStorage');
-      } catch (e) { }
-    }
+      const obj = JSON.parse(raw);
+      if(obj.addrCata) $('addrCata').value = obj.addrCata;
+      if(obj.addrStaking) $('addrStaking').value = obj.addrStaking;
+      if(obj.addrGovernance) $('addrGovernance').value = obj.addrGovernance;
+      if(obj.addrCouncil) $('addrCouncil').value = obj.addrCouncil;
+      log('Loaded saved addresses');
+    } catch(e){ log('loadSavedAddrs err', e); }
+  }
 
-    function attachContractsIfSet() {
-      if (!provider || Object.keys(abis).length === 0) return;
+  // Attach contract instances (requires signer)
+  async function attachContractsIfSet(){
+    try {
+      if(!provider || !signer) return;
+      // ensure ABIs present (attempt load if missing)
+      if(Object.keys(abis).length === 0 || Object.values(abis).every(v => v == null)) {
+        await loadABIs();
+      }
       const cataA = $('addrCata').value.trim();
       const stakingA = $('addrStaking').value.trim();
       const govA = $('addrGovernance').value.trim();
       const councilA = $('addrCouncil').value.trim();
-      if (cataA) contracts.cata = new ethers.Contract(cataA, abis.cata, signer);
-      if (stakingA) contracts.staking = new ethers.Contract(stakingA, abis.staking, signer);
-      if (govA) contracts.governance = new ethers.Contract(govA, abis.governance, signer);
-      if (councilA) contracts.council = new ethers.Contract(councilA, abis.council, signer);
-      if (contracts.cata) fetchCataBalance();
-    }
 
-    async function fetchCataBalance() {
-      try {
-        const bal = await contracts.cata.balanceOf(userAddr);
-        $('cataBal').innerText = ethers.utils.formatEther(bal) + " CATA";
-      } catch(e) { log("cata bal err", e); }
-    }
+      if(cataA && abis.cata) contracts.cata = new ethers.Contract(cataA, abis.cata, signer);
+      else contracts.cata = null;
 
-    window.addEventListener("load", async () => {
+      if(stakingA && abis.staking) contracts.staking = new ethers.Contract(stakingA, abis.staking, signer);
+      else contracts.staking = null;
+
+      if(govA && abis.governance) contracts.governance = new ethers.Contract(govA, abis.governance, signer);
+      else contracts.governance = null;
+
+      if(councilA && abis.council) contracts.council = new ethers.Contract(councilA, abis.council, signer);
+      else contracts.council = null;
+
+      log('Contracts attached', {
+        cata: !!contracts.cata,
+        staking: !!contracts.staking,
+        governance: !!contracts.governance,
+        council: !!contracts.council
+      });
+
+      // fetch balances if available
+      if(contracts.cata) await fetchCataBalance();
+    } catch(e){ log('attachContractsIfSet err', e && e.message ? e.message : e); }
+  }
+
+  async function fetchCataBalance(){
+    try {
+      if(!contracts.cata) return;
+      const bal = await contracts.cata.balanceOf(userAddr);
+      $('cataBal').innerText = ethers.utils.formatEther(bal) + ' CATA';
+    } catch(e){ log('fetchCataBalance err', e && e.message ? e.message : e); }
+  }
+
+  // ---------- Connect / Disconnect ----------
+  async function connect(){
+    try {
+      if(!window.ethereum) return alert('No Web3 wallet (install MetaMask)');
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send('eth_requestAccounts', []);
+      signer = provider.getSigner();
+      userAddr = await signer.getAddress();
+      $('addr').innerText = userAddr;
+      const net = await provider.getNetwork();
+      $('networkName').innerText = net.name + ' (' + net.chainId + ')';
+      $('connectBtn').classList.add('hidden');
+      $('disconnectBtn').classList.remove('hidden');
+
+      // load ABIs & attach
       await loadABIs();
-      $('connectBtn').onclick = connect;
-      $('disconnectBtn').onclick = disconnect;
-      $('saveAddrs').onclick = () => {
-        const payload = {
-          addrCata: $('addrCata').value.trim(),
-          addrStaking: $('addrStaking').value.trim(),
-          addrGovernance: $('addrGovernance').value.trim(),
-          addrCouncil: $('addrCouncil').value.trim()
-        };
-        saveAddrsToLocal(payload);
-        attachContractsIfSet();
+      await attachContractsIfSet();
+      log('Connected', userAddr);
+    } catch(e){ log('connect err', e && e.message ? e.message : e); }
+  }
+
+  function disconnect(){
+    provider = signer = userAddr = null;
+    contracts = { cata:null, staking:null, governance:null, council:null };
+    $('addr').innerText = 'Not connected';
+    $('networkName').innerText = '—';
+    $('cataBal').innerText = '—';
+    $('connectBtn').classList.remove('hidden');
+    $('disconnectBtn').classList.add('hidden');
+    log('Disconnected');
+  }
+
+  // ---------- CATA functions ----------
+  async function cataMint(){
+    try {
+      if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract address'); }
+      const to = $('cataMintTo').value.trim();
+      const amtRaw = $('cataMintAmt').value.trim();
+      if(!to || !amtRaw) return alert('mint: to & amount required');
+      // keep amount as string to avoid precision issues; contract expects uint256 (wei)
+      const tx = await contracts.cata.mint(to, ethers.BigNumber.from(amtRaw));
+      log('cata.mint tx', tx.hash);
+      await tx.wait();
+      log('cata.mint completed');
+      await fetchCataBalance();
+    } catch(e){ log('cataMint err', e && e.message ? e.message : e); }
+  }
+
+  async function cataBurn(){
+    try {
+      if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract address'); }
+      const amtRaw = $('cataMintAmt').value.trim(); // reuse input for burn amount (UI convenience)
+      if(!amtRaw) return alert('burn: amount required');
+      const tx = await contracts.cata.burn(ethers.BigNumber.from(amtRaw));
+      log('cata.burn tx', tx.hash);
+      await tx.wait();
+      log('cata.burn completed');
+      await fetchCataBalance();
+    } catch(e){ log('cataBurn err', e && e.message ? e.message : e); }
+  }
+
+  async function cataSwapAdmin(){
+    try {
+      if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract address'); }
+      const newAdmin = $('swapNewAdmin').value.trim();
+      const oldAdmin = $('swapOldAdmin').value.trim() || ethers.constants.AddressZero;
+      if(!newAdmin) return alert('new admin required');
+      // only callable by guardian council per contract; it will revert if caller not council
+      const tx = await contracts.cata.swapAdmin(newAdmin, oldAdmin);
+      log('cata.swapAdmin tx', tx.hash);
+      await tx.wait();
+      log('cata.swapAdmin completed');
+    } catch(e){ log('cataSwapAdmin err', e && e.message ? e.message : e); }
+  }
+
+  // ---------- NFT approval ----------
+  async function approveNFT(){
+    try {
+      const collection = $('nftCollection').value.trim();
+      if(!collection) return alert('collection required');
+      const stakingAddr = $('addrStaking').value.trim();
+      if(!stakingAddr) return alert('staking address required');
+      const nft = new ethers.Contract(collection, ERC721_ABI, signer);
+      const me = await signer.getAddress();
+      const already = await nft.isApprovedForAll(me, stakingAddr);
+      if(already){ log('already approved'); return; }
+      const tx = await nft.setApprovalForAll(stakingAddr, true);
+      log('approve tx', tx.hash);
+      await tx.wait();
+      log('approve complete');
+    } catch(e){ log('approveNFT err', e && e.message ? e.message : e); }
+  }
+
+  // ---------- Staking single ----------
+  async function termStake(){
+    try {
+      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+      const collection = $('nftCollection').value.trim();
+      const tokenId = $('nftTokenId').value.trim();
+      if(!collection || !tokenId) return alert('collection & tokenId required');
+      const tx = await contracts.staking.termStake(collection, tokenId);
+      log('termStake tx', tx.hash);
+      await tx.wait();
+      log('termStake done');
+    } catch(e){ log('termStake err', e && e.message ? e.message : e); }
+  }
+
+  async function permanentStake(){
+    try {
+      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+      const collection = $('nftCollection').value.trim();
+      const tokenId = $('nftTokenId').value.trim();
+      if(!collection || !tokenId) return alert('collection & tokenId required');
+      const tx = await contracts.staking.permanentStake(collection, tokenId);
+      log('permanentStake tx', tx.hash);
+      await tx.wait();
+      log('permanentStake done');
+    } catch(e){ log('permanentStake err', e && e.message ? e.message : e); }
+  }
+
+  async function unstake(){
+    try {
+      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+      const collection = $('nftCollection').value.trim();
+      const tokenId = $('nftTokenId').value.trim();
+      if(!collection || !tokenId) return alert('collection & tokenId required');
+      const tx = await contracts.staking.unstake(collection, tokenId);
+      log('unstake tx', tx.hash);
+      await tx.wait();
+      log('unstake done');
+    } catch(e){ log('unstake err', e && e.message ? e.message : e); }
+  }
+
+  // harvest - contract may or may not expose public harvest; if exists call it, otherwise advise.
+  async function harvest(){
+    try {
+      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+      // try common signatures
+      if(typeof contracts.staking.harvest === 'function'){
+        const collection = $('nftCollection').value.trim();
+        const tokenId = $('nftTokenId').value.trim();
+        const tx = await contracts.staking.harvest(collection, tokenId);
+        log('harvest tx', tx.hash);
+        await tx.wait();
+        log('harvest done');
+        return;
+      }
+      alert('No public harvest function found in staking ABI — rewards are minted on unstake or via contract-internal logic.');
+    } catch(e){ log('harvest err', e && e.message ? e.message : e); }
+  }
+
+  // ---------- Batch helpers ----------
+  function parseBatchPairs(){
+    const raw = $('batchNFTs').value.trim();
+    if(!raw) return [];
+    const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    const pairs = [];
+    for(const ln of lines){
+      const parts = ln.split(',').map(p=>p.trim()).filter(p=>p.length>0);
+      if(parts.length >= 2) pairs.push({collection: parts[0], tokenId: parts[1]});
+    }
+    return pairs;
+  }
+
+  async function batchTermStake(){
+    try {
+      const pairs = parseBatchPairs();
+      if(pairs.length === 0) return alert('No pairs to stake');
+      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+      // prefer a batch function if present
+      if(typeof contracts.staking.batchTermStake === 'function'){
+        const cols = pairs.map(p=>p.collection);
+        const ids = pairs.map(p=>p.tokenId);
+        const tx = await contracts.staking.batchTermStake(cols, ids);
+        log('batchTermStake tx', tx.hash);
+        await tx.wait();
+        log('batchTermStake done');
+      } else {
+        // fallback sequential
+        for(const p of pairs){
+          const tx = await contracts.staking.termStake(p.collection, p.tokenId);
+          log('termStake seq tx', tx.hash);
+          await tx.wait();
+        }
+        log('batchTermStake sequential done');
+      }
+    } catch(e){ log('batchTermStake err', e && e.message ? e.message : e); }
+  }
+
+  async function batchPermStake(){
+    try {
+      const pairs = parseBatchPairs();
+      if(pairs.length === 0) return alert('No pairs to stake');
+      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+      if(typeof contracts.staking.batchPermanentStake === 'function'){
+        const cols = pairs.map(p=>p.collection);
+        const ids = pairs.map(p=>p.tokenId);
+        const tx = await contracts.staking.batchPermanentStake(cols, ids);
+        log('batchPermanentStake tx', tx.hash);
+        await tx.wait();
+        log('batchPermanentStake done');
+      } else {
+        for(const p of pairs){
+          const tx = await contracts.staking.permanentStake(p.collection, p.tokenId);
+          log('permanentStake seq tx', tx.hash);
+          await tx.wait();
+        }
+        log('batchPermStake sequential done');
+      }
+    } catch(e){ log('batchPermStake err', e && e.message ? e.message : e); }
+  }
+
+  async function batchUnstake(){
+    try {
+      const pairs = parseBatchPairs();
+      if(pairs.length === 0) return alert('No pairs to unstake');
+      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+      if(typeof contracts.staking.batchUnstake === 'function'){
+        const cols = pairs.map(p=>p.collection);
+        const ids = pairs.map(p=>p.tokenId);
+        const tx = await contracts.staking.batchUnstake(cols, ids);
+        log('batchUnstake tx', tx.hash);
+        await tx.wait();
+        log('batchUnstake done');
+      } else {
+        for(const p of pairs){
+          const tx = await contracts.staking.unstake(p.collection, p.tokenId);
+          log('unstake seq tx', tx.hash);
+          await tx.wait();
+        }
+        log('batchUnstake sequential done');
+      }
+    } catch(e){ log('batchUnstake err', e && e.message ? e.message : e); }
+  }
+
+  // ---------- Governance ----------
+  async function createProposal(){
+    try {
+      if(!contracts.governance) { await attachContractsIfSet(); if(!contracts.governance) return alert('Set governance contract'); }
+      const mapping = {
+        BASE_REWARD:0, HARVEST_FEE:1, UNSTAKE_FEE:2, REGISTRATION_FEE_FALLBACK:3,
+        VOTING_PARAM:4, TIER_UPGRADE:5, COUNCIL_RESEED_ACTIVE:6
       };
-      $('loadAddrs').onclick = loadSavedAddrs;
-    });
+      const pTypeStr = $('proposalType').value;
+      const pType = mapping[pTypeStr];
+      const newValRaw = $('proposalValue').value.trim() || '0';
+      let newVal;
+      try { newVal = ethers.BigNumber.from(newValRaw); } catch(e){ newVal = ethers.BigNumber.from('0'); }
+      const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
+
+      // call propose(uint8 pType, uint8 paramTarget, uint256 newValue, address collectionContext)
+      // paramTarget default to 0 for simple types; UI does not yet expose paramTarget selection
+      const tx = await contracts.governance.propose(pType, 0, newVal, ctx);
+      log('propose tx', tx.hash);
+      await tx.wait();
+      log('proposal created');
+    } catch(e){ log('createProposal err', e && e.message ? e.message : e); }
+  }
+
+  async function voteProposal(){
+    try {
+      if(!contracts.governance) { await attachContractsIfSet(); if(!contracts.governance) return alert('Set governance contract'); }
+      const id = $('proposalId').value.trim();
+      const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
+      if(!id) return alert('proposal id required');
+      const tx = await contracts.governance.vote(id, ctx);
+      log('vote tx', tx.hash);
+      await tx.wait();
+      log('voted');
+    } catch(e){ log('voteProposal err', e && e.message ? e.message : e); }
+  }
+
+  async function execProposal(){
+    try {
+      if(!contracts.governance) { await attachContractsIfSet(); if(!contracts.governance) return alert('Set governance contract'); }
+      const id = $('proposalId').value.trim();
+      if(!id) return alert('proposal id required');
+      const tx = await contracts.governance.executeProposal(id);
+      log('exec tx', tx.hash);
+      await tx.wait();
+      log('executed');
+    } catch(e){ log('execProposal err', e && e.message ? e.message : e); }
+  }
+
+  async function fetchProposal(){
+    try {
+      if(!contracts.governance) { await attachContractsIfSet(); if(!contracts.governance) return alert('Set governance contract'); }
+      const id = $('proposalId').value.trim();
+      if(!id) return alert('proposal id required');
+      // contract exposes proposals(bytes32) or proposalPayloads mapping — we'll try a few reads
+      let info = null;
+      try { info = await contracts.governance.proposals(id); } catch(e){ /* ignore */ }
+      log('proposal fetch', info ? info : 'no direct proposals() result; try reading other helpers');
+    } catch(e){ log('fetchProposal err', e && e.message ? e.message : e); }
+  }
+
+  // ---------- Council ----------
+  async function proposeReseed(){
+    try {
+      if(!contracts.governance) { await attachContractsIfSet(); if(!contracts.governance) return alert('Set governance contract'); }
+      const raw = $('councilBatch').value.trim();
+      const arr = raw.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+      if(arr.length !== 7) return alert('Enter exactly 7 addresses (comma separated)');
+      // governance exposes proposeCouncilReseedActive(address[7]) per ABI
+      const tx = await contracts.governance.proposeCouncilReseedActive(arr);
+      log('proposeCouncilReseedActive tx', tx.hash);
+      await tx.wait();
+      log('proposeCouncilReseedActive completed');
+    } catch(e){ log('proposeReseed err', e && e.message ? e.message : e); }
+  }
+
+  async function execReseed(){
+    try {
+      if(!contracts.governance) { await attachContractsIfSet(); if(!contracts.governance) return alert('Set governance contract'); }
+      const id = $('proposalId').value.trim();
+      if(!id) return alert('proposal id required');
+      const tx = await contracts.governance.executeProposal(id);
+      log('execReseed tx', tx.hash);
+      await tx.wait();
+      log('execReseed completed');
+    } catch(e){ log('execReseed err', e && e.message ? e.message : e); }
+  }
+
+  // ---------- Bind UI on load ----------
+  window.addEventListener('load', async ()=>{
+    loadSavedAddrs();
+    await loadABIs(); // pre-load ABIs for faster attach later
+
+    // Connect / disconnect
+    $('connectBtn').onclick = connect;
+    $('disconnectBtn').onclick = disconnect;
+
+    // Save/load addresses
+    $('saveAddrs').onclick = ()=>{
+      const payload = {
+        addrCata: $('addrCata').value.trim(),
+        addrStaking: $('addrStaking').value.trim(),
+        addrGovernance: $('addrGovernance').value.trim(),
+        addrCouncil: $('addrCouncil').value.trim()
+      };
+      saveAddrsToLocal(payload);
+      // try attach if already connected
+      if(signer) attachContractsIfSet();
+    };
+    $('loadAddrs').onclick = ()=>{ loadSavedAddrs(); if(signer) attachContractsIfSet(); };
+
+    // CATA
+    $('cataMintBtn').onclick = cataMint;
+    $('cataBurnBtn').onclick = cataBurn;
+    $('swapAdminBtn').onclick = cataSwapAdmin;
+
+    // Staking single
+    $('approveNFTBtn').onclick = approveNFT;
+    $('termStakeBtn').onclick = termStake;
+    $('permApproveFeeBtn').onclick = async ()=>{ // approve CATA tokens for fees if CATA ABI exists
+      try {
+        if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract'); }
+        const stakingAddr = $('addrStaking').value.trim();
+        if(!stakingAddr) return alert('staking address required');
+        const amt = ethers.constants.MaxUint256;
+        const tx = await contracts.cata.approve(stakingAddr, amt);
+        log('approve CATA tx', tx.hash);
+        await tx.wait();
+        log('approve CATA done');
+      } catch(e){ log('permApproveFee err', e && e.message ? e.message : e); }
+    };
+    $('permStakeBtn').onclick = permanentStake;
+    $('unstakeBtn').onclick = unstake;
+    $('harvestBtn').onclick = harvest;
+
+    // Batch
+    $('batchTermStakeBtn').onclick = batchTermStake;
+    $('batchPermStakeBtn').onclick = batchPermStake;
+    $('batchUnstakeBtn').onclick = batchUnstake;
+
+    // Governance
+    $('createProposalBtn').onclick = createProposal;
+    $('voteProposalBtn').onclick = voteProposal;
+    $('execProposalBtn').onclick = execProposal;
+    $('fetchProposalBtn').onclick = fetchProposal;
+
+    // Council
+    $('proposeReseedBtn').onclick = proposeReseed;
+    $('execReseedBtn').onclick = execReseed;
+
+    log('UI ready');
+  });
   </script>
 </body>
 </html>
