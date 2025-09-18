@@ -144,47 +144,47 @@
 </section>
 	  
     <!-- Quick Status -->
-    <section id="quickstatus" class="tab-content">
-      <h2 class="font-semibold mb-2">Quick Status</h2>
-      <div class="space-y-2 text-sm text-slate-200">
-        <div>Connected: <strong id="addr">Not connected</strong></div>
-        <div>Network: <strong id="networkText">—</strong></div>
-        <div>CATA Balance: <strong id="cataBal">—</strong></div>
-        <div>Staked NFTs (global): <strong id="globalStaked">—</strong></div>
-        <div>Roles (CATA / Staking): <small id="roles">—</small></div>
-      </div>
+<section id="quickstatus" class="tab-content">
+  <h2 class="font-semibold mb-2">Quick Status</h2>
+  <div class="space-y-2 text-sm text-slate-200">
+    <div>Connected: <strong id="addr">Not connected</strong></div>
+    <div>Network: <strong id="networkText">—</strong></div>
+    <div>CATA Balance: <strong id="cataBal">—</strong></div>
+    <div>Staked NFTs (global): <strong id="globalStaked">—</strong></div>
+    <div>Roles (CATA / Staking): <small id="roles">—</small></div>
+  </div>
 
-      <hr class="my-3 border-slate-700" />
-      <div class="text-xs text-slate-300">Contract Addresses (defaults & localStorage)</div>
-      <div class="mt-2 space-y-2">
-        <input id="addrCata" placeholder="CATA Token Address" class="w-full p-2 rounded bg-black/20 text-sm" />
-        <input id="addrStaking" placeholder="Staking Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
-        <input id="addrGovernance" placeholder="Governance Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
-        <input id="addrCouncil" placeholder="GuardianCouncil Address" class="w-full p-2 rounded bg-black/20 text-sm" />
-        <div class="flex gap-2">
-          <button id="saveAddrs" class="px-3 py-1 bg-slate-700 rounded text-sm">Save</button>
-          <button id="loadAddrs" class="px-3 py-1 bg-slate-700/50 rounded text-sm">Load</button>
-        </div>
-      </div>
+  <hr class="my-3 border-slate-700" />
+  <div class="text-xs text-slate-300">Contract Addresses (defaults & localStorage)</div>
+  <div class="mt-2 space-y-2">
+    <input id="addrCata" placeholder="CATA Token Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="addrStaking" placeholder="Staking Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="addrGovernance" placeholder="Governance Contract Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="addrCouncil" placeholder="GuardianCouncil Address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <div class="flex gap-2">
+      <button id="saveAddrs" class="px-3 py-1 bg-slate-700 rounded text-sm">Save</button>
+      <button id="loadAddrs" class="px-3 py-1 bg-slate-700/50 rounded text-sm">Load</button>
+    </div>
+  </div>
 
-      <hr class="my-3 border-slate-700" />
-      <div class="text-xs text-slate-400">CATA Actions</div>
-      <div class="mt-2 space-y-2">
-        <input id="cataMintTo" placeholder="Mint to address" class="w-full p-2 rounded bg-black/20 text-sm" />
-        <input id="cataMintAmt" placeholder="Amount (wei or integer string)" class="w-full p-2 rounded bg-black/20 text-sm" />
-        <div class="flex gap-2">
-          <button id="cataMintBtn" class="flex-1 p-2 bg-indigo-600 rounded">Mint (MINTER_ROLE)</button>
-          <button id="cataBurnBtn" class="flex-1 p-2 bg-red-600 rounded">Burn (self)</button>
-        </div>
-        <div class="flex gap-2 mt-2">
-          <input id="swapNewAdmin" placeholder="New admin address" class="flex-1 p-2 rounded bg-black/20 text-sm" />
-          <input id="swapOldAdmin" placeholder="Old admin address (optional)" class="flex-1 p-2 rounded bg-black/20 text-sm" />
-        </div>
-        <div class="mt-2">
-          <button id="swapAdminBtn" class="p-2 bg-yellow-500 text-black rounded w-full">Swap Admin (council only)</button>
-        </div>
-      </div>
-    </section>
+  <hr class="my-3 border-slate-700" />
+  <div class="text-xs text-slate-400">CATA Actions</div>
+  <div class="mt-2 space-y-2">
+    <input id="cataMintTo" placeholder="Mint to address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="cataMintAmt" placeholder="Amount (wei or integer string)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <div class="flex gap-2">
+      <button id="cataMintBtn" class="flex-1 p-2 bg-indigo-600 rounded">Mint (MINTER_ROLE)</button>
+      <button id="cataBurnBtn" class="flex-1 p-2 bg-red-600 rounded">Burn (self)</button>
+    </div>
+    <div class="flex gap-2 mt-2">
+      <input id="swapNewAdmin" placeholder="New admin address" class="flex-1 p-2 rounded bg-black/20 text-sm" />
+      <input id="swapOldAdmin" placeholder="Old admin address (optional)" class="flex-1 p-2 rounded bg-black/20 text-sm" />
+    </div>
+    <div class="mt-2">
+      <button id="swapAdminBtn" class="p-2 bg-yellow-500 text-black rounded w-full">Swap Admin (council only)</button>
+    </div>
+  </div>
+</section>
 
     <!-- Collection Registration -->
     <section id="registration" class="tab-content hidden">
