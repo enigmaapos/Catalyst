@@ -145,14 +145,38 @@
 	  
     <!-- Quick Status -->
 <section id="quickstatus" class="tab-content hidden">
-  <h2 class="font-semibold mb-2">Quick Status</h2>
-  <div class="space-y-2 text-sm text-slate-200">
-    <div>Connected: <strong id="addr">Not connected</strong></div>
-    <div>Network: <strong id="networkText">—</strong></div>
-    <div>CATA Balance: <strong id="cataBal">—</strong></div>
-    <div>Staked NFTs (global): <strong id="globalStaked">—</strong></div>
-    <div>Roles (CATA / Staking): <small id="roles">—</small></div>
+  <h2 class="font-semibold mb-3 text-lg text-slate-100">⚡ Quick Status</h2>
+<div class="grid grid-cols-2 gap-3 text-sm">
+  <!-- Card -->
+  <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+    <div class="text-slate-400 text-xs">Connected</div>
+    <div id="addr" class="font-semibold text-slate-200">Not connected</div>
   </div>
+
+  <!-- Card -->
+  <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+    <div class="text-slate-400 text-xs">Network</div>
+    <div id="networkText" class="font-semibold text-slate-200">—</div>
+  </div>
+
+  <!-- Card -->
+  <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+    <div class="text-slate-400 text-xs">CATA Balance</div>
+    <div id="cataBal" class="font-semibold text-green-400">—</div>
+  </div>
+
+  <!-- Card -->
+  <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+    <div class="text-slate-400 text-xs">Staked NFTs</div>
+    <div id="globalStaked" class="font-semibold text-indigo-400">—</div>
+  </div>
+
+  <!-- Card (full width) -->
+  <div class="col-span-2 p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+    <div class="text-slate-400 text-xs">Roles (CATA / Staking)</div>
+    <div id="roles" class="font-semibold text-slate-200">—</div>
+  </div>
+</div>
 
   <hr class="my-3 border-slate-700" />
   <div class="text-xs text-slate-300">Contract Addresses (defaults & localStorage)</div>
@@ -434,28 +458,32 @@
 
 	<hr class="border-slate-700 my-3" />
 
-<hr class="border-slate-700 my-3" />
-
 <!-- Recovery Info Panel -->
-<div id="recoveryInfo" class="p-3 rounded bg-black/20 text-sm space-y-1">
-  <h4 class="font-semibold text-slate-200">Recovery Status</h4>
-  <p><span class="font-medium">Proposed:</span> <span id="riProposed">-</span></p>
-  <p><span class="font-medium">Approvals:</span> <span id="riApprovals">-</span></p>
-  <p><span class="font-medium">Deadline:</span> <span id="riDeadline">-</span></p>
-  <p><span class="font-medium">Executed:</span> <span id="riExecuted">-</span></p>
-  <p><span class="font-medium">Call Target:</span> <span id="riCallTarget">-</span></p>
-  <p><span class="font-medium">Call Data:</span> <span id="riCallData">-</span></p>
-  <p><span class="font-medium">Last Honest Guardian:</span> <span id="riGuardian">-</span></p>
-  <p><span class="font-medium">Veto Expiry:</span> <span id="riVetoExpiry">-</span></p>
+<div id="recoveryInfo" class="p-4 rounded-xl bg-slate-800/40 border border-slate-700 shadow-sm text-sm space-y-2">
+  <h4 class="font-semibold text-slate-100 text-base">📊 Recovery Status</h4>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+    <p><span class="text-slate-400">Proposed:</span> <span id="riProposed" class="font-medium text-slate-200">-</span></p>
+    <p><span class="text-slate-400">Approvals:</span> <span id="riApprovals" class="font-medium text-slate-200">-</span></p>
+    <p><span class="text-slate-400">Deadline:</span> <span id="riDeadline" class="font-medium text-slate-200">-</span></p>
+    <p><span class="text-slate-400">Executed:</span> <span id="riExecuted" class="font-medium">-</span></p>
+    <p><span class="text-slate-400">Call Target:</span> <span id="riCallTarget" class="font-mono text-xs text-slate-300">-</span></p>
+    <p><span class="text-slate-400">Call Data:</span> <span id="riCallData" class="font-mono text-xs text-slate-300 break-all">-</span></p>
+    <p><span class="text-slate-400">Guardian:</span> <span id="riGuardian" class="font-medium text-slate-200">-</span></p>
+    <p><span class="text-slate-400">Veto Expiry:</span> <span id="riVetoExpiry" class="font-medium text-slate-200">-</span></p>
+  </div>
 
-  <!-- Add a selector above Refresh button -->
-<label for="recoveryKind" class="block text-slate-300 text-sm font-medium mb-1">Recovery Kind</label>
-<select id="recoveryKind" class="w-full p-2 rounded bg-slate-800 text-slate-200">
-  <option value="0">Deployer</option>
-  <option value="1">Admin</option>
-</select>
+  <!-- Selector -->
+  <div class="mt-3">
+    <label for="recoveryKind" class="block text-slate-300 text-sm font-medium mb-1">Recovery Kind</label>
+    <select id="recoveryKind" class="w-full p-2 rounded-lg bg-slate-900 text-slate-200 border border-slate-700">
+      <option value="0">Deployer</option>
+      <option value="1">Admin</option>
+    </select>
+  </div>
 
-<button id="refreshRecoveryBtn" class="mt-2 w-full p-2 bg-slate-700 rounded">🔄 Refresh Recovery Info</button>
+  <button id="refreshRecoveryBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-semibold text-white transition">
+    🔄 Refresh Recovery Info
+  </button>
 </div>
 </div>
 </section>
