@@ -110,11 +110,11 @@ Staking NFTs mints new CATA.
 
 Base reward rate dynamically adjusts with participation.
 
-Global staking capacity capped at 1,000,000,000 NFTs:
+> Global staking capacity capped at 500,000,000 NFTs:
+– 375,000,000 Term stakes
+– 125,000,000 Permanent stakes
 
-75% Term stake (750M NFTs)
-
-25% Permanent stake (250M NFTs)
+CATA token supply is hard-capped at 1,000,000,000. At deployment, 100,000,000 CATA were minted to the initial admin. Only the CatalystStakingUpgradeable contract can mint new supply, ensuring emissions are tied exclusively to staking participation and reward mechanics.
 
 
 
@@ -177,6 +177,8 @@ Reduced governance rights until upgraded.
 
 Upgrade path: burn contribution + stake age + stakers + governance approval.
 
+> If an unverified collection fails to upgrade within the required surcharge forfeit window, its escrow is automatically forfeited. The forfeited escrow is split: 50% burned and 50% allocated to the Treasury.
+
 
 Blue-Chip (Curated / Trusted)
 
@@ -218,56 +220,50 @@ No extra weighting beyond normal rules — ensures fairness.
 
 ⚠️ Immutable: 90/9/1 split cannot be changed.
 
+> Governance supports a wide range of proposal types, including:
+– Base reward adjustments
+– Harvest fee updates
+– Unstake fee updates
+– Registration fee fallback
+– Voting parameter changes
+– Tier upgrades for collections
+– Guardian Council reseeding (active/standby batches)
+– DAO upgrades (two-step commit process)
+– Guardian Council contract upgrades (via UUPS)
+– Council lock clearing
+
+Voting weight is derived from the CatalystStaking contract, with votes scaled by stake and burned contributions. A per-collection cap (collectionVoteCapPercent) prevents monopolization by any single collection.
+
 
 ---
 
 9. Guardian Council Security System (DRS)
 
-Catalyst introduces the Decentralized Recovery System (DRS) — the first NFT protocol to integrate guardian-based multi-party security directly into its upgradeable smart contracts.
+> Catalyst secures its upgradeable contracts using the Batch Guardian Council (BGC) — a two-batch guardian model with 7 guardians in each batch.
 
-Two councils protect the protocol:
+– Active Batch: current guardians with operational authority.
+– Standby Batch: pre-seeded guardians, ready to take over in case of compromise.
 
-Deployer Guardian Council (GCSS): 7 guardians, 5 approvals required (7:5) to recover the deployer role.
+Recovery Thresholds:
+– 5 of 7 approvals → Recovery valid.
+– 6 of 7 approvals → Raises a Warning and grants the Last Honest Guardian a 48h veto.
+– 7 of 7 approvals → Auto-Lock triggered, Standby batch activated immediately.
 
-Admin Guardian Council (AGC): 7 guardians, 5 approvals required (7:5) to recover the default admin role.
+DAO-Managed Reseeding: Governance can propose and commit new batches of guardians. Both active and standby sets can be reseeded with a two-step commit and time-bound window, preventing rushed takeovers.
 
+Recovery Proposals: Guardians may propose arbitrary calls (target + calldata) that execute atomically if approved. This allows controlled upgrades, emergency recovery, or parameter resets.
 
-Features
-
-Multi-Party Recovery: No single key can compromise the protocol; 5-of-7 guardians must agree.
-
-Compromise Detection:
-
-5/7 approvals → Recovery valid.
-
-6/7 approvals → ⚠️ Warning (possible compromise).
-
-7/7 approvals → 🚨 Critical auto-lock for emergency review.
-
-
-Last Honest Guardian Reset: If 6 of 7 approve, the remaining guardian gains temporary reset powers (48h) to prevent a hostile takeover.
-
-
-Future Upgrade Path
-
-The DRS framework is designed to be upgradeable. In future versions, Catalyst governance may extend DRS into a Batch Guardians Council model — enabling multiple guardian groups to operate in parallel or in layered batches.
-
-This would:
-
-Further decentralize recovery authority.
-
-Allow specialized councils (e.g., technical, community, institutional).
-
-Improve resilience against coordinated guardian compromise.
-
-
-By design, the DRS evolution into Batch Guardians Council will remain compatible with Catalyst’s immutable rules (90% Burn, 9% Treasury, 1% Deployer).
+By combining batch failover, commit delays, and last-resort veto, the BGC provides stronger protection than the earlier dual-council model, while keeping Catalyst fully decentralized.
 
 ---
 
 10. Security, Scalability, Sustainability 
 
 Security: Guardian-based recovery (7:5 threshold), reentrancy protection, OpenZeppelin UUPS upgradeability.
+
+> – All core modules (ERC20, Staking, Governance, Council) are deployed as UUPS Upgradeable contracts.
+– ReentrancyGuard and Pausable protections ensure operational safety.
+– Immutable 90/9/1 fee split is enforced at contract level and cannot be modified by governance.
 
 Scalability:
 
@@ -322,22 +318,18 @@ An immutable 1% deployer fee exists to ensure founder sustainability, but beyond
 Catalyst = NFT-neutral utility + sustainable deflation + decentralized recovery.
 
 
-Technical Appendix — Catalyst Smart Contract Architecture (Aligned with Current Implementation)
+Technical Appendix — Catalyst Smart Contract Architecture (Aligned with Current Contracts)
 
 
 ---
 
 1. Overview
 
-Catalyst is deployed as a modular, upgradeable protocol.
-The design separates user-facing functions from business logic modules to ensure security, scalability, and sustainability.
+Catalyst is deployed as a modular, upgradeable protocol using the UUPS proxy standard.
+Each major function (staking, governance, council, token) is separated into its own contract to maximize upgrade flexibility, minimize attack surface, and ensure decentralized control.
 
-Core Upgradeable Contract: CatalystNFTStakingUpgradeable
-
-Libraries: StakingLib, GovernanceLib, BluechipLib
-
-Immutable Rules: 90% Burn, 9% Treasury, 1% Deployer
-
+Immutable Rule:
+All fees follow the 90% Burn / 9% Treasury / 1% Deployer split, hard-coded at contract level.
 
 Key upgrades we’ve integrated:
 
@@ -353,35 +345,49 @@ Custom errors instead of strings (deploy-size optimized).
 
 ---
 
-2. Core Contract — CatalystNFTStakingUpgradeable.sol
+2. Core Contracts (modular breakdown)
 
-The upgradeable ERC-20 + NFT staking contract, serving as the protocol hub.
+CataERC20Upgradeable.sol
+- ERC20 Utility & Governance token.
+- Max supply: 1,000,000,000 CATA.
+- Premint: 100,000,000 CATA allocated to initial admin.
+- Minting restricted to CatalystStakingUpgradeable (holds MINTER_ROLE).
+- Upgradeable and council-controlled (BatchGuardianCouncil may swap admins).
 
-Functions exposed to users:
+CatalystStakingUpgradeable.sol
+- Custodial NFT staking (term + permanent).
+- Caps:
+  • Global: 500,000,000 NFTs
+  • Term: 375,000,000 NFTs
+  • Permanent: 125,000,000 NFTs
+- Collection Tiers: Unverified, Verified, Blue-Chip.
+- Fee Split: 90% burn, 9% treasury, 1% deployer.
+- Supports escrow forfeits, proof-of-burn legitimacy, and automatic Top % collection tracking.
+- Blue-chip wallets may enroll via non-custodial one-time fee.
 
-Custodial staking: stake, batchStake, unstake, harvest.
+CatalystGovernanceUpgradeable.sol
+- On-chain proposal and voting system.
+- Proposal Types include:
+  • Base reward, harvest fee, unstake fee
+  • Registration fallback
+  • Voting parameter changes
+  • Tier upgrades
+  • Guardian Council reseed/activation
+  • DAO upgrades (two-step commit)
+  • Guardian Council implementation upgrades
+  • Lock clearing
+- Voting Weight: Derived from staking participation (scaled).
+- Per-Collection Vote Cap prevents monopoly.
 
-Blue-chip enrollment & rewards: enrollBluechip, harvestBluechip.
-
-Governance: propose, vote, executeProposal.
-
-Collection registration: registerCollection.
-
-
-Immutable fee split (hard-coded):
-
-90% Burn
-
-9% Treasury (governance-controlled)
-
-1% Deployer (creator address)
-
-
-Guardian Councils:
-
-Deployer Council (GCSS): 7 members, 5 approvals → can recover deployer.
-
-Admin Guardian Council (AGC): 7 members, 5 approvals → can recover admin role.
+BatchGuardianCouncilUpgradeable.sol
+- Dual-batch guardian council (Active + Standby).
+- 7 guardians per batch, 5-of-7 threshold for recovery.
+- Security layers:
+  • 6/7 approvals → Warning + 48h Last Honest Guardian veto.
+  • 7/7 approvals → Auto-lock + standby activation.
+- DAO-Managed Reseeding: Governance may rotate batches with two-step commit and expiry window.
+- Can execute recovery proposals (arbitrary callTarget + calldata).
+- UUPS upgradeable with DAO authorization.
 
 
 Whitepaper alignment:
@@ -398,7 +404,7 @@ Governance cannot override immutable economics.
 
 ---
 
-3. Staking Library — StakingLib.sol
+3. Security & Upgradeability
 
 Custodial staking only (for verified & unverified collections).
 
@@ -408,11 +414,11 @@ Records term & permanent stakes.
 
 Caps:
 
-Global cap: 1,000,000,000 NFTs
+Global cap: 500,000,000 NFTs
 
-Term: 750M
+Term: 375M
 
-Permanent: 250M
+Permanent: 125M
 
 Per-collection cap: 20,000 NFTs
 
@@ -420,6 +426,11 @@ Per-collection cap: 20,000 NFTs
 Calculates pending rewards.
 
 Tracks stake portfolios per user.
+
+- All contracts: UUPSUpgradeable + AccessControlUpgradeable.
+- Guardian-managed admin swaps ensure no single point of failure.
+- ReentrancyGuard and Pausable used across contracts.
+- Immutable economics (90/9/1 split) cannot be altered by governance or upgrades.
 
 
 Whitepaper alignment:
