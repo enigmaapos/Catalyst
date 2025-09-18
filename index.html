@@ -46,8 +46,9 @@
     Staking
   </button>
   <button data-tab="governance" class="tabbtn px-4 py-2 rounded-lg bg-violet-700 text-white">
-    Governance & Council
+    Governance DAO 
   </button>
+	<button data-tab="council" class="tabbtn btn btn-ghost">DRS Guardian Council</button>
 </div>
 
   <!-- Tab Contents -->
@@ -223,6 +224,74 @@
         </div>
       </div>
     </section>
+
+	  <section id="council" class="tab-content hidden">
+  <h2 class="font-semibold mb-2">DRS Guardian Council</h2>
+  <p class="text-sm text-slate-300 mb-3">
+    Manage guardian batches, DAO rotation, and emergency recovery.
+  </p>
+
+  <div class="space-y-2 text-sm">
+    <!-- DAO -->
+    <div class="grid grid-cols-2 gap-2">
+      <input id="newDaoAddr" placeholder="New DAO address" class="p-2 rounded bg-black/20" />
+      <button id="proposeDaoBtn" class="p-2 bg-indigo-600 rounded">Propose DAO</button>
+    </div>
+    <button id="commitDaoBtn" class="w-full p-2 bg-indigo-400 rounded">Commit DAO</button>
+
+    <hr class="border-slate-700 my-2" />
+
+    <!-- Active Batch -->
+    <textarea id="activeBatchInput" placeholder="7 addresses, one per line" class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
+    <div class="flex gap-2">
+      <button id="proposeActiveBatchBtn" class="flex-1 p-2 bg-amber-600 rounded">Propose Active Batch</button>
+      <button id="commitActiveBatchBtn" class="flex-1 p-2 bg-amber-400 rounded">Commit Active Batch</button>
+    </div>
+
+    <!-- Standby Batch -->
+    <textarea id="standbyBatchInput" placeholder="7 addresses, one per line" class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
+    <div class="flex gap-2">
+      <button id="proposeStandbyBatchBtn" class="flex-1 p-2 bg-emerald-600 rounded">Propose Standby Batch</button>
+      <button id="commitStandbyBatchBtn" class="flex-1 p-2 bg-emerald-400 rounded">Commit Standby Batch</button>
+    </div>
+
+    <button id="activateStandbyBtn" class="w-full p-2 bg-green-600 rounded mt-2">Activate Standby</button>
+
+    <hr class="border-slate-700 my-2" />
+
+    <!-- Lock & Warning -->
+    <div class="flex gap-2">
+      <button id="clearLockBtn" class="flex-1 p-2 bg-slate-600 rounded">Clear Lock/Warning</button>
+    </div>
+
+	  <hr class="border-slate-700 my-2" />
+
+<h3 class="text-sm font-semibold mb-1">Recovery Request</h3>
+<div class="space-y-2 text-sm">
+  <input id="recoveryDaoAddr" placeholder="Recovery DAO address" class="w-full p-2 rounded bg-black/20" />
+
+  <div class="flex gap-2">
+    <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 rounded">
+      Propose Recovery
+    </button>
+  </div>
+
+  <input id="recoveryReqId" placeholder="Recovery Request ID" class="w-full p-2 rounded bg-black/20" />
+
+  <div class="flex gap-2 mt-2">
+    <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 rounded">
+      Approve
+    </button>
+    <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 rounded">
+      Execute
+    </button>
+    <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 rounded">
+      Veto
+    </button>
+  </div>
+</div>
+  </div>
+</section>
   </div>
 </main>
 
@@ -990,7 +1059,6 @@ async function batchHarvest() {
     } catch(e){ log('fetchProposal err', e && e.message ? e.message : e); }
   }
 
-  // ---------- Council ----------
   async function proposeReseed(){
     try {
       if(!contracts.governance) { await attachContractsIfSet(); if(!contracts.governance) return alert('Set governance contract'); }
@@ -1016,6 +1084,114 @@ async function batchHarvest() {
       log('execReseed completed');
     } catch(e){ log('execReseed err', e && e.message ? e.message : e); }
   }
+
+	  // Guardian Council contract functions
+async function proposeDao(){
+  const newDao = $('newDaoAddr').value.trim();
+  if(!newDao) return alert('Enter DAO address');
+  const tx = await contracts.council.proposeNewDAO(newDao);
+  log('propose DAO tx', tx.hash);
+  await tx.wait();
+  log('DAO proposal submitted');
+}
+
+async function commitDao(){
+  const tx = await contracts.council.commitNewDAO();
+  log('commit DAO tx', tx.hash);
+  await tx.wait();
+  log('DAO committed');
+}
+
+async function proposeActiveBatch(){
+  const arr = parse7($('activeBatchInput').value);
+  const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
+  log('propose active batch tx', tx.hash);
+  await tx.wait();
+}
+
+async function commitActiveBatch(){
+  const tx = await contracts.council.daoCommitSeedActiveBatch();
+  log('commit active batch tx', tx.hash);
+  await tx.wait();
+}
+
+async function proposeStandbyBatch(){
+  const arr = parse7($('standbyBatchInput').value);
+  const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
+  log('propose standby batch tx', tx.hash);
+  await tx.wait();
+}
+
+async function commitStandbyBatch(){
+  const tx = await contracts.council.daoCommitSeedStandbyBatch();
+  log('commit standby batch tx', tx.hash);
+  await tx.wait();
+}
+
+async function activateStandby(){
+  const tx = await contracts.council.daoActivateStandby();
+  log('activate standby tx', tx.hash);
+  await tx.wait();
+}
+
+async function clearLock(){
+  const tx = await contracts.council.daoClearLockAndWarning();
+  log('clear lock tx', tx.hash);
+  await tx.wait();
+}
+
+function parse7(txt){
+  const arr = txt.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(arr.length !== 7) throw new Error("Need exactly 7 addresses");
+  return arr;
+}
+
+	  // ---------- Recovery Request ----------
+async function proposeRecovery(){
+  try {
+    const daoAddr = $('recoveryDaoAddr').value.trim();
+    if(!daoAddr) return alert('Enter Recovery DAO address');
+    const tx = await contracts.council.proposeRecoveryRequest(daoAddr);
+    log('proposeRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery proposal submitted');
+  } catch(e){ log('proposeRecovery err', e && e.message ? e.message : e); }
+}
+
+async function approveRecovery(){
+  try {
+    const id = $('recoveryReqId').value.trim();
+    if(!id) return alert('Enter Recovery Request ID');
+    const tx = await contracts.council.approveRecoveryRequest(id);
+    log('approveRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery approved');
+  } catch(e){ log('approveRecovery err', e && e.message ? e.message : e); }
+}
+
+async function executeRecovery(){
+  try {
+    const id = $('recoveryReqId').value.trim();
+    if(!id) return alert('Enter Recovery Request ID');
+    const tx = await contracts.council.executeRecoveryRequest(id);
+    log('executeRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery executed');
+  } catch(e){ log('executeRecovery err', e && e.message ? e.message : e); }
+}
+
+async function vetoRecovery(){
+  try {
+    const id = $('recoveryReqId').value.trim();
+    if(!id) return alert('Enter Recovery Request ID');
+    const tx = await contracts.council.lastHonestVeto(id);
+    log('vetoRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery vetoed');
+  } catch(e){ log('vetoRecovery err', e && e.message ? e.message : e); }
+}
+
+
 
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async ()=>{
@@ -1091,10 +1267,22 @@ $('batchHarvestBtn').onclick = batchHarvest;
     $('voteProposalBtn').onclick = voteProposal;
     $('execProposalBtn').onclick = execProposal;
     $('fetchProposalBtn').onclick = fetchProposal;
-
-    // Council
     $('proposeReseedBtn').onclick = proposeReseed;
     $('execReseedBtn').onclick = execReseed;
+
+	  // DRS Guardian Council 
+$('proposeDaoBtn').onclick       = proposeDao;
+$('commitDaoBtn').onclick        = commitDao;
+$('proposeActiveBatchBtn').onclick  = proposeActiveBatch;
+$('commitActiveBatchBtn').onclick   = commitActiveBatch;
+$('proposeStandbyBatchBtn').onclick = proposeStandbyBatch;
+$('commitStandbyBatchBtn').onclick  = commitStandbyBatch;
+$('activateStandbyBtn').onclick  = activateStandby;
+$('clearLockBtn').onclick        = clearLock;
+$('proposeRecoveryBtn').onclick = proposeRecovery;
+$('approveRecoveryBtn').onclick = approveRecovery;
+$('executeRecoveryBtn').onclick = executeRecovery;
+$('vetoRecoveryBtn').onclick = vetoRecovery;
 
     log('UI ready');
   });
