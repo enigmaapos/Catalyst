@@ -437,16 +437,32 @@
 <!-- Recovery Info Panel -->
 <div id="recoveryInfo" class="p-3 rounded bg-black/20 text-sm space-y-1">
   <h4 class="font-semibold text-slate-200">Recovery Status</h4>
+
+  <!-- Recovery Kind selector -->
+  <label for="riKind" class="font-medium">Recovery Kind:</label>
+  <select id="riKind" class="w-full p-2 rounded bg-black/30">
+    <option value="0">Deployer (0)</option>
+    <option value="1">Admin (1)</option>
+  </select>
+
   <p><span class="font-medium">Proposed:</span> <span id="riProposed">-</span></p>
   <p><span class="font-medium">Approvals:</span> <span id="riApprovals">-</span></p>
-  <p><span class="font-medium">Deadline:</span> <span id="riDeadline">-</span></p>
+  <p><span class="font-medium">Deadline:</span>
+    <span id="riDeadline">-</span>
+    <span id="riDeadlineRaw" class="text-slate-400 text-xs ml-1"></span>
+  </p>
   <p><span class="font-medium">Executed:</span> <span id="riExecuted">-</span></p>
   <p><span class="font-medium">Call Target:</span> <span id="riCallTarget">-</span></p>
   <p><span class="font-medium">Call Data:</span> <span id="riCallData">-</span></p>
   <p><span class="font-medium">Last Honest Guardian:</span> <span id="riGuardian">-</span></p>
-  <p><span class="font-medium">Veto Expiry:</span> <span id="riVetoExpiry">-</span></p>
+  <p><span class="font-medium">Veto Expiry:</span>
+    <span id="riVetoExpiry">-</span>
+    <span id="riVetoExpiryRaw" class="text-slate-400 text-xs ml-1"></span>
+  </p>
 
-  <button id="refreshRecoveryBtn" class="mt-2 w-full p-2 bg-slate-700 rounded">🔄 Refresh Recovery Info</button>
+  <button id="refreshRecoveryBtn" class="mt-2 w-full p-2 bg-slate-700 rounded">
+    🔄 Refresh Recovery Info
+  </button>
 </div>
 </div>
 </section>
