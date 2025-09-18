@@ -356,7 +356,7 @@
   </div>
 </section>
 
-<section id="council" class="tab-content hidden">
+<section id="council" class="tab-content">
   <h2 class="font-semibold mb-2">DRS Guardian Council</h2>
   <p class="text-sm text-slate-300 mb-3">
     Manage guardian batches, DAO rotation, and emergency recovery.
@@ -375,7 +375,8 @@
 
   <!-- Active Batch -->
   <div class="space-y-2 text-sm">
-    <textarea id="activeBatchInput" placeholder="7 addresses, one per line" class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
+    <textarea id="activeBatchInput" placeholder="7 addresses, one per line"
+      class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
     <div class="flex gap-2">
       <button id="proposeActiveBatchBtn" class="flex-1 p-2 bg-amber-600 rounded">Propose Active Batch</button>
       <button id="commitActiveBatchBtn" class="flex-1 p-2 bg-amber-400 rounded">Commit Active Batch</button>
@@ -384,7 +385,8 @@
 
   <!-- Standby Batch -->
   <div class="space-y-2 text-sm mt-3">
-    <textarea id="standbyBatchInput" placeholder="7 addresses, one per line" class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
+    <textarea id="standbyBatchInput" placeholder="7 addresses, one per line"
+      class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
     <div class="flex gap-2">
       <button id="proposeStandbyBatchBtn" class="flex-1 p-2 bg-emerald-600 rounded">Propose Standby Batch</button>
       <button id="commitStandbyBatchBtn" class="flex-1 p-2 bg-emerald-400 rounded">Commit Standby Batch</button>
@@ -401,10 +403,12 @@
 
   <hr class="border-slate-700 my-2" />
 
-  <!-- Recovery Request -->
+  <!-- Recovery -->
   <h3 class="text-sm font-semibold mb-1">Recovery Request</h3>
   <div class="space-y-2 text-sm">
-    <input id="recoveryDaoAddr" placeholder="Recovery proposed address" class="w-full p-2 rounded bg-black/20" />
+    <input id="recoveryProposed" placeholder="Proposed address" class="w-full p-2 rounded bg-black/20" />
+    <input id="recoveryCallTarget" placeholder="Target contract address" class="w-full p-2 rounded bg-black/20" />
+    <input id="recoveryCallData" placeholder="Calldata (0x...)" class="w-full p-2 rounded bg-black/20" />
 
     <div class="flex gap-2">
       <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 rounded">Propose Recovery</button>
@@ -1326,113 +1330,93 @@ function startGovernanceListeners(){
 // ---------- DAO ----------
 async function proposeDao(){
   const newDao = $('newDaoAddr').value.trim();
-  if(!newDao) return alert('Enter DAO address');
   const tx = await contracts.council.proposeNewDAO(newDao);
-  log('propose DAO tx', tx.hash);
   await tx.wait();
   log('DAO proposal submitted');
 }
 
 async function commitDao(){
   const tx = await contracts.council.commitNewDAO();
-  log('commit DAO tx', tx.hash);
   await tx.wait();
   log('DAO committed');
 }
 
-// ---------- Active Batch ----------
+// Active Batch
 async function proposeActiveBatch(){
   const arr = parse7($('activeBatchInput').value);
   const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
-  log('propose active batch tx', tx.hash);
   await tx.wait();
   log('proposeActiveBatch done');
 }
 
 async function commitActiveBatch(){
   const tx = await contracts.council.daoCommitSeedActiveBatch();
-  log('commit active batch tx', tx.hash);
   await tx.wait();
   log('commitActiveBatch done');
 }
 
-// ---------- Standby Batch ----------
+// Standby Batch
 async function proposeStandbyBatch(){
   const arr = parse7($('standbyBatchInput').value);
   const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
-  log('propose standby batch tx', tx.hash);
   await tx.wait();
   log('proposeStandbyBatch done');
 }
 
 async function commitStandbyBatch(){
   const tx = await contracts.council.daoCommitSeedStandbyBatch();
-  log('commit standby batch tx', tx.hash);
   await tx.wait();
   log('commitStandbyBatch done');
 }
 
 async function activateStandby(){
   const tx = await contracts.council.daoActivateStandby();
-  log('activate standby tx', tx.hash);
   await tx.wait();
   log('activateStandby done');
 }
 
-// ---------- Lock & Warning ----------
+// Lock
 async function clearLock(){
   const tx = await contracts.council.daoClearLockAndWarning();
-  log('clear lock tx', tx.hash);
   await tx.wait();
   log('clearLock done');
 }
 
+// Parse helper
 function parse7(txt){
   const arr = txt.split('\n').map(s=>s.trim()).filter(Boolean);
   if(arr.length !== 7) throw new Error("Need exactly 7 addresses");
   return arr;
 }
 
-// ---------- Recovery ----------
+// Recovery
 async function proposeRecovery(){
-  const kind = parseInt(prompt("Enter RecovKind (0 = DEPLOYER, 1 = ADMIN):"), 10);
-  const proposed = $('recoveryDaoAddr').value.trim();
-  const callTarget = prompt("Enter callTarget (contract to call)").trim();
-  const callData = prompt("Enter callData (0x... encoded)").trim();
-
-  if(!proposed || !callTarget || !callData) return alert("Fill all fields");
-
-  const tx = await contracts.council.proposeRecovery(
-    kind,
-    proposed,
-    callTarget,
-    callData
-  );
-  log('proposeRecovery tx', tx.hash);
+  const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
+  const proposed = $('recoveryProposed').value.trim();
+  const callTarget = $('recoveryCallTarget').value.trim();
+  const callData = $('recoveryCallData').value.trim();
+  const tx = await contracts.council.proposeRecovery(kind, proposed, callTarget, callData);
   await tx.wait();
-  log('Recovery proposal submitted');
+  log('Recovery proposed');
 }
 
 async function approveRecovery(){
-  const kind = parseInt(prompt("Enter RecovKind (0 = DEPLOYER, 1 = ADMIN):"), 10);
+  const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
   const tx = await contracts.council.approveRecovery(kind);
-  log('approveRecovery tx', tx.hash);
   await tx.wait();
   log('Recovery approved');
 }
 
 async function executeRecovery(){
-  const kind = parseInt(prompt("Enter RecovKind (0 = DEPLOYER, 1 = ADMIN):"), 10);
+  const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
   const tx = await contracts.council.executeRecovery(kind);
-  log('executeRecovery tx', tx.hash);
   await tx.wait();
   log('Recovery executed');
 }
 
 async function vetoRecovery(){
-  const kind = parseInt(prompt("Enter RecovKind (0 = DEPLOYER, 1 = ADMIN):"), 10);
+  const kind = parseInt(prompt("RecovKind? (0 = DEPLOYER, 1 = ADMIN)"), 10);
   const tx = await contracts.council.lastHonestHaltAndPromote(kind);
-  log('vetoRecovery tx', tx.hash);
   await tx.wait();
   log('Recovery vetoed');
 }
@@ -1527,7 +1511,7 @@ $('proposeRecoveryBtn').onclick = proposeRecovery;
 $('approveRecoveryBtn').onclick = approveRecovery;
 $('executeRecoveryBtn').onclick = executeRecovery;
 $('vetoRecoveryBtn').onclick = vetoRecovery;
-
+	  
     log('UI ready');
   });
 
