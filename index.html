@@ -1516,34 +1516,63 @@ async function checkPendingRewards(){
   }
 }
 
-
-	  $('refreshStakingStatsBtn').onclick = async () => {
+// Refresh Staking Stats
+async function refreshStakingStats(){
   try {
-    const [all, term, perm] = await Promise.all([
-      contracts.staking.totalStakedAll(),
-      contracts.staking.totalStakedTerm(),
-      contracts.staking.totalStakedPerm()
-    ]);
+    if(!contracts.staking){ 
+      await attachContractsIfSet();
+      if(!contracts.staking) return alert('Set staking contract');
+    }
 
-    $('stakedAll').innerText = all.toString();
-    $('stakedTerm').innerText = term.toString();
-    $('stakedPerm').innerText = perm.toString();
-  } catch (e) {
-    alert("Error loading staking stats: " + (e.message || e));
+    if(typeof contracts.staking.totalStakedAll === 'function'){
+      const [all, term, perm] = await Promise.all([
+        contracts.staking.totalStakedAll(),
+        contracts.staking.totalStakedTerm(),
+        contracts.staking.totalStakedPerm()
+      ]);
+
+      $('stakedAll').innerText = all.toString();
+      $('stakedTerm').innerText = term.toString();
+      $('stakedPerm').innerText = perm.toString();
+
+      log('refreshStakingStats done');
+    } else {
+      alert('staking stats functions not found in ABI');
+    }
+  } catch(e){ 
+    log('refreshStakingStats err', e && e.message ? e.message : e); 
+    alert(e.message || e);
   }
-};
+}
 
-	  $('viewPortfolioBtn').onclick = async () => {
+// View Portfolio
+async function viewPortfolio(){
   try {
     const collection = $('nftCollection').value.trim();
-    const account = await getAccount();
+    if(!collection) return alert('Enter a collection address');
 
-    const portfolio = await contracts.staking.stakePortfolioByUser(collection, account);
-    $('portfolioResult').innerText = portfolio.length > 0 ? portfolio.join(", ") : "No NFTs staked.";
-  } catch (e) {
-    alert("Error loading portfolio: " + (e.message || e));
+    if(!contracts.staking){ 
+      await attachContractsIfSet();
+      if(!contracts.staking) return alert('Set staking contract');
+    }
+
+    if(typeof contracts.staking.stakePortfolioByUser === 'function'){
+      const account = await getAccount();
+      const portfolio = await contracts.staking.stakePortfolioByUser(collection, account);
+      $('portfolioResult').innerText = portfolio.length > 0 
+        ? portfolio.join(', ') 
+        : 'No NFTs staked.';
+
+      log('viewPortfolio done');
+    } else {
+      alert('stakePortfolioByUser not found in ABI');
+    }
+  } catch(e){ 
+    log('viewPortfolio err', e && e.message ? e.message : e); 
+    alert(e.message || e);
   }
-};
+}
+
 
 // Group by collection => { '0xCollA': ['123','124'], '0xCollB': ['555'] }
 function groupByCollection(pairs) {
@@ -2123,7 +2152,9 @@ $('batchHarvestBtn').onclick = batchHarvest;
 
 	  // Extra staking binds
 $('pendingRewardsBtn').onclick = checkPendingRewards;
-
+$('refreshStakingStatsBtn').onclick = refreshStakingStats;
+$('viewPortfolioBtn').onclick = viewPortfolio;
+	
 
     // Governance
   $('createProposalBtn').onclick = createProposal;
