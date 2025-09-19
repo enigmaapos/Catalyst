@@ -976,6 +976,11 @@
       log('cata.swapAdmin completed');
     } catch(e){ log('cataSwapAdmin err', e && e.message ? e.message : e); }
   }
+	 
+	  // CATA
+    $('cataMintBtn').onclick = cataMint;
+    $('cataBurnBtn').onclick = cataBurn;
+    $('swapAdminBtn').onclick = cataSwapAdmin;
 
 /********************************************************************
  * Collection Registration logic
@@ -2069,17 +2074,11 @@ async function encodeCallData() {
     };
     $('loadAddrs').onclick = ()=>{ loadSavedAddrs(); if(signer) attachContractsIfSet(); };
 		
-    // CATA
-    $('cataMintBtn').onclick = cataMint;
-    $('cataBurnBtn').onclick = cataBurn;
-    $('swapAdminBtn').onclick = cataSwapAdmin;
+    
 
 
 
-// ---------- Bluechip Binds ----------
-$('enrollBluechipBtn').onclick = enrollBluechip;
-$('harvestBluechipBtn').onclick = harvestBluechip;
-$('refreshBluechipBtn').onclick = refreshBluechipInfo;
+
 	  
     // Staking single
     $('approveNFTBtn').onclick = approveNFT;
