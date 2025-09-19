@@ -1694,89 +1694,100 @@ async function createProposal(){
 	  
 // Vote
 async function voteProposal(){
-try {
-if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
-const id = $('proposalId').value.trim();
-if(!id) return alert('Proposal ID required');
-const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
-const tx = await contracts.governance.vote(id, ctx);
-log('vote tx', tx.hash);
-await tx.wait();
-log('voted');
-} catch(e){ log('voteProposal err', e.message || e); }
+  try {
+    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
+    const id = $('proposalId').value.trim();
+    if(!id) return alert('Proposal ID required');
+    const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
+    const tx = await contracts.governance.vote(id, ctx);
+    log('vote tx', tx.hash);
+    await tx.wait();
+    log('voted');
+  } catch(e){ log('voteProposal err', e.message || e); }
 }
 
 // Execute
 async function execProposal(){
-try {
-if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
-const id = $('proposalId').value.trim();
-if(!id) return alert('Proposal ID required');
-const tx = await contracts.governance.executeProposal(id);
-log('exec tx', tx.hash);
-await tx.wait();
-log('executed');
-} catch(e){ log('execProposal err', e.message || e); }
+  try {
+    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
+    const id = $('proposalId').value.trim();
+    if(!id) return alert('Proposal ID required');
+    const tx = await contracts.governance.executeProposal(id);
+    log('exec tx', tx.hash);
+    await tx.wait();
+    log('executed');
+  } catch(e){ log('execProposal err', e.message || e); }
 }
 
 // Fetch Proposal Details
 async function fetchProposal(){
-try {
-if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
-const id = $('proposalId').value.trim();
-if(!id) return alert('Proposal ID required');
-let info = null;
-try { info = await contracts.governance.proposals(id); } catch(e){ /* ignore */ }
-try { if(!info) info = await contracts.governance.proposalPayloads(id); } catch(e){}
-log('proposal fetch', info || 'no data');
-} catch(e){ log('fetchProposal err', e.message || e); }
+  try {
+    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
+    const id = $('proposalId').value.trim();
+    if(!id) return alert('Proposal ID required');
+    let info = null;
+    try { info = await contracts.governance.proposals(id); } catch(e){ /* ignore */ }
+    try { if(!info) info = await contracts.governance.proposalPayloads(id); } catch(e){}
+    log('proposal fetch', info || 'no data');
+  } catch(e){ log('fetchProposal err', e.message || e); }
 }
 
 // ---------- Proposal Explorer ----------
 const proposalsMap = {};
 
 function renderProposalsTable(){
-const tbody = $('proposalsTbody');
-tbody.innerHTML = '';
-Object.values(proposalsMap).forEach(p=>{
-const tr = document.createElement('tr');
-tr.className = 'border-t border-slate-700';
-tr.innerHTML =    <td class="p-2 font-mono text-xs">${p.id}</td>   <td class="p-2">${p.type}</td>   <td class="p-2">${p.value}</td>   <td class="p-2">${p.ctx}</td>   <td class="p-2">${p.proposer || '-'}</td>   <td class="p-2">${p.votes || 0}</td>   <td class="p-2">${p.executed ? 'Yes':'No'}</td>   <td class="p-2">   <button class="p-1 bg-slate-600 rounded text-xs" onclick="$('proposalId').value='${p.id}'">Load</button>   </td>;
-tbody.appendChild(tr);
-});
+  const tbody = $('proposalsTbody');
+  tbody.innerHTML = '';
+  Object.values(proposalsMap).forEach(p=>{
+    const tr = document.createElement('tr');
+    tr.className = 'border-t border-slate-700';
+    tr.innerHTML = `
+      <td class="p-2 font-mono text-xs">${p.id}</td>
+      <td class="p-2">${p.type}</td>
+      <td class="p-2">${p.value}</td>
+      <td class="p-2">${p.ctx}</td>
+      <td class="p-2">${p.proposer || '-'}</td>
+      <td class="p-2">${p.votes || 0}</td>
+      <td class="p-2">${p.executed ? 'Yes':'No'}</td>
+      <td class="p-2">
+        <button class="p-1 bg-slate-600 rounded text-xs" onclick="$('proposalId').value='${p.id}'">Load</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
 }
 
 // Governance Event Listeners
 function startGovernanceListeners(){
-if(!contracts.governance) return;
-const g = contracts.governance;
+  if(!contracts.governance) return;
+  const g = contracts.governance;
 
-g.on("ProposalCreated", (id, proposer, pType, evt) => {
-const pid = id.toString();
-proposalsMap[pid] = {id: pid, proposer, type:pType.toString(), value:'—', ctx:'—', votes:0, executed:false};
-renderProposalsTable();
-});
+  g.on("ProposalCreated", (id, proposer, pType, evt) => {
+    const pid = id.toString();
+    proposalsMap[pid] = {id: pid, proposer, type:pType.toString(), value:'—', ctx:'—', votes:0, executed:false};
+    renderProposalsTable();
+  });
 
-g.on("VoteCast", (voter, id, support, votes, evt) => {
-const pid = id.toString();
-proposalsMap[pid] = proposalsMap[pid] || {id:pid};
-proposalsMap[pid].votes = (proposalsMap[pid].votes||0) + parseInt(votes.toString());
-renderProposalsTable();
-});
+  g.on("VoteCast", (voter, id, support, votes, evt) => {
+    const pid = id.toString();
+    proposalsMap[pid] = proposalsMap[pid] || {id:pid};
+    proposalsMap[pid].votes = (proposalsMap[pid].votes||0) + parseInt(votes.toString());
+    renderProposalsTable();
+  });
 
-g.on("ProposalExecuted", (id, evt) => {
-const pid = id.toString();
-proposalsMap[pid] = proposalsMap[pid] || {id:pid};
-proposalsMap[pid].executed = true;
-renderProposalsTable();
-});
+  g.on("ProposalExecuted", (id, evt) => {
+    const pid = id.toString();
+    proposalsMap[pid] = proposalsMap[pid] || {id:pid};
+    proposalsMap[pid].executed = true;
+    renderProposalsTable();
+  });
 }
 
 // Start event listeners once contracts are attached
 (async function(){
-await attachContractsIfSet();
-startGovernanceListeners();
-})(); 
+  await attachContractsIfSet();
+  startGovernanceListeners();
+})();
+
    
 	  // Guardian Council contract functions
 // ---------- DAO ----------
