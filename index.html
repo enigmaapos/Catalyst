@@ -524,34 +524,74 @@
   </p>
 
   <!-- Proposal Creator -->
-  <div class="glass p-4 rounded-lg space-y-3">
-    <h3 class="font-semibold">Create Proposal</h3>
+<div class="glass p-4 rounded-lg space-y-3">
+  <h3 class="font-semibold">Create Proposal</h3>
 
-    <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
+  <!-- Proposal type -->
+  <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
+    <optgroup label="📊 Protocol Parameters">
       <option value="BASE_REWARD">Base Reward</option>
       <option value="HARVEST_FEE">Harvest Fee</option>
       <option value="UNSTAKE_FEE">Unstake Fee</option>
-      <option value="REGISTRATION_FEE_FALLBACK">Registration Fee</option>
-      <option value="VOTING_PARAM">Voting Param</option>
+      <option value="REGISTRATION_FEE_FALLBACK">Registration Fee Fallback</option>
+      <option value="VOTING_PARAM">Voting Parameter</option>
       <option value="TIER_UPGRADE">Tier Upgrade</option>
-      <option value="COUNCIL_RESEED_ACTIVE">Council Reseed (Active)</option>
+    </optgroup>
+
+    <optgroup label="🛡 Guardian Council Ops">
+      <option value="COUNCIL_RESEED_ACTIVE">Reseed Guardians (Active)</option>
+      <option value="COUNCIL_PROPOSE_STANDBY">Propose Guardians (Standby)</option>
+      <option value="COUNCIL_COMMIT_STANDBY">Commit Guardians (Standby)</option>
+      <option value="COUNCIL_ACTIVATE_STANDBY">Activate Guardians (Standby)</option>
+      <option value="COUNCIL_PROPOSE_NEW_DAO">Propose New DAO</option>
+      <option value="COUNCIL_COMMIT_NEW_DAO">Commit New DAO</option>
+      <option value="COUNCIL_CLEAR_LOCK">Clear Lock/Warning</option>
+      <option value="UPGRADE_COUNCIL">Upgrade Council Implementation</option>
+    </optgroup>
+  </select>
+
+  <!-- Generic proposal fields -->
+  <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
+  <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
+  <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
+
+  <!-- Tier Upgrade fields -->
+  <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
+    <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
+      <option value="0">UNVERIFIED (0)</option>
+      <option value="1">VERIFIED (1)</option>
+      <option value="2">BLUECHIP (2)</option>
     </select>
+    <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
+    <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+  </div>
 
-    <!-- Generic proposal fields -->
-    <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
-    <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
-    <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
-
-    <!-- Tier Upgrade special fields -->
-    <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
-      <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
-        <option value="0">UNVERIFIED (0)</option>
-        <option value="1">VERIFIED (1)</option>
-        <option value="2">BLUECHIP (2)</option>
-      </select>
-      <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
-      <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+  <!-- Council batch reseed fields -->
+  <div id="councilBatchRow" class="hidden space-y-2">
+    <p class="text-xs text-slate-400">Enter 7 guardian addresses for new batch:</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7" />
     </div>
+  </div>
+
+  <!-- Propose new DAO -->
+  <div id="newDaoRow" class="hidden">
+    <input id="newDaoAddr" placeholder="New DAO address" class="w-full p-2 rounded bg-black/20 text-sm" />
+  </div>
+
+  <!-- Upgrade council -->
+  <div id="upgradeCouncilRow" class="hidden">
+    <input id="newCouncilImpl" placeholder="New council implementation address" class="w-full p-2 rounded bg-black/20 text-sm" />
+  </div>
+
+  <button id="createProposalBtn" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
+</div>
 
     <button id="createProposalBtn" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
   </div>
@@ -1646,13 +1686,21 @@ async function batchHarvest() {
 
   // ---------- Governance Section ----------
 const PROPOSAL_MAPPING = {
-  BASE_REWARD:0,
-  HARVEST_FEE:1,
-  UNSTAKE_FEE:2,
-  REGISTRATION_FEE_FALLBACK:3,
-  VOTING_PARAM:4,
-  TIER_UPGRADE:5,
-  COUNCIL_RESEED_ACTIVE:6
+  BASE_REWARD: 0,
+  HARVEST_FEE: 1,
+  UNSTAKE_FEE: 2,
+  REGISTRATION_FEE_FALLBACK: 3,
+  VOTING_PARAM: 4,
+  TIER_UPGRADE: 5,
+
+  COUNCIL_RESEED_ACTIVE: 6,
+  COUNCIL_PROPOSE_STANDBY: 7,
+  COUNCIL_COMMIT_STANDBY: 8,
+  COUNCIL_ACTIVATE_STANDBY: 9,
+  COUNCIL_PROPOSE_NEW_DAO: 10,
+  COUNCIL_COMMIT_NEW_DAO: 11,
+  COUNCIL_CLEAR_LOCK: 12,
+  UPGRADE_COUNCIL: 13
 };
 
 // Toggle TierUpgrade fields
@@ -1689,6 +1737,48 @@ async function createProposal(){
     await tx.wait();
     log('proposal created');
   } catch(e){ log('createProposal err', e.message || e); }
+}
+
+	  $('proposalType').addEventListener('change', () => {
+  const type = $('proposalType').value;
+
+  // hide all extras
+  $('tierUpgradeRow').classList.add('hidden');
+  $('councilBatchRow').classList.add('hidden');
+  $('newDaoRow').classList.add('hidden');
+  $('upgradeCouncilRow').classList.add('hidden');
+
+  // show only relevant
+  if (type === 'TIER_UPGRADE') {
+    $('tierUpgradeRow').classList.remove('hidden');
+  } else if (type === 'COUNCIL_RESEED_ACTIVE' || type === 'COUNCIL_PROPOSE_STANDBY') {
+    $('councilBatchRow').classList.remove('hidden');
+  } else if (type === 'COUNCIL_PROPOSE_NEW_DAO') {
+    $('newDaoRow').classList.remove('hidden');
+  } else if (type === 'UPGRADE_COUNCIL') {
+    $('upgradeCouncilRow').classList.remove('hidden');
+  }
+});
+
+	  if (typeStr === 'COUNCIL_RESEED_ACTIVE' || typeStr === 'COUNCIL_PROPOSE_STANDBY') {
+  const addrs = Array.from(document.querySelectorAll('.councilAddr')).map(el => el.value.trim());
+  if (addrs.length !== 7 || addrs.some(a => !a)) return alert('Must provide 7 guardian addresses');
+  // encode batch via helper
+  const payload = await contracts.governance.encodeCouncilBatch(addrs);
+  ctx = ethers.constants.AddressZero;
+  newValue = 0;
+  paramTarget = 0;
+  // pass payload via governance.propose(...)
+  const tx = await contracts.governance.propose(pType, paramTarget, newValue, payload);
+  ...
+}
+
+if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
+  ctx = $('newDaoAddr').value.trim();
+}
+
+if (typeStr === 'UPGRADE_COUNCIL') {
+  ctx = $('newCouncilImpl').value.trim();
 }
 
 // Vote
