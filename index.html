@@ -1244,6 +1244,24 @@ async function handleToggleBluechip() {
     alert('Bluechip toggle failed: ' + (e.message || e));
   }
 }
+
+	  	// Register Collection 
+/** Wire handlers to new UI elements — call this inside your window load / UI ready handler */
+function wireRegistrationUIs() {
+  // Existing
+  $('calcRegFeeBtn').onclick = handleCalcRegFee;
+  $('approveRegCataBtn').onclick = handleApproveForRegistration;
+  $('registerCollectionBtn').onclick = handleRegisterCollection;
+  $('adminSetConfigBtn').onclick = handleAdminSetCollectionConfig;
+
+  // New admin actions (safe checks in case button missing in DOM)
+  if ($('removeCollectionBtn')) $('removeCollectionBtn').onclick = handleRemoveCollection;
+  if ($('forfeitEscrowBtn')) $('forfeitEscrowBtn').onclick = handleForfeitEscrow;
+  if ($('setBluechipBtn')) $('setBluechipBtn').onclick = handleToggleBluechip;
+}
+
+// call this after your existing UI init (e.g., at end of window.load)
+wireRegistrationUIs();
 	  
 
 // ---------- Bluechip Actions ----------
@@ -2056,23 +2074,7 @@ async function encodeCallData() {
     $('cataBurnBtn').onclick = cataBurn;
     $('swapAdminBtn').onclick = cataSwapAdmin;
 
-	// Register Collection 
-/** Wire handlers to new UI elements — call this inside your window load / UI ready handler */
-function wireRegistrationUIs() {
-  // Existing
-  $('calcRegFeeBtn').onclick = handleCalcRegFee;
-  $('approveRegCataBtn').onclick = handleApproveForRegistration;
-  $('registerCollectionBtn').onclick = handleRegisterCollection;
-  $('adminSetConfigBtn').onclick = handleAdminSetCollectionConfig;
 
-  // New admin actions (safe checks in case button missing in DOM)
-  if ($('removeCollectionBtn')) $('removeCollectionBtn').onclick = handleRemoveCollection;
-  if ($('forfeitEscrowBtn')) $('forfeitEscrowBtn').onclick = handleForfeitEscrow;
-  if ($('setBluechipBtn')) $('setBluechipBtn').onclick = handleToggleBluechip;
-}
-
-// call this after your existing UI init (e.g., at end of window.load)
-wireRegistrationUIs();
 
 // ---------- Bluechip Binds ----------
 $('enrollBluechipBtn').onclick = enrollBluechip;
