@@ -1685,8 +1685,8 @@ async function batchHarvest() {
 }
 
 // ---------- Governance Section ----------
+function $(id) { return document.getElementById(id); }
 
-// Proposal type mapping (must match contract enums)
 const PROPOSAL_MAPPING = {
   BASE_REWARD: 0,
   HARVEST_FEE: 1,
@@ -1694,7 +1694,6 @@ const PROPOSAL_MAPPING = {
   REGISTRATION_FEE_FALLBACK: 3,
   VOTING_PARAM: 4,
   TIER_UPGRADE: 5,
-
   COUNCIL_RESEED_ACTIVE: 6,
   COUNCIL_PROPOSE_STANDBY: 7,
   COUNCIL_COMMIT_STANDBY: 8,
@@ -1708,14 +1707,11 @@ const PROPOSAL_MAPPING = {
 // Toggle extra input fields when proposal type changes
 $('proposalType').addEventListener('change', () => {
   const type = $('proposalType').value;
-
-  // hide all extras
   $('tierUpgradeRow').classList.add('hidden');
   $('councilBatchRow').classList.add('hidden');
   $('newDaoRow').classList.add('hidden');
   $('upgradeCouncilRow').classList.add('hidden');
 
-  // show only relevant
   if (type === 'TIER_UPGRADE') {
     $('tierUpgradeRow').classList.remove('hidden');
   } else if (type === 'COUNCIL_RESEED_ACTIVE' || type === 'COUNCIL_PROPOSE_STANDBY') {
@@ -1743,34 +1739,23 @@ async function createProposal() {
     let newValue = ethers.BigNumber.from(newValueRaw);
     let ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
 
-    // ────────────── Tier Upgrade ──────────────
     if (typeStr === 'TIER_UPGRADE') {
       ctx = $('tierCollection').value.trim();
       paramTarget = parseInt($('tierTo').value);
       newValue = ethers.BigNumber.from($('tierDeclaredSupply').value || '0');
-    }
-
-    // ────────────── Council Reseed / Propose Standby ──────────────
-    else if (typeStr === 'COUNCIL_RESEED_ACTIVE' || typeStr === 'COUNCIL_PROPOSE_STANDBY') {
+    } else if (typeStr === 'COUNCIL_RESEED_ACTIVE' || typeStr === 'COUNCIL_PROPOSE_STANDBY') {
       const addrs = Array.from(document.querySelectorAll('.councilAddr')).map(el => el.value.trim());
       if (addrs.length !== 7 || addrs.some(a => !a)) return alert('Must provide 7 guardian addresses');
       const payload = await contracts.governance.encodeCouncilBatch(addrs);
-      ctx = payload; // encoded guardian batch
+      ctx = payload;
       newValue = 0;
       paramTarget = 0;
-    }
-
-    // ────────────── Council Propose New DAO ──────────────
-    else if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
+    } else if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
       ctx = $('newDaoAddr').value.trim();
-    }
-
-    // ────────────── Upgrade Council ──────────────
-    else if (typeStr === 'UPGRADE_COUNCIL') {
+    } else if (typeStr === 'UPGRADE_COUNCIL') {
       ctx = $('newCouncilImpl').value.trim();
     }
 
-    // Send tx
     const tx = await contracts.governance.propose(pType, paramTarget, newValue, ctx);
     log('propose tx', tx.hash);
     await tx.wait();
@@ -1828,7 +1813,7 @@ async function fetchProposal() {
     if (!id) return alert('Proposal ID required');
     let info = null;
     try { info = await contracts.governance.proposals(id); } catch (e) { /* ignore */ }
-    try { if (!info) info = await contracts.governance.proposalPayloads(id); } catch (e) { }
+    try { if (!info) info = await contracts.governance.proposalPayloads(id); } catch (e) {}
     log('proposal fetch', info || 'no data');
   } catch (e) {
     log('fetchProposal err', e.message || e);
@@ -1864,20 +1849,20 @@ function startGovernanceListeners() {
   if (!contracts.governance) return;
   const g = contracts.governance;
 
-  g.on("ProposalCreated", (id, proposer, pType, evt) => {
+  g.on("ProposalCreated", (id, proposer, pType) => {
     const pid = id.toString();
     proposalsMap[pid] = { id: pid, proposer, type: pType.toString(), value: '—', ctx: '—', votes: 0, executed: false };
     renderProposalsTable();
   });
 
-  g.on("VoteCast", (voter, id, support, votes, evt) => {
+  g.on("VoteCast", (voter, id, support, votes) => {
     const pid = id.toString();
     proposalsMap[pid] = proposalsMap[pid] || { id: pid };
     proposalsMap[pid].votes = (proposalsMap[pid].votes || 0) + parseInt(votes.toString());
     renderProposalsTable();
   });
 
-  g.on("ProposalExecuted", (id, evt) => {
+  g.on("ProposalExecuted", (id) => {
     const pid = id.toString();
     proposalsMap[pid] = proposalsMap[pid] || { id: pid };
     proposalsMap[pid].executed = true;
@@ -1885,11 +1870,11 @@ function startGovernanceListeners() {
   });
 }
 
-// Start event listeners once contracts are attached
-(async function () {
+// Start event listeners once contracts are attached + bind buttons
+window.addEventListener('DOMContentLoaded', async () => {
   await attachContractsIfSet();
   startGovernanceListeners();
-})();
+});
 
 	  // Guardian Council contract functions
 // ---------- DAO ----------
