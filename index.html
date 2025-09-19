@@ -516,81 +516,83 @@
   </div>
 </section>
 
-    <!-- Governance -->
-    <section id="governance" class="tab-content hidden">
+   <!-- Governance -->
+<section id="governance" class="tab-content hidden">
   <h2 class="font-semibold mb-2">Governance DAO</h2>
   <p class="text-sm text-slate-300 mb-3">
     Create proposals, vote, execute them, and monitor governance activity.
   </p>
 
   <!-- Proposal Creator -->
-<div class="glass p-4 rounded-lg space-y-3">
-  <h3 class="font-semibold">Create Proposal</h3>
+  <div class="glass p-4 rounded-lg space-y-3">
+    <h3 class="font-semibold">Create Proposal</h3>
 
-  <!-- Proposal type -->
-  <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
-    <optgroup label="📊 Protocol Parameters">
-      <option value="BASE_REWARD">Base Reward</option>
-      <option value="HARVEST_FEE">Harvest Fee</option>
-      <option value="UNSTAKE_FEE">Unstake Fee</option>
-      <option value="REGISTRATION_FEE_FALLBACK">Registration Fee Fallback</option>
-      <option value="VOTING_PARAM">Voting Parameter</option>
-      <option value="TIER_UPGRADE">Tier Upgrade</option>
-    </optgroup>
+    <!-- Proposal type -->
+    <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
+      <optgroup label="📊 Protocol Parameters">
+        <option value="BASE_REWARD">Base Reward</option>
+        <option value="HARVEST_FEE">Harvest Fee</option>
+        <option value="UNSTAKE_FEE">Unstake Fee</option>
+        <option value="REGISTRATION_FEE_FALLBACK">Registration Fee Fallback</option>
+        <option value="VOTING_PARAM">Voting Parameter</option>
+        <option value="TIER_UPGRADE">Tier Upgrade</option>
+      </optgroup>
 
-    <optgroup label="🛡 Guardian Council Ops">
-      <option value="COUNCIL_RESEED_ACTIVE">Reseed Guardians (Active)</option>
-      <option value="COUNCIL_PROPOSE_STANDBY">Propose Guardians (Standby)</option>
-      <option value="COUNCIL_COMMIT_STANDBY">Commit Guardians (Standby)</option>
-      <option value="COUNCIL_ACTIVATE_STANDBY">Activate Guardians (Standby)</option>
-      <option value="COUNCIL_PROPOSE_NEW_DAO">Propose New DAO</option>
-      <option value="COUNCIL_COMMIT_NEW_DAO">Commit New DAO</option>
-      <option value="COUNCIL_CLEAR_LOCK">Clear Lock/Warning</option>
-      <option value="UPGRADE_COUNCIL">Upgrade Council Implementation</option>
-    </optgroup>
-  </select>
-
-	  <button id="createProposalBtn" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
-</div>
-
-  <!-- Generic proposal fields -->
-  <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
-  <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
-  <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
-
-  <!-- Tier Upgrade fields -->
-  <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
-    <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
-      <option value="0">UNVERIFIED (0)</option>
-      <option value="1">VERIFIED (1)</option>
-      <option value="2">BLUECHIP (2)</option>
+      <optgroup label="🛡 Guardian Council Ops">
+        <option value="COUNCIL_RESEED_ACTIVE">Reseed Guardians (Active)</option>
+        <option value="COUNCIL_PROPOSE_STANDBY">Propose Guardians (Standby)</option>
+        <option value="COUNCIL_COMMIT_STANDBY">Commit Guardians (Standby)</option>
+        <option value="COUNCIL_ACTIVATE_STANDBY">Activate Guardians (Standby)</option>
+        <option value="COUNCIL_PROPOSE_NEW_DAO">Propose New DAO</option>
+        <option value="COUNCIL_COMMIT_NEW_DAO">Commit New DAO</option>
+        <option value="COUNCIL_CLEAR_LOCK">Clear Lock/Warning</option>
+        <option value="UPGRADE_COUNCIL">Upgrade Council Implementation</option>
+      </optgroup>
     </select>
-    <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
-    <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
-  </div>
 
-  <!-- Council batch reseed fields -->
-  <div id="councilBatchRow" class="hidden space-y-2">
-    <p class="text-xs text-slate-400">Enter 7 guardian addresses for new batch:</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7" />
+    <!-- Generic proposal fields (must be inside the card) -->
+    <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
+
+    <!-- Tier Upgrade fields -->
+    <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
+      <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
+        <option value="0">UNVERIFIED (0)</option>
+        <option value="1">VERIFIED (1)</option>
+        <option value="2">BLUECHIP (2)</option>
+      </select>
+      <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
+      <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
     </div>
 
-  <!-- Propose new DAO -->
-  <div id="newDaoRow" class="hidden">
-    <input id="newDaoAddr" placeholder="New DAO address" class="w-full p-2 rounded bg-black/20 text-sm" />
-  </div>
+    <!-- Council batch reseed fields -->
+    <div id="councilBatchRow" class="hidden space-y-2">
+      <p class="text-xs text-slate-400">Enter 7 guardian addresses for new batch:</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7" />
+      </div>
+    </div> <!-- <-- important: close councilBatchRow here -->
 
-  <!-- Upgrade council -->
-  <div id="upgradeCouncilRow" class="hidden">
-    <input id="newCouncilImpl" placeholder="New council implementation address" class="w-full p-2 rounded bg-black/20 text-sm" />
-  </div>
+    <!-- Propose new DAO -->
+    <div id="newDaoRow" class="hidden">
+      <input id="newDaoAddr" placeholder="New DAO address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    </div>
+
+    <!-- Upgrade council -->
+    <div id="upgradeCouncilRow" class="hidden">
+      <input id="newCouncilImpl" placeholder="New council implementation address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    </div>
+
+    <!-- single create button -->
+    <button id="createProposalBtn" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
+  </div> <!-- end Proposal Creator card -->
 
   <!-- Voting / Execution -->
   <div class="glass p-4 rounded-lg space-y-3 mt-4">
@@ -626,6 +628,8 @@
     </div>
   </div>
 </section>
+
+
 
 <section id="council" class="tab-content hidden">
   <h2 class="font-semibold mb-2">DRS Guardian Council</h2>
