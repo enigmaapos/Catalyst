@@ -1282,6 +1282,7 @@ async function harvestBluechip(){
   } 
 
 // Refresh Bluechip Info
+  <script>
   async function refreshBluechip() {
     try {
       if (!contracts.staking) {
@@ -1319,11 +1320,9 @@ async function harvestBluechip(){
     }
   }
 
-  // Attach handler to button
+  // 🔗 Bind to button only
   document.getElementById("refreshBluechipBtn").onclick = refreshBluechip;
-
-  // Auto-load once on page load
-  window.addEventListener("load", refreshBluechip);
+</script>
 
 	  
   // ---------- NFT approval ----------
