@@ -1267,19 +1267,24 @@ async function enrollBluechip(){
   }
 
 // Harvest Bluechip
-$('harvestBluechipBtn').onclick = async () => {
-  try {
-    const collection = $('bluechipCollectionInput').value.trim();
-    if (!collection) return alert("collection required");
-    const tx = await contracts.staking.harvestBluechip(collection);
-    log("Harvest tx", tx.hash);
-    await tx.wait();
-    log("Harvest complete");
-    alert("✅ Harvest complete!");
-  } catch (e) {
-    alert("Error harvesting: " + (e.message || e));
-  }
-};
+async function harvestBluechip(){
+    try {
+      const collection = document.getElementById('bluechipCollectionInput').value.trim();
+      if(!collection) return alert('Enter a collection address');
+      if(!contracts.staking){ 
+        await attachContractsIfSet(); 
+        if(!contracts.staking) return alert('Set staking contract'); 
+      }
+      if(typeof contracts.staking.harvestBluechip === 'function'){
+        const tx = await contracts.staking.harvestBluechip(collection);
+        log('harvestBluechip tx', tx.hash);
+        await tx.wait();
+        log('harvestBluechip done');
+      } else {
+        alert('harvestBluechip not found in ABI');
+      }
+    } catch(e){ log('harvestBluechip err', e && e.message ? e.message : e); }
+  } 
 
 // Refresh Bluechip Info
 $('refreshBluechipBtn').onclick = async () => {
