@@ -1249,17 +1249,22 @@ async function handleToggleBluechip() {
 
 // ---------- Bluechip Actions ----------
 // Enroll as Bluechip
-$('enrollBluechipBtn').onclick = async () => {
-  try {
-    const tx = await contracts.staking.enrollBluechip();
-    log("Enroll tx", tx.hash);
-    await tx.wait();
-    log("Enroll complete");
-    alert("✅ You are now a Bluechip wallet!");
-  } catch (e) {
-    alert("Error enrolling: " + (e.message || e));
+async function enrollBluechip(){
+    try {
+      if(!contracts.staking){ 
+        await attachContractsIfSet(); 
+        if(!contracts.staking) return alert('Set staking contract'); 
+      }
+      if(typeof contracts.staking.enrollBluechip === 'function'){
+        const tx = await contracts.staking.enrollBluechip();
+        log('enrollBluechip tx', tx.hash);
+        await tx.wait();
+        log('enrollBluechip done');
+      } else {
+        alert('enrollBluechip not found in ABI');
+      }
+    } catch(e){ log('enrollBluechip err', e && e.message ? e.message : e); }
   }
-};
 
 // Harvest Bluechip
 $('harvestBluechipBtn').onclick = async () => {
