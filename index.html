@@ -299,6 +299,57 @@
     Make sure your connected wallet has the proper role.
   </p>
 </div>
+
+		<div class="mt-8 bg-slate-900/60 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/10">
+  <!-- Title -->
+  <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+    📊 Collection Details
+  </h4>
+
+  <!-- Input -->
+  <div class="flex gap-3">
+    <input 
+      id="viewCollAddr" 
+      placeholder="0x... collection address" 
+      class="flex-1 p-3 rounded-xl bg-slate-800/70 border border-slate-700/50 text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition" 
+    />
+    <button 
+      id="viewCollBtn" 
+      class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 transition text-sm font-medium shadow-md flex items-center gap-1">
+      🔍 <span>View</span>
+    </button>
+  </div>
+
+  <!-- Info Panel -->
+  <div id="collDetailsPanel" class="mt-6 hidden">
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+      <div>
+        <dt class="font-medium text-slate-400">Tier</dt>
+        <dd id="collTier" class="mt-1 text-white">—</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-400">Declared Supply</dt>
+        <dd id="collSupply" class="mt-1 text-white">—</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-400">Registrant</dt>
+        <dd id="collRegistrant" class="mt-1 text-emerald-300 break-words">—</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-400">Escrowed Surcharge</dt>
+        <dd id="collEscrow" class="mt-1 text-amber-300">—</dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="font-medium text-slate-400">Bluechip Status</dt>
+        <dd id="collBluechip" class="mt-1">
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-slate-700/70 text-slate-300">
+            —
+          </span>
+        </dd>
+      </div>
+    </dl>
+  </div>
+</div>
       </div>
     </section>
 
@@ -1207,6 +1258,39 @@ async function handleToggleBluechip() {
     alert('Bluechip toggle failed: ' + (e.message || e));
   }
 }
+
+	  async function handleViewCollectionDetails() {
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('staking contract not attached');
+    }
+
+    const collection = $('viewCollAddr').value.trim();
+    if (!collection) return alert('Enter collection address');
+
+    // Read data from contract
+    const config = await contracts.staking.collectionConfigs(collection);
+    const meta = await contracts.staking.collectionMeta(collection);
+    let bluechip = false;
+    if (typeof contracts.staking.isBluechipCollection === 'function') {
+      bluechip = await contracts.staking.isBluechipCollection(collection);
+    }
+
+    // Update UI
+    $('collTier').innerText = config.tier.toString();
+    $('collSupply').innerText = config.declaredMaxSupply.toString();
+    $('collRegistrant').innerText = meta.registrant;
+    $('collEscrow').innerText = ethers.utils.formatEther(meta.escrowedSurcharge) + " CATA";
+    $('collBluechip').innerText = bluechip ? "✅ Yes" : "❌ No";
+
+    $('collDetailsPanel').classList.remove("hidden");
+  } catch (e) {
+    log('handleViewCollectionDetails err', e && e.message ? e.message : e);
+    alert('View failed: ' + (e.message || e));
+  }
+}
 	  
 
 // ---------- Bluechip Actions ----------
@@ -1984,6 +2068,8 @@ function wireRegistrationUIs() {
   if ($('removeCollectionBtn')) $('removeCollectionBtn').onclick = handleRemoveCollection;
   if ($('forfeitEscrowBtn')) $('forfeitEscrowBtn').onclick = handleForfeitEscrow;
   if ($('setBluechipBtn')) $('setBluechipBtn').onclick = handleToggleBluechip;
+
+	if ($('viewCollBtn')) $('viewCollBtn').onclick = handleViewCollectionDetails;
 }
 
 // call this after your existing UI init (e.g., at end of window.load)
