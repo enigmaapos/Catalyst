@@ -1282,39 +1282,39 @@ async function harvestBluechip(){
   } 
 
 // Refresh Bluechip Info
-async function refreshBluechip() {
+async function refreshBluechip(){
   try {
-    if (!contracts.staking) {
-      await attachContractsIfSet();
-      if (!contracts.staking) {
-        return alert('Set staking contract first');
-      }
+    if(!contracts.staking){ 
+      await attachContractsIfSet(); 
+      if(!contracts.staking) return alert('Set staking contract'); 
     }
+    if(typeof contracts.staking.bluechipWallets === 'function'){
+      const me = await signer.getAddress();
 
-    const me = await signer.getAddress();
+      // 1. Enrollment status
+      const enrolled = await contracts.staking.bluechipWallets(
+        ethers.constants.AddressZero,
+        me
+      );
+      $('bluechipStatus').innerText = enrolled ? '✅ Enrolled' : '❌ Not Enrolled';
 
-    // 1. Enrollment status
-    const enrolled = await contracts.staking.bluechipWallets(
-      ethers.constants.AddressZero,
-      me
-    );
-    $('bluechipStatus').innerText = enrolled ? '✅ Enrolled' : '❌ Not Enrolled';
+      // 2. Last harvest block
+      const lastBlock = await contracts.staking.bluechipLastHarvestBlock(
+        ethers.constants.AddressZero,
+        me
+      );
+      $('bluechipLastBlock').innerText =
+        lastBlock.toString() !== '0' ? lastBlock.toString() : '—';
 
-    // 2. Last harvest block
-    const lastBlock = await contracts.staking.bluechipLastHarvestBlock(
-      ethers.constants.AddressZero,
-      me
-    );
-    $('bluechipLastBlock').innerText =
-      lastBlock.toString() !== '0' ? lastBlock.toString() : '—';
+      // 3. Enrollment fee
+      const fee = await contracts.staking.bluechipWalletFee();
+      $('bluechipFee').innerText = `${fee.toString()} CATA`;
 
-    // 3. Enrollment fee
-    const fee = await contracts.staking.bluechipWalletFee();
-    $('bluechipFee').innerText = `${fee.toString()} CATA`;
-  } catch (e) {
-    log('refreshBluechip err', e);
-    alert(e.message || e);
-  }
+      log('refreshBluechip done');
+    } else {
+      alert('bluechipWallets not found in ABI');
+    }
+  } catch(e){ log('refreshBluechip err', e && e.message ? e.message : e); }
 }
 
 	  
