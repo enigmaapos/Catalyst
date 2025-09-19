@@ -259,6 +259,46 @@
           </select>
           <button id="adminSetConfigBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded text-sm">Set Collection Config (admin)</button>
         </div>
+
+		  <div class="mt-6 bg-slate-800/50 rounded-2xl shadow-lg p-4 border border-white/10">
+  <h4 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+    ⚙️ Admin: Manage Registered Collections
+  </h4>
+
+  <!-- Input -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <input 
+      id="manageCollAddr" 
+      placeholder="Enter collection address" 
+      class="p-3 rounded-lg bg-slate-900/60 border border-slate-700/40 text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
+    />
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+    <button 
+      id="removeCollectionBtn" 
+      class="p-3 rounded-lg bg-red-600 hover:bg-red-700 transition text-sm font-medium shadow-md">
+      🗑 Remove Collection
+    </button>
+    <button 
+      id="forfeitEscrowBtn" 
+      class="p-3 rounded-lg bg-amber-500 hover:bg-amber-600 transition text-sm font-medium text-black shadow-md">
+      ⏳ Forfeit Escrow
+    </button>
+    <button 
+      id="setBluechipBtn" 
+      class="p-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition text-sm font-medium shadow-md">
+      💎 Toggle Bluechip
+    </button>
+  </div>
+
+  <!-- Hint -->
+  <p class="mt-3 text-xs text-slate-400">
+    * These actions require <span class="font-semibold text-amber-300">admin privileges</span>. 
+    Make sure your connected wallet has the proper role.
+  </p>
+</div>
       </div>
     </section>
 
@@ -1090,6 +1130,85 @@ async function handleAdminSetCollectionConfig() {
   }
 }
 
+	  /********************************************************************
+ * Extra Collection Management (Admin)
+ ********************************************************************/
+
+/** Admin: removeCollection(collection) */
+async function handleRemoveCollection() {
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    if (!contracts.staking || typeof contracts.staking.removeCollection !== 'function') {
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.removeCollection !== 'function') {
+        return alert('staking contract ABI missing removeCollection or not attached');
+      }
+    }
+    const collection = $('manageCollAddr').value.trim();
+    if (!collection) return alert('collection required');
+    const tx = await contracts.staking.removeCollection(collection);
+    log('removeCollection tx', tx.hash);
+    await tx.wait();
+    log('Collection removed:', collection);
+  } catch (e) {
+    log('handleRemoveCollection err', e && e.message ? e.message : e);
+    alert('Remove failed: ' + (e.message || e));
+  }
+}
+
+/** Admin: forfeitEscrowIfExpired(collection) */
+async function handleForfeitEscrow() {
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    if (!contracts.staking || typeof contracts.staking.forfeitEscrowIfExpired !== 'function') {
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.forfeitEscrowIfExpired !== 'function') {
+        return alert('staking contract ABI missing forfeitEscrowIfExpired or not attached');
+      }
+    }
+    const collection = $('manageCollAddr').value.trim();
+    if (!collection) return alert('collection required');
+    const tx = await contracts.staking.forfeitEscrowIfExpired(collection);
+    log('forfeitEscrowIfExpired tx', tx.hash);
+    await tx.wait();
+    log('Escrow forfeited for:', collection);
+  } catch (e) {
+    log('handleForfeitEscrow err', e && e.message ? e.message : e);
+    alert('Forfeit failed: ' + (e.message || e));
+  }
+}
+
+/** Admin: setBluechipCollection(collection, bool) */
+async function handleToggleBluechip() {
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    if (!contracts.staking || typeof contracts.staking.setBluechipCollection !== 'function') {
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.setBluechipCollection !== 'function') {
+        return alert('staking contract ABI missing setBluechipCollection or not attached');
+      }
+    }
+    const collection = $('manageCollAddr').value.trim();
+    if (!collection) return alert('collection required');
+
+    // Check current status if function available
+    let newStatus = true;
+    if (typeof contracts.staking.isBluechipCollection === 'function') {
+      const current = await contracts.staking.isBluechipCollection(collection);
+      newStatus = !current;
+    }
+
+    const tx = await contracts.staking.setBluechipCollection(collection, newStatus);
+    log('setBluechipCollection tx', tx.hash);
+    await tx.wait();
+    log('Bluechip status updated:', collection, '=>', newStatus);
+  } catch (e) {
+    log('handleToggleBluechip err', e && e.message ? e.message : e);
+    alert('Bluechip toggle failed: ' + (e.message || e));
+  }
+}
+	  
+
 // ---------- Bluechip Actions ----------
 // Enroll as Bluechip
 $('enrollBluechipBtn').onclick = async () => {
@@ -1852,13 +1971,19 @@ async function encodeCallData() {
     $('cataBurnBtn').onclick = cataBurn;
     $('swapAdminBtn').onclick = cataSwapAdmin;
 
-	  // Register Collection 
+	// Register Collection 
 /** Wire handlers to new UI elements — call this inside your window load / UI ready handler */
 function wireRegistrationUIs() {
+  // Existing
   $('calcRegFeeBtn').onclick = handleCalcRegFee;
   $('approveRegCataBtn').onclick = handleApproveForRegistration;
   $('registerCollectionBtn').onclick = handleRegisterCollection;
   $('adminSetConfigBtn').onclick = handleAdminSetCollectionConfig;
+
+  // New admin actions (safe checks in case button missing in DOM)
+  if ($('removeCollectionBtn')) $('removeCollectionBtn').onclick = handleRemoveCollection;
+  if ($('forfeitEscrowBtn')) $('forfeitEscrowBtn').onclick = handleForfeitEscrow;
+  if ($('setBluechipBtn')) $('setBluechipBtn').onclick = handleToggleBluechip;
 }
 
 // call this after your existing UI init (e.g., at end of window.load)
