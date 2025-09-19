@@ -472,76 +472,77 @@
     Create proposals, vote, execute them, and monitor governance activity.
   </p>
 
-<!-- Proposal Creator -->
-<div class="glass p-4 rounded-lg space-y-3">
-  <h3 class="font-semibold">Create Proposal</h3>
+  <!-- Proposal Creator -->
+  <div class="glass p-4 rounded-lg space-y-3">
+    <h3 class="font-semibold">Create Proposal</h3>
 
-  <!-- Proposal type -->
-  <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
-    <optgroup label="📊 Protocol Parameters">
-      <option value="BASE_REWARD">Base Reward</option>
-      <option value="HARVEST_FEE">Harvest Fee</option>
-      <option value="UNSTAKE_FEE">Unstake Fee</option>
-      <option value="REGISTRATION_FEE_FALLBACK">Registration Fee Fallback</option>
-      <option value="VOTING_PARAM">Voting Parameter</option>
-      <option value="TIER_UPGRADE">Tier Upgrade</option>
-    </optgroup>
+    <!-- Proposal type -->
+    <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
+      <optgroup label="📊 Protocol Parameters">
+        <option value="BASE_REWARD">Base Reward</option>
+        <option value="HARVEST_FEE">Harvest Fee</option>
+        <option value="UNSTAKE_FEE">Unstake Fee</option>
+        <option value="REGISTRATION_FEE_FALLBACK">Registration Fee Fallback</option>
+        <option value="VOTING_PARAM">Voting Parameter</option>
+        <option value="TIER_UPGRADE">Tier Upgrade</option>
+      </optgroup>
 
-    <optgroup label="🛡 Guardian Council Ops">
-      <option value="COUNCIL_RESEED_ACTIVE">Reseed Guardians (Active)</option>
-      <option value="COUNCIL_PROPOSE_STANDBY">Propose Guardians (Standby)</option>
-      <option value="COUNCIL_COMMIT_STANDBY">Commit Guardians (Standby)</option>
-      <option value="COUNCIL_ACTIVATE_STANDBY">Activate Guardians (Standby)</option>
-      <option value="COUNCIL_PROPOSE_NEW_DAO">Propose New DAO</option>
-      <option value="COUNCIL_COMMIT_NEW_DAO">Commit New DAO</option>
-      <option value="COUNCIL_CLEAR_LOCK">Clear Lock/Warning</option>
-      <option value="UPGRADE_COUNCIL">Upgrade Council Implementation</option>
-    </optgroup>
-  </select>
-
-  <!-- Generic proposal fields -->
-  <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
-  <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
-  <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
-
-  <!-- Tier Upgrade fields -->
-  <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
-    <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
-      <option value="0">UNVERIFIED (0)</option>
-      <option value="1">VERIFIED (1)</option>
-      <option value="2">BLUECHIP (2)</option>
+      <optgroup label="🛡 Guardian Council Ops">
+        <option value="COUNCIL_RESEED_ACTIVE">Reseed Guardians (Active)</option>
+        <option value="COUNCIL_PROPOSE_STANDBY">Propose Guardians (Standby)</option>
+        <option value="COUNCIL_COMMIT_STANDBY">Commit Guardians (Standby)</option>
+        <option value="COUNCIL_ACTIVATE_STANDBY">Activate Guardians (Standby)</option>
+        <option value="COUNCIL_PROPOSE_NEW_DAO">Propose New DAO</option>
+        <option value="COUNCIL_COMMIT_NEW_DAO">Commit New DAO</option>
+        <option value="COUNCIL_CLEAR_LOCK">Clear Lock/Warning</option>
+        <option value="UPGRADE_COUNCIL">Upgrade Council Implementation</option>
+      </optgroup>
     </select>
-    <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
-    <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
-  </div>
 
-  <!-- Council batch reseed fields -->
-  <div id="councilBatchRow" class="hidden space-y-2">
-    <p class="text-xs text-slate-400">Enter 7 guardian addresses for new batch:</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7" />
+	  <!-- single create button -->
+    <button id="createProposalBtn" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
+  </div> <!-- end Proposal Creator card -->
+
+    <!-- Generic proposal fields (must be inside the card) -->
+    <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
+
+    <!-- Tier Upgrade fields -->
+    <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
+      <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
+        <option value="0">UNVERIFIED (0)</option>
+        <option value="1">VERIFIED (1)</option>
+        <option value="2">BLUECHIP (2)</option>
+      </select>
+      <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
+      <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
     </div>
-  </div>
 
-  <!-- Propose new DAO -->
-  <div id="newDaoRow" class="hidden">
-    <input id="newDaoAddr" placeholder="New DAO address" class="w-full p-2 rounded bg-black/20 text-sm" />
-  </div>
+    <!-- Council batch reseed fields -->
+    <div id="councilBatchRow" class="hidden space-y-2">
+      <p class="text-xs text-slate-400">Enter 7 guardian addresses for new batch:</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7" />
+      </div>
+    </div> <!-- <-- important: close councilBatchRow here -->
 
-  <!-- Upgrade council -->
-  <div id="upgradeCouncilRow" class="hidden">
-    <input id="newCouncilImpl" placeholder="New council implementation address" class="w-full p-2 rounded bg-black/20 text-sm" />
-  </div>
+    <!-- Propose new DAO -->
+    <div id="newDaoRow" class="hidden">
+      <input id="newDaoAddr" placeholder="New DAO address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    </div>
 
-  <button id="createProposalBtn" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
-</div>
-	
+    <!-- Upgrade council -->
+    <div id="upgradeCouncilRow" class="hidden">
+      <input id="newCouncilImpl" placeholder="New council implementation address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    </div>
+
   <!-- Voting / Execution -->
   <div class="glass p-4 rounded-lg space-y-3 mt-4">
     <h3 class="font-semibold">Vote & Execute</h3>
@@ -976,11 +977,6 @@
       log('cata.swapAdmin completed');
     } catch(e){ log('cataSwapAdmin err', e && e.message ? e.message : e); }
   }
-	 
-	  // CATA
-    $('cataMintBtn').onclick = cataMint;
-    $('cataBurnBtn').onclick = cataBurn;
-    $('swapAdminBtn').onclick = cataSwapAdmin;
 
 /********************************************************************
  * Collection Registration logic
@@ -1249,24 +1245,6 @@ async function handleToggleBluechip() {
     alert('Bluechip toggle failed: ' + (e.message || e));
   }
 }
-
-	  	// Register Collection 
-/** Wire handlers to new UI elements — call this inside your window load / UI ready handler */
-function wireRegistrationUIs() {
-  // Existing
-  $('calcRegFeeBtn').onclick = handleCalcRegFee;
-  $('approveRegCataBtn').onclick = handleApproveForRegistration;
-  $('registerCollectionBtn').onclick = handleRegisterCollection;
-  $('adminSetConfigBtn').onclick = handleAdminSetCollectionConfig;
-
-  // New admin actions (safe checks in case button missing in DOM)
-  if ($('removeCollectionBtn')) $('removeCollectionBtn').onclick = handleRemoveCollection;
-  if ($('forfeitEscrowBtn')) $('forfeitEscrowBtn').onclick = handleForfeitEscrow;
-  if ($('setBluechipBtn')) $('setBluechipBtn').onclick = handleToggleBluechip;
-}
-
-// call this after your existing UI init (e.g., at end of window.load)
-wireRegistrationUIs();
 	  
 
 // ---------- Bluechip Actions ----------
@@ -1333,10 +1311,6 @@ $('refreshBluechipBtn').onclick = async () => {
     alert("Error loading Bluechip info: " + (e.message || e));
   }
 };
-	  // ---------- Bluechip Binds ----------
-$('enrollBluechipBtn').onclick = enrollBluechip;
-$('harvestBluechipBtn').onclick = harvestBluechip;
-$('refreshBluechipBtn').onclick = refreshBluechipInfo;
 	  
   // ---------- NFT approval ----------
   async function approveNFT(){
@@ -1413,24 +1387,6 @@ $('refreshBluechipBtn').onclick = refreshBluechipInfo;
       alert('No public harvest function found in staking ABI — rewards are minted on unstake or via contract-internal logic.');
     } catch(e){ log('harvest err', e && e.message ? e.message : e); }
   }
-	 // Staking single
-    $('approveNFTBtn').onclick = approveNFT;
-    $('termStakeBtn').onclick = termStake;
-    $('permApproveFeeBtn').onclick = async ()=>{ // approve CATA tokens for fees if CATA ABI exists
-      try {
-        if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract'); }
-        const stakingAddr = $('addrStaking').value.trim();
-        if(!stakingAddr) return alert('staking address required');
-        const amt = ethers.constants.MaxUint256;
-        const tx = await contracts.cata.approve(stakingAddr, amt);
-        log('approve CATA tx', tx.hash);
-        await tx.wait();
-        log('approve CATA done');
-      } catch(e){ log('permApproveFee err', e && e.message ? e.message : e); }
-    };
-    $('permStakeBtn').onclick = permanentStake;
-    $('unstakeBtn').onclick = unstake;
-    $('harvestBtn').onclick = harvest; 
 
   // ---------- Batch helpers ----------
   function parseBatchPairs(){
@@ -1641,20 +1597,10 @@ async function batchHarvest() {
     log('batchHarvest err', err && err.message ? err.message : err);
   }
 }
-	  // Batch
-    $('batchTermStakeBtn').onclick = batchTermStake;
-    $('batchPermStakeBtn').onclick = batchPermStake;
-    $('batchUnstakeBtn').onclick = batchUnstake;
-	$('batchHarvestBtn').onclick = batchHarvest;
 
-	 // Extra staking binds
-$('pendingRewardsBtn').onclick = checkPendingRewards;
-$('refreshStakingStatsBtn').onclick = refreshStakingStats;
-$('viewPortfolioBtn').onclick = viewPortfolio;
- 
+    // ---------- Governance Section ----------
+function $(id) { return document.getElementById(id); }
 
-
-	  // ---------- Governance Section ----------
 const PROPOSAL_MAPPING = {
   BASE_REWARD: 0,
   HARVEST_FEE: 1,
@@ -1662,7 +1608,6 @@ const PROPOSAL_MAPPING = {
   REGISTRATION_FEE_FALLBACK: 3,
   VOTING_PARAM: 4,
   TIER_UPGRADE: 5,
-
   COUNCIL_RESEED_ACTIVE: 6,
   COUNCIL_PROPOSE_STANDBY: 7,
   COUNCIL_COMMIT_STANDBY: 8,
@@ -1673,17 +1618,14 @@ const PROPOSAL_MAPPING = {
   UPGRADE_COUNCIL: 13
 };
 
-// Toggle TierUpgrade fields
-	  $('proposalType').addEventListener('change', () => {
+// Toggle extra input fields when proposal type changes
+$('proposalType').addEventListener('change', () => {
   const type = $('proposalType').value;
-
-  // hide all extras
   $('tierUpgradeRow').classList.add('hidden');
   $('councilBatchRow').classList.add('hidden');
   $('newDaoRow').classList.add('hidden');
   $('upgradeCouncilRow').classList.add('hidden');
 
-  // show only relevant
   if (type === 'TIER_UPGRADE') {
     $('tierUpgradeRow').classList.remove('hidden');
   } else if (type === 'COUNCIL_RESEED_ACTIVE' || type === 'COUNCIL_PROPOSE_STANDBY') {
@@ -1696,11 +1638,11 @@ const PROPOSAL_MAPPING = {
 });
 
 // Create Proposal
-async function createProposal(){
+async function createProposal() {
   try {
-    if(!contracts.governance){
+    if (!contracts.governance) {
       await attachContractsIfSet();
-      if(!contracts.governance) return alert('Governance not set');
+      if (!contracts.governance) return alert('Governance not set');
     }
 
     const typeStr = $('proposalType').value;
@@ -1711,91 +1653,94 @@ async function createProposal(){
     let newValue = ethers.BigNumber.from(newValueRaw);
     let ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
 
-    // ────────────── Tier Upgrade ──────────────
-    if(typeStr === 'TIER_UPGRADE'){
+    if (typeStr === 'TIER_UPGRADE') {
       ctx = $('tierCollection').value.trim();
       paramTarget = parseInt($('tierTo').value);
       newValue = ethers.BigNumber.from($('tierDeclaredSupply').value || '0');
-    }
-
-    // ────────────── Council Reseed / Propose Standby ──────────────
-    else if(typeStr === 'COUNCIL_RESEED_ACTIVE' || typeStr === 'COUNCIL_PROPOSE_STANDBY'){
+    } else if (typeStr === 'COUNCIL_RESEED_ACTIVE' || typeStr === 'COUNCIL_PROPOSE_STANDBY') {
       const addrs = Array.from(document.querySelectorAll('.councilAddr')).map(el => el.value.trim());
       if (addrs.length !== 7 || addrs.some(a => !a)) return alert('Must provide 7 guardian addresses');
-
       const payload = await contracts.governance.encodeCouncilBatch(addrs);
-      ctx = payload;                 // payload holds encoded guardian batch
+      ctx = payload;
       newValue = 0;
       paramTarget = 0;
-    }
-
-    // ────────────── Council Propose New DAO ──────────────
-    else if(typeStr === 'COUNCIL_PROPOSE_NEW_DAO'){
+    } else if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
       ctx = $('newDaoAddr').value.trim();
-    }
-
-    // ────────────── Upgrade Council ──────────────
-    else if(typeStr === 'UPGRADE_COUNCIL'){
+    } else if (typeStr === 'UPGRADE_COUNCIL') {
       ctx = $('newCouncilImpl').value.trim();
     }
 
-    // Send tx
     const tx = await contracts.governance.propose(pType, paramTarget, newValue, ctx);
     log('propose tx', tx.hash);
     await tx.wait();
     log('proposal created');
-  } catch(e){
+  } catch (e) {
     log('createProposal err', e.message || e);
   }
 }
-	  
+
 // Vote
-async function voteProposal(){
+async function voteProposal() {
   try {
-    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
+    if (!contracts.governance) {
+      await attachContractsIfSet();
+      if (!contracts.governance) return alert('Governance not set');
+    }
     const id = $('proposalId').value.trim();
-    if(!id) return alert('Proposal ID required');
+    if (!id) return alert('Proposal ID required');
     const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
     const tx = await contracts.governance.vote(id, ctx);
     log('vote tx', tx.hash);
     await tx.wait();
     log('voted');
-  } catch(e){ log('voteProposal err', e.message || e); }
+  } catch (e) {
+    log('voteProposal err', e.message || e);
+  }
 }
 
 // Execute
-async function execProposal(){
+async function execProposal() {
   try {
-    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
+    if (!contracts.governance) {
+      await attachContractsIfSet();
+      if (!contracts.governance) return alert('Governance not set');
+    }
     const id = $('proposalId').value.trim();
-    if(!id) return alert('Proposal ID required');
+    if (!id) return alert('Proposal ID required');
     const tx = await contracts.governance.executeProposal(id);
     log('exec tx', tx.hash);
     await tx.wait();
     log('executed');
-  } catch(e){ log('execProposal err', e.message || e); }
+  } catch (e) {
+    log('execProposal err', e.message || e);
+  }
 }
 
 // Fetch Proposal Details
-async function fetchProposal(){
+async function fetchProposal() {
   try {
-    if(!contracts.governance){ await attachContractsIfSet(); if(!contracts.governance) return alert('Governance not set'); }
+    if (!contracts.governance) {
+      await attachContractsIfSet();
+      if (!contracts.governance) return alert('Governance not set');
+    }
     const id = $('proposalId').value.trim();
-    if(!id) return alert('Proposal ID required');
+    if (!id) return alert('Proposal ID required');
     let info = null;
-    try { info = await contracts.governance.proposals(id); } catch(e){ /* ignore */ }
-    try { if(!info) info = await contracts.governance.proposalPayloads(id); } catch(e){}
+    try { info = await contracts.governance.proposals(id); } catch (e) { /* ignore */ }
+    try { if (!info) info = await contracts.governance.proposalPayloads(id); } catch (e) {}
     log('proposal fetch', info || 'no data');
-  } catch(e){ log('fetchProposal err', e.message || e); }
+  } catch (e) {
+    log('fetchProposal err', e.message || e);
+  }
 }
 
 // ---------- Proposal Explorer ----------
 const proposalsMap = {};
 
-function renderProposalsTable(){
+function renderProposalsTable() {
   const tbody = $('proposalsTbody');
   tbody.innerHTML = '';
-  Object.values(proposalsMap).forEach(p=>{
+  Object.values(proposalsMap).forEach(p => {
     const tr = document.createElement('tr');
     tr.className = 'border-t border-slate-700';
     tr.innerHTML = `
@@ -1805,7 +1750,7 @@ function renderProposalsTable(){
       <td class="p-2">${p.ctx}</td>
       <td class="p-2">${p.proposer || '-'}</td>
       <td class="p-2">${p.votes || 0}</td>
-      <td class="p-2">${p.executed ? 'Yes':'No'}</td>
+      <td class="p-2">${p.executed ? 'Yes' : 'No'}</td>
       <td class="p-2">
         <button class="p-1 bg-slate-600 rounded text-xs" onclick="$('proposalId').value='${p.id}'">Load</button>
       </td>`;
@@ -1814,43 +1759,36 @@ function renderProposalsTable(){
 }
 
 // Governance Event Listeners
-function startGovernanceListeners(){
-  if(!contracts.governance) return;
+function startGovernanceListeners() {
+  if (!contracts.governance) return;
   const g = contracts.governance;
 
-  g.on("ProposalCreated", (id, proposer, pType, evt) => {
+  g.on("ProposalCreated", (id, proposer, pType) => {
     const pid = id.toString();
-    proposalsMap[pid] = {id: pid, proposer, type:pType.toString(), value:'—', ctx:'—', votes:0, executed:false};
+    proposalsMap[pid] = { id: pid, proposer, type: pType.toString(), value: '—', ctx: '—', votes: 0, executed: false };
     renderProposalsTable();
   });
 
-  g.on("VoteCast", (voter, id, support, votes, evt) => {
+  g.on("VoteCast", (voter, id, support, votes) => {
     const pid = id.toString();
-    proposalsMap[pid] = proposalsMap[pid] || {id:pid};
-    proposalsMap[pid].votes = (proposalsMap[pid].votes||0) + parseInt(votes.toString());
+    proposalsMap[pid] = proposalsMap[pid] || { id: pid };
+    proposalsMap[pid].votes = (proposalsMap[pid].votes || 0) + parseInt(votes.toString());
     renderProposalsTable();
   });
 
-  g.on("ProposalExecuted", (id, evt) => {
+  g.on("ProposalExecuted", (id) => {
     const pid = id.toString();
-    proposalsMap[pid] = proposalsMap[pid] || {id:pid};
+    proposalsMap[pid] = proposalsMap[pid] || { id: pid };
     proposalsMap[pid].executed = true;
     renderProposalsTable();
   });
 }
 
-// Start event listeners once contracts are attached
-(async function(){
+// Start event listeners once contracts are attached + bind buttons
+window.addEventListener('DOMContentLoaded', async () => {
   await attachContractsIfSet();
   startGovernanceListeners();
-	
-	    // Governance
-$('createProposalBtn').onclick = createProposal;
-$('voteProposalBtn').onclick = voteProposal;
-$('execProposalBtn').onclick = execProposal;
-$('fetchProposalBtn').onclick = fetchProposal;
-})();
-
+});
    
 	  // Guardian Council contract functions
 // ---------- DAO ----------
@@ -2089,25 +2027,6 @@ async function encodeCallData() {
     alert("Error encoding callData: " + (e.message || e));
   }
 }
-	   // DRS Guardian Council 
-// ---------- Bind Buttons ----------
-$('proposeDaoBtn').onclick = proposeDao;
-$('commitDaoBtn').onclick = commitDao;
-$('proposeActiveBatchBtn').onclick = proposeActiveBatch;
-$('commitActiveBatchBtn').onclick = commitActiveBatch;
-$('proposeStandbyBatchBtn').onclick = proposeStandbyBatch;
-$('commitStandbyBatchBtn').onclick = commitStandbyBatch;
-$('activateStandbyBtn').onclick = activateStandby;
-$('clearLockBtn').onclick = clearLock;
-
-$('proposeRecoveryBtn').onclick = proposeRecovery;
-$('approveRecoveryBtn').onclick = approveRecovery;
-$('executeRecoveryBtn').onclick = executeRecovery;
-$('vetoRecoveryBtn').onclick = vetoRecovery;
-$('refreshRecoveryBtn').onclick = refreshRecoveryInfo;
-  
-$('encodeCallDataBtn').onclick = encodeCallData;
-	   
 
 	  
   // ---------- Bind UI on load ----------
@@ -2133,7 +2052,89 @@ $('encodeCallDataBtn').onclick = encodeCallData;
     };
     $('loadAddrs').onclick = ()=>{ loadSavedAddrs(); if(signer) attachContractsIfSet(); };
 		
+    // CATA
+    $('cataMintBtn').onclick = cataMint;
+    $('cataBurnBtn').onclick = cataBurn;
+    $('swapAdminBtn').onclick = cataSwapAdmin;
 
+	// Register Collection 
+/** Wire handlers to new UI elements — call this inside your window load / UI ready handler */
+function wireRegistrationUIs() {
+  // Existing
+  $('calcRegFeeBtn').onclick = handleCalcRegFee;
+  $('approveRegCataBtn').onclick = handleApproveForRegistration;
+  $('registerCollectionBtn').onclick = handleRegisterCollection;
+  $('adminSetConfigBtn').onclick = handleAdminSetCollectionConfig;
+
+  // New admin actions (safe checks in case button missing in DOM)
+  if ($('removeCollectionBtn')) $('removeCollectionBtn').onclick = handleRemoveCollection;
+  if ($('forfeitEscrowBtn')) $('forfeitEscrowBtn').onclick = handleForfeitEscrow;
+  if ($('setBluechipBtn')) $('setBluechipBtn').onclick = handleToggleBluechip;
+}
+
+// call this after your existing UI init (e.g., at end of window.load)
+wireRegistrationUIs();
+
+// ---------- Bluechip Binds ----------
+$('enrollBluechipBtn').onclick = enrollBluechip;
+$('harvestBluechipBtn').onclick = harvestBluechip;
+$('refreshBluechipBtn').onclick = refreshBluechipInfo;
+	  
+    // Staking single
+    $('approveNFTBtn').onclick = approveNFT;
+    $('termStakeBtn').onclick = termStake;
+    $('permApproveFeeBtn').onclick = async ()=>{ // approve CATA tokens for fees if CATA ABI exists
+      try {
+        if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract'); }
+        const stakingAddr = $('addrStaking').value.trim();
+        if(!stakingAddr) return alert('staking address required');
+        const amt = ethers.constants.MaxUint256;
+        const tx = await contracts.cata.approve(stakingAddr, amt);
+        log('approve CATA tx', tx.hash);
+        await tx.wait();
+        log('approve CATA done');
+      } catch(e){ log('permApproveFee err', e && e.message ? e.message : e); }
+    };
+    $('permStakeBtn').onclick = permanentStake;
+    $('unstakeBtn').onclick = unstake;
+    $('harvestBtn').onclick = harvest;
+
+    // Batch
+    $('batchTermStakeBtn').onclick = batchTermStake;
+    $('batchPermStakeBtn').onclick = batchPermStake;
+    $('batchUnstakeBtn').onclick = batchUnstake;
+$('batchHarvestBtn').onclick = batchHarvest;
+
+	  // Extra staking binds
+$('pendingRewardsBtn').onclick = checkPendingRewards;
+$('refreshStakingStatsBtn').onclick = refreshStakingStats;
+$('viewPortfolioBtn').onclick = viewPortfolio;
+
+    // Governance
+  $('createProposalBtn').onclick = createProposal;
+  $('voteProposalBtn').onclick = voteProposal;
+  $('execProposalBtn').onclick = execProposal;
+  $('fetchProposalBtn').onclick = fetchProposal;
+
+	  // DRS Guardian Council 
+// ---------- Bind Buttons ----------
+$('proposeDaoBtn').onclick = proposeDao;
+$('commitDaoBtn').onclick = commitDao;
+$('proposeActiveBatchBtn').onclick = proposeActiveBatch;
+$('commitActiveBatchBtn').onclick = commitActiveBatch;
+$('proposeStandbyBatchBtn').onclick = proposeStandbyBatch;
+$('commitStandbyBatchBtn').onclick = commitStandbyBatch;
+$('activateStandbyBtn').onclick = activateStandby;
+$('clearLockBtn').onclick = clearLock;
+
+$('proposeRecoveryBtn').onclick = proposeRecovery;
+$('approveRecoveryBtn').onclick = approveRecovery;
+$('executeRecoveryBtn').onclick = executeRecovery;
+$('vetoRecoveryBtn').onclick = vetoRecovery;
+$('refreshRecoveryBtn').onclick = refreshRecoveryInfo;
+  
+$('encodeCallDataBtn').onclick = encodeCallData;
+	  
     log('UI ready');
   });
 
