@@ -1311,14 +1311,12 @@ async function refreshBluechip() {
       alert("bluechipWallets not found in ABI");
     }
   } catch (e) {
-    log(
-      "refreshBluechip err",
-      e && e.message ? e.message : e
-    );
+    log("refreshBluechip err", e && e.message ? e.message : e);
     alert("❌ Error refreshing Bluechip status: " + (e.message || e));
   }
 }
 
+// ✅ attach event listener properly
 document.getElementById("refreshBluechipBtn").onclick = refreshBluechip;
 
     // 2. Enrollment fee
