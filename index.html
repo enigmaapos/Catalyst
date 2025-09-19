@@ -1489,18 +1489,33 @@ function parseBatchHarvestPairs() {
   }).filter(Boolean);
 }
 
-	  $('pendingRewardsBtn').onclick = async () => {
+// Check Pending Rewards
+async function checkPendingRewards(){
   try {
     const collection = $('nftCollection').value.trim();
-    const tokenId = $('nftTokenId').value.trim();
-    const account = await getAccount();
+    const tokenId = parseInt($('nftTokenId').value.trim(), 10);
+    if(!collection) return alert('Enter a collection address');
+    if(isNaN(tokenId)) return alert('Enter a valid token ID');
 
-    const rewards = await contracts.staking.pendingRewards(collection, account, tokenId);
-    $('pendingRewardsResult').innerText = `${rewards.toString()} CATA`;
-  } catch (e) {
-    alert("Error checking rewards: " + (e.message || e));
+    if(!contracts.staking){ 
+      await attachContractsIfSet(); 
+      if(!contracts.staking) return alert('Set staking contract'); 
+    }
+
+    if(typeof contracts.staking.pendingRewards === 'function'){
+      const account = await getAccount();
+      const rewards = await contracts.staking.pendingRewards(collection, account, tokenId);
+      $('pendingRewardsResult').innerText = `${rewards.toString()} CATA`;
+      log('checkPendingRewards done');
+    } else {
+      alert('pendingRewards not found in ABI');
+    }
+  } catch(e){ 
+    log('checkPendingRewards err', e && e.message ? e.message : e); 
+    alert(e.message || e);
   }
-};
+}
+
 
 	  $('refreshStakingStatsBtn').onclick = async () => {
   try {
@@ -2107,7 +2122,7 @@ $('refreshBluechipBtn').onclick = refreshBluechip;
 $('batchHarvestBtn').onclick = batchHarvest;
 
 	  // Extra staking binds
-$('pendingRewardsBtn').onclick = pendingRewards;
+$('pendingRewardsBtn').onclick = checkPendingRewards;
 $('refreshStakingStatsBtn').onclick = refreshStakingStats;
 $('viewPortfolioBtn').onclick = viewPortfolio;
 
