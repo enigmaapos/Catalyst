@@ -1287,16 +1287,39 @@ async function harvestBluechip(){
   } 
 
 // Refresh Bluechip Info
-$('refreshBluechipBtn').onclick = async () => {
+async function refreshBluechip() {
   try {
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) {
+        return alert("Set staking contract");
+      }
+    }
+
     const me = await signer.getAddress();
 
-    // 1. Enrollment status
-    const enrolled = await contracts.staking.bluechipWallets(
-      ethers.constants.AddressZero,
-      me
+    if (typeof contracts.staking.bluechipWallets === "function") {
+      const enrolled = await contracts.staking.bluechipWallets(
+        ethers.constants.AddressZero,
+        me
+      );
+
+      document.getElementById("bluechipStatus").innerText = enrolled
+        ? "✅ Enrolled"
+        : "❌ Not Enrolled";
+    } else {
+      alert("bluechipWallets not found in ABI");
+    }
+  } catch (e) {
+    log(
+      "refreshBluechip err",
+      e && e.message ? e.message : e
     );
-    $('bluechipStatus').innerText = enrolled ? "✅ Enrolled" : "❌ Not Enrolled";
+    alert("❌ Error refreshing Bluechip status: " + (e.message || e));
+  }
+}
+
+document.getElementById("refreshBluechipBtn").onclick = refreshBluechip;
 
     // 2. Enrollment fee
     const fee = await contracts.staking.bluechipWalletFee();
