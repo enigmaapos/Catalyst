@@ -651,40 +651,44 @@
 
 	<hr class="border-slate-700 my-3" />
 
-<div>
-  <h3>DAO</h3>
-  <div>Current DAO: <span id="daoAddr"></span></div>
-</div>
+  <!-- DAO -->
+  <div class="glass" style="padding:1rem; border-radius:12px; margin-bottom:1rem;">
+    <h3 style="margin-top:0; margin-bottom:0.5rem;">DAO</h3>
+    <div>Current DAO: <span id="daoAddr"></span></div>
+  </div>
 
-<div>
-  <h3>Guardians</h3>
-  <div>Active Guardians:<br><pre id="activeGuardians"></pre></div>
-  <div>Standby Guardians:<br><pre id="standbyGuardians"></pre></div>
-</div>
+  <!-- Guardians -->
+  <div class="glass" style="padding:1rem; border-radius:12px; margin-bottom:1rem;">
+    <h3 style="margin-top:0; margin-bottom:0.5rem;">Guardians</h3>
+    <div>Active Guardians:<br><pre id="activeGuardians"></pre></div>
+    <div>Standby Guardians:<br><pre id="standbyGuardians"></pre></div>
+  </div>
 
-<div>
-  <h3>Recovery State</h3>
-  <div>Nonce: <span id="riNonce"></span></div>
-  <div>Proposed: <span id="riProposed"></span></div>
-  <div>Approvals: <span id="riApprovals"></span></div>
-  <div>Deadline: <span id="riDeadline"></span></div>
-  <div>Executed: <span id="riExecuted"></span></div>
-  <div>Call Target: <span id="riCallTarget"></span></div>
-  <div>Call Data: <span id="riCallData"></span></div>
-  <div>Temp Veto Guardian: <span id="riGuardian"></span></div>
-  <div>Veto Expiry: <span id="riVetoExpiry"></span></div>
-  <div>Approvers:<br><pre id="riApprovers"></pre></div>
-</div>
+  <!-- Recovery -->
+  <div class="glass" style="padding:1rem; border-radius:12px; margin-bottom:1rem;">
+    <h3 style="margin-top:0; margin-bottom:0.5rem;">Recovery State</h3>
+    <div>Nonce: <span id="riNonce"></span></div>
+    <div>Proposed: <span id="riProposed"></span></div>
+    <div>Approvals: <span id="riApprovals"></span></div>
+    <div>Deadline: <span id="riDeadline"></span></div>
+    <div>Executed: <span id="riExecuted"></span></div>
+    <div>Call Target: <span id="riCallTarget"></span></div>
+    <div>Call Data: <span id="riCallData"></span></div>
+    <div>Temp Veto Guardian: <span id="riGuardian"></span></div>
+    <div>Veto Expiry: <span id="riVetoExpiry"></span></div>
+    <div>Approvers:<br><pre id="riApprovers"></pre></div>
+  </div>
 
-<div>
-  <h3>System Lock</h3>
-  <div>Status: <span id="lockStatus"></span></div>
-</div>
+  <!-- Lock -->
+  <div class="glass" style="padding:1rem; border-radius:12px; margin-bottom:1rem;">
+    <h3 style="margin-top:0; margin-bottom:0.5rem;">System Lock</h3>
+    <div>Status: <span id="lockStatus"></span></div>
+  </div>
 
-<!-- Manual refresh button -->
-<div style="margin-top:1em;">
-  <button id="refreshCouncilBtn">🔄 Refresh Council Info</button>
-</div>
+  <!-- Refresh -->
+  <div style="text-align:center; margin-top:1rem;">
+    <button id="refreshCouncilBtn" class="tabbtn glass">🔄 Refresh Council Info</button>
+  </div>
 </div>
 </section>
 
@@ -2259,14 +2263,6 @@ $('vetoRecoveryBtn').onclick = vetoRecovery;
   
 $('encodeCallDataBtn').onclick = encodeCallData;
 
-	  // ---------- Auto-refresh read-only state on page load ----------
-await fetchDaoInfo();
-await fetchGuardians();
-await fetchLockStatus();
-await fetchFullRecoveryState();
-await refreshBluechip();
-await refreshStakingStats();
-
 // Manual refresh button
 if ($('refreshCouncilBtn')) {
   $('refreshCouncilBtn').onclick = async ()=>{
@@ -2275,8 +2271,6 @@ if ($('refreshCouncilBtn')) {
     await fetchGuardians();
     await fetchLockStatus();
     await fetchFullRecoveryState();
-    await refreshBluechip();
-    await refreshStakingStats();
     log('Manual refresh complete.');
   };
 }
