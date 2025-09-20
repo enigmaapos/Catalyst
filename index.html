@@ -46,7 +46,6 @@
 </div>  
         <button id="connectBtn" class="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-400 rounded-md font-semibold text-black">Connect</button>
         <button id="disconnectBtn" class="px-4 py-2 bg-red-500 rounded-md font-semibold text-black hidden">Disconnect</button>
-		<button onclick="switchWallet()">🔄 Switch Wallet</button>
       </div>
     </header>
 	
@@ -1072,10 +1071,6 @@
     log("Disconnected");
   }
 
-	  async function switchWallet() {
-  await web3Modal.clearCachedProvider();
-  await connect(); // reopens modal
-	  }
 
   // ---------- Helpers ----------
   function $(id) { return document.getElementById(id); }
