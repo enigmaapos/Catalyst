@@ -4,6 +4,11 @@
   <title>Catalyst Protocol — DApp (Production-ready UI)</title>
   <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
   <script src="https://cdn.tailwindcss.com"></script>
+	<!-- Include Web3Modal & Ethers -->
+<script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://unpkg.com/web3modal"></script>
+<script src="https://unpkg.com/@walletconnect/web3-provider"></script>
+<script src="https://unpkg.com/@coinbase/wallet-sdk"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 	<link rel="icon" type="image/png" href="assets/logo.png">
   <style>
@@ -986,61 +991,62 @@
 }
 
 // ---------- Connect / Disconnect ----------
+let web3Modal, provider, signer, userAddr;
+
+async function init() {
+  const providerOptions = {
+    walletconnect: {
+      package: window.WalletConnectProvider.default,
+      options: {
+        infuraId: "YOUR_INFURA_ID" // or rpc URL
+      }
+    },
+    coinbasewallet: {
+      package: window.CoinbaseWalletSDK,
+      options: {
+        appName: "My dApp",
+        infuraId: "YOUR_INFURA_ID"
+      }
+    }
+  };
+
+  web3Modal = new window.Web3Modal.default({
+    cacheProvider: false,
+    providerOptions,
+  });
+}
+
 async function connect() {
   try {
-    if (!window.ethereum) return alert('No Web3 wallet (install MetaMask)');
-
-    provider = new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send('eth_requestAccounts', []);
+    const instance = await web3Modal.connect();
+    provider = new ethers.providers.Web3Provider(instance);
     signer = provider.getSigner();
     userAddr = await signer.getAddress();
 
-    // Shortened address + tooltip
-    const addrEl = $('addr');
-    addrEl.innerText = shortenAddress(userAddr);
-    addrEl.title = userAddr;
-
-    // Setup copy button
-    $('copyAddrBtn').onclick = () => {
-      navigator.clipboard.writeText(userAddr);
-      alert("✅ Address copied!");
-    };
-
-    // Network
-    const net = await provider.getNetwork();
-    $('networkText').innerText = net.name + " (" + net.chainId + ")";
-
-    // Toggle buttons
+    $('addr').innerText = shortenAddress(userAddr);
+    $('addr').title = userAddr;
     $('connectBtn').classList.add('hidden');
     $('disconnectBtn').classList.remove('hidden');
 
-    // Load contracts
-    await loadABIs();
-    await attachContractsIfSet();
-
     log("Connected", userAddr);
-  } catch (e) {
-    log("connect err", e?.message || e);
+  } catch (err) {
+    console.error("Connect error", err);
   }
 }
 
-function disconnect() {
+async function disconnect() {
+  if (web3Modal) await web3Modal.clearCachedProvider();
   provider = signer = userAddr = null;
-  contracts = { cata: null, staking: null, governance: null, council: null };
 
-  // Reset UI
-  const addrEl = $('addr');
-  addrEl.innerText = "Not connected";
-  addrEl.title = "";
-
-  $('networkText').innerText = "—";
-  $('cataBal').innerText = "—";
-
+  $('addr').innerText = "Not connected";
+  $('addr').title = "";
   $('connectBtn').classList.remove('hidden');
   $('disconnectBtn').classList.add('hidden');
 
   log("Disconnected");
 }
+
+init();
 
   // ---------- CATA functions ----------
   async function cataMint(){
