@@ -2092,6 +2092,8 @@ async function fetchDaoInfo() {
   }
 }
 
+
+
 // Guardians
 async function fetchGuardians() {
   try {
@@ -2110,6 +2112,25 @@ async function fetchGuardians() {
     $('standbyGuardians').innerText = "Error loading";
   }
 }
+
+
+
+// Lock / health
+async function fetchLockStatus() {
+  try {
+    if (!contracts.council) return alert("Council contract not set");
+
+    const locked = await contracts.council.locked();
+    $('lockStatus').innerText = locked ? "🔒 Locked" : "✅ Unlocked";
+
+    log("fetchLockStatus done ✅");
+  } catch (e) {
+    console.error("fetchLockStatus err", e);
+    $('lockStatus').innerText = "Error: " + (e.message || e);
+  }
+}
+
+
 
 // Recovery approvals (who approved)
 async function fetchRecoveryApprovals(kind) {
@@ -2138,22 +2159,8 @@ async function fetchRecoveryApprovals(kind) {
   }
 }
 
-// Lock / health
-async function fetchLockStatus() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
 
-    const locked = await contracts.council.locked();
-    $('lockStatus').innerText = locked ? "🔒 Locked" : "✅ Unlocked";
-
-    log("fetchLockStatus done ✅");
-  } catch (e) {
-    console.error("fetchLockStatus err", e);
-    $('lockStatus').innerText = "Error: " + (e.message || e);
-  }
-}
-
-// Full recovery state (extension of your refreshRecoveryInfo)
+// Full recovery state
 async function fetchFullRecoveryState() {
   try {
     if (!contracts.council) return alert("Council contract not set");
@@ -2177,7 +2184,6 @@ async function fetchFullRecoveryState() {
     $('riVetoExpiry').innerText = expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "-";
     $('riNonce').innerText = nonce.toString();
 
-    // Fetch approvers list
     await fetchRecoveryApprovals(kind);
 
     log("fetchFullRecoveryState done ✅");
@@ -2186,6 +2192,9 @@ async function fetchFullRecoveryState() {
     alert("Error loading recovery info: " + (e.message || e));
   }
 }
+
+
+
 	  
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async ()=>{
