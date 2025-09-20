@@ -2264,16 +2264,27 @@ $('vetoRecoveryBtn').onclick = vetoRecovery;
 $('encodeCallDataBtn').onclick = encodeCallData;
 
 // Manual refresh button
-if ($('refreshCouncilBtn')) {
-  $('refreshCouncilBtn').onclick = async ()=>{
-    log('Manual refresh started...');
+$('refreshCouncilBtn').onclick = async ()=>{
+  log('Manual refresh started...');
+
+  try {
+    // make sure contracts are ready
+    if (!contracts.dao || !contracts.council) {
+      await attachContractsIfSet();
+    }
+
     await fetchDaoInfo();
     await fetchGuardians();
     await fetchLockStatus();
     await fetchFullRecoveryState();
-    log('Manual refresh complete.');
-  };
-}
+    await refreshBluechip();
+    await refreshStakingStats();
+
+    log('Manual refresh done ✅');
+  } catch (e) {
+    log('Manual refresh error', e.message || e);
+  }
+};
 
 log('UI ready');
 	  
