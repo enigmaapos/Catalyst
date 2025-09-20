@@ -21,6 +21,30 @@
         <p class="text-sm text-slate-300">Staking · Governance · Guardian Council</p>
       </div>
       <div class="flex items-center gap-3">
+		  <!-- Card -->
+<div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+  <div class="text-slate-400 text-xs">Connected</div>
+  <div class="flex items-center gap-2">
+    <!-- Shortened address -->
+    <span id="addr" 
+          class="font-semibold text-slate-200 cursor-pointer" 
+          title="Not connected">
+      Not connected
+    </span>
+    <!-- Copy button -->
+    <button id="copyAddrBtn" 
+            class="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 rounded">
+      📋
+    </button>
+  </div>
+</div>
+
+  <!-- Card -->
+  <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+    <div class="text-slate-400 text-xs">Network</div>
+    <div id="networkText" class="font-semibold text-slate-200">—</div>
+  </div>
+		  
         <button id="connectBtn" class="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-400 rounded-md font-semibold text-black">Connect</button>
         <button id="disconnectBtn" class="px-4 py-2 bg-red-500 rounded-md font-semibold text-black hidden">Disconnect</button>
       </div>
@@ -159,30 +183,6 @@
 <section id="quickstatus" class="tab-content hidden">
   <h2 class="font-semibold mb-3 text-lg text-slate-100">⚡ Quick Status</h2>
 <div class="grid grid-cols-2 gap-3 text-sm">
-<!-- Card -->
-<div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
-  <div class="text-slate-400 text-xs">Connected</div>
-  <div class="flex items-center gap-2">
-    <!-- Shortened address -->
-    <span id="addr" 
-          class="font-semibold text-slate-200 cursor-pointer" 
-          title="Not connected">
-      Not connected
-    </span>
-    <!-- Copy button -->
-    <button id="copyAddrBtn" 
-            class="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 rounded">
-      📋
-    </button>
-  </div>
-</div>
-
-  <!-- Card -->
-  <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
-    <div class="text-slate-400 text-xs">Network</div>
-    <div id="networkText" class="font-semibold text-slate-200">—</div>
-  </div>
-
   <!-- Card -->
   <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
     <div class="text-slate-400 text-xs">CATA Balance</div>
