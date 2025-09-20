@@ -6,7 +6,7 @@
   <title>Catalyst Protocol — DApp (Production-ready UI)</title>
   <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 	<link rel="icon" type="image/png" href="assets/logo.png">
   <style>
     body { background: linear-gradient(180deg,#041024 0%, #061426 100%); }
@@ -19,16 +19,10 @@
 <body class="min-h-screen text-white font-sans">
   <div class="max-w-6xl mx-auto p-6">
     <header class="relative flex items-center justify-between mb-6">
-  <!-- Left: Logo -->
-  <img src="assets/logo.png" alt="Catalyst Protocol Logo" class="w-10 h-10" />
-
-  <!-- Center: Title (absolute positioning) -->
   <div class="absolute left-1/2 transform -translate-x-1/2 text-center">
     <h1 class="text-2xl font-bold">Catalyst Protocol</h1>
     <p class="text-sm text-slate-300">Staking · Governance · Guardian Council</p>
   </div>
-
-  <!-- Right: Buttons -->
   <div class="flex items-center gap-3">
     <button id="connectBtn" class="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-400 rounded-md font-semibold text-black">
       Connect
