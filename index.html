@@ -989,88 +989,101 @@
 
 // ---------- Connect / Disconnect ----------
   // ---------- Globals ----------
-  let web3Modal, provider, signer, userAddr;
+let web3Modal, provider, signer, userAddr;
+let contracts = { cata:null, staking:null, governance:null, council:null };
 
-  // ---------- Init Web3Modal ----------
-  async function initWeb3Modal() {
-    const providerOptions = {
-      walletconnect: {
-        package: window.WalletConnectProvider.default,
-        options: {
-          rpc: { 1: "https://mainnet.infura.io/v3/YOUR_INFURA_ID" }
-        }
-      },
-      coinbasewallet: {
-        package: window.CoinbaseWalletSDK,
-        options: {
-          appName: "My DApp",
-          infuraId: "YOUR_INFURA_ID"
-        }
+// ---------- Init Web3Modal ----------
+async function initWeb3Modal() {
+  const providerOptions = {
+    walletconnect: {
+      package: window.WalletConnectProvider.default,
+      options: {
+        rpc: { 1: "https://mainnet.infura.io/v3/YOUR_INFURA_ID" }
+      }
+    },
+    coinbasewallet: {
+      package: window.CoinbaseWalletSDK,
+      options: {
+        appName: "My DApp",
+        infuraId: "YOUR_INFURA_ID"
+      }
+    }
+    // injected (MetaMask/Brave) is automatic
+  };
+
+  web3Modal = new window.Web3Modal.default({
+    cacheProvider: false, // 🔑 always show modal
+    providerOptions
+  });
+}
+
+// ---------- Connect ----------
+async function connect() {
+  try {
+    const instance = await web3Modal.connect();
+    provider = new ethers.providers.Web3Provider(instance);
+    signer = provider.getSigner();
+    userAddr = await signer.getAddress();
+
+    // Shortened address + tooltip
+    const addrEl = $('addr');
+    addrEl.innerText = shortenAddress(userAddr);
+    addrEl.title = userAddr; // full addr on hover
+
+    // Safe copy button
+    $('copyAddrBtn').onclick = () => {
+      if (userAddr) {
+        navigator.clipboard.writeText(userAddr);
+        alert("✅ Address copied:\n" + userAddr);
+      } else {
+        alert("⚠️ No wallet connected.");
       }
     };
 
-    web3Modal = new window.Web3Modal.default({
-      cacheProvider: false,
-      providerOptions
-    });
+    // Network
+    const net = await provider.getNetwork();
+    $('networkText').innerText = `${net.name} (${net.chainId})`;
+
+    // Toggle buttons
+    $('connectBtn').classList.add('hidden');
+    $('disconnectBtn').classList.remove('hidden');
+
+    // Load contracts
+    await loadABIs();
+    await attachContractsIfSet();
+
+    log("Connected", userAddr);
+  } catch (e) {
+    log("connect err", e?.message || e);
   }
+}
 
-  // ---------- Connect / Disconnect ----------
-  async function connect() {
-    try {
-      const instance = await web3Modal.connect();
-      provider = new ethers.providers.Web3Provider(instance);
-      signer = provider.getSigner();
-      userAddr = await signer.getAddress();
-
-      // Shortened address + tooltip
-      const addrEl = $('addr');
-      addrEl.innerText = shortenAddress(userAddr);
-      addrEl.title = userAddr;
-
-      // Setup copy button
-      $('copyAddrBtn').onclick = () => {
-        navigator.clipboard.writeText(userAddr);
-        alert("✅ Address copied!");
-      };
-
-      // Network
-      const net = await provider.getNetwork();
-      $('networkText').innerText = net.name + " (" + net.chainId + ")";
-
-      // Toggle buttons
-      $('connectBtn').classList.add('hidden');
-      $('disconnectBtn').classList.remove('hidden');
-
-      // Load contracts
-      await loadABIs();
-      await attachContractsIfSet();
-
-      log("Connected", userAddr);
-    } catch (e) {
-      log("connect err", e?.message || e);
-    }
+// ---------- Disconnect ----------
+async function disconnect() {
+  if (web3Modal) {
+    await web3Modal.clearCachedProvider(); // 🔑 reset choice
   }
+  provider = signer = userAddr = null;
+  contracts = { cata: null, staking: null, governance: null, council: null };
 
-  async function disconnect() {
-    if (web3Modal) await web3Modal.clearCachedProvider();
-    provider = signer = userAddr = null;
-    contracts = { cata: null, staking: null, governance: null, council: null };
+  // Reset UI
+  const addrEl = $('addr');
+  addrEl.innerText = "Not connected";
+  addrEl.title = "";
 
-    // Reset UI
-    const addrEl = $('addr');
-    addrEl.innerText = "Not connected";
-    addrEl.title = "";
+  $('networkText').innerText = "—";
+  $('cataBal').innerText = "—";
 
-    $('networkText').innerText = "—";
-    $('cataBal').innerText = "—";
+  $('connectBtn').classList.remove('hidden');
+  $('disconnectBtn').classList.add('hidden');
 
-    $('connectBtn').classList.remove('hidden');
-    $('disconnectBtn').classList.add('hidden');
+  log("Disconnected");
+}
 
-    log("Disconnected");
-  }
-
+// ---------- Helper ----------
+function shortenAddress(addr) {
+  return addr ? addr.slice(0, 6) + "..." + addr.slice(-4) : "—";
+}
 
   // ---------- Helpers ----------
   function $(id) { return document.getElementById(id); }
