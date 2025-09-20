@@ -680,6 +680,11 @@
   <h3>System Lock</h3>
   <div>Status: <span id="lockStatus"></span></div>
 </div>
+
+<!-- Manual refresh button -->
+<div style="margin-top:1em;">
+  <button id="refreshCouncilBtn">🔄 Refresh Council Info</button>
+</div>
 </div>
 </section>
 
@@ -2253,6 +2258,30 @@ $('executeRecoveryBtn').onclick = executeRecovery;
 $('vetoRecoveryBtn').onclick = vetoRecovery;
   
 $('encodeCallDataBtn').onclick = encodeCallData;
+
+	  // ---------- Auto-refresh read-only state on page load ----------
+await fetchDaoInfo();
+await fetchGuardians();
+await fetchLockStatus();
+await fetchFullRecoveryState();
+await refreshBluechip();
+await refreshStakingStats();
+
+// Manual refresh button
+if ($('refreshCouncilBtn')) {
+  $('refreshCouncilBtn').onclick = async ()=>{
+    log('Manual refresh started...');
+    await fetchDaoInfo();
+    await fetchGuardians();
+    await fetchLockStatus();
+    await fetchFullRecoveryState();
+    await refreshBluechip();
+    await refreshStakingStats();
+    log('Manual refresh complete.');
+  };
+}
+
+log('UI ready');
 	  
     log('UI ready');
   });
