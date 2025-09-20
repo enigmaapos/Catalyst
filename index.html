@@ -4,12 +4,6 @@
   <title>Catalyst Protocol — DApp (Production-ready UI)</title>
   <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
   <script src="https://cdn.tailwindcss.com"></script>
-	<!-- Include Web3Modal & Ethers -->
-<script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<script src="https://unpkg.com/web3modal"></script>
-<script src="https://unpkg.com/@walletconnect/web3-provider"></script>
-<script src="https://unpkg.com/@coinbase/wallet-sdk"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 	<link rel="icon" type="image/png" href="assets/logo.png">
   <style>
     body { background: linear-gradient(180deg,#041024 0%, #061426 100%); }
@@ -844,6 +838,13 @@
 
   <!-- load ethers first -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+	<!-- Wallet libs -->
+<script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
+<script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@3.7.1/dist/CoinbaseWalletSDK.umd.min.js"></script>
+
+
 
   <script>
   /************************************************************************
@@ -991,62 +992,100 @@
 }
 
 // ---------- Connect / Disconnect ----------
-let web3Modal, provider, signer, userAddr;
+  // ---------- Globals ----------
+  let web3Modal, provider, signer, userAddr;
+  let contracts = { cata: null, staking: null, governance: null, council: null };
 
-async function init() {
-  const providerOptions = {
-    walletconnect: {
-      package: window.WalletConnectProvider.default,
-      options: {
-        infuraId: "YOUR_INFURA_ID" // or rpc URL
+  // ---------- Init Web3Modal ----------
+  async function initWeb3Modal() {
+    const providerOptions = {
+      walletconnect: {
+        package: window.WalletConnectProvider.default,
+        options: {
+          rpc: { 1: "https://mainnet.infura.io/v3/YOUR_INFURA_ID" }
+        }
+      },
+      coinbasewallet: {
+        package: window.CoinbaseWalletSDK,
+        options: {
+          appName: "My DApp",
+          infuraId: "YOUR_INFURA_ID"
+        }
       }
-    },
-    coinbasewallet: {
-      package: window.CoinbaseWalletSDK,
-      options: {
-        appName: "My dApp",
-        infuraId: "YOUR_INFURA_ID"
-      }
-    }
-  };
+    };
 
-  web3Modal = new window.Web3Modal.default({
-    cacheProvider: false,
-    providerOptions,
-  });
-}
-
-async function connect() {
-  try {
-    const instance = await web3Modal.connect();
-    provider = new ethers.providers.Web3Provider(instance);
-    signer = provider.getSigner();
-    userAddr = await signer.getAddress();
-
-    $('addr').innerText = shortenAddress(userAddr);
-    $('addr').title = userAddr;
-    $('connectBtn').classList.add('hidden');
-    $('disconnectBtn').classList.remove('hidden');
-
-    log("Connected", userAddr);
-  } catch (err) {
-    console.error("Connect error", err);
+    web3Modal = new window.Web3Modal.default({
+      cacheProvider: false,
+      providerOptions
+    });
   }
-}
 
-async function disconnect() {
-  if (web3Modal) await web3Modal.clearCachedProvider();
-  provider = signer = userAddr = null;
+  // ---------- Connect / Disconnect ----------
+  async function connect() {
+    try {
+      const instance = await web3Modal.connect();
+      provider = new ethers.providers.Web3Provider(instance);
+      signer = provider.getSigner();
+      userAddr = await signer.getAddress();
 
-  $('addr').innerText = "Not connected";
-  $('addr').title = "";
-  $('connectBtn').classList.remove('hidden');
-  $('disconnectBtn').classList.add('hidden');
+      // Shortened address + tooltip
+      const addrEl = $('addr');
+      addrEl.innerText = shortenAddress(userAddr);
+      addrEl.title = userAddr;
 
-  log("Disconnected");
-}
+      // Setup copy button
+      $('copyAddrBtn').onclick = () => {
+        navigator.clipboard.writeText(userAddr);
+        alert("✅ Address copied!");
+      };
 
-init();
+      // Network
+      const net = await provider.getNetwork();
+      $('networkText').innerText = net.name + " (" + net.chainId + ")";
+
+      // Toggle buttons
+      $('connectBtn').classList.add('hidden');
+      $('disconnectBtn').classList.remove('hidden');
+
+      // Load contracts
+      await loadABIs();
+      await attachContractsIfSet();
+
+      log("Connected", userAddr);
+    } catch (e) {
+      log("connect err", e?.message || e);
+    }
+  }
+
+  async function disconnect() {
+    if (web3Modal) await web3Modal.clearCachedProvider();
+    provider = signer = userAddr = null;
+    contracts = { cata: null, staking: null, governance: null, council: null };
+
+    // Reset UI
+    const addrEl = $('addr');
+    addrEl.innerText = "Not connected";
+    addrEl.title = "";
+
+    $('networkText').innerText = "—";
+    $('cataBal').innerText = "—";
+
+    $('connectBtn').classList.remove('hidden');
+    $('disconnectBtn').classList.add('hidden');
+
+    log("Disconnected");
+  }
+
+  // ---------- Helpers ----------
+  function $(id) { return document.getElementById(id); }
+
+  function shortenAddress(addr) {
+    return addr ? addr.substring(0, 6) + "..." + addr.substring(addr.length - 4) : "";
+  }
+
+  function log(...args) {
+    console.log("[LOG]", ...args);
+  }
 
   // ---------- CATA functions ----------
   async function cataMint(){
@@ -2286,10 +2325,14 @@ async function fetchFullRecoveryState() {
 
 	  
   // ---------- Bind UI on load ----------
-  window.addEventListener('load', async ()=>{
-    loadSavedAddrs();
-    await loadABIs(); // pre-load ABIs for faster attach later
+  window.addEventListener('load', async () => {
+  // 1. Init Web3Modal (so it’s ready when user clicks connect)
+  await initWeb3Modal();
 
+  // 2. Load any saved state
+  if (typeof loadSavedAddrs === "function") loadSavedAddrs();
+  if (typeof loadABIs === "function") await loadABIs(); // preload ABIs
+	  
     // Connect / disconnect
     $('connectBtn').onclick = connect;
     $('disconnectBtn').onclick = disconnect;
