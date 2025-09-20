@@ -876,6 +876,10 @@
     council: "0xfeedfeedfeedfeedfeedfeedfeedfeedfeedfeed"
   };
 
+	  // App state
+  let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null };
+	  
+
   function log(...args){
     const el = $('logs');
     try {
@@ -987,7 +991,6 @@
 // ---------- Connect / Disconnect ----------
   // ---------- Globals ----------
   let web3Modal, provider, signer, userAddr;
-  let contracts = { cata: null, staking: null, governance: null, council: null };
 
   // ---------- Init Web3Modal ----------
   async function initWeb3Modal() {
