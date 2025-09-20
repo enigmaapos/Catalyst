@@ -162,11 +162,23 @@
 <section id="quickstatus" class="tab-content hidden">
   <h2 class="font-semibold mb-3 text-lg text-slate-100">⚡ Quick Status</h2>
 <div class="grid grid-cols-2 gap-3 text-sm">
-  <!-- Card -->
-  <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
-    <div class="text-slate-400 text-xs">Connected</div>
-    <div id="addr" class="font-semibold text-slate-200">Not connected</div>
+<!-- Card -->
+<div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+  <div class="text-slate-400 text-xs">Connected</div>
+  <div class="flex items-center gap-2">
+    <!-- Shortened address -->
+    <span id="addr" 
+          class="font-semibold text-slate-200 cursor-pointer" 
+          title="Not connected">
+      Not connected
+    </span>
+    <!-- Copy button -->
+    <button id="copyAddrBtn" 
+            class="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 rounded">
+      📋
+    </button>
   </div>
+</div>
 
   <!-- Card -->
   <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
@@ -970,37 +982,67 @@
     } catch(e){ log('fetchCataBalance err', e && e.message ? e.message : e); }
   }
 
-  // ---------- Connect / Disconnect ----------
-  async function connect(){
-    try {
-      if(!window.ethereum) return alert('No Web3 wallet (install MetaMask)');
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send('eth_requestAccounts', []);
-      signer = provider.getSigner();
-      userAddr = await signer.getAddress();
-      $('addr').innerText = userAddr;
-      const net = await provider.getNetwork();
-      $('networkName').innerText = net.name + ' (' + net.chainId + ')';
-      $('connectBtn').classList.add('hidden');
-      $('disconnectBtn').classList.remove('hidden');
+	  function shortenAddress(addr) {
+  if (!addr) return "Not connected";
+  return addr.slice(0, 6) + "..." + addr.slice(-4);
+}
 
-      // load ABIs & attach
-      await loadABIs();
-      await attachContractsIfSet();
-      log('Connected', userAddr);
-    } catch(e){ log('connect err', e && e.message ? e.message : e); }
-  }
+// ---------- Connect / Disconnect ----------
+async function connect() {
+  try {
+    if (!window.ethereum) return alert('No Web3 wallet (install MetaMask)');
 
-  function disconnect(){
-    provider = signer = userAddr = null;
-    contracts = { cata:null, staking:null, governance:null, council:null };
-    $('addr').innerText = 'Not connected';
-    $('networkName').innerText = '—';
-    $('cataBal').innerText = '—';
-    $('connectBtn').classList.remove('hidden');
-    $('disconnectBtn').classList.add('hidden');
-    log('Disconnected');
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send('eth_requestAccounts', []);
+    signer = provider.getSigner();
+    userAddr = await signer.getAddress();
+
+    // Shortened address + tooltip
+    const addrEl = $('addr');
+    addrEl.innerText = shortenAddress(userAddr);
+    addrEl.title = userAddr;
+
+    // Setup copy button
+    $('copyAddrBtn').onclick = () => {
+      navigator.clipboard.writeText(userAddr);
+      alert("✅ Address copied!");
+    };
+
+    // Network
+    const net = await provider.getNetwork();
+    $('networkText').innerText = net.name + " (" + net.chainId + ")";
+
+    // Toggle buttons
+    $('connectBtn').classList.add('hidden');
+    $('disconnectBtn').classList.remove('hidden');
+
+    // Load contracts
+    await loadABIs();
+    await attachContractsIfSet();
+
+    log("Connected", userAddr);
+  } catch (e) {
+    log("connect err", e?.message || e);
   }
+}
+
+function disconnect() {
+  provider = signer = userAddr = null;
+  contracts = { cata: null, staking: null, governance: null, council: null };
+
+  // Reset UI
+  const addrEl = $('addr');
+  addrEl.innerText = "Not connected";
+  addrEl.title = "";
+
+  $('networkText').innerText = "—";
+  $('cataBal').innerText = "—";
+
+  $('connectBtn').classList.remove('hidden');
+  $('disconnectBtn').classList.add('hidden');
+
+  log("Disconnected");
+}
 
   // ---------- CATA functions ----------
   async function cataMint(){
