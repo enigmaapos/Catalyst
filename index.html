@@ -20,33 +20,37 @@
         <h1 class="text-2xl font-bold">Catalyst Protocol</h1>
         <p class="text-sm text-slate-300">Staking · Governance · Guardian Council</p>
       </div>
-      <div class="flex items-center gap-2 text-sm">
-  <!-- Connected Card -->
-  <div class="px-2 py-1 rounded-lg bg-slate-800/70 shadow border border-slate-700">
-    <div class="text-slate-400 text-[10px]">Connected</div>
-    <div class="flex items-center gap-1">
-      <!-- Shortened address -->
-      <span id="addr" 
-            class="font-medium text-slate-100 cursor-pointer text-xs"
-            title="Not connected">
-        Not connected
-      </span>
-      <!-- Copy button -->
-      <button id="copyAddrBtn" 
-              class="px-1 py-0.5 text-[10px] bg-slate-700 hover:bg-slate-600 rounded">
-        📋
-      </button>
+        <!-- Action Buttons -->
+  <div class="flex gap-2 mb-4">
+    <button id="connectBtn" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500">
+      🔌 Connect Wallet
+    </button>
+    <button id="disconnectBtn" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 hidden">
+      ❌ Disconnect
+    </button>
+  </div>
+
+  <!-- Info Cards -->
+  <div class="flex items-center gap-2 text-sm">
+    <!-- Connected Card -->
+    <div class="px-2 py-1 rounded-lg bg-slate-800/70 shadow border border-slate-700">
+      <div class="text-slate-400 text-[10px]">Connected</div>
+      <div class="flex items-center gap-1">
+        <span id="addr" class="font-medium text-slate-100 cursor-pointer text-xs" title="Not connected">
+          Not connected
+        </span>
+        <button id="copyAddrBtn" class="px-1 py-0.5 text-[10px] bg-slate-700 hover:bg-slate-600 rounded">
+          📋
+        </button>
+      </div>
+    </div>
+
+    <!-- Network Card -->
+    <div class="px-2 py-1 rounded-lg bg-slate-800/70 shadow border border-slate-700">
+      <div class="text-slate-400 text-[10px]">Network</div>
+      <div id="networkText" class="font-medium text-slate-100 text-xs">—</div>
     </div>
   </div>
-  <!-- Network Card -->
-  <div class="px-2 py-1 rounded-lg bg-slate-800/70 shadow border border-slate-700">
-    <div class="text-slate-400 text-[10px]">Network</div>
-    <div id="networkText" class="font-medium text-slate-100 text-xs">—</div>
-  </div>
-</div>  
-        <button id="connectBtn" class="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-400 rounded-md font-semibold text-black">Connect</button>
-        <button id="disconnectBtn" class="px-4 py-2 bg-red-500 rounded-md font-semibold text-black hidden">Disconnect</button>
-      </div>
     </header>
 	
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
@@ -835,13 +839,14 @@
 </footer>
   </div>
 
-  <!-- Ethers (only once) -->
-<script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <!-- Ethers.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  <!-- Web3Modal v2 -->
+  <script src="https://unpkg.com/@web3modal/html@2.7.1"></script>
+  <script type="module">
+    import { EthereumClient, w3mConnectors, w3mProvider } from "https://unpkg.com/@web3modal/ethereum@2.7.1/dist/index.js";
+    import { configureChains, createClient } from "https://unpkg.com/wagmi@0.12.19/dist/index.js";
 
-<!-- Web3Modal + wallet providers -->
-<script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
-<script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@3.7.1/dist/CoinbaseWalletSDK.min.js"></script>
 	
   <script>
   /************************************************************************
@@ -988,101 +993,66 @@
 }
 
 // ---------- Connect / Disconnect ----------
-  // ---------- Globals ----------
-let web3Modal, provider, signer, userAddr;
+   // ---------- Globals ----------
+    let provider, signer, userAddr;
+    const projectId = "YOUR_WALLETCONNECT_PROJECT_ID"; // get free at https://cloud.walletconnect.com
+    const chains = [{ id: 1, name: "Ethereum", network: "homestead" }];
 
-// ---------- Init Web3Modal ----------
-async function initWeb3Modal() {
-  const providerOptions = {
-    walletconnect: {
-      package: window.WalletConnectProvider.default,
-      options: {
-        rpc: { 1: "https://mainnet.infura.io/v3/YOUR_INFURA_ID" }
-      }
-    },
-    coinbasewallet: {
-      package: window.CoinbaseWalletSDK,
-      options: {
-        appName: "My DApp",
-        infuraId: "YOUR_INFURA_ID"
+    const { provider: wagmiProvider } = configureChains(chains, [w3mProvider({ projectId })]);
+    const wagmiClient = createClient({
+      autoConnect: false,
+      connectors: w3mConnectors({ projectId, version: 1, chains }),
+      provider: wagmiProvider
+    });
+
+    const ethereumClient = new EthereumClient(wagmiClient, chains);
+    const web3modal = new Web3Modal.default({ projectId, themeMode: "dark" }, ethereumClient);
+
+    // ---------- Helpers ----------
+    function shortenAddress(addr) {
+      return addr ? addr.slice(0, 6) + "..." + addr.slice(-4) : "—";
+    }
+
+    // ---------- Connect ----------
+    async function connect() {
+      try {
+        await web3modal.openModal();
+        const providerWeb3 = await wagmiProvider();
+        provider = new ethers.providers.Web3Provider(providerWeb3);
+        signer = provider.getSigner();
+        userAddr = await signer.getAddress();
+
+        // Update UI
+        document.getElementById("addr").innerText = shortenAddress(userAddr);
+        document.getElementById("addr").title = userAddr;
+        document.getElementById("copyAddrBtn").onclick = () => {
+          navigator.clipboard.writeText(userAddr);
+          alert("✅ Address copied:\n" + userAddr);
+        };
+
+        const net = await provider.getNetwork();
+        document.getElementById("networkText").innerText = `${net.name} (${net.chainId})`;
+
+        document.getElementById("connectBtn").classList.add("hidden");
+        document.getElementById("disconnectBtn").classList.remove("hidden");
+      } catch (e) {
+        console.error("Connect error", e);
       }
     }
-    // injected (MetaMask/Brave) is automatic
-  };
 
-  web3Modal = new window.Web3Modal.default({
-    cacheProvider: false, // 🔑 always show modal
-    providerOptions
-  });
-}
+    // ---------- Disconnect ----------
+    async function disconnect() {
+      await web3modal.closeModal();
+      provider = signer = userAddr = null;
 
-// ---------- Connect ----------
-async function connect() {
-  try {
-    const instance = await web3Modal.connect();
-    provider = new ethers.providers.Web3Provider(instance);
-    signer = provider.getSigner();
-    userAddr = await signer.getAddress();
+      document.getElementById("addr").innerText = "Not connected";
+      document.getElementById("addr").title = "";
+      document.getElementById("networkText").innerText = "—";
 
-    // Shortened address + tooltip
-    const addrEl = $('addr');
-    addrEl.innerText = shortenAddress(userAddr);
-    addrEl.title = userAddr; // full addr on hover
-
-    // Safe copy button
-    $('copyAddrBtn').onclick = () => {
-      if (userAddr) {
-        navigator.clipboard.writeText(userAddr);
-        alert("✅ Address copied:\n" + userAddr);
-      } else {
-        alert("⚠️ No wallet connected.");
-      }
-    };
-
-    // Network
-    const net = await provider.getNetwork();
-    $('networkText').innerText = `${net.name} (${net.chainId})`;
-
-    // Toggle buttons
-    $('connectBtn').classList.add('hidden');
-    $('disconnectBtn').classList.remove('hidden');
-
-    // Load contracts
-    await loadABIs();
-    await attachContractsIfSet();
-
-    log("Connected", userAddr);
-  } catch (e) {
-    log("connect err", e?.message || e);
-  }
-}
-
-// ---------- Disconnect ----------
-async function disconnect() {
-  if (web3Modal) {
-    await web3Modal.clearCachedProvider(); // 🔑 reset choice
-  }
-  provider = signer = userAddr = null;
-  contracts = { cata: null, staking: null, governance: null, council: null };
-
-  // Reset UI
-  const addrEl = $('addr');
-  addrEl.innerText = "Not connected";
-  addrEl.title = "";
-
-  $('networkText').innerText = "—";
-  $('cataBal').innerText = "—";
-
-  $('connectBtn').classList.remove('hidden');
-  $('disconnectBtn').classList.add('hidden');
-
-  log("Disconnected");
-}
-
-// ---------- Helper ----------
-function shortenAddress(addr) {
-  return addr ? addr.slice(0, 6) + "..." + addr.slice(-4) : "—";
-}
+      document.getElementById("connectBtn").classList.remove("hidden");
+      document.getElementById("disconnectBtn").classList.add("hidden");
+    }
+	  
 
   // ---------- Helpers ----------
   function $(id) { return document.getElementById(id); }
@@ -2334,16 +2304,22 @@ async function fetchFullRecoveryState() {
 	  
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async () => {
-  // 1. Init Web3Modal (so it’s ready when user clicks connect)
-  await initWeb3Modal();
+  // 1. Init Web3Modal (only needed if you wrap the setup into a function)
+  if (typeof initWeb3Modal === "function") {
+    await initWeb3Modal();
+  }
 
-  // 2. Load any saved state
+  // 2. Load any saved app state
   if (typeof loadSavedAddrs === "function") loadSavedAddrs();
-  if (typeof loadABIs === "function") await loadABIs(); // preload ABIs
-	  
-    // Connect / disconnect
-    $('connectBtn').onclick = connect;
-    $('disconnectBtn').onclick = disconnect;
+  if (typeof loadABIs === "function") await loadABIs(); // preload ABIs if defined
+
+  // 3. Connect / disconnect button hooks
+  if (document.getElementById('connectBtn')) {
+    document.getElementById('connectBtn').onclick = connect;
+  }
+  if (document.getElementById('disconnectBtn')) {
+    document.getElementById('disconnectBtn').onclick = disconnect;
+  }
 
     // Save/load addresses
     $('saveAddrs').onclick = ()=>{
