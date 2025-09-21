@@ -1131,11 +1131,7 @@ function disconnect() {
 }
 
 
-
-
-// Unpause (admin only)
 // ---------- CATA functions ----------
-
 // Burn (any holder)
 async function cataBurn() {
   try {
@@ -1147,10 +1143,14 @@ async function cataBurn() {
     const amtRaw = $('cataBurnAmt').value.trim();
     if (!amtRaw) return alert('Burn amount required');
 
-    const tx = await contracts.cata.burn(ethers.BigNumber.from(amtRaw));
+    // ✅ convert from user-friendly number to wei (18 decimals)
+    const amt = ethers.parseUnits(amtRaw, 18);
+
+    const tx = await contracts.cata.burn(amt);
     log('cata.burn tx', tx.hash);
     await tx.wait();
     log('cata.burn completed');
+
     await fetchCataBalance();
     await fetchTransparency(); // refresh transparency after burn
   } catch (e) {
