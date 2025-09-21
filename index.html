@@ -265,9 +265,11 @@
 
 
   <hr class="my-3 border-slate-700" />
-<div class="text-xs text-slate-400">CATA Actions</div>
-<div class="mt-2 space-y-2">
-  <!-- Safe: Burn -->
+
+	<div class="p-4 rounded-xl bg-slate-800 text-slate-200 space-y-4">
+  <div class="text-lg font-bold text-slate-100">⚡ CATA Actions</div>
+
+  <!-- Burn -->
   <div>
     <input id="cataBurnAmt" placeholder="Amount to burn" class="w-full p-2 rounded bg-black/20 text-sm" />
     <button id="cataBurnBtn" class="mt-2 w-full p-2 bg-red-600 hover:bg-red-500 rounded">
@@ -297,6 +299,25 @@
     </div>
     <button id="swapAdminBtn" class="mt-2 w-full p-2 bg-yellow-500 text-black rounded">
       🔑 Swap Admin
+    </button>
+  </div>
+
+  <!-- Transparency -->
+  <div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Transparency</div>
+    <div class="flex flex-col gap-1">
+      <div class="p-2 rounded bg-black/20 text-sm">
+        Remaining Mintable: <span id="cataRemainingMintable" class="font-mono text-green-400">…</span>
+      </div>
+      <div class="p-2 rounded bg-black/20 text-sm">
+        Total Supply: <span id="cataTotalSupply" class="font-mono text-blue-400">…</span>
+      </div>
+      <div class="p-2 rounded bg-black/20 text-sm">
+        Max Supply: <span id="cataMaxSupply" class="font-mono text-yellow-400">…</span>
+      </div>
+    </div>
+    <button id="refreshTransparencyBtn" class="mt-2 w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded">
+      🔍 Refresh Transparency
     </button>
   </div>
 </div>
@@ -1110,8 +1131,10 @@ function disconnect() {
 }
 
 
-  // ---------- CATA functions ----------
-  // ---------- CATA functions ----------
+
+
+// Unpause (admin only)
+// ---------- CATA functions ----------
 
 // Burn (any holder)
 async function cataBurn() {
@@ -1122,15 +1145,16 @@ async function cataBurn() {
     }
 
     const amtRaw = $('cataBurnAmt').value.trim();
-    if (!amtRaw) return alert('burn: amount required');
+    if (!amtRaw) return alert('Burn amount required');
 
     const tx = await contracts.cata.burn(ethers.BigNumber.from(amtRaw));
     log('cata.burn tx', tx.hash);
     await tx.wait();
     log('cata.burn completed');
     await fetchCataBalance();
+    await fetchTransparency(); // refresh transparency after burn
   } catch (e) {
-    log('cataBurn err', e && e.message ? e.message : e);
+    log('cataBurn err', e?.message || e);
     alert(`Burn failed: ${e.message || e}`);
   }
 }
@@ -1148,7 +1172,7 @@ async function cataPause() {
     await tx.wait();
     log('cata.pause completed');
   } catch (e) {
-    log('cataPause err', e && e.message ? e.message : e);
+    log('cataPause err', e?.message || e);
     alert(`Pause failed: ${e.message || e}`);
   }
 }
@@ -1166,7 +1190,7 @@ async function cataUnpause() {
     await tx.wait();
     log('cata.unpause completed');
   } catch (e) {
-    log('cataUnpause err', e && e.message ? e.message : e);
+    log('cataUnpause err', e?.message || e);
     alert(`Unpause failed: ${e.message || e}`);
   }
 }
@@ -1189,8 +1213,29 @@ async function cataSwapAdmin() {
     await tx.wait();
     log('cata.swapAdmin completed');
   } catch (e) {
-    log('cataSwapAdmin err', e && e.message ? e.message : e);
+    log('cataSwapAdmin err', e?.message || e);
     alert(`Swap admin failed: ${e.message || e}`);
+  }
+}
+
+// Transparency (view supply)
+async function fetchTransparency() {
+  try {
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert('Set CATA contract address first');
+    }
+
+    const totalSupply = await contracts.cata.totalSupply();
+    const maxSupply = await contracts.cata.MAX_SUPPLY();
+    const remainingMintable = maxSupply.sub(totalSupply);
+
+    $('cataTotalSupply').innerText = ethers.utils.formatUnits(totalSupply, 18) + " CATA";
+    $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
+    $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
+  } catch (e) {
+    log('fetchTransparency err', e?.message || e);
+    alert(`Transparency fetch failed: ${e.message || e}`);
   }
 }
 
@@ -2413,6 +2458,7 @@ async function fetchFullRecoveryState() {
   $('pauseBtn').onclick = cataPause;
   $('unpauseBtn').onclick = cataUnpause;
   $('swapAdminBtn').onclick = cataSwapAdmin;
+	$('refreshTransparencyBtn').onclick = fetchTransparency;
 
 	// Register Collection 
 /** Wire handlers to new UI elements — call this inside your window load / UI ready handler */
