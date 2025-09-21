@@ -1061,19 +1061,12 @@ const $ = id => document.getElementById(id);
   }
 
   // Fetch CATA Balance (shows in readable numbers, e.g. "1.25 CATA")
-async function fetchCataBalance() {
-  try {
-    if (!contracts.cata) return;
-
-    const bal = await contracts.cata.balanceOf(userAddr);
-
-    // ✅ format to human-readable (18 decimals → CATA)
-    const formatted = ethers.formatEther(bal);
-
-    $('cataBal').innerText = `${formatted} CATA`;
-  } catch (e) {
-    log('fetchCataBalance err', e?.message || e);
-  }
+async function fetchCataBalance(){
+try {
+if(!contracts.cata) return;
+const bal = await contracts.cata.balanceOf(userAddr);
+$('cataBal').innerText = ethers.utils.formatEther(bal) + ' CATA';
+} catch(e){ log('fetchCataBalance err', e && e.message ? e.message : e); }
 }
 
 
@@ -1142,6 +1135,7 @@ function disconnect() {
 
 // ---------- CATA functions ----------
 // Burn (any holder) — accepts real numbers (e.g., "1.5" = 1.5 CATA)
+// Burn (any holder) - user enters normal number (e.g. "1.5"), auto converts to wei
 async function cataBurn() {
   try {
     if (!contracts.cata) {
@@ -1152,16 +1146,16 @@ async function cataBurn() {
     const amtRaw = $('cataBurnAmt').value.trim();
     if (!amtRaw) return alert('Burn amount required');
 
-    // ✅ convert user input (like "1.5") into correct wei amount
-    const amt = ethers.parseUnits(amtRaw, 18);
+    // ✅ convert normal number to wei
+    const amtWei = ethers.utils.parseEther(amtRaw);
 
-    const tx = await contracts.cata.burn(amt);
+    const tx = await contracts.cata.burn(amtWei);
     log('cata.burn tx', tx.hash);
     await tx.wait();
     log('cata.burn completed');
-    
-    await fetchCataBalance();   // optional: refresh balance after burn
-    await fetchTransparency();  // optional: refresh supply info
+
+    await fetchCataBalance();
+    await fetchTransparency(); // refresh transparency after burn
   } catch (e) {
     log('cataBurn err', e?.message || e);
     alert(`Burn failed: ${e.message || e}`);
