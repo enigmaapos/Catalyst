@@ -265,22 +265,41 @@
 
 
   <hr class="my-3 border-slate-700" />
-  <div class="text-xs text-slate-400">CATA Actions</div>
-  <div class="mt-2 space-y-2">
-    <input id="cataMintTo" placeholder="Mint to address" class="w-full p-2 rounded bg-black/20 text-sm" />
-    <input id="cataMintAmt" placeholder="Amount (wei or integer string)" class="w-full p-2 rounded bg-black/20 text-sm" />
+<div class="text-xs text-slate-400">CATA Actions</div>
+<div class="mt-2 space-y-2">
+  <!-- Safe: Burn -->
+  <div>
+    <input id="cataBurnAmt" placeholder="Amount to burn" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="cataBurnBtn" class="mt-2 w-full p-2 bg-red-600 hover:bg-red-500 rounded">
+      🔥 Burn My CATA
+    </button>
+  </div>
+
+  <!-- Admin-only: Pause/Unpause -->
+  <div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Admin Controls</div>
     <div class="flex gap-2">
-      <button id="cataMintBtn" class="flex-1 p-2 bg-indigo-600 rounded">Mint (MINTER_ROLE)</button>
-      <button id="cataBurnBtn" class="flex-1 p-2 bg-red-600 rounded">Burn (self)</button>
+      <button id="pauseBtn" class="flex-1 p-2 bg-yellow-600 hover:bg-yellow-500 rounded">
+        ⏸ Pause
+      </button>
+      <button id="unpauseBtn" class="flex-1 p-2 bg-green-600 hover:bg-green-500 rounded">
+        ▶️ Unpause
+      </button>
     </div>
-    <div class="flex gap-2 mt-2">
+  </div>
+
+  <!-- Council-only: Swap Admin -->
+  <div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Council Actions</div>
+    <div class="flex gap-2">
       <input id="swapNewAdmin" placeholder="New admin address" class="flex-1 p-2 rounded bg-black/20 text-sm" />
       <input id="swapOldAdmin" placeholder="Old admin address (optional)" class="flex-1 p-2 rounded bg-black/20 text-sm" />
     </div>
-    <div class="mt-2">
-      <button id="swapAdminBtn" class="p-2 bg-yellow-500 text-black rounded w-full">Swap Admin (council only)</button>
-    </div>
+    <button id="swapAdminBtn" class="mt-2 w-full p-2 bg-yellow-500 text-black rounded">
+      🔑 Swap Admin
+    </button>
   </div>
+</div>
 </section>
 
     <!-- Collection Registration -->
@@ -1092,47 +1111,88 @@ function disconnect() {
 
 
   // ---------- CATA functions ----------
-  async function cataMint(){
-    try {
-      if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract address'); }
-      const to = $('cataMintTo').value.trim();
-      const amtRaw = $('cataMintAmt').value.trim();
-      if(!to || !amtRaw) return alert('mint: to & amount required');
-      // keep amount as string to avoid precision issues; contract expects uint256 (wei)
-      const tx = await contracts.cata.mint(to, ethers.BigNumber.from(amtRaw));
-      log('cata.mint tx', tx.hash);
-      await tx.wait();
-      log('cata.mint completed');
-      await fetchCataBalance();
-    } catch(e){ log('cataMint err', e && e.message ? e.message : e); }
-  }
+  // ---------- CATA functions ----------
 
-  async function cataBurn(){
-    try {
-      if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract address'); }
-      const amtRaw = $('cataMintAmt').value.trim(); // reuse input for burn amount (UI convenience)
-      if(!amtRaw) return alert('burn: amount required');
-      const tx = await contracts.cata.burn(ethers.BigNumber.from(amtRaw));
-      log('cata.burn tx', tx.hash);
-      await tx.wait();
-      log('cata.burn completed');
-      await fetchCataBalance();
-    } catch(e){ log('cataBurn err', e && e.message ? e.message : e); }
-  }
+// Burn (any holder)
+async function cataBurn() {
+  try {
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert('Set CATA contract address first');
+    }
 
-  async function cataSwapAdmin(){
-    try {
-      if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract address'); }
-      const newAdmin = $('swapNewAdmin').value.trim();
-      const oldAdmin = $('swapOldAdmin').value.trim() || ethers.constants.AddressZero;
-      if(!newAdmin) return alert('new admin required');
-      // only callable by guardian council per contract; it will revert if caller not council
-      const tx = await contracts.cata.swapAdmin(newAdmin, oldAdmin);
-      log('cata.swapAdmin tx', tx.hash);
-      await tx.wait();
-      log('cata.swapAdmin completed');
-    } catch(e){ log('cataSwapAdmin err', e && e.message ? e.message : e); }
+    const amtRaw = $('cataBurnAmt').value.trim();
+    if (!amtRaw) return alert('burn: amount required');
+
+    const tx = await contracts.cata.burn(ethers.BigNumber.from(amtRaw));
+    log('cata.burn tx', tx.hash);
+    await tx.wait();
+    log('cata.burn completed');
+    await fetchCataBalance();
+  } catch (e) {
+    log('cataBurn err', e && e.message ? e.message : e);
+    alert(`Burn failed: ${e.message || e}`);
   }
+}
+
+// Pause (admin only)
+async function cataPause() {
+  try {
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert('Set CATA contract address first');
+    }
+
+    const tx = await contracts.cata.pause();
+    log('cata.pause tx', tx.hash);
+    await tx.wait();
+    log('cata.pause completed');
+  } catch (e) {
+    log('cataPause err', e && e.message ? e.message : e);
+    alert(`Pause failed: ${e.message || e}`);
+  }
+}
+
+// Unpause (admin only)
+async function cataUnpause() {
+  try {
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert('Set CATA contract address first');
+    }
+
+    const tx = await contracts.cata.unpause();
+    log('cata.unpause tx', tx.hash);
+    await tx.wait();
+    log('cata.unpause completed');
+  } catch (e) {
+    log('cataUnpause err', e && e.message ? e.message : e);
+    alert(`Unpause failed: ${e.message || e}`);
+  }
+}
+
+// Swap Admin (council only)
+async function cataSwapAdmin() {
+  try {
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert('Set CATA contract address first');
+    }
+
+    const newAdmin = $('swapNewAdmin').value.trim();
+    const oldAdmin = $('swapOldAdmin').value.trim() || ethers.constants.AddressZero;
+
+    if (!newAdmin) return alert('New admin address required');
+
+    const tx = await contracts.cata.swapAdmin(newAdmin, oldAdmin);
+    log('cata.swapAdmin tx', tx.hash);
+    await tx.wait();
+    log('cata.swapAdmin completed');
+  } catch (e) {
+    log('cataSwapAdmin err', e && e.message ? e.message : e);
+    alert(`Swap admin failed: ${e.message || e}`);
+  }
+}
 
 /********************************************************************
  * Collection Registration logic
@@ -2349,9 +2409,10 @@ async function fetchFullRecoveryState() {
     $('loadAddrs').onclick = ()=>{ loadSavedAddrs(); if(signer) attachContractsIfSet(); };
 		
     // CATA
-    $('cataMintBtn').onclick = cataMint;
-    $('cataBurnBtn').onclick = cataBurn;
-    $('swapAdminBtn').onclick = cataSwapAdmin;
+	$('cataBurnBtn').onclick = cataBurn;
+  $('pauseBtn').onclick = cataPause;
+  $('unpauseBtn').onclick = cataUnpause;
+  $('swapAdminBtn').onclick = cataSwapAdmin;
 
 	// Register Collection 
 /** Wire handlers to new UI elements — call this inside your window load / UI ready handler */
