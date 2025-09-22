@@ -141,6 +141,25 @@
 			{
 				"indexed": true,
 				"internalType": "address",
+				"name": "oldCata",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newCata",
+				"type": "address"
+			}
+		],
+		"name": "CataTokenUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
 				"name": "collection",
 				"type": "address"
 			},
@@ -202,6 +221,25 @@
 			}
 		],
 		"name": "CouncilSet",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "oldDeployer",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newDeployer",
+				"type": "address"
+			}
+		],
+		"name": "DeployerAddressUpdated",
 		"type": "event"
 	},
 	{
@@ -1605,6 +1643,19 @@
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "newCata",
+				"type": "address"
+			}
+		],
+		"name": "setCataToken",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "collection",
 				"type": "address"
 			},
@@ -1633,6 +1684,19 @@
 			}
 		],
 		"name": "setCouncil",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newDeployer",
+				"type": "address"
+			}
+		],
+		"name": "setDeployerAddress",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
