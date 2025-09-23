@@ -1951,6 +1951,188 @@ async function batchHarvest() {
   }
 }
 
+	  // Helper: parse textarea "collection,tokenId" lines into objects
+function parseBatchHarvestPairs() {
+  try {
+    showLoading();
+
+    const txt = $('batchHarvestNFTs').value.trim();
+    if (!txt) return [];
+
+    return txt
+      .split(/\r?\n/)
+      .map(line => {
+        const parts = line.split(',').map(s => s.trim()).filter(Boolean);
+        if (parts.length < 2) return null;
+        const collection = parts[0];
+        const tokenId = parts[1];
+        if (!collection || !tokenId) return null;
+        return { collection, tokenId };
+      })
+      .filter(Boolean);
+
+  } finally {
+    hideLoading();
+  }
+}
+
+
+// Check Pending Rewards
+async function checkPendingRewards(){
+  try {
+    showLoading();
+
+    const collection = $('nftCollection').value.trim();
+    const tokenId = parseInt($('nftTokenId').value.trim(), 10);
+    if(!collection) return alert('Enter a collection address');
+    if(isNaN(tokenId)) return alert('Enter a valid token ID');
+
+    if(!contracts.staking){   
+      await attachContractsIfSet();   
+      if(!contracts.staking) return alert('Set staking contract');   
+    }  
+
+    if(typeof contracts.staking.pendingRewards === 'function'){  
+      const account = await getAccount();  
+      const rewards = await contracts.staking.pendingRewards(collection, account, tokenId);  
+      $('pendingRewardsResult').innerText = `${rewards.toString()} CATA`;  
+      log('checkPendingRewards done');  
+    } else {  
+      alert('pendingRewards not found in ABI');  
+    }
+
+  } catch(e){
+    log('checkPendingRewards err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Refresh Staking Stats
+async function refreshStakingStats(){
+  try {
+    showLoading();
+
+    if(!contracts.staking){
+      await attachContractsIfSet();
+      if(!contracts.staking) return alert('Set staking contract');
+    }
+
+    if(typeof contracts.staking.totalStakedAll === 'function'){  
+      const [all, term, perm] = await Promise.all([  
+        contracts.staking.totalStakedAll(),  
+        contracts.staking.totalStakedTerm(),  
+        contracts.staking.totalStakedPerm()  
+      ]);  
+
+      $('stakedAll').innerText = all.toString();  
+      $('stakedTerm').innerText = term.toString();  
+      $('stakedPerm').innerText = perm.toString();  
+
+      log('refreshStakingStats done');  
+    } else {  
+      alert('staking stats functions not found in ABI');  
+    }
+
+  } catch(e){
+    log('refreshStakingStats err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// View Portfolio
+async function viewPortfolio(){
+  try {
+    showLoading();
+
+    const collection = $('nftCollection').value.trim();
+    if(!collection) return alert('Enter a collection address');
+
+    if(!contracts.staking){   
+      await attachContractsIfSet();  
+      if(!contracts.staking) return alert('Set staking contract');  
+    }  
+
+    if(typeof contracts.staking.stakePortfolioByUser === 'function'){  
+      const account = await getAccount();  
+      const portfolio = await contracts.staking.stakePortfolioByUser(collection, account);  
+      $('portfolioResult').innerText = portfolio.length > 0   
+        ? portfolio.join(', ')   
+        : 'No NFTs staked.';  
+
+      log('viewPortfolio done');  
+    } else {  
+      alert('stakePortfolioByUser not found in ABI');  
+    }
+
+  } catch(e){
+    log('viewPortfolio err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Batch Harvest
+async function batchHarvest() {
+  try {
+    showLoading();
+
+    const pairs = parseBatchHarvestPairs();
+    if (pairs.length === 0) {
+      alert('No pairs to harvest');
+      return;
+    }
+
+    if (!contracts || !contracts.staking) {  
+      if (typeof attachContractsIfSet === 'function') {  
+        await attachContractsIfSet();  
+      }  
+      if (!contracts || !contracts.staking) {  
+        return alert('Staking contract not set. Set addresses and attach contracts first.');  
+      }  
+    }  
+
+    const byCollection = groupByCollection(pairs);  
+    const hasHarvestBatch = typeof contracts.staking.harvestBatch === 'function';  
+    const hasHarvestSingle = typeof contracts.staking.harvest === 'function';  
+
+    if (!hasHarvestBatch && !hasHarvestSingle) {  
+      return alert('Contract ABI lacks harvestBatch and harvest functions.');  
+    }  
+
+    for (const colLower of Object.keys(byCollection)) {  
+      const collection = colLower;  
+      const ids = byCollection[colLower];  
+
+      if (hasHarvestBatch) {  
+        log('calling harvestBatch for', collection, 'ids:', ids);  
+        const tx = await contracts.staking.harvestBatch(collection, ids);  
+        log('harvestBatch tx', tx.hash);  
+        await tx.wait();  
+        log('harvestBatch confirmed for', collection);  
+      } else {  
+        for (const id of ids) {  
+          log('calling harvest for', collection, id);  
+          const tx = await contracts.staking.harvest(collection, id);  
+          log('harvest tx', tx.hash);  
+          await tx.wait();  
+          log('harvest confirmed', id);  
+        }  
+      }  
+    }  
+
+    log('batchHarvest: done for all collections');
+  } catch (err) {
+    log('batchHarvest err', err && err.message ? err.message : err);
+  } finally {
+    hideLoading();
+  }
+}
+
 
   // ---------- Governance Section ----------
 const PROPOSAL_MAPPING = {
@@ -2145,7 +2327,6 @@ async function fetchProposal() {
 
 	  
 // ---------- Guardian Council / DAO & Governance ----------
-
 // DAO
 async function proposeDao(){
   try {
