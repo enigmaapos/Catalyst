@@ -1610,7 +1610,6 @@ attachStatusChecker("nftCollection", "nftStatusInfo");
 	  
 
 // ---------- Bluechip Actions ----------
-
 // Enroll as Bluechip
 async function enrollBluechip(){
   try {
@@ -1708,299 +1707,215 @@ async function refreshBluechip(){
   }
 }
 	  
-  // ---------- NFT approval ----------
-  async function approveNFT(){
-    try {
-      const collection = $('nftCollection').value.trim();
-      if(!collection) return alert('collection required');
-      const stakingAddr = $('addrStaking').value.trim();
-      if(!stakingAddr) return alert('staking address required');
-      const nft = new ethers.Contract(collection, ERC721_ABI, signer);
-      const me = await signer.getAddress();
-      const already = await nft.isApprovedForAll(me, stakingAddr);
-      if(already){ log('already approved'); return; }
-      const tx = await nft.setApprovalForAll(stakingAddr, true);
-      log('approve tx', tx.hash);
-      await tx.wait();
-      log('approve complete');
-    } catch(e){ log('approveNFT err', e && e.message ? e.message : e); }
-  }
-
-  // ---------- Staking single ----------
-  async function termStake(){
-    try {
-      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
-      const collection = $('nftCollection').value.trim();
-      const tokenId = $('nftTokenId').value.trim();
-      if(!collection || !tokenId) return alert('collection & tokenId required');
-      const tx = await contracts.staking.termStake(collection, tokenId);
-      log('termStake tx', tx.hash);
-      await tx.wait();
-      log('termStake done');
-    } catch(e){ log('termStake err', e && e.message ? e.message : e); }
-  }
-
-  async function permanentStake(){
-    try {
-      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
-      const collection = $('nftCollection').value.trim();
-      const tokenId = $('nftTokenId').value.trim();
-      if(!collection || !tokenId) return alert('collection & tokenId required');
-      const tx = await contracts.staking.permanentStake(collection, tokenId);
-      log('permanentStake tx', tx.hash);
-      await tx.wait();
-      log('permanentStake done');
-    } catch(e){ log('permanentStake err', e && e.message ? e.message : e); }
-  }
-
-  async function unstake(){
-    try {
-      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
-      const collection = $('nftCollection').value.trim();
-      const tokenId = $('nftTokenId').value.trim();
-      if(!collection || !tokenId) return alert('collection & tokenId required');
-      const tx = await contracts.staking.unstake(collection, tokenId);
-      log('unstake tx', tx.hash);
-      await tx.wait();
-      log('unstake done');
-    } catch(e){ log('unstake err', e && e.message ? e.message : e); }
-  }
-
-  // harvest - contract may or may not expose public harvest; if exists call it, otherwise advise.
-  async function harvest(){
-    try {
-      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
-      // try common signatures
-      if(typeof contracts.staking.harvest === 'function'){
-        const collection = $('nftCollection').value.trim();
-        const tokenId = $('nftTokenId').value.trim();
-        const tx = await contracts.staking.harvest(collection, tokenId);
-        log('harvest tx', tx.hash);
-        await tx.wait();
-        log('harvest done');
-        return;
-      }
-      alert('No public harvest function found in staking ABI — rewards are minted on unstake or via contract-internal logic.');
-    } catch(e){ log('harvest err', e && e.message ? e.message : e); }
-  }
-
-  // ---------- Batch helpers ----------
-  function parseBatchPairs(){
-    const raw = $('batchNFTs').value.trim();
-    if(!raw) return [];
-    const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
-    const pairs = [];
-    for(const ln of lines){
-      const parts = ln.split(',').map(p=>p.trim()).filter(p=>p.length>0);
-      if(parts.length >= 2) pairs.push({collection: parts[0], tokenId: parts[1]});
-    }
-    return pairs;
-  }
-
-  async function batchTermStake(){
-    try {
-      const pairs = parseBatchPairs();
-      if(pairs.length === 0) return alert('No pairs to stake');
-      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
-      // prefer a batch function if present
-      if(typeof contracts.staking.batchTermStake === 'function'){
-        const cols = pairs.map(p=>p.collection);
-        const ids = pairs.map(p=>p.tokenId);
-        const tx = await contracts.staking.batchTermStake(cols, ids);
-        log('batchTermStake tx', tx.hash);
-        await tx.wait();
-        log('batchTermStake done');
-      } else {
-        // fallback sequential
-        for(const p of pairs){
-          const tx = await contracts.staking.termStake(p.collection, p.tokenId);
-          log('termStake seq tx', tx.hash);
-          await tx.wait();
-        }
-        log('batchTermStake sequential done');
-      }
-    } catch(e){ log('batchTermStake err', e && e.message ? e.message : e); }
-  }
-
-  async function batchPermStake(){
-    try {
-      const pairs = parseBatchPairs();
-      if(pairs.length === 0) return alert('No pairs to stake');
-      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
-      if(typeof contracts.staking.batchPermanentStake === 'function'){
-        const cols = pairs.map(p=>p.collection);
-        const ids = pairs.map(p=>p.tokenId);
-        const tx = await contracts.staking.batchPermanentStake(cols, ids);
-        log('batchPermanentStake tx', tx.hash);
-        await tx.wait();
-        log('batchPermanentStake done');
-      } else {
-        for(const p of pairs){
-          const tx = await contracts.staking.permanentStake(p.collection, p.tokenId);
-          log('permanentStake seq tx', tx.hash);
-          await tx.wait();
-        }
-        log('batchPermStake sequential done');
-      }
-    } catch(e){ log('batchPermStake err', e && e.message ? e.message : e); }
-  }
-
-  async function batchUnstake(){
-    try {
-      const pairs = parseBatchPairs();
-      if(pairs.length === 0) return alert('No pairs to unstake');
-      if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
-      if(typeof contracts.staking.batchUnstake === 'function'){
-        const cols = pairs.map(p=>p.collection);
-        const ids = pairs.map(p=>p.tokenId);
-        const tx = await contracts.staking.batchUnstake(cols, ids);
-        log('batchUnstake tx', tx.hash);
-        await tx.wait();
-        log('batchUnstake done');
-      } else {
-        for(const p of pairs){
-          const tx = await contracts.staking.unstake(p.collection, p.tokenId);
-          log('unstake seq tx', tx.hash);
-          await tx.wait();
-        }
-        log('batchUnstake sequential done');
-      }
-    } catch(e){ log('batchUnstake err', e && e.message ? e.message : e); }
-  }
-
-	  // Helper: parse textarea "collection,tokenId" lines into objects
-function parseBatchHarvestPairs() {
-  const txt = $('batchHarvestNFTs').value.trim();
-  if (!txt) return [];
-  return txt.split(/\r?\n/).map(line => {
-    const parts = line.split(',').map(s => s.trim()).filter(Boolean);
-    if (parts.length < 2) return null;
-    const collection = parts[0];
-    const tokenId = parts[1];
-    if (!collection || !tokenId) return null;
-    return { collection, tokenId };
-  }).filter(Boolean);
-}
-
-// Check Pending Rewards
-async function checkPendingRewards(){
+// ---------- NFT approval ----------
+async function approveNFT(){
   try {
     const collection = $('nftCollection').value.trim();
-    const tokenId = parseInt($('nftTokenId').value.trim(), 10);
-    if(!collection) return alert('Enter a collection address');
-    if(isNaN(tokenId)) return alert('Enter a valid token ID');
+    if(!collection) return alert('collection required');
+    const stakingAddr = $('addrStaking').value.trim();
+    if(!stakingAddr) return alert('staking address required');
+    const nft = new ethers.Contract(collection, ERC721_ABI, signer);
+    const me = await signer.getAddress();
 
-    if(!contracts.staking){ 
-      await attachContractsIfSet(); 
-      if(!contracts.staking) return alert('Set staking contract'); 
+    showLoading("Approving NFT...");
+    const already = await nft.isApprovedForAll(me, stakingAddr);
+    if(already){ 
+      log('already approved'); 
+      alert('Already approved for staking');
+      return; 
     }
-
-    if(typeof contracts.staking.pendingRewards === 'function'){
-      const account = await getAccount();
-      const rewards = await contracts.staking.pendingRewards(collection, account, tokenId);
-      $('pendingRewardsResult').innerText = `${rewards.toString()} CATA`;
-      log('checkPendingRewards done');
-    } else {
-      alert('pendingRewards not found in ABI');
-    }
+    const tx = await nft.setApprovalForAll(stakingAddr, true);
+    log('approve tx', tx.hash);
+    await tx.wait();
+    log('approve complete');
   } catch(e){ 
-    log('checkPendingRewards err', e && e.message ? e.message : e); 
-    alert(e.message || e);
+    log('approveNFT err', e?.message || e); 
+    alert(`Approve failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
   }
 }
 
-// Refresh Staking Stats
-async function refreshStakingStats(){
+// ---------- Staking single ----------
+async function termStake(){
   try {
-    if(!contracts.staking){ 
-      await attachContractsIfSet();
-      if(!contracts.staking) return alert('Set staking contract');
-    }
-
-    if(typeof contracts.staking.totalStakedAll === 'function'){
-      const [all, term, perm] = await Promise.all([
-        contracts.staking.totalStakedAll(),
-        contracts.staking.totalStakedTerm(),
-        contracts.staking.totalStakedPerm()
-      ]);
-
-      $('stakedAll').innerText = all.toString();
-      $('stakedTerm').innerText = term.toString();
-      $('stakedPerm').innerText = perm.toString();
-
-      log('refreshStakingStats done');
-    } else {
-      alert('staking stats functions not found in ABI');
-    }
-  } catch(e){ 
-    log('refreshStakingStats err', e && e.message ? e.message : e); 
-    alert(e.message || e);
-  }
-}
-
-// View Portfolio
-async function viewPortfolio(){
-  try {
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
     const collection = $('nftCollection').value.trim();
-    if(!collection) return alert('Enter a collection address');
+    const tokenId = $('nftTokenId').value.trim();
+    if(!collection || !tokenId) return alert('collection & tokenId required');
 
-    if(!contracts.staking){ 
-      await attachContractsIfSet();
-      if(!contracts.staking) return alert('Set staking contract');
-    }
-
-    if(typeof contracts.staking.stakePortfolioByUser === 'function'){
-      const account = await getAccount();
-      const portfolio = await contracts.staking.stakePortfolioByUser(collection, account);
-      $('portfolioResult').innerText = portfolio.length > 0 
-        ? portfolio.join(', ') 
-        : 'No NFTs staked.';
-
-      log('viewPortfolio done');
-    } else {
-      alert('stakePortfolioByUser not found in ABI');
-    }
+    showLoading("Staking (term)...");
+    const tx = await contracts.staking.termStake(collection, tokenId);
+    log('termStake tx', tx.hash);
+    await tx.wait();
+    log('termStake done');
   } catch(e){ 
-    log('viewPortfolio err', e && e.message ? e.message : e); 
-    alert(e.message || e);
+    log('termStake err', e?.message || e); 
+    alert(`Stake failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
   }
 }
 
+async function permanentStake(){
+  try {
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+    const collection = $('nftCollection').value.trim();
+    const tokenId = $('nftTokenId').value.trim();
+    if(!collection || !tokenId) return alert('collection & tokenId required');
 
-// Group by collection => { '0xCollA': ['123','124'], '0xCollB': ['555'] }
-function groupByCollection(pairs) {
-  const map = {};
-  for (const p of pairs) {
-    const col = p.collection.toLowerCase();
-    if (!map[col]) map[col] = [];
-    // keep as string or BigInt depending on how you send; strings are fine for ethers
-    map[col].push(p.tokenId.toString());
+    showLoading("Staking (permanent)...");
+    const tx = await contracts.staking.permanentStake(collection, tokenId);
+    log('permanentStake tx', tx.hash);
+    await tx.wait();
+    log('permanentStake done');
+  } catch(e){ 
+    log('permanentStake err', e?.message || e); 
+    alert(`Permanent stake failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
   }
-  return map;
+}
+
+async function unstake(){
+  try {
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+    const collection = $('nftCollection').value.trim();
+    const tokenId = $('nftTokenId').value.trim();
+    if(!collection || !tokenId) return alert('collection & tokenId required');
+
+    showLoading("Unstaking...");
+    const tx = await contracts.staking.unstake(collection, tokenId);
+    log('unstake tx', tx.hash);
+    await tx.wait();
+    log('unstake done');
+  } catch(e){ 
+    log('unstake err', e?.message || e); 
+    alert(`Unstake failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// harvest - contract may or may not expose public harvest
+async function harvest(){
+  try {
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+    if(typeof contracts.staking.harvest === 'function'){
+      const collection = $('nftCollection').value.trim();
+      const tokenId = $('nftTokenId').value.trim();
+
+      showLoading("Harvesting rewards...");
+      const tx = await contracts.staking.harvest(collection, tokenId);
+      log('harvest tx', tx.hash);
+      await tx.wait();
+      log('harvest done');
+      return;
+    }
+    alert('No public harvest function found in staking ABI');
+  } catch(e){ 
+    log('harvest err', e?.message || e); 
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ---------- Batch helpers ----------
+async function batchTermStake(){
+  try {
+    const pairs = parseBatchPairs();
+    if(pairs.length === 0) return alert('No pairs to stake');
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+
+    showLoading("Batch term staking...");
+    if(typeof contracts.staking.batchTermStake === 'function'){
+      const cols = pairs.map(p=>p.collection);
+      const ids = pairs.map(p=>p.tokenId);
+      const tx = await contracts.staking.batchTermStake(cols, ids);
+      log('batchTermStake tx', tx.hash);
+      await tx.wait();
+      log('batchTermStake done');
+    } else {
+      for(const p of pairs){
+        const tx = await contracts.staking.termStake(p.collection, p.tokenId);
+        log('termStake seq tx', tx.hash);
+        await tx.wait();
+      }
+      log('batchTermStake sequential done');
+    }
+  } catch(e){ log('batchTermStake err', e?.message || e); }
+  finally { hideLoading(); }
+}
+
+async function batchPermStake(){
+  try {
+    const pairs = parseBatchPairs();
+    if(pairs.length === 0) return alert('No pairs to stake');
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+
+    showLoading("Batch permanent staking...");
+    if(typeof contracts.staking.batchPermanentStake === 'function'){
+      const cols = pairs.map(p=>p.collection);
+      const ids = pairs.map(p=>p.tokenId);
+      const tx = await contracts.staking.batchPermanentStake(cols, ids);
+      log('batchPermanentStake tx', tx.hash);
+      await tx.wait();
+      log('batchPermanentStake done');
+    } else {
+      for(const p of pairs){
+        const tx = await contracts.staking.permanentStake(p.collection, p.tokenId);
+        log('permanentStake seq tx', tx.hash);
+        await tx.wait();
+      }
+      log('batchPermStake sequential done');
+    }
+  } catch(e){ log('batchPermStake err', e?.message || e); }
+  finally { hideLoading(); }
+}
+
+async function batchUnstake(){
+  try {
+    const pairs = parseBatchPairs();
+    if(pairs.length === 0) return alert('No pairs to unstake');
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+
+    showLoading("Batch unstaking...");
+    if(typeof contracts.staking.batchUnstake === 'function'){
+      const cols = pairs.map(p=>p.collection);
+      const ids = pairs.map(p=>p.tokenId);
+      const tx = await contracts.staking.batchUnstake(cols, ids);
+      log('batchUnstake tx', tx.hash);
+      await tx.wait();
+      log('batchUnstake done');
+    } else {
+      for(const p of pairs){
+        const tx = await contracts.staking.unstake(p.collection, p.tokenId);
+        log('unstake seq tx', tx.hash);
+        await tx.wait();
+      }
+      log('batchUnstake sequential done');
+    }
+  } catch(e){ log('batchUnstake err', e?.message || e); }
+  finally { hideLoading(); }
 }
 
 async function batchHarvest() {
   try {
     const pairs = parseBatchHarvestPairs();
-    if (pairs.length === 0) {
-      alert('No pairs to harvest');
-      return;
-    }
+    if (pairs.length === 0) return alert('No pairs to harvest');
 
-    // ensure contracts.staking exists (attach if needed)
     if (!contracts || !contracts.staking) {
       if (typeof attachContractsIfSet === 'function') {
         await attachContractsIfSet();
       }
       if (!contracts || !contracts.staking) {
-        return alert('Staking contract not set. Set addresses and attach contracts first.');
+        return alert('Staking contract not set.');
       }
     }
 
-    // Prefer calling harvestBatch(collection, uint256[] tokenIds)
+    showLoading("Batch harvesting...");
     const byCollection = groupByCollection(pairs);
-
-    // Detect if harvestBatch exists in ABI
     const hasHarvestBatch = typeof contracts.staking.harvestBatch === 'function';
     const hasHarvestSingle = typeof contracts.staking.harvest === 'function';
 
@@ -2008,20 +1923,17 @@ async function batchHarvest() {
       return alert('Contract ABI lacks harvestBatch and harvest functions.');
     }
 
-    // Iterate groups
     for (const colLower of Object.keys(byCollection)) {
-      const collection = colLower; // already lowercase; contract accepts checksummed address too
+      const collection = colLower;
       const ids = byCollection[colLower];
 
       if (hasHarvestBatch) {
-        // call harvestBatch(collection, uint256[] tokenIds)
         log('calling harvestBatch for', collection, 'ids:', ids);
         const tx = await contracts.staking.harvestBatch(collection, ids);
         log('harvestBatch tx', tx.hash);
         await tx.wait();
         log('harvestBatch confirmed for', collection);
       } else {
-        // fallback: call harvest(collection, tokenId) for each id
         for (const id of ids) {
           log('calling harvest for', collection, id);
           const tx = await contracts.staking.harvest(collection, id);
@@ -2031,14 +1943,16 @@ async function batchHarvest() {
         }
       }
     }
-
     log('batchHarvest: done for all collections');
   } catch (err) {
-    log('batchHarvest err', err && err.message ? err.message : err);
+    log('batchHarvest err', err?.message || err);
+  } finally {
+    hideLoading();
   }
 }
 
-    // ---------- Governance Section ----------
+
+  // ---------- Governance Section ----------
 const PROPOSAL_MAPPING = {
   BASE_REWARD: 0,
   HARVEST_FEE: 1,
@@ -2055,6 +1969,21 @@ const PROPOSAL_MAPPING = {
   COUNCIL_CLEAR_LOCK: 12,
   UPGRADE_COUNCIL: 13
 };
+
+// Helpers
+function fmtNum(val) {
+  if (!val) return '0';
+  try { return ethers.BigNumber.isBigNumber(val) ? val.toString() : val.toString(); } catch { return val.toString(); }
+}
+function fmtReadable(val) {
+  if (!val) return '0';
+  try { return Number(val.toString()).toLocaleString(); } catch { return val.toString(); }
+}
+function blocksToDays(blocks) {
+  const avgBlockTimeSec = 12; // adjust if chain differs
+  const sec = Number(blocks) * avgBlockTimeSec;
+  return (sec / 86400).toFixed(2); // days
+}
 
 // Toggle extra input fields when proposal type changes
 $('proposalType').addEventListener('change', () => {
@@ -2074,14 +2003,16 @@ $('proposalType').addEventListener('change', () => {
     $('upgradeCouncilRow').classList.remove('hidden');
   }
 });
-
+    
 // Create Proposal
 async function createProposal() {
   try {
     if (!contracts.governance) {
       await attachContractsIfSet();
-      if (!contracts.governance) return alert('Governance not set');
+      if (!contracts.governance) return alert('⚠️ Governance not set');
     }
+
+    $('loadingIndicator').style.display = 'block'; // show loading
 
     const typeStr = $('proposalType').value;
     const pType = PROPOSAL_MAPPING[typeStr];
@@ -2097,7 +2028,10 @@ async function createProposal() {
       newValue = ethers.BigNumber.from($('tierDeclaredSupply').value || '0');
     } else if (typeStr === 'COUNCIL_RESEED_ACTIVE' || typeStr === 'COUNCIL_PROPOSE_STANDBY') {
       const addrs = Array.from(document.querySelectorAll('.councilAddr')).map(el => el.value.trim());
-      if (addrs.length !== 7 || addrs.some(a => !a)) return alert('Must provide 7 guardian addresses');
+      if (addrs.length !== 7 || addrs.some(a => !a)) {
+        $('loadingIndicator').style.display = 'none';
+        return alert('⚠️ Must provide 7 guardian addresses');
+      }
       const payload = await contracts.governance.encodeCouncilBatch(addrs);
       ctx = payload;
       newValue = 0;
@@ -2111,9 +2045,14 @@ async function createProposal() {
     const tx = await contracts.governance.propose(pType, paramTarget, newValue, ctx);
     log('propose tx', tx.hash);
     await tx.wait();
+
+    $('loadingIndicator').style.display = 'none';
+    alert("✅ Proposal created!");
     log('proposal created');
   } catch (e) {
+    $('loadingIndicator').style.display = 'none';
     log('createProposal err', e.message || e);
+    alert("❌ " + (e.message || e));
   }
 }
 
@@ -2122,17 +2061,25 @@ async function voteProposal() {
   try {
     if (!contracts.governance) {
       await attachContractsIfSet();
-      if (!contracts.governance) return alert('Governance not set');
+      if (!contracts.governance) return alert('⚠️ Governance not set');
     }
     const id = $('proposalId').value.trim();
-    if (!id) return alert('Proposal ID required');
+    if (!id) return alert('⚠️ Proposal ID required');
+
+    $('loadingIndicator').style.display = 'block';
+
     const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
     const tx = await contracts.governance.vote(id, ctx);
     log('vote tx', tx.hash);
     await tx.wait();
+
+    $('loadingIndicator').style.display = 'none';
+    alert("✅ Vote cast!");
     log('voted');
   } catch (e) {
+    $('loadingIndicator').style.display = 'none';
     log('voteProposal err', e.message || e);
+    alert("❌ " + (e.message || e));
   }
 }
 
@@ -2141,16 +2088,24 @@ async function execProposal() {
   try {
     if (!contracts.governance) {
       await attachContractsIfSet();
-      if (!contracts.governance) return alert('Governance not set');
+      if (!contracts.governance) return alert('⚠️ Governance not set');
     }
     const id = $('proposalId').value.trim();
-    if (!id) return alert('Proposal ID required');
+    if (!id) return alert('⚠️ Proposal ID required');
+
+    $('loadingIndicator').style.display = 'block';
+
     const tx = await contracts.governance.executeProposal(id);
     log('exec tx', tx.hash);
     await tx.wait();
+
+    $('loadingIndicator').style.display = 'none';
+    alert("✅ Proposal executed!");
     log('executed');
   } catch (e) {
+    $('loadingIndicator').style.display = 'none';
     log('execProposal err', e.message || e);
+    alert("❌ " + (e.message || e));
   }
 }
 
@@ -2159,403 +2114,191 @@ async function fetchProposal() {
   try {
     if (!contracts.governance) {
       await attachContractsIfSet();
-      if (!contracts.governance) return alert('Governance not set');
+      if (!contracts.governance) return alert('⚠️ Governance not set');
     }
     const id = $('proposalId').value.trim();
-    if (!id) return alert('Proposal ID required');
+    if (!id) return alert('⚠️ Proposal ID required');
+
+    $('loadingIndicator').style.display = 'block';
+
     let info = null;
-    try { info = await contracts.governance.proposals(id); } catch (e) { /* ignore */ }
+    try { info = await contracts.governance.proposals(id); } catch (e) {}
     try { if (!info) info = await contracts.governance.proposalPayloads(id); } catch (e) {}
-    log('proposal fetch', info || 'no data');
+
+    $('loadingIndicator').style.display = 'none';
+
+    if (info) {
+      log('proposal fetch', {
+        ...info,
+        valueReadable: fmtReadable(info.value),
+        blocksAsDays: info.endBlock ? blocksToDays(info.endBlock - info.startBlock) : '—'
+      });
+    } else {
+      log('proposal fetch', 'no data');
+    }
   } catch (e) {
+    $('loadingIndicator').style.display = 'none';
     log('fetchProposal err', e.message || e);
+    alert("❌ " + (e.message || e));
   }
 }
 
-// ---------- Proposal Explorer ----------
-const proposalsMap = {};
+	  
+// ---------- Guardian Council / DAO & Governance ----------
 
-function renderProposalsTable() {
-  const tbody = $('proposalsTbody');
-  tbody.innerHTML = '';
-  Object.values(proposalsMap).forEach(p => {
-    const tr = document.createElement('tr');
-    tr.className = 'border-t border-slate-700';
-    tr.innerHTML = `
-      <td class="p-2 font-mono text-xs">${p.id}</td>
-      <td class="p-2">${p.type}</td>
-      <td class="p-2">${p.value}</td>
-      <td class="p-2">${p.ctx}</td>
-      <td class="p-2">${p.proposer || '-'}</td>
-      <td class="p-2">${p.votes || 0}</td>
-      <td class="p-2">${p.executed ? 'Yes' : 'No'}</td>
-      <td class="p-2">
-        <button class="p-1 bg-slate-600 rounded text-xs" onclick="$('proposalId').value='${p.id}'">Load</button>
-      </td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-// Governance Event Listeners
-function startGovernanceListeners() {
-  if (!contracts.governance) return;
-  const g = contracts.governance;
-
-  g.on("ProposalCreated", (id, proposer, pType) => {
-    const pid = id.toString();
-    proposalsMap[pid] = { id: pid, proposer, type: pType.toString(), value: '—', ctx: '—', votes: 0, executed: false };
-    renderProposalsTable();
-  });
-
-  g.on("VoteCast", (voter, id, support, votes) => {
-    const pid = id.toString();
-    proposalsMap[pid] = proposalsMap[pid] || { id: pid };
-    proposalsMap[pid].votes = (proposalsMap[pid].votes || 0) + parseInt(votes.toString());
-    renderProposalsTable();
-  });
-
-  g.on("ProposalExecuted", (id) => {
-    const pid = id.toString();
-    proposalsMap[pid] = proposalsMap[pid] || { id: pid };
-    proposalsMap[pid].executed = true;
-    renderProposalsTable();
-  });
-}
-
-// Start event listeners once contracts are attached + bind buttons
-window.addEventListener('DOMContentLoaded', async () => {
-  await attachContractsIfSet();
-  startGovernanceListeners();
-});
-   
-	  // Guardian Council contract functions
-// ---------- DAO ----------
+// DAO
 async function proposeDao(){
   try {
-    if(!contracts.council) return alert("Council contract not attached");
+    if(!contracts.council) return alert("⚠️ Council contract not attached");
     const newDao = $('newDaoAddr').value.trim();
-    if(!newDao) return alert("Enter DAO address");
+    if(!newDao) return alert("⚠️ Enter DAO address");
+
     const tx = await contracts.council.proposeNewDAO(newDao);
-    log('propose DAO tx', tx.hash);
+    log('proposeDao tx', tx.hash);
+    $('loadingIndicator').style.display = 'block';
     await tx.wait();
+    $('loadingIndicator').style.display = 'none';
+
     log('DAO proposal submitted');
     alert("✅ DAO proposal submitted");
   } catch(e){
-    log('proposeDao err', e && e.message ? e.message : e);
-    alert(e.message || e);
+    log('proposeDao err', e?.message || e);
+    $('loadingIndicator').style.display = 'none';
+    alert("❌ " + (e.message || e));
   }
 }
 
 async function commitDao(){
   try {
-    if(!contracts.council) return alert("Council contract not attached");
+    if(!contracts.council) return alert("⚠️ Council contract not attached");
     const tx = await contracts.council.commitNewDAO();
-    log('commit DAO tx', tx.hash);
+    log('commitDao tx', tx.hash);
+    $('loadingIndicator').style.display = 'block';
     await tx.wait();
+    $('loadingIndicator').style.display = 'none';
+
     log('DAO committed');
     alert("✅ DAO committed");
   } catch(e){
-    log('commitDao err', e && e.message ? e.message : e);
-    alert(e.message || e);
+    log('commitDao err', e?.message || e);
+    $('loadingIndicator').style.display = 'none';
+    alert("❌ " + (e.message || e));
   }
 }
 
-// Active Batch
+// ----------- Active Batch -----------
 async function proposeActiveBatch(){
   try {
-    if(!contracts.council) return alert("Council contract not attached");
+    if(!contracts.council) return alert("⚠️ Council contract not attached");
     const arr = parse7($('activeBatchInput').value);
     const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
-    log('propose active batch tx', tx.hash);
+    log('proposeActiveBatch tx', tx.hash);
+    $('loadingIndicator').style.display = 'block';
     await tx.wait();
+    $('loadingIndicator').style.display = 'none';
+
     log('proposeActiveBatch done');
     alert("✅ Active batch proposed");
   } catch(e){
-    log('proposeActiveBatch err', e && e.message ? e.message : e);
-    alert(e.message || e);
+    log('proposeActiveBatch err', e?.message || e);
+    $('loadingIndicator').style.display = 'none';
+    alert("❌ " + (e.message || e));
   }
 }
 
 async function commitActiveBatch(){
   try {
-    if(!contracts.council) return alert("Council contract not attached");
+    if(!contracts.council) return alert("⚠️ Council contract not attached");
     const tx = await contracts.council.daoCommitSeedActiveBatch();
-    log('commit active batch tx', tx.hash);
+    log('commitActiveBatch tx', tx.hash);
+    $('loadingIndicator').style.display = 'block';
     await tx.wait();
+    $('loadingIndicator').style.display = 'none';
+
     log('commitActiveBatch done');
     alert("✅ Active batch committed");
   } catch(e){
-    log('commitActiveBatch err', e && e.message ? e.message : e);
-    alert(e.message || e);
+    log('commitActiveBatch err', e?.message || e);
+    $('loadingIndicator').style.display = 'none';
+    alert("❌ " + (e.message || e));
   }
 }
 
-// Standby Batch
+// ----------- Standby Batch -----------
 async function proposeStandbyBatch(){
   try {
-    if(!contracts.council) return alert("Council contract not attached");
+    if(!contracts.council) return alert("⚠️ Council contract not attached");
     const arr = parse7($('standbyBatchInput').value);
     const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
-    log('propose standby batch tx', tx.hash);
+    log('proposeStandbyBatch tx', tx.hash);
+    $('loadingIndicator').style.display = 'block';
     await tx.wait();
+    $('loadingIndicator').style.display = 'none';
+
     log('proposeStandbyBatch done');
     alert("✅ Standby batch proposed");
   } catch(e){
-    log('proposeStandbyBatch err', e && e.message ? e.message : e);
-    alert(e.message || e);
+    log('proposeStandbyBatch err', e?.message || e);
+    $('loadingIndicator').style.display = 'none';
+    alert("❌ " + (e.message || e));
   }
 }
 
 async function commitStandbyBatch(){
   try {
-    if(!contracts.council) return alert("Council contract not attached");
+    if(!contracts.council) return alert("⚠️ Council contract not attached");
     const tx = await contracts.council.daoCommitSeedStandbyBatch();
-    log('commit standby batch tx', tx.hash);
+    log('commitStandbyBatch tx', tx.hash);
+    $('loadingIndicator').style.display = 'block';
     await tx.wait();
+    $('loadingIndicator').style.display = 'none';
+
     log('commitStandbyBatch done');
     alert("✅ Standby batch committed");
   } catch(e){
-    log('commitStandbyBatch err', e && e.message ? e.message : e);
-    alert(e.message || e);
+    log('commitStandbyBatch err', e?.message || e);
+    $('loadingIndicator').style.display = 'none';
+    alert("❌ " + (e.message || e));
   }
 }
 
 async function activateStandby(){
   try {
-    if(!contracts.council) return alert("Council contract not attached");
+    if(!contracts.council) return alert("⚠️ Council contract not attached");
     const tx = await contracts.council.daoActivateStandby();
-    log('activate standby tx', tx.hash);
+    log('activateStandby tx', tx.hash);
+    $('loadingIndicator').style.display = 'block';
     await tx.wait();
+    $('loadingIndicator').style.display = 'none';
+
     log('activateStandby done');
     alert("✅ Standby batch activated");
   } catch(e){
-    log('activateStandby err', e && e.message ? e.message : e);
-    alert(e.message || e);
+    log('activateStandby err', e?.message || e);
+    $('loadingIndicator').style.display = 'none';
+    alert("❌ " + (e.message || e));
   }
 }
 
-// Lock
+// ----------- Lock -----------
 async function clearLock(){
   try {
-    if(!contracts.council) return alert("Council contract not attached");
+    if(!contracts.council) return alert("⚠️ Council contract not attached");
     const tx = await contracts.council.daoClearLockAndWarning();
-    log('clear lock tx', tx.hash);
+    log('clearLock tx', tx.hash);
+    $('loadingIndicator').style.display = 'block';
     await tx.wait();
+    $('loadingIndicator').style.display = 'none';
+
     log('clearLock done');
     alert("✅ Lock cleared");
   } catch(e){
-    log('clearLock err', e && e.message ? e.message : e);
-    alert(e.message || e);
+    log('clearLock err', e?.message || e);
+    $('loadingIndicator').style.display = 'none';
+    alert("❌ " + (e.message || e));
   }
 }
 
-// Parse helper
-function parse7(txt){
-  const arr = txt.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(arr.length !== 7) throw new Error("Need exactly 7 addresses");
-  return arr;
-}
-	  
-// Recovery
-async function proposeRecovery(){
-  try {
-    const kind = parseInt($('recoveryKind').value, 10);
-    const proposed = $('recoveryProposed').value.trim();
-    const callTarget = $('recoveryCallTarget').value.trim();
-    const callData = $('recoveryCallData').value.trim();
-
-    if(!proposed || !callTarget || !callData) {
-      return alert("Fill all recovery fields");
-    }
-
-    const tx = await contracts.council.proposeRecovery(kind, proposed, callTarget, callData);
-    log('proposeRecovery tx', tx.hash);
-    await tx.wait();
-    log('Recovery proposed');
-    alert("Recovery proposal submitted!");
-  } catch(e) {
-    log('proposeRecovery err', e);
-    alert(e.message || e);
-  }
-}
-
-async function approveRecovery(){
-  try {
-    const kind = parseInt($('recoveryKind').value, 10);
-    const tx = await contracts.council.approveRecovery(kind);
-    log('approveRecovery tx', tx.hash);
-    await tx.wait();
-    log('Recovery approved');
-    alert("Recovery approved!");
-  } catch(e) {
-    log('approveRecovery err', e);
-    alert(e.message || e);
-  }
-}
-
-async function executeRecovery(){
-  try {
-    const kind = parseInt($('recoveryKind').value, 10);
-    const tx = await contracts.council.executeRecovery(kind);
-    log('executeRecovery tx', tx.hash);
-    await tx.wait();
-    log('Recovery executed');
-    alert("Recovery executed!");
-  } catch(e) {
-    log('executeRecovery err', e);
-    alert(e.message || e);
-  }
-}
-
-async function vetoRecovery(){
-  try {
-    const kind = parseInt($('recoveryKind').value, 10);
-    const tx = await contracts.council.lastHonestHaltAndPromote(kind);
-    log('vetoRecovery tx', tx.hash);
-    await tx.wait();
-    log('Recovery vetoed');
-    alert("Recovery vetoed!");
-  } catch(e) {
-    log('vetoRecovery err', e);
-    alert(e.message || e);
-  }
-}
-
-	  // Encode calldata helper
-async function encodeCallData() {
-  try {
-    const fnSig = $('recoveryFunction').value.trim(); // e.g. "upgradeTo(address)"
-    const args = $('recoveryArgs').value.trim().split(',').map(s => s.trim()).filter(Boolean);
-
-    if (!fnSig) return alert("Enter function signature");
-    
-    // Create ethers.js Interface
-    const iface = new ethers.utils.Interface([ "function " + fnSig ]);
-    const fnName = fnSig.split('(')[0]; // extract name before '('
-
-    const callData = iface.encodeFunctionData(fnName, args);
-    $('recoveryCallData').value = callData;
-
-    alert("✅ CallData encoded!");
-  } catch (e) {
-    console.error(e);
-    alert("Error encoding callData: " + (e.message || e));
-  }
-}
-
-// -------------------- READ-ONLY HELPERS --------------------
-// DAO
-async function fetchDaoInfo() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-
-    const daoAddr = await contracts.council.dao();
-    $('daoAddr').innerText = daoAddr;
-
-    log("fetchDaoInfo done ✅");
-  } catch (e) {
-    console.error("fetchDaoInfo err", e);
-    $('daoAddr').innerText = "Error: " + (e.message || e);
-  }
-}
-
-
-// Guardians
-async function fetchGuardians() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-
-    const active = await contracts.council.getActiveGuardians();
-    const standby = await contracts.council.getStandbyGuardians();
-
-    $('activeGuardians').innerText = active.join("\n") || "None";
-    $('standbyGuardians').innerText = standby.join("\n") || "None";
-
-    log("fetchGuardians done ✅");
-  } catch (e) {
-    console.error("fetchGuardians err", e);
-    $('activeGuardians').innerText = "Error loading";
-    $('standbyGuardians').innerText = "Error loading";
-  }
-}
-
-
-// Lock / health
-async function fetchLockStatus() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-
-    const locked = await contracts.council.locked();
-    $('lockStatus').innerText = locked ? "🔒 Locked" : "✅ Unlocked";
-
-    log("fetchLockStatus done ✅");
-  } catch (e) {
-    console.error("fetchLockStatus err", e);
-    $('lockStatus').innerText = "Error: " + (e.message || e);
-  }
-}
-
-
-// Recovery approvals (who approved)
-async function fetchRecoveryApprovals(kind) {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-
-    const nonce = await contracts.council.getRequestNonce(kind);
-    const guardians = await contracts.council.getActiveGuardians();
-
-    const approvedList = [];
-    for (const g of guardians) {
-      const lastApproved = await contracts.council.getLastApprovedNonce(kind, g);
-      if (lastApproved.toString() === nonce.toString()) {
-        approvedList.push(g);
-      }
-    }
-
-    $('riApprovers').innerText = approvedList.length > 0
-      ? approvedList.join("\n")
-      : "None yet";
-
-    log("fetchRecoveryApprovals done ✅");
-  } catch (e) {
-    console.error("fetchRecoveryApprovals err", e);
-    $('riApprovers').innerText = "Error: " + (e.message || e);
-  }
-}
-
-
-// Full recovery state
-async function fetchFullRecoveryState() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-
-    const kind = parseInt($('recoveryKind').value, 10);
-    if (isNaN(kind)) return alert("Select a valid recovery kind");
-
-    const [proposed, approvals, deadline, executed, callTarget, callData] =
-      await contracts.council.getRecoveryState(kind);
-
-    const [guardian, expiry] = await contracts.council.getTempVeto();
-    const nonce = await contracts.council.getRequestNonce(kind);
-
-    $('riProposed').innerText = proposed;
-    $('riApprovals').innerText = `${approvals} approvals`;
-    $('riDeadline').innerText = new Date(deadline * 1000).toLocaleString();
-    $('riExecuted').innerText = executed ? "✅ Yes" : "❌ No";
-    $('riCallTarget').innerText = callTarget;
-    $('riCallData').innerText = callData;
-    $('riGuardian').innerText = guardian;
-    $('riVetoExpiry').innerText = expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "-";
-    $('riNonce').innerText = nonce.toString();
-
-    await fetchRecoveryApprovals(kind);
-
-    log("fetchFullRecoveryState done ✅");
-  } catch (e) {
-    console.error("fetchFullRecoveryState err", e);
-    alert("Error loading recovery info: " + (e.message || e));
-  }
-}
 	  
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async ()=>{
