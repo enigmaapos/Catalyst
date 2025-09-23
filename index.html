@@ -1821,85 +1821,119 @@ async function harvest(){
   }
 }
 
-// ---------- Batch helpers ----------
-async function batchTermStake(){
-  try {
-    const pairs = parseBatchPairs();
-    if(pairs.length === 0) return alert('No pairs to stake');
-    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+	  // ---------- Batch helpers ----------
+function parseBatchPairs() {
+  const raw = $('batchNFTs').value.trim();
+  if (!raw) return [];
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const pairs = [];
+  for (const ln of lines) {
+    const parts = ln.split(',').map(p => p.trim()).filter(p => p.length > 0);
+    if (parts.length >= 2) pairs.push({ collection: parts[0], tokenId: parts[1] });
+  }
+  return pairs;
+}
 
-    showLoading("Batch term staking...");
-    if(typeof contracts.staking.batchTermStake === 'function'){
-      const cols = pairs.map(p=>p.collection);
-      const ids = pairs.map(p=>p.tokenId);
+async function batchTermStake() {
+  try {
+    showLoading();
+
+    const pairs = parseBatchPairs();
+    if (pairs.length === 0) return alert('No pairs to stake');
+    if (!contracts.staking) { 
+      await attachContractsIfSet(); 
+      if (!contracts.staking) return alert('Set staking contract'); 
+    }
+
+    if (typeof contracts.staking.batchTermStake === 'function') {
+      const cols = pairs.map(p => p.collection);
+      const ids = pairs.map(p => p.tokenId);
       const tx = await contracts.staking.batchTermStake(cols, ids);
       log('batchTermStake tx', tx.hash);
       await tx.wait();
       log('batchTermStake done');
     } else {
-      for(const p of pairs){
+      // fallback sequential
+      for (const p of pairs) {
         const tx = await contracts.staking.termStake(p.collection, p.tokenId);
         log('termStake seq tx', tx.hash);
         await tx.wait();
       }
       log('batchTermStake sequential done');
     }
-  } catch(e){ log('batchTermStake err', e?.message || e); }
-  finally { hideLoading(); }
+  } catch (e) { 
+    log('batchTermStake err', e && e.message ? e.message : e); 
+  } finally {
+    hideLoading();
+  }
 }
 
-async function batchPermStake(){
+async function batchPermStake() {
   try {
-    const pairs = parseBatchPairs();
-    if(pairs.length === 0) return alert('No pairs to stake');
-    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+    showLoading();
 
-    showLoading("Batch permanent staking...");
-    if(typeof contracts.staking.batchPermanentStake === 'function'){
-      const cols = pairs.map(p=>p.collection);
-      const ids = pairs.map(p=>p.tokenId);
+    const pairs = parseBatchPairs();
+    if (pairs.length === 0) return alert('No pairs to stake');
+    if (!contracts.staking) { 
+      await attachContractsIfSet(); 
+      if (!contracts.staking) return alert('Set staking contract'); 
+    }
+
+    if (typeof contracts.staking.batchPermanentStake === 'function') {
+      const cols = pairs.map(p => p.collection);
+      const ids = pairs.map(p => p.tokenId);
       const tx = await contracts.staking.batchPermanentStake(cols, ids);
       log('batchPermanentStake tx', tx.hash);
       await tx.wait();
       log('batchPermanentStake done');
     } else {
-      for(const p of pairs){
+      for (const p of pairs) {
         const tx = await contracts.staking.permanentStake(p.collection, p.tokenId);
         log('permanentStake seq tx', tx.hash);
         await tx.wait();
       }
       log('batchPermStake sequential done');
     }
-  } catch(e){ log('batchPermStake err', e?.message || e); }
-  finally { hideLoading(); }
+  } catch (e) { 
+    log('batchPermStake err', e && e.message ? e.message : e); 
+  } finally {
+    hideLoading();
+  }
 }
 
-async function batchUnstake(){
+async function batchUnstake() {
   try {
-    const pairs = parseBatchPairs();
-    if(pairs.length === 0) return alert('No pairs to unstake');
-    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+    showLoading();
 
-    showLoading("Batch unstaking...");
-    if(typeof contracts.staking.batchUnstake === 'function'){
-      const cols = pairs.map(p=>p.collection);
-      const ids = pairs.map(p=>p.tokenId);
+    const pairs = parseBatchPairs();
+    if (pairs.length === 0) return alert('No pairs to unstake');
+    if (!contracts.staking) { 
+      await attachContractsIfSet(); 
+      if (!contracts.staking) return alert('Set staking contract'); 
+    }
+
+    if (typeof contracts.staking.batchUnstake === 'function') {
+      const cols = pairs.map(p => p.collection);
+      const ids = pairs.map(p => p.tokenId);
       const tx = await contracts.staking.batchUnstake(cols, ids);
       log('batchUnstake tx', tx.hash);
       await tx.wait();
       log('batchUnstake done');
     } else {
-      for(const p of pairs){
+      for (const p of pairs) {
         const tx = await contracts.staking.unstake(p.collection, p.tokenId);
         log('unstake seq tx', tx.hash);
         await tx.wait();
       }
       log('batchUnstake sequential done');
     }
-  } catch(e){ log('batchUnstake err', e?.message || e); }
-  finally { hideLoading(); }
+  } catch (e) { 
+    log('batchUnstake err', e && e.message ? e.message : e); 
+  } finally {
+    hideLoading();
+  }
 }
-
+ 
 async function batchHarvest() {
   try {
     const pairs = parseBatchHarvestPairs();
