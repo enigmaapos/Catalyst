@@ -1592,17 +1592,18 @@ async function harvestBluechip(){
     } catch(e){ log('harvestBluechip err', e && e.message ? e.message : e); }
   } 
 
-// Refresh Bluechip Info
-async function refreshBluechip(){
+// Refresh Bluechip Info (improved)
+async function refreshBluechip() {
   try {
-    if(!contracts.staking){
+    if (!contracts.staking) {
       await attachContractsIfSet();
-      if(!contracts.staking) return alert('Set staking contract');
+      if (!contracts.staking) return alert('Set staking contract');
     }
 
-    if(typeof contracts.staking.bluechipWallets === 'function'){
+    if (typeof contracts.staking.bluechipWallets === 'function') {
       const me = await signer.getAddress();
 
+      // --- Enrollment status ---
       const enrolled = await contracts.staking.bluechipWallets(
         ethers.constants.AddressZero,
         me
@@ -1614,29 +1615,27 @@ async function refreshBluechip(){
         ethers.constants.AddressZero,
         me
       );
-
-      if(lastBlock.isZero()){
+      if (lastBlock.isZero()) {
         $('bluechipLastBlock').innerText = '—';
       } else {
         const currentBlock = await provider.getBlockNumber();
         const diff = currentBlock - lastBlock.toNumber();
-        const approxMinutes = diff * 12 / 60; // ⏱ assuming ~12s/block → minutes
+        const approxMinutes = (diff * 12) / 60; // assume ~12s per block
         $('bluechipLastBlock').innerText =
           `${lastBlock.toString()} (≈ ${approxMinutes.toFixed(1)} mins ago)`;
       }
 
-      // --- Bluechip Fee ---
+      // --- Enrollment Fee ---
       const fee = await contracts.staking.bluechipWalletFee();
-      // assuming CATA has 18 decimals like ERC20
-      const readableFee = ethers.utils.formatUnits(fee, 18);
+      const readableFee = ethers.utils.formatUnits(fee, 18); // assumes 18 decimals
       $('bluechipFee').innerText = `${readableFee} CATA`;
 
-      log('refreshBluechip done');
+      console.log('refreshBluechip done ✅');
     } else {
       alert('bluechipWallets not found in ABI');
     }
-  } catch(e){
-    log('refreshBluechip err', e && e.message ? e.message : e);
+  } catch (e) {
+    console.error('refreshBluechip err ❌', e);
   }
 }
 
