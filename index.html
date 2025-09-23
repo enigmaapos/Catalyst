@@ -2361,81 +2361,85 @@ async function fetchProposal() {
 
 	  
 // ---------- Guardian Council / DAO & Governance ----------
-// DAO
+// ---------- DAO ----------
 async function proposeDao(){
   try {
-    if(!contracts.council) return alert("⚠️ Council contract not attached");
+    if(!contracts.council) return alert("Council contract not attached");
     const newDao = $('newDaoAddr').value.trim();
-    if(!newDao) return alert("⚠️ Enter DAO address");
+    if(!newDao) return alert("Enter DAO address");
+
+    showLoading(); // 🔥 show spinner
 
     const tx = await contracts.council.proposeNewDAO(newDao);
-    log('proposeDao tx', tx.hash);
-    $('loadingIndicator').style.display = 'block';
+    log('propose DAO tx', tx.hash);
     await tx.wait();
-    $('loadingIndicator').style.display = 'none';
-
     log('DAO proposal submitted');
     alert("✅ DAO proposal submitted");
   } catch(e){
-    log('proposeDao err', e?.message || e);
-    $('loadingIndicator').style.display = 'none';
-    alert("❌ " + (e.message || e));
+    log('proposeDao err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  } finally {
+    hideLoading(); // 🔥 always hide spinner
   }
 }
 
 async function commitDao(){
   try {
-    if(!contracts.council) return alert("⚠️ Council contract not attached");
-    const tx = await contracts.council.commitNewDAO();
-    log('commitDao tx', tx.hash);
-    $('loadingIndicator').style.display = 'block';
-    await tx.wait();
-    $('loadingIndicator').style.display = 'none';
+    if(!contracts.council) return alert("Council contract not attached");
 
+    showLoading();
+
+    const tx = await contracts.council.commitNewDAO();
+    log('commit DAO tx', tx.hash);
+    await tx.wait();
     log('DAO committed');
     alert("✅ DAO committed");
   } catch(e){
-    log('commitDao err', e?.message || e);
-    $('loadingIndicator').style.display = 'none';
-    alert("❌ " + (e.message || e));
+    log('commitDao err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
   }
 }
 
-// ----------- Active Batch -----------
+// ---------- Active Batch ----------
 async function proposeActiveBatch(){
   try {
-    if(!contracts.council) return alert("⚠️ Council contract not attached");
+    if(!contracts.council) return alert("Council contract not attached");
     const arr = parse7($('activeBatchInput').value);
-    const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
-    log('proposeActiveBatch tx', tx.hash);
-    $('loadingIndicator').style.display = 'block';
-    await tx.wait();
-    $('loadingIndicator').style.display = 'none';
+    if(!arr || arr.length === 0) return alert("Enter active batch data");
 
+    showLoading();
+
+    const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
+    log('propose active batch tx', tx.hash);
+    await tx.wait();
     log('proposeActiveBatch done');
     alert("✅ Active batch proposed");
   } catch(e){
-    log('proposeActiveBatch err', e?.message || e);
-    $('loadingIndicator').style.display = 'none';
-    alert("❌ " + (e.message || e));
+    log('proposeActiveBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
   }
 }
 
 async function commitActiveBatch(){
   try {
-    if(!contracts.council) return alert("⚠️ Council contract not attached");
-    const tx = await contracts.council.daoCommitSeedActiveBatch();
-    log('commitActiveBatch tx', tx.hash);
-    $('loadingIndicator').style.display = 'block';
-    await tx.wait();
-    $('loadingIndicator').style.display = 'none';
+    if(!contracts.council) return alert("Council contract not attached");
 
+    showLoading();
+
+    const tx = await contracts.council.daoCommitSeedActiveBatch();
+    log('commit active batch tx', tx.hash);
+    await tx.wait();
     log('commitActiveBatch done');
     alert("✅ Active batch committed");
   } catch(e){
-    log('commitActiveBatch err', e?.message || e);
-    $('loadingIndicator').style.display = 'none';
-    alert("❌ " + (e.message || e));
+    log('commitActiveBatch err', e && e.message ? e.message : e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
   }
 }
 
