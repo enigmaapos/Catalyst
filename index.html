@@ -2634,6 +2634,139 @@ async function encodeCallData() {
   }
 }
 
+	  // -------------------- LOADING HELPER --------------------
+function showLoading() {
+  document.getElementById("loadingIndicator").style.display = "block";
+}
+function hideLoading() {
+  document.getElementById("loadingIndicator").style.display = "none";
+}
+
+// -------------------- READ-ONLY HELPERS --------------------
+// DAO
+async function fetchDaoInfo() {
+  try {
+    if (!contracts.council) return alert("Council contract not set");
+    showLoading();
+
+    const daoAddr = await contracts.council.dao();  
+    $('daoAddr').innerText = daoAddr;  
+
+    log("fetchDaoInfo done ✅");
+  } catch (e) {
+    console.error("fetchDaoInfo err", e);
+    $('daoAddr').innerText = "Error: " + (e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Guardians
+async function fetchGuardians() {
+  try {
+    if (!contracts.council) return alert("Council contract not set");
+    showLoading();
+
+    const active = await contracts.council.getActiveGuardians();  
+    const standby = await contracts.council.getStandbyGuardians();  
+
+    $('activeGuardians').innerText = active.join("\n") || "None";  
+    $('standbyGuardians').innerText = standby.join("\n") || "None";  
+
+    log("fetchGuardians done ✅");
+  } catch (e) {
+    console.error("fetchGuardians err", e);
+    $('activeGuardians').innerText = "Error loading";
+    $('standbyGuardians').innerText = "Error loading";
+  } finally {
+    hideLoading();
+  }
+}
+
+// Lock / health
+async function fetchLockStatus() {
+  try {
+    if (!contracts.council) return alert("Council contract not set");
+    showLoading();
+
+    const locked = await contracts.council.locked();  
+    $('lockStatus').innerText = locked ? "🔒 Locked" : "✅ Unlocked";  
+
+    log("fetchLockStatus done ✅");
+  } catch (e) {
+    console.error("fetchLockStatus err", e);
+    $('lockStatus').innerText = "Error: " + (e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Recovery approvals (who approved)
+async function fetchRecoveryApprovals(kind) {
+  try {
+    if (!contracts.council) return alert("Council contract not set");
+    showLoading();
+
+    const nonce = await contracts.council.getRequestNonce(kind);  
+    const guardians = await contracts.council.getActiveGuardians();  
+
+    const approvedList = [];  
+    for (const g of guardians) {  
+      const lastApproved = await contracts.council.getLastApprovedNonce(kind, g);  
+      if (lastApproved.toString() === nonce.toString()) {  
+        approvedList.push(g);  
+      }  
+    }  
+
+    $('riApprovers').innerText = approvedList.length > 0  
+      ? approvedList.join("\n")  
+      : "None yet";  
+
+    log("fetchRecoveryApprovals done ✅");
+  } catch (e) {
+    console.error("fetchRecoveryApprovals err", e);
+    $('riApprovers').innerText = "Error: " + (e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Full recovery state
+async function fetchFullRecoveryState() {
+  try {
+    if (!contracts.council) return alert("Council contract not set");
+    showLoading();
+
+    const kind = parseInt($('recoveryKind').value, 10);  
+    if (isNaN(kind)) return alert("Select a valid recovery kind");  
+
+    const [proposed, approvals, deadline, executed, callTarget, callData] =  
+      await contracts.council.getRecoveryState(kind);  
+
+    const [guardian, expiry] = await contracts.council.getTempVeto();  
+    const nonce = await contracts.council.getRequestNonce(kind);  
+
+    $('riProposed').innerText = proposed;  
+    $('riApprovals').innerText = `${approvals} approvals`;  
+    $('riDeadline').innerText = new Date(deadline * 1000).toLocaleString();  
+    $('riExecuted').innerText = executed ? "✅ Yes" : "❌ No";  
+    $('riCallTarget').innerText = callTarget;  
+    $('riCallData').innerText = callData;  
+    $('riGuardian').innerText = guardian;  
+    $('riVetoExpiry').innerText = expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "-";  
+    $('riNonce').innerText = nonce.toString();  
+
+    await fetchRecoveryApprovals(kind);  
+
+    log("fetchFullRecoveryState done ✅");
+  } catch (e) {
+    console.error("fetchFullRecoveryState err", e);
+    alert("Error loading recovery info: " + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+}
+
 	  
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async ()=>{
