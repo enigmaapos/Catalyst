@@ -2550,6 +2550,90 @@ async function proposeRecovery(){
   }
 						   }
 
+	  // ---------- Recovery Actions ----------
+async function approveRecovery(){
+  try {
+    const kind = parseInt($('recoveryKind').value, 10);
+
+    showLoading();
+
+    const tx = await contracts.council.approveRecovery(kind);
+    log('approveRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery approved');
+    alert("✅ Recovery approved!");
+  } catch(e) {
+    log('approveRecovery err', e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function executeRecovery(){
+  try {
+    const kind = parseInt($('recoveryKind').value, 10);
+
+    showLoading();
+
+    const tx = await contracts.council.executeRecovery(kind);
+    log('executeRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery executed');
+    alert("✅ Recovery executed!");
+  } catch(e) {
+    log('executeRecovery err', e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function vetoRecovery(){
+  try {
+    const kind = parseInt($('recoveryKind').value, 10);
+
+    showLoading();
+
+    const tx = await contracts.council.lastHonestHaltAndPromote(kind);
+    log('vetoRecovery tx', tx.hash);
+    await tx.wait();
+    log('Recovery vetoed');
+    alert("✅ Recovery vetoed!");
+  } catch(e) {
+    log('vetoRecovery err', e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ---------- Encode calldata helper ----------
+async function encodeCallData() {
+  try {
+    const fnSig = $('recoveryFunction').value.trim(); // e.g. "upgradeTo(address)"
+    const args = $('recoveryArgs').value.trim().split(',').map(s => s.trim()).filter(Boolean);
+
+    if (!fnSig) return alert("Enter function signature");  
+
+    showLoading();
+
+    // Create ethers.js Interface  
+    const iface = new ethers.utils.Interface([ "function " + fnSig ]);  
+    const fnName = fnSig.split('(')[0]; // extract name before '('  
+
+    const callData = iface.encodeFunctionData(fnName, args);  
+    $('recoveryCallData').value = callData;  
+
+    alert("✅ CallData encoded!");
+  } catch (e) {
+    console.error(e);
+    alert("Error encoding callData: " + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+}
+
 	  
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async ()=>{
