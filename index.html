@@ -1595,10 +1595,11 @@ async function harvestBluechip(){
 // Refresh Bluechip Info
 async function refreshBluechip(){
   try {
-    if(!contracts.staking){ 
-      await attachContractsIfSet(); 
-      if(!contracts.staking) return alert('Set staking contract'); 
+    if(!contracts.staking){
+      await attachContractsIfSet();
+      if(!contracts.staking) return alert('Set staking contract');
     }
+
     if(typeof contracts.staking.bluechipWallets === 'function'){
       const me = await signer.getAddress();
 
@@ -1608,21 +1609,35 @@ async function refreshBluechip(){
       );
       $('bluechipStatus').innerText = enrolled ? '✅ Enrolled' : '❌ Not Enrolled';
 
+      // --- Last Harvest Block ---
       const lastBlock = await contracts.staking.bluechipLastHarvestBlock(
         ethers.constants.AddressZero,
         me
       );
-      $('bluechipLastBlock').innerText =
-        lastBlock.toString() !== '0' ? lastBlock.toString() : '—';
 
+      if(lastBlock.isZero()){
+        $('bluechipLastBlock').innerText = '—';
+      } else {
+        const currentBlock = await provider.getBlockNumber();
+        const diff = currentBlock - lastBlock.toNumber();
+        const approxMinutes = diff * 12 / 60; // ⏱ assuming ~12s/block → minutes
+        $('bluechipLastBlock').innerText =
+          `${lastBlock.toString()} (≈ ${approxMinutes.toFixed(1)} mins ago)`;
+      }
+
+      // --- Bluechip Fee ---
       const fee = await contracts.staking.bluechipWalletFee();
-      $('bluechipFee').innerText = `${fee.toString()} CATA`;
+      // assuming CATA has 18 decimals like ERC20
+      const readableFee = ethers.utils.formatUnits(fee, 18);
+      $('bluechipFee').innerText = `${readableFee} CATA`;
 
       log('refreshBluechip done');
     } else {
       alert('bluechipWallets not found in ABI');
     }
-  } catch(e){ log('refreshBluechip err', e && e.message ? e.message : e); }
+  } catch(e){
+    log('refreshBluechip err', e && e.message ? e.message : e);
+  }
 }
 
 	  
