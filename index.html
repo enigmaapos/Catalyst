@@ -425,6 +425,7 @@
         placeholder="Bluechip Collection Address"
         class="p-2 rounded bg-black/20"
       />
+		<div id="bluechipStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
       <button id="harvestBluechipBtn" class="p-2 bg-sky-600 hover:bg-sky-500 rounded">
         🎁 Harvest Bluechip
       </button>
@@ -476,6 +477,7 @@
     <!-- Single NFT Stake -->
     <div class="grid grid-cols-2 gap-2">
       <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
+		<div id="nftStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
       <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
     </div>
     <div class="flex gap-2">
@@ -1546,6 +1548,9 @@ async function handleToggleBluechip() {
 attachStatusChecker("regCollectionAddr", "regStatusInfo");
 attachStatusChecker("adminCollAddr", "adminStatusInfo");
 attachStatusChecker("manageCollAddr", "manageStatusInfo");
+// Attach status checkers to new fields
+attachStatusChecker("bluechipCollectionInput", "bluechipStatusInfo");
+attachStatusChecker("nftCollection", "nftStatusInfo");	  
 	  
 
 // ---------- Bluechip Actions ----------
