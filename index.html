@@ -2533,7 +2533,6 @@ function parse7(txt){
 async function proposeRecovery(){
   try {
     if(!contracts.council) return alert("Council contract not attached");
-    showLoading();
 
     const kind = parseInt($('recoveryKind').value, 10);
     const proposed = $('recoveryProposed').value.trim();
@@ -2543,6 +2542,8 @@ async function proposeRecovery(){
     if(!proposed || !callTarget || !callData) {  
       return alert("Fill all recovery fields");  
     }  
+
+    showLoading("Submitting recovery proposal...");
 
     const tx = await contracts.council.proposeRecovery(kind, proposed, callTarget, callData);  
     log('proposeRecovery tx', tx.hash);  
@@ -2557,7 +2558,6 @@ async function proposeRecovery(){
     hideLoading();
   }
 }
-
 
 	  // ---------- Recovery Actions ----------
 async function approveRecovery(){
