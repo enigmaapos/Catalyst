@@ -1105,6 +1105,25 @@
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "collection",
+				"type": "address"
+			}
+		],
+		"name": "getCollectionStatus",
+		"outputs": [
+			{
+				"internalType": "enum CatalystStakingUpgradeable.CollectionStatus",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "bytes32",
 				"name": "role",
 				"type": "bytes32"
