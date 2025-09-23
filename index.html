@@ -2365,33 +2365,34 @@ async function fetchProposal() {
 async function proposeDao(){
   try {
     if(!contracts.council) return alert("Council contract not attached");
+    showLoading();
+
     const newDao = $('newDaoAddr').value.trim();
     if(!newDao) return alert("Enter DAO address");
-
-    showLoading(); // 🔥 show spinner
 
     const tx = await contracts.council.proposeNewDAO(newDao);
     log('propose DAO tx', tx.hash);
     await tx.wait();
+
     log('DAO proposal submitted');
     alert("✅ DAO proposal submitted");
   } catch(e){
     log('proposeDao err', e && e.message ? e.message : e);
     alert(e.message || e);
   } finally {
-    hideLoading(); // 🔥 always hide spinner
+    hideLoading();
   }
 }
 
 async function commitDao(){
   try {
     if(!contracts.council) return alert("Council contract not attached");
-
     showLoading();
 
     const tx = await contracts.council.commitNewDAO();
     log('commit DAO tx', tx.hash);
     await tx.wait();
+
     log('DAO committed');
     alert("✅ DAO committed");
   } catch(e){
@@ -2402,18 +2403,17 @@ async function commitDao(){
   }
 }
 
-// ---------- Active Batch ----------
+// Active Batch
 async function proposeActiveBatch(){
   try {
     if(!contracts.council) return alert("Council contract not attached");
-    const arr = parse7($('activeBatchInput').value);
-    if(!arr || arr.length === 0) return alert("Enter active batch data");
-
     showLoading();
 
+    const arr = parse7($('activeBatchInput').value);
     const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
     log('propose active batch tx', tx.hash);
     await tx.wait();
+
     log('proposeActiveBatch done');
     alert("✅ Active batch proposed");
   } catch(e){
@@ -2427,12 +2427,12 @@ async function proposeActiveBatch(){
 async function commitActiveBatch(){
   try {
     if(!contracts.council) return alert("Council contract not attached");
-
     showLoading();
 
     const tx = await contracts.council.daoCommitSeedActiveBatch();
     log('commit active batch tx', tx.hash);
     await tx.wait();
+
     log('commitActiveBatch done');
     alert("✅ Active batch committed");
   } catch(e){
@@ -2443,17 +2443,17 @@ async function commitActiveBatch(){
   }
 }
 
-// ----------- Standby Batch -----------
+// Standby Batch
 async function proposeStandbyBatch(){
   try {
     if(!contracts.council) return alert("Council contract not attached");
-    const arr = parse7($('standbyBatchInput').value);
-
     showLoading();
 
+    const arr = parse7($('standbyBatchInput').value);
     const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
     log('propose standby batch tx', tx.hash);
     await tx.wait();
+
     log('proposeStandbyBatch done');
     alert("✅ Standby batch proposed");
   } catch(e){
@@ -2467,12 +2467,12 @@ async function proposeStandbyBatch(){
 async function commitStandbyBatch(){
   try {
     if(!contracts.council) return alert("Council contract not attached");
-
     showLoading();
 
     const tx = await contracts.council.daoCommitSeedStandbyBatch();
     log('commit standby batch tx', tx.hash);
     await tx.wait();
+
     log('commitStandbyBatch done');
     alert("✅ Standby batch committed");
   } catch(e){
@@ -2486,12 +2486,12 @@ async function commitStandbyBatch(){
 async function activateStandby(){
   try {
     if(!contracts.council) return alert("Council contract not attached");
-
     showLoading();
 
     const tx = await contracts.council.daoActivateStandby();
     log('activate standby tx', tx.hash);
     await tx.wait();
+
     log('activateStandby done');
     alert("✅ Standby batch activated");
   } catch(e){
@@ -2502,16 +2502,16 @@ async function activateStandby(){
   }
 }
 
-// ---------- Lock ----------
+// Lock
 async function clearLock(){
   try {
     if(!contracts.council) return alert("Council contract not attached");
-
     showLoading();
 
     const tx = await contracts.council.daoClearLockAndWarning();
     log('clear lock tx', tx.hash);
     await tx.wait();
+
     log('clearLock done');
     alert("✅ Lock cleared");
   } catch(e){
@@ -2522,9 +2522,19 @@ async function clearLock(){
   }
 }
 
-// ---------- Recovery ----------
+// Parse helper
+function parse7(txt){
+  const arr = txt.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(arr.length !== 7) throw new Error("Need exactly 7 addresses");
+  return arr;
+}
+
+// Recovery
 async function proposeRecovery(){
   try {
+    if(!contracts.council) return alert("Council contract not attached");
+    showLoading();
+
     const kind = parseInt($('recoveryKind').value, 10);
     const proposed = $('recoveryProposed').value.trim();
     const callTarget = $('recoveryCallTarget').value.trim();
@@ -2534,21 +2544,20 @@ async function proposeRecovery(){
       return alert("Fill all recovery fields");  
     }  
 
-    showLoading();
-
     const tx = await contracts.council.proposeRecovery(kind, proposed, callTarget, callData);  
     log('proposeRecovery tx', tx.hash);  
     await tx.wait();  
-    log('Recovery proposed');  
-    alert("✅ Recovery proposal submitted!");  
 
+    log('Recovery proposed');  
+    alert("Recovery proposal submitted!");
   } catch(e) {
     log('proposeRecovery err', e);
     alert(e.message || e);
   } finally {
     hideLoading();
   }
-						   }
+}
+
 
 	  // ---------- Recovery Actions ----------
 async function approveRecovery(){
