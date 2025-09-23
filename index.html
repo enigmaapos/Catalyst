@@ -1139,7 +1139,6 @@ function disconnect() {
 
 
 // ---------- CATA functions ----------
-// Burn (any holder) — accepts real numbers (e.g., "1.5" = 1.5 CATA)
 // Burn (any holder) - user enters normal number (e.g. "1.5"), auto converts to wei
 async function cataBurn() {
   try {
@@ -1592,51 +1591,45 @@ async function harvestBluechip(){
     } catch(e){ log('harvestBluechip err', e && e.message ? e.message : e); }
   } 
 
-// Refresh Bluechip Info (improved)
-async function refreshBluechip() {
+// Refresh Bluechip Info
+async function refreshBluechip(){
   try {
-    if (!contracts.staking) {
+    if(!contracts.staking){
       await attachContractsIfSet();
-      if (!contracts.staking) return alert('Set staking contract');
+      if(!contracts.staking) return alert('Set staking contract');
     }
-
-    if (typeof contracts.staking.bluechipWallets === 'function') {
+    if(typeof contracts.staking.bluechipWallets === 'function'){
       const me = await signer.getAddress();
 
-      // --- Enrollment status ---
       const enrolled = await contracts.staking.bluechipWallets(
         ethers.constants.AddressZero,
         me
       );
       $('bluechipStatus').innerText = enrolled ? '✅ Enrolled' : '❌ Not Enrolled';
 
-      // --- Last Harvest Block ---
       const lastBlock = await contracts.staking.bluechipLastHarvestBlock(
         ethers.constants.AddressZero,
         me
       );
-      if (lastBlock.isZero()) {
-        $('bluechipLastBlock').innerText = '—';
-      } else {
+      if(lastBlock.toString() !== '0'){
         const currentBlock = await provider.getBlockNumber();
         const diff = currentBlock - lastBlock.toNumber();
-        const approxMinutes = (diff * 12) / 60; // assume ~12s per block
+        const approxDays = (diff * 12) / (60 * 60 * 24); // ⏱ 12s per block → days
         $('bluechipLastBlock').innerText =
-          `${lastBlock.toString()} (≈ ${approxMinutes.toFixed(1)} mins ago)`;
+          `${lastBlock.toString()} (≈ ${approxDays.toFixed(2)} days ago)`;
+      } else {
+        $('bluechipLastBlock').innerText = '—';
       }
 
-      // --- Enrollment Fee ---
       const fee = await contracts.staking.bluechipWalletFee();
       const readableFee = ethers.utils.formatUnits(fee, 18); // assumes 18 decimals
       $('bluechipFee').innerText = `${readableFee} CATA`;
 
-      console.log('refreshBluechip done ✅');
+      log('refreshBluechip done');
     } else {
       alert('bluechipWallets not found in ABI');
     }
-  } catch (e) {
-    console.error('refreshBluechip err ❌', e);
-  }
+  } catch(e){ log('refreshBluechip err', e && e.message ? e.message : e); }
 }
 
 	  
