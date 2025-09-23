@@ -57,6 +57,9 @@
     </header>
 	
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+		<div id="loadingIndicator" style="display:none; color:yellow; font-weight:bold;">
+  Loading...
+		</div>
 
 <!-- Tab Buttons -->
 <div class="glass ring-1 rounded-2xl p-4 flex flex-wrap gap-3 justify-center">
@@ -1080,6 +1083,7 @@ $('cataBal').innerText = ethers.utils.formatEther(bal) + ' CATA';
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
+
 // ---------- Connect / Disconnect ----------
 async function connect() {
   try {
@@ -1247,15 +1251,23 @@ async function fetchTransparency() {
 }
 
 /********************************************************************
+ * Loading Indicator
+ ********************************************************************/
+function showLoading() {
+  $('loadingIndicator').style.display = 'block';
+}
+function hideLoading() {
+  $('loadingIndicator').style.display = 'none';
+}
+
+/********************************************************************
  * Collection Registration logic
  ********************************************************************/
-// ---------- Minimal ERC20 ABI fallback (allowance/approve) ----------
 const MIN_ERC20_ABI = [
   'function allowance(address owner, address spender) view returns (uint256)',
   'function approve(address spender, uint256 amount) returns (bool)'
 ];
 
-// BigNumber helpers & fee constants (match contract constants)
 const ONE = ethers.BigNumber.from("1000000000000000000");
 const SMALL_MIN_FEE = ONE.mul(1);
 const SMALL_MAX_FEE = ONE.mul(10);
@@ -1265,7 +1277,6 @@ const LARGE_MIN_FEE = ONE.mul(51);
 const LARGE_MAX_FEE_CAP = ONE.mul(200);
 const BP_DENOM = 10000;
 
-/** calculate baseFee using same curve logic as the contract (BigNumber safe) */
 function calculateRegistrationBaseFeeBN(declaredSupplyInt) {
   if (!Number.isInteger(declaredSupplyInt) || declaredSupplyInt < 1) {
     throw new Error('declaredSupply must be integer >= 1');
@@ -1286,17 +1297,14 @@ function calculateRegistrationBaseFeeBN(declaredSupplyInt) {
   }
 }
 
-/** compute total fee (baseFeeBN) for tier (uint8). reads unverified surcharge BP from contract if needed */
 async function computeTotalFeeBN(baseFeeBN, tier) {
-  let multBP = BP_DENOM; // default (no surcharge)
+  let multBP = BP_DENOM;
   try {
     if (tier === 0) {
-      // try reading from contract (public variable)
       if (contracts.staking && typeof contracts.staking.unverifiedSurchargeBP === 'function') {
         const bp = await contracts.staking.unverifiedSurchargeBP();
-        multBP = bp.toNumber(); // fall back if fails
+        multBP = bp.toNumber();
       } else {
-        // fallback default used in your code
         multBP = 12000;
       }
     }
@@ -1309,20 +1317,17 @@ async function computeTotalFeeBN(baseFeeBN, tier) {
   return { totalFeeBN: total, surchargeBN: surcharge, multBP };
 }
 
-/** Format BigNumber wei to readable Ether string */
 function fmtCata(bn) { return ethers.utils.formatEther(bn) + ' CATA'; }
 
-/** Ensure we have an ERC20 contract instance for CATA (ABI might be in abis.cata or fallback) */
 function getCataERC20ContractInstance() {
   const cataAddr = $('addrCata').value.trim();
   if (!cataAddr) throw new Error('CATA address not set in UI');
   if (contracts.cata && typeof contracts.cata.allowance === 'function') return contracts.cata;
-  // fallback to minimal ABI
   return new ethers.Contract(cataAddr, MIN_ERC20_ABI, signer);
 }
 
-/** Calculate fee and update UI */
 async function handleCalcRegFee() {
+  showLoading();
   try {
     const supplyStr = $('regDeclaredSupply').value.trim();
     const collection = $('regCollectionAddr').value.trim();
@@ -1336,16 +1341,17 @@ async function handleCalcRegFee() {
   } catch (e) {
     log('handleCalcRegFee err', e && e.message ? e.message : e);
     alert('Fee calc error: ' + (e.message || e));
+  } finally {
+    hideLoading();
   }
 }
 
-/** Approve CATA to staking contract for registration (amount param optional — will use computed fee if available) */
 async function handleApproveForRegistration() {
+  showLoading();
   try {
     if (!provider || !signer) return alert('connect wallet first');
     const stakingAddr = $('addrStaking').value.trim();
     if (!stakingAddr) return alert('set staking address first');
-    // compute fee
     const supplyStr = $('regDeclaredSupply').value.trim();
     const declaredSupply = parseInt(supplyStr, 10);
     if (!supplyStr || isNaN(declaredSupply)) return alert('enter declared supply to compute fee before approving');
@@ -1360,11 +1366,13 @@ async function handleApproveForRegistration() {
   } catch (e) {
     log('handleApproveForRegistration err', e && e.message ? e.message : e);
     alert('Approve failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
   }
 }
 
-/** Permissionless registration: approve if needed, then call registerCollection(collection, declaredSupply, tier) */
 async function handleRegisterCollection() {
+  showLoading();
   try {
     if (!provider || !signer) return alert('connect wallet first');
     const collection = $('regCollectionAddr').value.trim();
@@ -1372,17 +1380,12 @@ async function handleRegisterCollection() {
     if (!collection || !supplyStr) return alert('collection & declared supply required');
     const declaredSupply = parseInt(supplyStr, 10);
     const tier = parseInt($('regTier').value, 10);
-
-    // compute fee
     const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
     const { totalFeeBN } = await computeTotalFeeBN(baseFeeBN, tier);
-
-    // ensure allowance
     const cata = getCataERC20ContractInstance();
     const myAddr = await signer.getAddress();
     const stakingAddr = $('addrStaking').value.trim();
     if (!stakingAddr) return alert('Set staking contract address first');
-
     const allowance = await cata.allowance(myAddr, stakingAddr);
     if (allowance.lt(totalFeeBN)) {
       const ok = confirm('You need to approve CATA for the registration fee: ' + fmtCata(totalFeeBN) + '. Approve now?');
@@ -1392,16 +1395,12 @@ async function handleRegisterCollection() {
       await txA.wait();
       log('approve done');
     }
-
-    // call registerCollection(collection, declaredSupply, tier)
     if (!contracts.staking || typeof contracts.staking.registerCollection !== 'function') {
-      // try attaching if ABI missing
       await attachContractsIfSet();
       if (!contracts.staking || typeof contracts.staking.registerCollection !== 'function') {
         return alert('staking contract ABI missing registerCollection function or contract not attached');
       }
     }
-
     const tx = await contracts.staking.registerCollection(collection, declaredSupply, tier);
     log('registerCollection tx', tx.hash);
     await tx.wait();
@@ -1409,11 +1408,13 @@ async function handleRegisterCollection() {
   } catch (e) {
     log('handleRegisterCollection err', e && e.message ? e.message : e);
     alert('Register failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
   }
 }
 
-/** Admin: setCollectionConfig(collection, declaredMaxSupply, tier) — will revert if caller not admin */
 async function handleAdminSetCollectionConfig() {
+  showLoading();
   try {
     if (!provider || !signer) return alert('connect wallet first');
     if (!contracts.staking || typeof contracts.staking.setCollectionConfig !== 'function') {
@@ -1433,15 +1434,13 @@ async function handleAdminSetCollectionConfig() {
   } catch (e) {
     log('handleAdminSetCollectionConfig err', e && e.message ? e.message : e);
     alert('Admin set failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
   }
 }
 
-	  /********************************************************************
- * Extra Collection Management (Admin)
- ********************************************************************/
-
-/** Admin: removeCollection(collection) */
 async function handleRemoveCollection() {
+  showLoading();
   try {
     if (!provider || !signer) return alert('connect wallet first');
     if (!contracts.staking || typeof contracts.staking.removeCollection !== 'function') {
@@ -1459,11 +1458,13 @@ async function handleRemoveCollection() {
   } catch (e) {
     log('handleRemoveCollection err', e && e.message ? e.message : e);
     alert('Remove failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
   }
 }
 
-/** Admin: forfeitEscrowIfExpired(collection) */
 async function handleForfeitEscrow() {
+  showLoading();
   try {
     if (!provider || !signer) return alert('connect wallet first');
     if (!contracts.staking || typeof contracts.staking.forfeitEscrowIfExpired !== 'function') {
@@ -1481,11 +1482,13 @@ async function handleForfeitEscrow() {
   } catch (e) {
     log('handleForfeitEscrow err', e && e.message ? e.message : e);
     alert('Forfeit failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
   }
 }
 
-/** Admin: setBluechipCollection(collection, bool) */
 async function handleToggleBluechip() {
+  showLoading();
   try {
     if (!provider || !signer) return alert('connect wallet first');
     if (!contracts.staking || typeof contracts.staking.setBluechipCollection !== 'function') {
@@ -1496,14 +1499,11 @@ async function handleToggleBluechip() {
     }
     const collection = $('manageCollAddr').value.trim();
     if (!collection) return alert('collection required');
-
-    // Check current status if function available
     let newStatus = true;
     if (typeof contracts.staking.isBluechipCollection === 'function') {
       const current = await contracts.staking.isBluechipCollection(collection);
       newStatus = !current;
     }
-
     const tx = await contracts.staking.setBluechipCollection(collection, newStatus);
     log('setBluechipCollection tx', tx.hash);
     await tx.wait();
@@ -1511,8 +1511,12 @@ async function handleToggleBluechip() {
   } catch (e) {
     log('handleToggleBluechip err', e && e.message ? e.message : e);
     alert('Bluechip toggle failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
   }
 }
+
+
 	  async function fetchCollectionStatus(addr) {
   if (!addr || addr.length !== 42) return "—"; // basic ETH address check
 
