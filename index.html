@@ -328,6 +328,7 @@
       <h3 class="font-semibold mb-2">Collection Registration</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
         <input id="regCollectionAddr" placeholder="Collection address (ERC721)" class="p-2 rounded bg-black/20 text-sm" />
+		  <div id="regStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
         <input id="regDeclaredSupply" placeholder="Declared max supply (integer >=1)" class="p-2 rounded bg-black/20 text-sm" />
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -347,6 +348,7 @@
         <h4 class="font-semibold">Admin: Set / Upgrade Collection Tier</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
           <input id="adminCollAddr" placeholder="Collection address (admin action)" class="p-2 rounded bg-black/20 text-sm" />
+			<div id="adminStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
           <input id="adminDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
         </div>
         <div class="flex gap-2 mt-2">
@@ -371,6 +373,7 @@
       class="p-3 rounded-lg bg-slate-900/60 border border-slate-700/40 text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
     />
   </div>
+			  <div id="manageStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
 
   <!-- Action Buttons -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
@@ -1509,6 +1512,40 @@ async function handleToggleBluechip() {
     alert('Bluechip toggle failed: ' + (e.message || e));
   }
 }
+	  async function fetchCollectionStatus(addr) {
+  if (!addr || addr.length !== 42) return "—"; // basic ETH address check
+
+  try {
+    const status = await contract.methods.getCollectionStatus(addr).call();
+    switch (parseInt(status)) {
+      case 0: return "❌ Not Registered";
+      case 1: return "⚪ Unverified";
+      case 2: return "✅ Verified";
+      case 3: return "💎 Bluechip";
+      default: return "—";
+    }
+  } catch (err) {
+    console.error("Status check error:", err);
+    return "⚠️ Error fetching status";
+  }
+}
+
+	  function attachStatusChecker(inputId, statusDivId) {
+  const inputEl = document.getElementById(inputId);
+  const statusEl = document.getElementById(statusDivId);
+
+  inputEl.addEventListener("input", async () => {
+    const addr = inputEl.value.trim();
+    statusEl.innerText = "⏳ Checking...";
+    const result = await fetchCollectionStatus(addr);
+    statusEl.innerText = `Status: ${result}`;
+  });
+}
+
+// Attach to each field
+attachStatusChecker("regCollectionAddr", "regStatusInfo");
+attachStatusChecker("adminCollAddr", "adminStatusInfo");
+attachStatusChecker("manageCollAddr", "manageStatusInfo");
 	  
 
 // ---------- Bluechip Actions ----------
