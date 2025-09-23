@@ -11,6 +11,41 @@
 	  .tabbtn {transition: all 0.2s ease-in-out;}
 .tabbtn:hover {opacity: 0.85; transform: translateY(-1px);}
 .tab-active {outline: 2px solid white; outline-offset: 2px;}
+
+  /* Center it on the screen */
+  #loadingIndicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Spinner circle */
+  .spinner {
+    border: 6px solid rgba(255, 255, 255, 0.2);
+    border-top: 6px solid yellow;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+  }
+
+  /* Spinning animation */
+  @keyframes spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    margin-top: 10px;
+    color: yellow;
+    font-weight: bold;
+    font-size: 14px;
+  }
   </style>
 </head>
 <body class="min-h-screen text-white font-sans">
@@ -57,9 +92,7 @@
     </header>
 	
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-		<div id="loadingIndicator" style="display:none; color:yellow; font-weight:bold;">
-  Loading...
-		</div>
+		
 
 <!-- Tab Buttons -->
 <div class="glass ring-1 rounded-2xl p-4 flex flex-wrap gap-3 justify-center">
@@ -106,6 +139,12 @@
 
   <!-- Tab Contents -->
   <div id="tabContents" class="glass rounded-2xl p-4">
+
+	   <!-- Loading Indicator -->
+<div id="loadingIndicator" style="display:none;">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading...</div>
+</div> 
 
 <section>
   <div id="overview" class="tab-content">
@@ -1143,7 +1182,7 @@ function disconnect() {
 
 
 // ---------- CATA functions ----------
-// Burn (any holder) - user enters normal number (e.g. "1.5"), auto converts to wei
+// Burn (any holder)
 async function cataBurn() {
   try {
     if (!contracts.cata) {
@@ -1154,22 +1193,24 @@ async function cataBurn() {
     const amtRaw = $('cataBurnAmt').value.trim();
     if (!amtRaw) return alert('Burn amount required');
 
-    // ✅ convert normal number to wei
     const amtWei = ethers.utils.parseEther(amtRaw);
 
+    showLoading("Burning tokens...");
     const tx = await contracts.cata.burn(amtWei);
     log('cata.burn tx', tx.hash);
     await tx.wait();
     log('cata.burn completed');
 
     await fetchCataBalance();
-    await fetchTransparency(); // refresh transparency after burn
+    await fetchTransparency();
   } catch (e) {
     log('cataBurn err', e?.message || e);
     alert(`Burn failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
   }
 }
-	  
+
 // Pause (admin only)
 async function cataPause() {
   try {
@@ -1178,6 +1219,7 @@ async function cataPause() {
       if (!contracts.cata) return alert('Set CATA contract address first');
     }
 
+    showLoading("Pausing contract...");
     const tx = await contracts.cata.pause();
     log('cata.pause tx', tx.hash);
     await tx.wait();
@@ -1185,6 +1227,8 @@ async function cataPause() {
   } catch (e) {
     log('cataPause err', e?.message || e);
     alert(`Pause failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
   }
 }
 
@@ -1196,6 +1240,7 @@ async function cataUnpause() {
       if (!contracts.cata) return alert('Set CATA contract address first');
     }
 
+    showLoading("Unpausing contract...");
     const tx = await contracts.cata.unpause();
     log('cata.unpause tx', tx.hash);
     await tx.wait();
@@ -1203,6 +1248,8 @@ async function cataUnpause() {
   } catch (e) {
     log('cataUnpause err', e?.message || e);
     alert(`Unpause failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
   }
 }
 
@@ -1219,6 +1266,7 @@ async function cataSwapAdmin() {
 
     if (!newAdmin) return alert('New admin address required');
 
+    showLoading("Swapping admin...");
     const tx = await contracts.cata.swapAdmin(newAdmin, oldAdmin);
     log('cata.swapAdmin tx', tx.hash);
     await tx.wait();
@@ -1226,6 +1274,8 @@ async function cataSwapAdmin() {
   } catch (e) {
     log('cataSwapAdmin err', e?.message || e);
     alert(`Swap admin failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
   }
 }
 
@@ -1237,6 +1287,7 @@ async function fetchTransparency() {
       if (!contracts.cata) return alert('Set CATA contract address first');
     }
 
+    showLoading("Fetching transparency...");
     const totalSupply = await contracts.cata.totalSupply();
     const maxSupply = await contracts.cata.MAX_SUPPLY();
     const remainingMintable = maxSupply.sub(totalSupply);
@@ -1247,6 +1298,8 @@ async function fetchTransparency() {
   } catch (e) {
     log('fetchTransparency err', e?.message || e);
     alert(`Transparency fetch failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
   }
 }
 
