@@ -2390,43 +2390,24 @@ async function loadCurrentDAO() {
   }
 }
 
-async function proposeNewDAO() {
-  try {
-    if (!contracts.council) {
-      return alert("⚠️ Council contract not attached");
+  async function proposeNewDAO() {
+    try {
+      if (!contracts.council) return alert("⚠️ Council contract not attached");
+
+      const newDao = $("newDaoAddr").value.trim();
+      if (!(newDao.startsWith("0x") && newDao.length === 42)) {
+        return alert("⚠️ Invalid DAO address");
+      }
+
+      const tx = await contracts.council.proposeNewDAO(newDao);
+      console.log("📤 proposeNewDAO tx:", tx.hash);
+      await tx.wait();
+      alert("✅ DAO proposal submitted");
+    } catch (err) {
+      console.error("❌ proposeNewDAO error:", err);
+      alert(err.reason || err.message || "Transaction failed");
     }
-
-    showLoading();
-
-    const newDao = $('newDaoAddr').value.trim();
-
-    // Empty check
-    if (!newDao) {
-      hideLoading();
-      return alert("⚠️ Please paste a DAO address in the input field.");
-    }
-
-    // Address format check
-    if (!ethers.utils.isAddress(newDao)) {
-      hideLoading();
-      return alert("⚠️ Invalid Ethereum address.");
-    }
-
-    // Send transaction
-    const tx = await contracts.council.proposeNewDAO(newDao);
-    log("📤 propose DAO tx", tx.hash);
-
-    await tx.wait();
-
-    log("✅ DAO proposal submitted");
-    alert("✅ DAO proposal submitted");
-  } catch (e) {
-    console.error("❌ proposeDao err", e);
-    alert(e.reason || e.shortMessage || e.info?.error?.message || e.message || "Transaction failed");
-  } finally {
-    hideLoading();
   }
-}
 
 
 async function commitDao() {
