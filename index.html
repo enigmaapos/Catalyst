@@ -2801,7 +2801,13 @@ async function fetchFullRecoveryState() {
 	  
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async ()=>{
-  await loadABIs(); // pre-load ABIs for faster attach later
+  // Manually set the default addresses
+  $('addrCata').value = DEFAULT_ADDRS.cata;
+  $('addrStaking').value = DEFAULT_ADDRS.staking;
+  $('addrGovernance').value = DEFAULT_ADDRS.governance;
+  $('addrCouncil').value = DEFAULT_ADDRS.council;
+
+  await loadABIs();
 
   // Connect / disconnect
   $('connectBtn').onclick = connect;
