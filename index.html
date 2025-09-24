@@ -2380,27 +2380,44 @@ function parse7(txt) {
 // ---------- Guardian Council / DAO & Governance ----------
 // ---------- DAO ----------
 async function proposeNewDAO() {
-    try {
-        if (!contracts.council) return alert("Council contract not attached");
-        showLoading();
-
-        const newDao = $('newDaoAddr').value.trim();
-        if (!newDao) return alert("Enter DAO address");
-
-        const tx = await contracts.council.proposeNewDAO(newDao);
-        log('propose DAO tx', tx.hash);
-        await tx.wait();
-
-        log('DAO proposal submitted');
-        alert("✅ DAO proposal submitted");
-    } catch (e) {
-        log('proposeDao err', e && e.message ? e.message : e);
-        alert(e.message || e);
-    } finally {
-        // Corrected line
-        hideLoading();
+  try {
+    if (!contracts.council) {
+      return alert("⚠️ Council contract not attached");
     }
+
+    showLoading();
+
+    // Read input
+    const newDao = $('newDaoAddr').value.trim();
+
+    // Empty check
+    if (!newDao) {
+      hideLoading();
+      return alert("Enter DAO address");
+    }
+
+    // Address format check
+    if (!ethers.utils.isAddress(newDao)) {
+      hideLoading();
+      return alert("Invalid DAO address");
+    }
+
+    // Send transaction
+    const tx = await contracts.council.proposeNewDAO(newDao);
+    log("📤 propose DAO tx", tx.hash);
+
+    await tx.wait();
+
+    log("✅ DAO proposal submitted");
+    alert("✅ DAO proposal submitted");
+  } catch (e) {
+    console.error("❌ proposeDao err", e);
+    alert(e.reason || e.shortMessage || e.message || "Transaction failed");
+  } finally {
+    hideLoading();
+  }
 }
+
 
 async function commitDao() {
     try {
