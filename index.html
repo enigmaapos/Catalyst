@@ -725,12 +725,12 @@
     </p>
 
     <div class="space-y-2 text-sm">
-        <div class="grid grid-cols-2 gap-2">
-            <input id="newDaoAddr" placeholder="New DAO address" class="p-2 rounded bg-black/20" />
-            <button id="proposeDaoBtn" class="p-2 bg-indigo-600 rounded">Propose DAO</button>
-        </div>
-        <button id="commitDaoBtn" class="w-full p-2 bg-indigo-400 rounded">Commit DAO</button>
-    </div>
+  <div class="grid grid-cols-2 gap-2">
+    <input id="newDaoAddr" placeholder="New DAO address" class="p-2 rounded bg-black/20" />
+    <button id="proposeDaoBtn" class="p-2 bg-indigo-600 rounded">Propose DAO</button>
+  </div>
+  <button id="commitDaoBtn" class="w-full p-2 bg-indigo-400 rounded">Commit DAO</button>
+</div>
 
     <hr class="border-slate-700 my-2" />
 
@@ -2379,6 +2379,17 @@ function parse7(txt) {
 	  
 // ---------- Guardian Council / DAO & Governance ----------
 // ---------- DAO ----------
+async function loadCurrentDAO() {
+  if (!contracts.council) return;
+  try {
+    const currentDAO = await contracts.council.dao();
+    $('newDaoAddr').value = currentDAO; // auto-fill with current DAO
+    log("Current DAO:", currentDAO);
+  } catch (e) {
+    console.error("Failed to fetch current DAO:", e);
+  }
+}
+
 async function proposeNewDAO() {
   try {
     if (!contracts.council) {
@@ -2387,19 +2398,18 @@ async function proposeNewDAO() {
 
     showLoading();
 
-    // Read input
     const newDao = $('newDaoAddr').value.trim();
 
     // Empty check
     if (!newDao) {
       hideLoading();
-      return alert("Enter DAO address");
+      return alert("⚠️ Please paste a DAO address in the input field.");
     }
 
     // Address format check
     if (!ethers.utils.isAddress(newDao)) {
       hideLoading();
-      return alert("Invalid DAO address");
+      return alert("⚠️ Invalid Ethereum address.");
     }
 
     // Send transaction
@@ -2412,7 +2422,7 @@ async function proposeNewDAO() {
     alert("✅ DAO proposal submitted");
   } catch (e) {
     console.error("❌ proposeDao err", e);
-    alert(e.reason || e.shortMessage || e.message || "Transaction failed");
+    alert(e.reason || e.shortMessage || e.info?.error?.message || e.message || "Transaction failed");
   } finally {
     hideLoading();
   }
@@ -2834,6 +2844,7 @@ async function fetchFullRecoveryState() {
   $('addrCouncil').value = DEFAULT_ADDRS.council;
 
   await loadABIs();
+	  await loadCurrentDAO();
 
   // Connect / disconnect
   $('connectBtn').onclick = connect;
