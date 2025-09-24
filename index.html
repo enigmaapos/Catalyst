@@ -2369,6 +2369,14 @@ async function fetchProposal() {
 }
 
 
+
+	  // Parse helper for 7 addresses
+function parse7(txt) {
+    const arr = txt.split('\n').map(s => s.trim()).filter(Boolean);
+    if (arr.length !== 7) throw new Error("Need exactly 7 addresses");
+    return arr;
+}
+	  
 // ---------- Guardian Council / DAO & Governance ----------
 // ---------- DAO ----------
 async function proposeDao() {
