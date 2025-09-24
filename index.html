@@ -719,184 +719,193 @@
 </section>
 
 <section id="council" class="tab-content hidden">
-  <h2 class="font-semibold mb-2">DRS Guardian Council</h2>
-  <p class="text-sm text-slate-300 mb-3">
-    Manage guardian batches, DAO rotation, and emergency recovery.
-  </p>
+    <h2 class="font-semibold mb-2">DRS Guardian Council</h2>
+    <p class="text-sm text-slate-300 mb-3">
+        Manage guardian batches, DAO rotation, and emergency recovery.
+    </p>
 
-  <!-- DAO -->
-  <div class="space-y-2 text-sm">
-    <div class="grid grid-cols-2 gap-2">
-      <input id="newDaoAddr" placeholder="New DAO address" class="p-2 rounded bg-black/20" />
-      <button id="proposeDaoBtn" class="p-2 bg-indigo-600 rounded">Propose DAO</button>
+    <div class="space-y-2 text-sm">
+        <div class="grid grid-cols-2 gap-2">
+            <input id="newDaoAddr" placeholder="New DAO address" class="p-2 rounded bg-black/20" />
+            <button id="proposeDaoBtn" class="p-2 bg-indigo-600 rounded">Propose DAO</button>
+        </div>
+        <button id="commitDaoBtn" class="w-full p-2 bg-indigo-400 rounded">Commit DAO</button>
     </div>
-    <button id="commitDaoBtn" class="w-full p-2 bg-indigo-400 rounded">Commit DAO</button>
-  </div>
 
-  <hr class="border-slate-700 my-2" />
+    <hr class="border-slate-700 my-2" />
 
-  <!-- Active Batch -->
-  <div class="space-y-2 text-sm">
-    <textarea id="activeBatchInput" placeholder="7 addresses, one per line"
-      class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
-    <div class="flex gap-2">
-      <button id="proposeActiveBatchBtn" class="flex-1 p-2 bg-amber-600 rounded">Propose Active Batch</button>
-      <button id="commitActiveBatchBtn" class="flex-1 p-2 bg-amber-400 rounded">Commit Active Batch</button>
+    <div class="space-y-2 text-sm">
+        <textarea id="activeBatchInput" placeholder="7 addresses, one per line"
+            class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
+        <div class="flex gap-2">
+            <button id="proposeActiveBatchBtn" class="flex-1 p-2 bg-amber-600 rounded">Propose Active Batch</button>
+            <button id="commitActiveBatchBtn" class="flex-1 p-2 bg-amber-400 rounded">Commit Active Batch</button>
+        </div>
     </div>
-  </div>
 
-  <!-- Standby Batch -->
-  <div class="space-y-2 text-sm mt-3">
-    <textarea id="standbyBatchInput" placeholder="7 addresses, one per line"
-      class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
-    <div class="flex gap-2">
-      <button id="proposeStandbyBatchBtn" class="flex-1 p-2 bg-emerald-600 rounded">Propose Standby Batch</button>
-      <button id="commitStandbyBatchBtn" class="flex-1 p-2 bg-emerald-400 rounded">Commit Standby Batch</button>
+    <div class="space-y-2 text-sm mt-3">
+        <textarea id="standbyBatchInput" placeholder="7 addresses, one per line"
+            class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
+        <div class="flex gap-2">
+            <button id="proposeStandbyBatchBtn" class="flex-1 p-2 bg-emerald-600 rounded">Propose Standby Batch</button>
+            <button id="commitStandbyBatchBtn" class="flex-1 p-2 bg-emerald-400 rounded">Commit Standby Batch</button>
+        </div>
+        <button id="activateStandbyBtn" class="w-full p-2 bg-green-600 rounded mt-2">Activate Standby</button>
     </div>
-    <button id="activateStandbyBtn" class="w-full p-2 bg-green-600 rounded mt-2">Activate Standby</button>
-  </div>
 
-  <hr class="border-slate-700 my-2" />
+    <hr class="border-slate-700 my-2" />
 
-  <!-- Lock & Warning -->
-  <div class="space-y-2 text-sm">
-    <button id="clearLockBtn" class="w-full p-2 bg-slate-600 rounded">Clear Lock/Warning</button>
-  </div>
+    <div class="space-y-2 text-sm">
+        <button id="clearLockBtn" class="w-full p-2 bg-slate-600 rounded">Clear Lock/Warning</button>
+    </div>
 
-  <hr class="border-slate-700 my-2" />
+    <hr class="border-slate-700 my-2" />
 
-<!-- Recovery -->
-<h3 class="text-sm font-semibold mb-1">Recovery Request</h3>
-<div class="space-y-2 text-sm">
-  <!-- Kind -->
-  <select id="recoveryKind" class="w-full p-2 rounded bg-black/20">
-    <option value="0">Deployer</option>
-    <option value="1">Admin</option>
-  </select>
+    <h3 class="text-sm font-semibold mb-1">Recovery Request</h3>
+    <div class="space-y-2 text-sm">
+        <select id="recoveryKind" class="w-full p-2 rounded bg-black/20">
+            <option value="0">Deployer</option>
+            <option value="1">Admin</option>
+        </select>
 
-  <!-- Inputs -->
-  <input id="recoveryProposed" placeholder="Proposed address" class="w-full p-2 rounded bg-black/20" />
-  <input id="recoveryCallTarget" placeholder="Target contract address" class="w-full p-2 rounded bg-black/20" />
+        <input id="recoveryProposed" placeholder="Proposed address" class="w-full p-2 rounded bg-black/20" />
+        <input id="recoveryCallTarget" placeholder="Target contract address" class="w-full p-2 rounded bg-black/20" />
 
-  <!-- ABI encoding helper -->
-  <input id="recoveryFunction" placeholder="Function (e.g. upgradeTo(address))" class="w-full p-2 rounded bg-black/20" />
-  <input id="recoveryArgs" placeholder="Arguments (comma-separated)" class="w-full p-2 rounded bg-black/20" />
+        <input id="recoveryFunction" placeholder="Function (e.g. upgradeTo(address))" class="w-full p-2 rounded bg-black/20" />
+        <input id="recoveryArgs" placeholder="Arguments (comma-separated)" class="w-full p-2 rounded bg-black/20" />
 
-  <!-- Auto-generated -->
-  <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20"></textarea>
-  <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 rounded">Encode CallData</button>
+        <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20"></textarea>
+        <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 rounded">Encode CallData</button>
 
-  <!-- Buttons -->
-  <div class="flex gap-2 mt-2">
-    <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 rounded">Propose Recovery</button>
-    <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 rounded">Approve</button>
-    <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 rounded">Execute</button>
-    <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 rounded">Veto</button>
-  </div>
+        <div class="flex gap-2 mt-2">
+            <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 rounded">Propose Recovery</button>
+            <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 rounded">Approve</button>
+            <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 rounded">Execute</button>
+            <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 rounded">Veto</button>
+        </div>
 
-	<hr class="border-slate-700 my-3" />
+        <hr class="border-slate-700 my-3" />
 
-<!-- DAO Info -->
-<h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
-  🏛️ DAO
-</h3>
-<div class="p-3 rounded-lg bg-slate-800/60 shadow text-sm">
-  <div class="text-slate-400 text-xs">DAO Address</div>
-  <div id="daoAddr" class="font-mono text-slate-100 break-all">—</div>
-</div>
-<button id="refreshDaoBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
-  🔄 Refresh DAO
-</button>
+        <h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
+            🏛️ DAO
+        </h3>
+        <div class="p-3 rounded-lg bg-slate-800/60 shadow text-sm space-y-3">
+            <div>
+                <div class="text-slate-400 text-xs">Current DAO Address</div>
+                <div id="daoAddr" class="font-mono text-slate-100 break-all">—</div>
+            </div>
+            <div>
+                <div class="text-slate-400 text-xs">Pending DAO Address</div>
+                <div id="pendingDaoAddr" class="font-mono text-slate-100 break-all">—</div>
+            </div>
+            <div>
+                <div class="text-slate-400 text-xs">Commitment Window</div>
+                <div id="pendingDaoWindow" class="font-mono text-slate-100">—</div>
+            </div>
+        </div>
+        <button id="refreshDaoBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+            🔄 Refresh DAO
+        </button>
 
-<!-- Guardians -->
-<h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
-  🛡️ Guardians
-</h3>
-<div class="grid grid-cols-2 gap-3 text-sm">
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Active</div>
-    <pre id="activeGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Standby</div>
-    <pre id="standbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
-  </div>
-</div>
-<button id="refreshGuardiansBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
-  🔄 Refresh Guardians
-</button>
+        <h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
+            🛡️ Guardians
+        </h3>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Active</div>
+                <pre id="activeGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Standby</div>
+                <pre id="standbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow col-span-2">
+                <div class="text-slate-400 text-xs">Pending Active Batch</div>
+                <pre id="pendingActiveGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+                <div class="text-slate-400 text-xs mt-2">Commitment Window</div>
+                <div id="pendingActiveWindow" class="font-mono text-slate-100">—</div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow col-span-2">
+                <div class="text-slate-400 text-xs">Pending Standby Batch</div>
+                <pre id="pendingStandbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+                <div class="text-slate-400 text-xs mt-2">Commitment Window</div>
+                <div id="pendingStandbyWindow" class="font-mono text-slate-100">—</div>
+            </div>
+        </div>
+        <button id="refreshGuardiansBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+            🔄 Refresh Guardians
+        </button>
 
-<!-- Lock Status -->
-<h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
-  🔒 Lock Status
-</h3>
-<div class="p-3 rounded-lg bg-slate-800/60 shadow text-sm">
-  <div class="text-slate-400 text-xs">Status</div>
-  <div id="lockStatus" class="font-mono text-slate-100">—</div>
-</div>
-<button id="refreshLockBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
-  🔄 Refresh Lock
-</button>
+        <h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
+            🔒 Lock Status
+        </h3>
+        <div class="p-3 rounded-lg bg-slate-800/60 shadow text-sm">
+            <div class="text-slate-400 text-xs">Status</div>
+            <div id="lockStatus" class="font-mono text-slate-100">—</div>
+        </div>
+        <button id="refreshLockBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+            🔄 Refresh Lock
+        </button>
 
-<!-- Recovery State -->
-<h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
-  🩹 Recovery State
-</h3>
-<div class="flex items-center gap-2 mb-3">
-  <select id="recoveryKind" class="rounded-lg px-2 py-1 text-sm text-black">
-  <option value="">Select Recovery Kind</option>
-  <option value="0">🟢 Default (0)</option>
-  <option value="1">🛡️ Social (1)</option>
-  <option value="2">👥 Guardian (2)</option>
-  </select>
-  <button id="refreshRecoveryBtn" class="flex-1 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
-    🔄 Refresh Recovery
-  </button>
-</div>
-<div class="grid grid-cols-2 gap-3 text-sm">
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Proposed</div>
-    <pre id="riProposed" class="font-mono text-slate-100 whitespace-pre-wrap">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Approvals</div>
-    <pre id="riApprovals" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Deadline</div>
-    <pre id="riDeadline" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Executed</div>
-    <pre id="riExecuted" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Call Target</div>
-    <pre id="riCallTarget" class="font-mono text-slate-100 whitespace-pre-wrap">—</pre>
-  </div>
-  <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Call Data</div>
-    <pre id="riCallData" class="font-mono text-slate-100 whitespace-pre-wrap break-words">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Guardian</div>
-    <pre id="riGuardian" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Veto Expiry</div>
-    <pre id="riVetoExpiry" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Nonce</div>
-    <pre id="riNonce" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Approvers</div>
-    <pre id="riApprovers" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
-  </div>
-</div>
-</div>
+        <h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
+            🩹 Recovery State
+        </h3>
+        <div class="flex items-center gap-2 mb-3">
+            <select id="recoveryKind" class="rounded-lg px-2 py-1 text-sm text-black">
+                <option value="">Select Recovery Kind</option>
+                <option value="0">🟢 Default (0)</option>
+                <option value="1">🛡️ Social (1)</option>
+                <option value="2">👥 Guardian (2)</option>
+            </select>
+            <button id="refreshRecoveryBtn" class="flex-1 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+                🔄 Refresh Recovery
+            </button>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Proposed</div>
+                <pre id="riProposed" class="font-mono text-slate-100 whitespace-pre-wrap">—</pre>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Approvals</div>
+                <pre id="riApprovals" class="font-mono text-slate-100">—</pre>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Deadline</div>
+                <pre id="riDeadline" class="font-mono text-slate-100">—</pre>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Executed</div>
+                <pre id="riExecuted" class="font-mono text-slate-100">—</pre>
+            </div>
+            <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Call Target</div>
+                <pre id="riCallTarget" class="font-mono text-slate-100 whitespace-pre-wrap">—</pre>
+            </div>
+            <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Call Data</div>
+                <pre id="riCallData" class="font-mono text-slate-100 whitespace-pre-wrap break-words">—</pre>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Guardian</div>
+                <pre id="riGuardian" class="font-mono text-slate-100">—</pre>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Veto Expiry</div>
+                <pre id="riVetoExpiry" class="font-mono text-slate-100">—</pre>
+            </div>
+            <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Nonce</div>
+                <pre id="riNonce" class="font-mono text-slate-100">—</pre>
+            </div>
+            <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
+                <div class="text-slate-400 text-xs">Approvers</div>
+                <pre id="riApprovers" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+            </div>
+        </div>
+    </div>
 </section>
+
 
 	  <div id="whitepaper" class="tab-content hidden">
   <div class="glass ring-1 rounded-2xl p-5 space-y-6">
@@ -2359,415 +2368,435 @@ async function fetchProposal() {
   }
 }
 
-	  
+
 // ---------- Guardian Council / DAO & Governance ----------
 // ---------- DAO ----------
-async function proposeDao(){
-  try {
-    if(!contracts.council) return alert("Council contract not attached");
-    showLoading();
+async function proposeDao() {
+    try {
+        if (!contracts.council) return alert("Council contract not attached");
+        showLoading();
 
-    const newDao = $('newDaoAddr').value.trim();
-    if(!newDao) return alert("Enter DAO address");
+        const newDao = $('newDaoAddr').value.trim();
+        if (!newDao) return alert("Enter DAO address");
 
-    const tx = await contracts.council.proposeNewDAO(newDao);
-    log('propose DAO tx', tx.hash);
-    await tx.wait();
+        const tx = await contracts.council.proposeNewDAO(newDao);
+        log('propose DAO tx', tx.hash);
+        await tx.wait();
 
-    log('DAO proposal submitted');
-    alert("✅ DAO proposal submitted");
-  } catch(e){
-    log('proposeDao err', e && e.message ? e.message : e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log('DAO proposal submitted');
+        alert("✅ DAO proposal submitted");
+    } catch (e) {
+        log('proposeDao err', e && e.message ? e.message : e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
-async function commitDao(){
-  try {
-    if(!contracts.council) return alert("Council contract not attached");
-    showLoading();
+async function commitDao() {
+    try {
+        if (!contracts.council) return alert("Council contract not attached");
+        showLoading();
 
-    const tx = await contracts.council.commitNewDAO();
-    log('commit DAO tx', tx.hash);
-    await tx.wait();
+        const tx = await contracts.council.commitNewDAO();
+        log('commit DAO tx', tx.hash);
+        await tx.wait();
 
-    log('DAO committed');
-    alert("✅ DAO committed");
-  } catch(e){
-    log('commitDao err', e && e.message ? e.message : e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log('DAO committed');
+        alert("✅ DAO committed");
+    } catch (e) {
+        log('commitDao err', e && e.message ? e.message : e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
 // Active Batch
-async function proposeActiveBatch(){
-  try {
-    if(!contracts.council) return alert("Council contract not attached");
-    showLoading();
+async function proposeActiveBatch() {
+    try {
+        if (!contracts.council) return alert("Council contract not attached");
+        showLoading();
 
-    const arr = parse7($('activeBatchInput').value);
-    const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
-    log('propose active batch tx', tx.hash);
-    await tx.wait();
+        const arr = parse7($('activeBatchInput').value);
+        const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
+        log('propose active batch tx', tx.hash);
+        await tx.wait();
 
-    log('proposeActiveBatch done');
-    alert("✅ Active batch proposed");
-  } catch(e){
-    log('proposeActiveBatch err', e && e.message ? e.message : e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log('proposeActiveBatch done');
+        alert("✅ Active batch proposed");
+    } catch (e) {
+        log('proposeActiveBatch err', e && e.message ? e.message : e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
-async function commitActiveBatch(){
-  try {
-    if(!contracts.council) return alert("Council contract not attached");
-    showLoading();
+async function commitActiveBatch() {
+    try {
+        if (!contracts.council) return alert("Council contract not attached");
+        showLoading();
 
-    const tx = await contracts.council.daoCommitSeedActiveBatch();
-    log('commit active batch tx', tx.hash);
-    await tx.wait();
+        const tx = await contracts.council.daoCommitSeedActiveBatch();
+        log('commit active batch tx', tx.hash);
+        await tx.wait();
 
-    log('commitActiveBatch done');
-    alert("✅ Active batch committed");
-  } catch(e){
-    log('commitActiveBatch err', e && e.message ? e.message : e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log('commitActiveBatch done');
+        alert("✅ Active batch committed");
+    } catch (e) {
+        log('commitActiveBatch err', e && e.message ? e.message : e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
 // Standby Batch
-async function proposeStandbyBatch(){
-  try {
-    if(!contracts.council) return alert("Council contract not attached");
-    showLoading();
+async function proposeStandbyBatch() {
+    try {
+        if (!contracts.council) return alert("Council contract not attached");
+        showLoading();
 
-    const arr = parse7($('standbyBatchInput').value);
-    const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
-    log('propose standby batch tx', tx.hash);
-    await tx.wait();
+        const arr = parse7($('standbyBatchInput').value);
+        const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
+        log('propose standby batch tx', tx.hash);
+        await tx.wait();
 
-    log('proposeStandbyBatch done');
-    alert("✅ Standby batch proposed");
-  } catch(e){
-    log('proposeStandbyBatch err', e && e.message ? e.message : e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log('proposeStandbyBatch done');
+        alert("✅ Standby batch proposed");
+    } catch (e) {
+        log('proposeStandbyBatch err', e && e.message ? e.message : e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
-async function commitStandbyBatch(){
-  try {
-    if(!contracts.council) return alert("Council contract not attached");
-    showLoading();
+async function commitStandbyBatch() {
+    try {
+        if (!contracts.council) return alert("Council contract not attached");
+        showLoading();
 
-    const tx = await contracts.council.daoCommitSeedStandbyBatch();
-    log('commit standby batch tx', tx.hash);
-    await tx.wait();
+        const tx = await contracts.council.daoCommitSeedStandbyBatch();
+        log('commit standby batch tx', tx.hash);
+        await tx.wait();
 
-    log('commitStandbyBatch done');
-    alert("✅ Standby batch committed");
-  } catch(e){
-    log('commitStandbyBatch err', e && e.message ? e.message : e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log('commitStandbyBatch done');
+        alert("✅ Standby batch committed");
+    } catch (e) {
+        log('commitStandbyBatch err', e && e.message ? e.message : e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
-async function activateStandby(){
-  try {
-    if(!contracts.council) return alert("Council contract not attached");
-    showLoading();
+async function activateStandby() {
+    try {
+        if (!contracts.council) return alert("Council contract not attached");
+        showLoading();
 
-    const tx = await contracts.council.daoActivateStandby();
-    log('activate standby tx', tx.hash);
-    await tx.wait();
+        const tx = await contracts.council.daoActivateStandby();
+        log('activate standby tx', tx.hash);
+        await tx.wait();
 
-    log('activateStandby done');
-    alert("✅ Standby batch activated");
-  } catch(e){
-    log('activateStandby err', e && e.message ? e.message : e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log('activateStandby done');
+        alert("✅ Standby batch activated");
+    } catch (e) {
+        log('activateStandby err', e && e.message ? e.message : e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
 // Lock
-async function clearLock(){
-  try {
-    if(!contracts.council) return alert("Council contract not attached");
-    showLoading();
+async function clearLock() {
+    try {
+        if (!contracts.council) return alert("Council contract not attached");
+        showLoading();
 
-    const tx = await contracts.council.daoClearLockAndWarning();
-    log('clear lock tx', tx.hash);
-    await tx.wait();
+        const tx = await contracts.council.daoClearLockAndWarning();
+        log('clear lock tx', tx.hash);
+        await tx.wait();
 
-    log('clearLock done');
-    alert("✅ Lock cleared");
-  } catch(e){
-    log('clearLock err', e && e.message ? e.message : e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
-}
-
-// Parse helper
-function parse7(txt){
-  const arr = txt.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(arr.length !== 7) throw new Error("Need exactly 7 addresses");
-  return arr;
+        log('clearLock done');
+        alert("✅ Lock cleared");
+    } catch (e) {
+        log('clearLock err', e && e.message ? e.message : e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
 // Recovery
-async function proposeRecovery(){
-  try {
-    if(!contracts.council) return alert("Council contract not attached");
+async function proposeRecovery() {
+    try {
+        if (!contracts.council) return alert("Council contract not attached");
 
-    const kind = parseInt($('recoveryKind').value, 10);
-    const proposed = $('recoveryProposed').value.trim();
-    const callTarget = $('recoveryCallTarget').value.trim();
-    const callData = $('recoveryCallData').value.trim();
+        const kind = parseInt($('recoveryKind').value, 10);
+        const proposed = $('recoveryProposed').value.trim();
+        const callTarget = $('recoveryCallTarget').value.trim();
+        const callData = $('recoveryCallData').value.trim();
 
-    if(!proposed || !callTarget || !callData) {  
-      return alert("Fill all recovery fields");  
-    }  
+        if (!proposed || !callTarget || !callData) {
+            return alert("Fill all recovery fields");
+        }
 
-    showLoading("Submitting recovery proposal...");
+        showLoading("Submitting recovery proposal...");
 
-    const tx = await contracts.council.proposeRecovery(kind, proposed, callTarget, callData);  
-    log('proposeRecovery tx', tx.hash);  
-    await tx.wait();  
+        const tx = await contracts.council.proposeRecovery(kind, proposed, callTarget, callData);
+        log('proposeRecovery tx', tx.hash);
+        await tx.wait();
 
-    log('Recovery proposed');  
-    alert("Recovery proposal submitted!");
-  } catch(e) {
-    log('proposeRecovery err', e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log('Recovery proposed');
+        alert("Recovery proposal submitted!");
+    } catch (e) {
+        log('proposeRecovery err', e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
-	  // ---------- Recovery Actions ----------
-async function approveRecovery(){
-  try {
-    const kind = parseInt($('recoveryKind').value, 10);
+// ---------- Recovery Actions ----------
+async function approveRecovery() {
+    try {
+        const kind = parseInt($('recoveryKind').value, 10);
 
-    showLoading();
+        showLoading();
 
-    const tx = await contracts.council.approveRecovery(kind);
-    log('approveRecovery tx', tx.hash);
-    await tx.wait();
-    log('Recovery approved');
-    alert("✅ Recovery approved!");
-  } catch(e) {
-    log('approveRecovery err', e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        const tx = await contracts.council.approveRecovery(kind);
+        log('approveRecovery tx', tx.hash);
+        await tx.wait();
+        log('Recovery approved');
+        alert("✅ Recovery approved!");
+    } catch (e) {
+        log('approveRecovery err', e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
-async function executeRecovery(){
-  try {
-    const kind = parseInt($('recoveryKind').value, 10);
+async function executeRecovery() {
+    try {
+        const kind = parseInt($('recoveryKind').value, 10);
 
-    showLoading();
+        showLoading();
 
-    const tx = await contracts.council.executeRecovery(kind);
-    log('executeRecovery tx', tx.hash);
-    await tx.wait();
-    log('Recovery executed');
-    alert("✅ Recovery executed!");
-  } catch(e) {
-    log('executeRecovery err', e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        const tx = await contracts.council.executeRecovery(kind);
+        log('executeRecovery tx', tx.hash);
+        await tx.wait();
+        log('Recovery executed');
+        alert("✅ Recovery executed!");
+    } catch (e) {
+        log('executeRecovery err', e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
-async function vetoRecovery(){
-  try {
-    const kind = parseInt($('recoveryKind').value, 10);
+async function vetoRecovery() {
+    try {
+        const kind = parseInt($('recoveryKind').value, 10);
 
-    showLoading();
+        showLoading();
 
-    const tx = await contracts.council.lastHonestHaltAndPromote(kind);
-    log('vetoRecovery tx', tx.hash);
-    await tx.wait();
-    log('Recovery vetoed');
-    alert("✅ Recovery vetoed!");
-  } catch(e) {
-    log('vetoRecovery err', e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+        const tx = await contracts.council.lastHonestHaltAndPromote(kind);
+        log('vetoRecovery tx', tx.hash);
+        await tx.wait();
+        log('Recovery vetoed');
+        alert("✅ Recovery vetoed!");
+    } catch (e) {
+        log('vetoRecovery err', e);
+        alert(e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
 // ---------- Encode calldata helper ----------
 async function encodeCallData() {
-  try {
-    const fnSig = $('recoveryFunction').value.trim(); // e.g. "upgradeTo(address)"
-    const args = $('recoveryArgs').value.trim().split(',').map(s => s.trim()).filter(Boolean);
+    try {
+        const fnSig = $('recoveryFunction').value.trim(); // e.g. "upgradeTo(address)"
+        const args = $('recoveryArgs').value.trim().split(',').map(s => s.trim()).filter(Boolean);
 
-    if (!fnSig) return alert("Enter function signature");  
+        if (!fnSig) return alert("Enter function signature");
 
-    showLoading();
+        showLoading();
 
-    // Create ethers.js Interface  
-    const iface = new ethers.utils.Interface([ "function " + fnSig ]);  
-    const fnName = fnSig.split('(')[0]; // extract name before '('  
+        // Use ethers.js Interface
+        const iface = new ethers.utils.Interface(["function " + fnSig]);
+        const fnName = fnSig.split('(')[0];
 
-    const callData = iface.encodeFunctionData(fnName, args);  
-    $('recoveryCallData').value = callData;  
+        const callData = iface.encodeFunctionData(fnName, args);
+        $('recoveryCallData').value = callData;
 
-    alert("✅ CallData encoded!");
-  } catch (e) {
-    console.error(e);
-    alert("Error encoding callData: " + (e.message || e));
-  } finally {
-    hideLoading();
-  }
+        alert("✅ CallData encoded!");
+    } catch (e) {
+        console.error(e);
+        alert("Error encoding callData: " + (e.message || e));
+    } finally {
+        hideLoading();
+    }
 }
 
 
 // -------------------- READ-ONLY HELPERS --------------------
 // DAO
 async function fetchDaoInfo() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-    showLoading();
+    try {
+        if (!contracts.council) return alert("Council contract not set");
+        showLoading();
 
-    const daoAddr = await contracts.council.dao();  
-    $('daoAddr').innerText = daoAddr;  
+        const daoAddr = await contracts.council.dao();
+        const [pendingDao, commitEarliest, commitDeadline] = await contracts.council.getPendingDAOState();
+        
+        const formatTimestamp = (timestamp) => {
+            if (timestamp.isZero() || timestamp.toNumber() === 0) return "—";
+            const date = new Date(timestamp.toNumber() * 1000);
+            return date.toLocaleString();
+        };
 
-    log("fetchDaoInfo done ✅");
-  } catch (e) {
-    console.error("fetchDaoInfo err", e);
-    $('daoAddr').innerText = "Error: " + (e.message || e);
-  } finally {
-    hideLoading();
-  }
+        $('daoAddr').innerText = daoAddr;
+        $('pendingDaoAddr').innerText = pendingDao;
+        $('pendingDaoWindow').innerText = `Earliest: ${formatTimestamp(commitEarliest)} | Deadline: ${formatTimestamp(commitDeadline)}`;
+        
+        log("fetchDaoInfo done ✅");
+    } catch (e) {
+        console.error("fetchDaoInfo err", e);
+        $('daoAddr').innerText = "Error: " + (e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
 // Guardians
 async function fetchGuardians() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-    showLoading();
+    try {
+        if (!contracts.council) return alert("Council contract not set");
+        showLoading();
 
-    const active = await contracts.council.getActiveGuardians();  
-    const standby = await contracts.council.getStandbyGuardians();  
+        const active = await contracts.council.getActiveGuardians();
+        const standby = await contracts.council.getStandbyGuardians();
+        const [pendingActive, paEarliest, paDeadline] = await contracts.council.getPendingActiveBatchState();
+        const [pendingStandby, psEarliest, psDeadline] = await contracts.council.getPendingStandbyBatchState();
+        
+        const formatTimestamp = (timestamp) => {
+            if (timestamp.isZero() || timestamp.toNumber() === 0) return "—";
+            const date = new Date(timestamp.toNumber() * 1000);
+            return date.toLocaleString();
+        };
 
-    $('activeGuardians').innerText = active.join("\n") || "None";  
-    $('standbyGuardians').innerText = standby.join("\n") || "None";  
+        $('activeGuardians').innerText = active.join("\n") || "None";
+        $('standbyGuardians').innerText = standby.join("\n") || "None";
+        $('pendingActiveGuardians').innerText = pendingActive.join("\n") || "None";
+        $('pendingActiveWindow').innerText = `Earliest: ${formatTimestamp(paEarliest)} | Deadline: ${formatTimestamp(paDeadline)}`;
+        $('pendingStandbyGuardians').innerText = pendingStandby.join("\n") || "None";
+        $('pendingStandbyWindow').innerText = `Earliest: ${formatTimestamp(psEarliest)} | Deadline: ${formatTimestamp(psDeadline)}`;
 
-    log("fetchGuardians done ✅");
-  } catch (e) {
-    console.error("fetchGuardians err", e);
-    $('activeGuardians').innerText = "Error loading";
-    $('standbyGuardians').innerText = "Error loading";
-  } finally {
-    hideLoading();
-  }
+        log("fetchGuardians done ✅");
+    } catch (e) {
+        console.error("fetchGuardians err", e);
+        $('activeGuardians').innerText = "Error loading";
+        $('standbyGuardians').innerText = "Error loading";
+    } finally {
+        hideLoading();
+    }
 }
 
 // Lock / health
 async function fetchLockStatus() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-    showLoading();
+    try {
+        if (!contracts.council) return alert("Council contract not set");
+        showLoading();
 
-    const locked = await contracts.council.locked();  
-    $('lockStatus').innerText = locked ? "🔒 Locked" : "✅ Unlocked";  
+        const locked = await contracts.council.locked();
+        $('lockStatus').innerText = locked ? "🔒 Locked" : "✅ Unlocked";
 
-    log("fetchLockStatus done ✅");
-  } catch (e) {
-    console.error("fetchLockStatus err", e);
-    $('lockStatus').innerText = "Error: " + (e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log("fetchLockStatus done ✅");
+    } catch (e) {
+        console.error("fetchLockStatus err", e);
+        $('lockStatus').innerText = "Error: " + (e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
 // Recovery approvals (who approved)
 async function fetchRecoveryApprovals(kind) {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-    showLoading();
+    try {
+        if (!contracts.council) return alert("Council contract not set");
+        showLoading();
 
-    const nonce = await contracts.council.getRequestNonce(kind);  
-    const guardians = await contracts.council.getActiveGuardians();  
+        const guardians = await contracts.council.getActiveGuardians();
+        
+        const approvedList = [];
+        for (const g of guardians) {
+            const hasApproved = await contracts.council.hasApproved(kind, g);
+            if (hasApproved) {
+                approvedList.push(g);
+            }
+        }
 
-    const approvedList = [];  
-    for (const g of guardians) {  
-      const lastApproved = await contracts.council.getLastApprovedNonce(kind, g);  
-      if (lastApproved.toString() === nonce.toString()) {  
-        approvedList.push(g);  
-      }  
-    }  
+        $('riApprovers').innerText = approvedList.length > 0
+            ? approvedList.join("\n")
+            : "None yet";
 
-    $('riApprovers').innerText = approvedList.length > 0  
-      ? approvedList.join("\n")  
-      : "None yet";  
-
-    log("fetchRecoveryApprovals done ✅");
-  } catch (e) {
-    console.error("fetchRecoveryApprovals err", e);
-    $('riApprovers').innerText = "Error: " + (e.message || e);
-  } finally {
-    hideLoading();
-  }
+        log("fetchRecoveryApprovals done ✅");
+    } catch (e) {
+        console.error("fetchRecoveryApprovals err", e);
+        $('riApprovers').innerText = "Error: " + (e.message || e);
+    } finally {
+        hideLoading();
+    }
 }
 
 // Full recovery state
 async function fetchFullRecoveryState() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-    showLoading();
+    try {
+        if (!contracts.council) return alert("Council contract not set");
+        showLoading();
 
-    const kind = parseInt($('recoveryKind').value, 10);  
-    if (isNaN(kind)) return alert("Select a valid recovery kind");  
+        const kind = parseInt($('recoveryKind').value, 10);
+        if (isNaN(kind)) return alert("Select a valid recovery kind");
 
-    const [proposed, approvals, deadline, executed, callTarget, callData] =  
-      await contracts.council.getRecoveryState(kind);  
+        const [proposed, approvals, deadline, executed, callTarget, callData] =
+            await contracts.council.getRecoveryState(kind);
 
-    const [guardian, expiry] = await contracts.council.getTempVeto();  
-    const nonce = await contracts.council.getRequestNonce(kind);  
+        const [guardian, expiry] = await contracts.council.getTempVeto();
+        const nonce = await contracts.council.getRequestNonce(kind);
 
-    $('riProposed').innerText = proposed;  
-    $('riApprovals').innerText = `${approvals} approvals`;  
-    $('riDeadline').innerText = new Date(deadline * 1000).toLocaleString();  
-    $('riExecuted').innerText = executed ? "✅ Yes" : "❌ No";  
-    $('riCallTarget').innerText = callTarget;  
-    $('riCallData').innerText = callData;  
-    $('riGuardian').innerText = guardian;  
-    $('riVetoExpiry').innerText = expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "-";  
-    $('riNonce').innerText = nonce.toString();  
+        const formatTimestamp = (timestamp) => {
+            if (timestamp.isZero() || timestamp.toNumber() === 0) return "—";
+            const date = new Date(timestamp.toNumber() * 1000);
+            return date.toLocaleString();
+        };
+        
+        $('riProposed').innerText = proposed;
+        $('riApprovals').innerText = `${approvals} approvals`;
+        $('riDeadline').innerText = new Date(deadline * 1000).toLocaleString();
+        $('riExecuted').innerText = executed ? "✅ Yes" : "❌ No";
+        $('riCallTarget').innerText = callTarget;
+        $('riCallData').innerText = callData;
+        $('riGuardian').innerText = guardian;
+        $('riVetoExpiry').innerText = expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "-";
+        $('riNonce').innerText = nonce.toString();
 
-    await fetchRecoveryApprovals(kind);  
+        await fetchRecoveryApprovals(kind);
 
-    log("fetchFullRecoveryState done ✅");
-  } catch (e) {
-    console.error("fetchFullRecoveryState err", e);
-    alert("Error loading recovery info: " + (e.message || e));
-  } finally {
-    hideLoading();
-  }
-}
+        log("fetchFullRecoveryState done ✅");
+    } catch (e) {
+        console.error("fetchFullRecoveryState err", e);
+        alert("Error loading recovery info: " + (e.message || e));
+    } finally {
+        hideLoading();
+    }
+}  
 
 	  
   // ---------- Bind UI on load ----------
