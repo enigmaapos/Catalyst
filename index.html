@@ -2379,7 +2379,7 @@ function parse7(txt) {
 	  
 // ---------- Guardian Council / DAO & Governance ----------
 // ---------- DAO ----------
-async function proposeDao() {
+async function proposeNewDAO() {
     try {
         if (!contracts.council) return alert("Council contract not attached");
         showLoading();
@@ -2899,7 +2899,7 @@ $('viewPortfolioBtn').onclick = viewPortfolio;
 
 	  // DRS Guardian Council 
 // ---------- Bind Buttons ----------
-$('proposeDaoBtn').onclick = proposeDao;
+$('proposeDaoBtn').onclick = proposeNewDAO;
 $('commitDaoBtn').onclick = commitDao;
 $('proposeActiveBatchBtn').onclick = proposeActiveBatch;
 $('commitActiveBatchBtn').onclick = commitActiveBatch;
