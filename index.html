@@ -2801,26 +2801,21 @@ async function fetchFullRecoveryState() {
 	  
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async ()=>{
-    loadSavedAddrs();
-    await loadABIs(); // pre-load ABIs for faster attach later
+  await loadABIs(); // pre-load ABIs for faster attach later
 
-    // Connect / disconnect
-    $('connectBtn').onclick = connect;
-    $('disconnectBtn').onclick = disconnect;
-	  
-    // Save/load addresses
-    $('saveAddrs').onclick = ()=>{
-      const payload = {
-        addrCata: $('addrCata').value.trim(),
-        addrStaking: $('addrStaking').value.trim(),
-        addrGovernance: $('addrGovernance').value.trim(),
-        addrCouncil: $('addrCouncil').value.trim()
-      };
-      saveAddrsToLocal(payload);
-      // try attach if already connected
-      if(signer) attachContractsIfSet();
-    };
-    $('loadAddrs').onclick = ()=>{ loadSavedAddrs(); if(signer) attachContractsIfSet(); };
+  // Connect / disconnect
+  $('connectBtn').onclick = connect;
+  $('disconnectBtn').onclick = disconnect;
+
+  // Refreshes the contracts based on the addresses in the input fields
+  $('saveAddrs').onclick = ()=>{
+    if(signer) attachContractsIfSet();
+  };
+
+  $('loadAddrs').onclick = ()=>{
+    if(signer) attachContractsIfSet();
+  };
+});
 		
     // CATA
 	$('cataBurnBtn').onclick = cataBurn;
