@@ -2379,17 +2379,6 @@ function parse7(txt) {
 	  
 // ---------- Guardian Council / DAO & Governance ----------
 // ---------- DAO ----------
-async function loadCurrentDAO() {
-  if (!contracts.council) return;
-  try {
-    const currentDAO = await contracts.council.dao();
-    $('newDaoAddr').value = currentDAO; // auto-fill with current DAO
-    log("Current DAO:", currentDAO);
-  } catch (e) {
-    console.error("Failed to fetch current DAO:", e);
-  }
-}
-
   async function proposeNewDAO() {
     try {
       if (!contracts.council) return alert("⚠️ Council contract not attached");
@@ -2825,7 +2814,6 @@ async function fetchFullRecoveryState() {
   $('addrCouncil').value = DEFAULT_ADDRS.council;
 
   await loadABIs();
-	  await loadCurrentDAO();
 
   // Connect / disconnect
   $('connectBtn').onclick = connect;
