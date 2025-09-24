@@ -21,6 +21,13 @@
 		"type": "error"
 	},
 	{
+		"inputs": [],
+		"name": "activateStandbyIfLocked",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -211,6 +218,19 @@
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "approveRecovery",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -222,6 +242,20 @@
 		],
 		"name": "AutoLocked",
 		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "commitNewDAO",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "daoActivateStandby",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -262,6 +296,107 @@
 		"type": "event"
 	},
 	{
+		"inputs": [],
+		"name": "daoClearLockAndWarning",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "daoCommitSeedActiveBatch",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "daoCommitSeedStandbyBatch",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address[7]",
+				"name": "batch",
+				"type": "address[7]"
+			}
+		],
+		"name": "daoProposeSeedActiveBatch",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address[7]",
+				"name": "batch",
+				"type": "address[7]"
+			}
+		],
+		"name": "daoProposeSeedStandbyBatch",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "executeRecovery",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "role",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "grantRole",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "dao_",
+				"type": "address"
+			},
+			{
+				"internalType": "address[7]",
+				"name": "batchActive",
+				"type": "address[7]"
+			},
+			{
+				"internalType": "address[7]",
+				"name": "batchStandby",
+				"type": "address[7]"
+			}
+		],
+		"name": "initialize",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -294,6 +429,19 @@
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "lastHonestHaltAndPromote",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -313,6 +461,13 @@
 		"type": "event"
 	},
 	{
+		"inputs": [],
+		"name": "pause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -324,6 +479,47 @@
 		],
 		"name": "Paused",
 		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newDAO",
+				"type": "address"
+			}
+		],
+		"name": "proposeNewDAO",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			},
+			{
+				"internalType": "address",
+				"name": "proposed",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "callTarget",
+				"type": "address"
+			},
+			{
+				"internalType": "bytes",
+				"name": "callData",
+				"type": "bytes"
+			}
+		],
+		"name": "proposeRecovery",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -463,6 +659,42 @@
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "role",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "callerConfirmation",
+				"type": "address"
+			}
+		],
+		"name": "renounceRole",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "role",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "revokeRole",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -577,6 +809,13 @@
 		"type": "event"
 	},
 	{
+		"inputs": [],
+		"name": "unpause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -603,6 +842,24 @@
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newImplementation",
+				"type": "address"
+			},
+			{
+				"internalType": "bytes",
+				"name": "data",
+				"type": "bytes"
+			}
+		],
+		"name": "upgradeToAndCall",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -622,6 +879,25 @@
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "activeGuardians",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "COMMIT_DELAY",
 		"outputs": [
@@ -629,6 +905,19 @@
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "dao",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -675,203 +964,81 @@
 	},
 	{
 		"inputs": [],
-		"name": "GUARDIAN_COUNT",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "LAST_HONEST_VETO_WINDOW",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "RECOVERY_WINDOW",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "THRESHOLD",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "UPGRADE_INTERFACE_VERSION",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "activateStandbyIfLocked",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "activeGuardians",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
-				"name": "kind",
-				"type": "uint8"
-			}
-		],
-		"name": "approveRecovery",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "commitNewDAO",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "dao",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "daoActivateStandby",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "daoClearLockAndWarning",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "daoCommitSeedActiveBatch",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "daoCommitSeedStandbyBatch",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address[7]",
-				"name": "batch",
-				"type": "address[7]"
-			}
-		],
-		"name": "daoProposeSeedActiveBatch",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address[7]",
-				"name": "batch",
-				"type": "address[7]"
-			}
-		],
-		"name": "daoProposeSeedStandbyBatch",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
-				"name": "kind",
-				"type": "uint8"
-			}
-		],
-		"name": "executeRecovery",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "getActiveGuardians",
 		"outputs": [
 			{
 				"internalType": "address[7]",
 				"name": "",
 				"type": "address[7]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPendingActiveBatchState",
+		"outputs": [
+			{
+				"internalType": "address[7]",
+				"name": "pendingBatch",
+				"type": "address[7]"
+			},
+			{
+				"internalType": "uint256",
+				"name": "commitEarliest",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "commitDeadline",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPendingDAOState",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "pendingDAO",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "commitEarliest",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "commitDeadline",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPendingStandbyBatchState",
+		"outputs": [
+			{
+				"internalType": "address[7]",
+				"name": "pendingBatch",
+				"type": "address[7]"
+			},
+			{
+				"internalType": "uint256",
+				"name": "commitEarliest",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "commitDeadline",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -916,6 +1083,25 @@
 				"internalType": "bytes",
 				"name": "callData",
 				"type": "bytes"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "getRequestNonce",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -972,21 +1158,40 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "GUARDIAN_COUNT",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
-				"internalType": "bytes32",
-				"name": "role",
-				"type": "bytes32"
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
 			},
 			{
 				"internalType": "address",
-				"name": "account",
+				"name": "guardian",
 				"type": "address"
 			}
 		],
-		"name": "grantRole",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"name": "hasApproved",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -1011,29 +1216,6 @@
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "dao_",
-				"type": "address"
-			},
-			{
-				"internalType": "address[7]",
-				"name": "batchActive",
-				"type": "address[7]"
-			},
-			{
-				"internalType": "address[7]",
-				"name": "batchStandby",
-				"type": "address[7]"
-			}
-		],
-		"name": "initialize",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1075,16 +1257,16 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
+		"inputs": [],
+		"name": "LAST_HONEST_VETO_WINDOW",
+		"outputs": [
 			{
-				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
-				"name": "kind",
-				"type": "uint8"
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
-		"name": "lastHonestHaltAndPromote",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -1102,13 +1284,6 @@
 	},
 	{
 		"inputs": [],
-		"name": "pause",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "paused",
 		"outputs": [
 			{
@@ -1118,47 +1293,6 @@
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newDAO",
-				"type": "address"
-			}
-		],
-		"name": "proposeNewDAO",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
-				"name": "kind",
-				"type": "uint8"
-			},
-			{
-				"internalType": "address",
-				"name": "proposed",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "callTarget",
-				"type": "address"
-			},
-			{
-				"internalType": "bytes",
-				"name": "callData",
-				"type": "bytes"
-			}
-		],
-		"name": "proposeRecovery",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1175,39 +1309,16 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
+		"inputs": [],
+		"name": "RECOVERY_WINDOW",
+		"outputs": [
 			{
-				"internalType": "bytes32",
-				"name": "role",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "address",
-				"name": "callerConfirmation",
-				"type": "address"
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
-		"name": "renounceRole",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes32",
-				"name": "role",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "revokeRole",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -1268,27 +1379,28 @@
 	},
 	{
 		"inputs": [],
-		"name": "unpause",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"name": "THRESHOLD",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
-		"inputs": [
+		"inputs": [],
+		"name": "UPGRADE_INTERFACE_VERSION",
+		"outputs": [
 			{
-				"internalType": "address",
-				"name": "newImplementation",
-				"type": "address"
-			},
-			{
-				"internalType": "bytes",
-				"name": "data",
-				"type": "bytes"
+				"internalType": "string",
+				"name": "",
+				"type": "string"
 			}
 		],
-		"name": "upgradeToAndCall",
-		"outputs": [],
-		"stateMutability": "payable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
