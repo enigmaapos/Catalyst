@@ -2397,6 +2397,7 @@ async function proposeNewDAO() {
         log('proposeDao err', e && e.message ? e.message : e);
         alert(e.message || e);
     } finally {
+        // Corrected line
         hideLoading();
     }
 }
