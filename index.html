@@ -765,12 +765,16 @@
   <!-- Recovery -->
 <h3 class="text-sm font-semibold mb-1">Recovery Request</h3>
 <div class="space-y-2 text-sm">
+  <!-- Recovery kind (contract enum category) -->
   <select id="recoveryKind" class="w-full p-2 rounded bg-black/20">
     <option value="0">Deployer</option>
     <option value="1">Admin</option>
   </select>
 
+  <!-- Who is proposed as new admin/deployer -->
   <input id="recoveryProposed" placeholder="Proposed address" class="w-full p-2 rounded bg-black/20" />
+
+  <!-- Contract that will be called -->
   <input id="recoveryCallTarget" placeholder="Target contract address" class="w-full p-2 rounded bg-black/20" />
 
   <!-- Dropdown for common functions -->
@@ -783,13 +787,20 @@
     <option value="renounceOwnership()">renounceOwnership()</option>
   </select>
 
-  <!-- Free input for custom function -->
-  <input id="recoveryFunction" placeholder="Custom function (e.g. myFunction(uint256))" class="w-full p-2 rounded bg-black/20" />
+  <!-- Free input for custom functions -->
+  <input id="recoveryFunction" placeholder="Custom function (e.g. myFunction(uint256))"
+    class="w-full p-2 rounded bg-black/20" />
 
-  <input id="recoveryArgs" placeholder="Arguments (comma-separated)" class="w-full p-2 rounded bg-black/20" />
-  <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20"></textarea>
+  <!-- Function args -->
+  <input id="recoveryArgs" placeholder="Arguments (comma-separated)"
+    class="w-full p-2 rounded bg-black/20" />
+
+  <!-- Encoded calldata -->
+  <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" readonly
+    class="w-full p-2 rounded bg-black/20 font-mono h-20"></textarea>
 
   <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 rounded">Encode CallData</button>
+
     <div class="flex gap-2 mt-2">
       <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 rounded">Propose</button>
       <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 rounded">Approve</button>
@@ -2463,17 +2474,23 @@ $('clearLockBtn').onclick = async () => {
 // Recovery
 $('encodeCallDataBtn').onclick = async () => {
   try {
-    // Prefer dropdown function, fallback to custom input
+    // Prefer dropdown value if selected, otherwise fallback to custom input
     let fnSig = $('recoveryFunctionSelect').value || $('recoveryFunction').value.trim();
     if (!fnSig) throw new Error("Select or enter a function signature");
 
-    const args = $('recoveryArgs').value.trim().split(',').map(a => a.trim()).filter(Boolean);
+    const args = $('recoveryArgs').value
+      .trim()
+      .split(',')
+      .map(a => a.trim())
+      .filter(Boolean);
+
     const iface = new ethers.utils.Interface([`function ${fnSig}`]);
     const fnName = fnSig.split('(')[0];
 
     $('recoveryCallData').value = iface.encodeFunctionData(fnName, args);
     alert("✅ Calldata encoded");
   } catch (e) {
+    console.error("Encoding failed:", e);
     alert("❌ " + (e.message || e));
   }
 };
