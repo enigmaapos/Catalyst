@@ -815,66 +815,18 @@
     </div>
   </div>
 
-		<h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
-  🩹 Recovery State
+	<h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
+  🩹 Recovery States
 </h3>
-
-<div class="mb-3">
-  <span id="riStatus"
-    class="inline-block px-3 py-1 text-xs rounded-full bg-slate-700 text-slate-300">
-    ⚪ Checking...
-  </span>
-</div>
-
 <div class="flex items-center gap-2 mb-3">
   <button id="refreshRecoveryBtn"
     class="flex-1 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
-    🔄 Refresh Recovery
+    🔄 Refresh Recoveries
   </button>
 </div>
 
-<div class="grid grid-cols-2 gap-3 text-sm">
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Proposed</div>
-    <pre id="riProposed" class="font-mono text-slate-100 whitespace-pre-wrap">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Approvals</div>
-    <pre id="riApprovals" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Deadline</div>
-    <pre id="riDeadline" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Executed</div>
-    <pre id="riExecuted" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Call Target</div>
-    <pre id="riCallTarget" class="font-mono text-slate-100 whitespace-pre-wrap break-words">—</pre>
-  </div>
-  <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Call Data</div>
-    <pre id="riCallData" class="font-mono text-slate-100 whitespace-pre-wrap break-words h-20 overflow-y-auto">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Guardian</div>
-    <pre id="riGuardian" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Veto Expiry</div>
-    <pre id="riVetoExpiry" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Nonce</div>
-    <pre id="riNonce" class="font-mono text-slate-100">—</pre>
-  </div>
-  <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-    <div class="text-slate-400 text-xs">Approvers</div>
-    <pre id="riApprovers" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
-  </div>
-</div>
+<!-- Each recovery (0,1,2) will render here -->
+<div id="riRecoveries" class="space-y-3 text-sm"></div>
 
   <hr class="border-slate-700 my-2" />
 
@@ -2676,7 +2628,18 @@ async function fetchAllRecoveryStates() {
 
 document.getElementById("refreshRecoveryBtn").onclick = fetchAllRecoveryStates;
       
-          
+$('refreshDaoBtn').onclick = async () => {
+  try {
+    showLoading();
+    const dao = await contracts.council.dao();
+    const [pending, earliest, deadline] = await contracts.council.getPendingDAOState();
+    $('daoAddr').innerText = dao;
+    $('pendingDaoAddr').innerText = pending;
+    $('pendingDaoWindow').innerText = `Earliest: ${new Date(earliest*1000).toLocaleString()} | Deadline: ${new Date(deadline*1000).toLocaleString()}`;
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+	  
+	  
 $('refreshGuardiansBtn').onclick = async () => {
   try {
     showLoading();
