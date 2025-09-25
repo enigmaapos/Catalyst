@@ -2359,22 +2359,35 @@ $('clearLockBtn').onclick = async () => {
 // Recovery
 let recoveryIface;
 
-// Load functions from ABI automatically
+// Exclude functions you don’t want in dropdown
+const FN_BLOCKLIST = [
+  "commitNewDAO()",
+  "daoCommitSeedActiveBatch()",
+  "daoCommitSeedStandbyBatch()",
+  "daoActivateStandby()",
+  "daoClearLockAndWarning()"
+];
+
 async function loadRecoveryFunctions() {
   if (!contracts.council) return console.error("Council contract not set");
 
-  // Create an Interface from ABI
+  // Create Interface from ABI
   recoveryIface = new ethers.utils.Interface(contracts.council.interface.fragments);
 
-  // Filter only functions (exclude events, constructor)
   const fnFragments = Object.values(recoveryIface.functions);
 
-  // Populate dropdown
-  const dropdown = $('recoveryFunction');
+  const dropdown = $("recoveryFunction");
   dropdown.innerHTML = '<option value="">-- Select Function --</option>';
 
   fnFragments.forEach(fn => {
+    // Skip view/pure functions (read-only)
+    if (fn.stateMutability === "view" || fn.stateMutability === "pure") return;
+
     const sig = fn.format(); // e.g. "upgradeTo(address)"
+
+    // Skip blocklisted functions
+    if (FN_BLOCKLIST.includes(sig)) return;
+
     const opt = document.createElement("option");
     opt.value = sig;
     opt.textContent = sig;
@@ -2383,9 +2396,9 @@ async function loadRecoveryFunctions() {
 }
 
 // When dropdown changes → rebuild args UI
-$('recoveryFunction').addEventListener('change', () => {
-  const fnSig = $('recoveryFunction').value;
-  const container = $('recoveryArgsContainer');
+$("recoveryFunction").addEventListener("change", () => {
+  const fnSig = $("recoveryFunction").value;
+  const container = $("recoveryArgsContainer");
   container.innerHTML = "";
 
   if (!fnSig || !recoveryIface) return;
@@ -2400,16 +2413,16 @@ $('recoveryFunction').addEventListener('change', () => {
   });
 });
 
-// Encode calldata automatically
-$('encodeCallDataBtn').onclick = async () => {
+// Encode calldata
+$("encodeCallDataBtn").onclick = async () => {
   try {
-    const fnSig = $('recoveryFunction').value.trim();
+    const fnSig = $("recoveryFunction").value.trim();
     if (!fnSig) return alert("⚠️ Please select a function");
 
     const fn = recoveryIface.getFunction(fnSig);
     const args = fn.inputs.map((_, i) => $(`recoveryArg${i}`).value.trim());
 
-    $('recoveryCallData').value = recoveryIface.encodeFunctionData(fnSig, args);
+    $("recoveryCallData").value = recoveryIface.encodeFunctionData(fnSig, args);
     alert("✅ Calldata encoded");
   } catch (e) {
     console.error("encodeCallData error", e);
