@@ -763,18 +763,32 @@
   <hr class="border-slate-700 my-2" />
 
   <!-- Recovery -->
-  <h3 class="text-sm font-semibold mb-1">Recovery Request</h3>
-  <div class="space-y-2 text-sm">
-  <label for="recoveryFunction" class="block text-sm text-slate-300">Select Recovery Function</label>
-  <select id="recoveryFunction" class="w-full p-2 rounded bg-black/20">
-    <option value="">-- Select Function --</option>
+<h3 class="text-sm font-semibold mb-1">Recovery Request</h3>
+<div class="space-y-2 text-sm">
+  <select id="recoveryKind" class="w-full p-2 rounded bg-black/20">
+    <option value="0">Deployer</option>
+    <option value="1">Admin</option>
   </select>
 
-  <!-- Args container will be generated dynamically -->
-  <div id="recoveryArgsContainer" class="space-y-2"></div>
+  <input id="recoveryProposed" placeholder="Proposed address" class="w-full p-2 rounded bg-black/20" />
+  <input id="recoveryCallTarget" placeholder="Target contract address" class="w-full p-2 rounded bg-black/20" />
 
-  <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" 
-    class="w-full p-2 rounded bg-black/20 font-mono h-20"></textarea>
+  <!-- Dropdown for common functions -->
+  <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
+    <option value="">-- Select Function --</option>
+    <option value="upgradeTo(address)">upgradeTo(address)</option>
+    <option value="upgradeToAndCall(address,bytes)">upgradeToAndCall(address,bytes)</option>
+    <option value="changeAdmin(address)">changeAdmin(address)</option>
+    <option value="transferOwnership(address)">transferOwnership(address)</option>
+    <option value="renounceOwnership()">renounceOwnership()</option>
+  </select>
+
+  <!-- Free input for custom function -->
+  <input id="recoveryFunction" placeholder="Custom function (e.g. myFunction(uint256))" class="w-full p-2 rounded bg-black/20" />
+
+  <input id="recoveryArgs" placeholder="Arguments (comma-separated)" class="w-full p-2 rounded bg-black/20" />
+  <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20"></textarea>
+
   <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 rounded">Encode CallData</button>
     <div class="flex gap-2 mt-2">
       <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 rounded">Propose</button>
@@ -2357,78 +2371,23 @@ $('clearLockBtn').onclick = async () => {
 };
 
 // Recovery
-let recoveryIface;
-
-// Exclude functions you don’t want in dropdown
-const FN_BLOCKLIST = [
-  "commitNewDAO()",
-  "daoCommitSeedActiveBatch()",
-  "daoCommitSeedStandbyBatch()",
-  "daoActivateStandby()",
-  "daoClearLockAndWarning()"
-];
-
-async function loadRecoveryFunctions() {
-  if (!contracts.council) return console.error("Council contract not set");
-
-  // Create Interface from ABI
-  recoveryIface = new ethers.utils.Interface(contracts.council.interface.fragments);
-
-  const fnFragments = Object.values(recoveryIface.functions);
-
-  const dropdown = $("recoveryFunction");
-  dropdown.innerHTML = '<option value="">-- Select Function --</option>';
-
-  fnFragments.forEach(fn => {
-    // Skip view/pure functions (read-only)
-    if (fn.stateMutability === "view" || fn.stateMutability === "pure") return;
-
-    const sig = fn.format(); // e.g. "upgradeTo(address)"
-
-    // Skip blocklisted functions
-    if (FN_BLOCKLIST.includes(sig)) return;
-
-    const opt = document.createElement("option");
-    opt.value = sig;
-    opt.textContent = sig;
-    dropdown.appendChild(opt);
-  });
-}
-
-// When dropdown changes → rebuild args UI
-$("recoveryFunction").addEventListener("change", () => {
-  const fnSig = $("recoveryFunction").value;
-  const container = $("recoveryArgsContainer");
-  container.innerHTML = "";
-
-  if (!fnSig || !recoveryIface) return;
-
-  const fn = recoveryIface.getFunction(fnSig);
-  fn.inputs.forEach((input, i) => {
-    const el = document.createElement("input");
-    el.id = `recoveryArg${i}`;
-    el.placeholder = `${input.name || "arg" + i} (${input.type})`;
-    el.className = "w-full p-2 rounded bg-black/20";
-    container.appendChild(el);
-  });
-});
-
-// Encode calldata
-$("encodeCallDataBtn").onclick = async () => {
+$('encodeCallDataBtn').onclick = async () => {
   try {
-    const fnSig = $("recoveryFunction").value.trim();
-    if (!fnSig) return alert("⚠️ Please select a function");
+    // Prefer dropdown function, fallback to custom input
+    let fnSig = $('recoveryFunctionSelect').value || $('recoveryFunction').value.trim();
+    if (!fnSig) throw new Error("Select or enter a function signature");
 
-    const fn = recoveryIface.getFunction(fnSig);
-    const args = fn.inputs.map((_, i) => $(`recoveryArg${i}`).value.trim());
+    const args = $('recoveryArgs').value.trim().split(',').map(a => a.trim()).filter(Boolean);
+    const iface = new ethers.utils.Interface([`function ${fnSig}`]);
+    const fnName = fnSig.split('(')[0];
 
-    $("recoveryCallData").value = recoveryIface.encodeFunctionData(fnSig, args);
+    $('recoveryCallData').value = iface.encodeFunctionData(fnName, args);
     alert("✅ Calldata encoded");
   } catch (e) {
-    console.error("encodeCallData error", e);
     alert("❌ " + (e.message || e));
   }
 };
+
 
 $('proposeRecoveryBtn').onclick = async () => {
   try {
