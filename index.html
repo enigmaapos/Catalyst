@@ -815,32 +815,28 @@
     </div>
   </div>
 
-	<h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
-  🩹 Recovery States
+<h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
+    🩹 Recovery States
 </h3>
 
 <div class="flex items-center gap-2 mb-3">
-  <!-- Refresh button -->
-  <button id="refreshRecoveryBtn"
-    class="flex-1 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
-    🔄 Refresh Recoveries
-  </button>
+    <button id="refreshRecoveryBtn"
+        class="flex-1 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+        🔄 Refresh Recoveries
+    </button>
 
-  <!-- Debug toggle -->
-  <button id="toggleDebugBtn"
-    class="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
-    🐞 Debug
-  </button>
+    <button id="toggleDebugBtn"
+        class="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+        🐞 Debug
+    </button>
 </div>
 
-<!-- Where recoveries will render -->
 <div id="riRecoveries" class="space-y-4 text-sm">
-  <div class="text-slate-400">⚪ No Active Recovery</div>
+    <div class="text-slate-400">⚪ No Active Recovery</div>
 </div>
 
-<!-- Debug output -->
 <pre id="debugOutput"
-  class="hidden mt-4 p-3 bg-slate-900 text-green-400 text-xs rounded-lg overflow-x-auto whitespace-pre-wrap">
+    class="hidden mt-4 p-3 bg-slate-900 text-green-400 text-xs rounded-lg overflow-x-auto whitespace-pre-wrap">
 </pre>
 
   <hr class="border-slate-700 my-2" />
@@ -2472,207 +2468,208 @@ $('vetoRecoveryBtn').onclick = async () => {
 
 // ---------- Read-only State ----------
 	  // Full recovery state
-// Approvals
- // Decode calldata into readable function
+// Helper function to decode the calldata into a readable function signature
 function decodeRecoveryAction(callData) {
-  if (!callData || callData === "0x") return "—";
+    if (!callData || callData === "0x") return "—";
 
-  const signatures = [
-    "upgradeTo(address)",
-    "upgradeToAndCall(address,bytes)",
-    "changeAdmin(address)",
-    "transferOwnership(address)",
-    "renounceOwnership()"
-  ];
+    // Known signatures for common proxy/admin actions
+    const signatures = [
+        "upgradeTo(address)",
+        "upgradeToAndCall(address,bytes)",
+        "changeAdmin(address)",
+        "transferOwnership(address)",
+        "renounceOwnership()"
+    ];
 
-  for (const sig of signatures) {
-    try {
-      const iface = new ethers.utils.Interface([`function ${sig}`]);
-      const fnName = sig.split("(")[0];
-      const decoded = iface.decodeFunctionData(fnName, callData);
-
-      if (fnName === "upgradeToAndCall") {
-        return `upgradeToAndCall → impl: ${decoded[0]}, data: ${decoded[1]}`;
-      } else if (decoded.length > 0) {
-        return `${fnName}(${decoded.join(", ")})`;
-      } else {
-        return `${fnName}()`;
-      }
-    } catch {}
-  }
-
-  return `Unknown action: ${callData.slice(0, 10)}…`;
-}
-
-// Fetch approvers list
-async function fetchRecoveryApprovals(kind) {
-  const guardians = await contracts.council.getActiveGuardians();
-  const approvedList = [];
-
-  for (const g of guardians) {
-    if (!g || g === ethers.constants.AddressZero) continue;
-    try {
-      if (await contracts.council.hasApproved(kind, g)) approvedList.push(g);
-    } catch {}
-  }
-
-  return approvedList;
-}
-
-// Main: show all recoveries
-async function fetchAllRecoveryStates() {
-  try {
-    if (!contracts.council) return alert("Council contract not set");
-    showLoading();
-
-    const container = document.getElementById("riRecoveries");
-    const debugOut = document.getElementById("debugOutput");
-    container.innerHTML = "";
-    debugOut.innerText = "";
-
-    let foundAny = false;
-
-    for (let kind = 0; kind <= 2; kind++) {
-      let state;
-      try {
-        state = await contracts.council.getRecoveryState(kind);
-      } catch (err) {
-        console.warn("getRecoveryState failed for kind", kind, err);
-        continue;
-      }
-
-      const [proposed, approvals, deadline, executed, callTarget, callData] = state;
-
-      // Debug log
-      console.log("Kind", kind, "state:", {
-        proposed,
-        approvals: approvals.toString(),
-        deadline: deadline.toString(),
-        executed,
-        callTarget,
-        callData
-      });
-      debugOut.innerText +=
-        `Kind ${kind}:\n` + JSON.stringify({
-          proposed,
-          approvals: approvals.toString(),
-          deadline: deadline.toString(),
-          executed,
-          callTarget,
-          callData
-        }, null, 2) + "\n\n";
-
-      // ✅ Only skip if absolutely nothing was proposed
-      const isEmpty =
-        proposed === ethers.constants.AddressZero &&
-        (!callData || callData === "0x") &&
-        !executed &&
-        approvals.toString() === "0" &&
-        Number(deadline) === 0;
-
-      if (isEmpty) continue;
-
-      foundAny = true;
-
-      // Fetch extras
-      let threshold = 0;
-      try {
-        threshold = await contracts.council.THRESHOLD();
-      } catch {}
-      let guardian = ethers.constants.AddressZero, expiry = 0;
-      try {
-        [guardian, expiry] = await contracts.council.getTempVeto();
-      } catch {}
-      let nonce = 0;
-      try {
-        nonce = await contracts.council.getRequestNonce(kind);
-      } catch {}
-
-      let approvers = [];
-      try {
-        approvers = await fetchRecoveryApprovals(kind);
-      } catch {}
-
-      const formatTimestamp = (ts) => {
+    for (const sig of signatures) {
         try {
-          const num = ethers.BigNumber.isBigNumber(ts) ? ts.toNumber() : Number(ts);
-          if (!num) return "—";
-          return new Date(num * 1000).toLocaleString();
-        } catch {
-          return "—";
+            const iface = new ethers.utils.Interface([`function ${sig}`]);
+            const fnName = sig.split("(")[0];
+            const decoded = iface.decodeFunctionData(fnName, callData);
+
+            // Format the decoded data for display
+            if (fnName === "upgradeToAndCall") {
+                return `upgradeToAndCall → impl: ${decoded[0]}, data: ${decoded[1]}`;
+            } else if (decoded.length > 0) {
+                return `${fnName}(${decoded.join(", ")})`;
+            } else {
+                return `${fnName}()`;
+            }
+        } catch {}
+    }
+
+    return `Unknown action: ${callData.slice(0, 10)}…`;
+}
+
+// Helper function to fetch the list of guardians who have approved the CURRENT proposal
+async function fetchRecoveryApprovals(kind) {
+    // Assuming contracts.council is available and has getActiveGuardians/hasApproved methods
+    const guardians = await contracts.council.getActiveGuardians();
+    const approvedList = [];
+
+    for (const g of guardians) {
+        if (!g || g === ethers.constants.AddressZero) continue;
+        try {
+            // Check if the guardian has approved the current Nonce
+            if (await contracts.council.hasApproved(kind, g)) approvedList.push(g);
+        } catch {}
+    }
+
+    return approvedList;
+}
+
+// Main function to fetch and render all recovery states
+async function fetchAllRecoveryStates() {
+    try {
+        if (!contracts.council) return alert("Council contract not set");
+        showLoading(); // Assuming showLoading() is defined
+
+        const container = document.getElementById("riRecoveries");
+        const debugOut = document.getElementById("debugOutput");
+        container.innerHTML = "";
+        debugOut.innerText = "";
+
+        let foundAny = false;
+
+        // Iterate through all possible recovery kinds (0: Deployer, 1: Admin)
+        for (let kind = 0; kind <= 1; kind++) { // Changed from 2 to 1 to match enum
+            let state;
+            try {
+                // Get the raw state from the contract
+                state = await contracts.council.getRecoveryState(kind);
+            } catch (err) {
+                console.warn("getRecoveryState failed for kind", kind, err);
+                continue;
+            }
+
+            const [proposed, approvals, deadline, executed, callTarget, callData] = state;
+
+            // Debug log to console and UI
+            debugOut.innerText +=
+                `Kind ${kind}:\n` + JSON.stringify({
+                    proposed,
+                    approvals: approvals.toString(),
+                    deadline: deadline.toString(),
+                    executed,
+                    callTarget,
+                    callData
+                }, null, 2) + "\n\n";
+
+            // Check if the request state is empty (cleared/never set)
+            const isEmpty =
+                proposed === ethers.constants.AddressZero &&
+                (!callData || callData === "0x") &&
+                !executed &&
+                approvals.toString() === "0" &&
+                Number(deadline) === 0;
+
+            if (isEmpty) continue;
+
+            foundAny = true;
+
+            // Fetch extra security state information
+            let threshold = 5; // Hardcoded THRESHOLD for 5/7
+            try {
+                // You could fetch this from the contract, but 5 is a constant
+                // threshold = await contracts.council.THRESHOLD(); 
+            } catch {}
+            
+            let guardian = ethers.constants.AddressZero, expiry = 0;
+            try {
+                [guardian, expiry] = await contracts.council.getTempVeto();
+            } catch {}
+            
+            let nonce = 0;
+            try {
+                nonce = await contracts.council.getRequestNonce(kind);
+            } catch {}
+
+            let approvers = [];
+            try {
+                approvers = await fetchRecoveryApprovals(kind);
+            } catch {}
+
+            const formatTimestamp = (ts) => {
+                try {
+                    const num = ethers.BigNumber.isBigNumber(ts) ? ts.toNumber() : Number(ts);
+                    if (!num) return "—";
+                    return new Date(num * 1000).toLocaleString();
+                } catch {
+                    return "—";
+                }
+            };
+
+            const kindName = kind === 0 ? "🟢 Deployer" : "🛡️ Admin";
+            const now = Math.floor(Date.now() / 1000);
+
+            let statusText, statusClass;
+            // Logic for status badge
+            if (executed) {
+                statusText = `${kindName} • 🔴 Executed`;
+                statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white";
+            } else if (deadline > 0 && now > Number(deadline)) {
+                statusText = `${kindName} • ⏰ Expired`;
+                statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-orange-700 text-white";
+            } else if (approvals < threshold) {
+                statusText = `${kindName} • 🟡 Pending Approvals (${approvals}/${threshold})`;
+                statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-yellow-600 text-white";
+            } else {
+                statusText = `${kindName} • 🟢 Ready to Execute`;
+                statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
+            }
+
+            const actionText = callData && callData !== "0x" ? decodeRecoveryAction(callData) : "—";
+
+            // Build UI block for the active request
+            const block = document.createElement("div");
+            block.className = "p-3 mb-3 rounded-lg bg-slate-800/60 shadow space-y-2";
+
+            block.innerHTML = `
+                <div class="${statusClass}">
+                    ${statusText} ${actionText !== "—" ? ` • Action: ${actionText}` : ""}
+                </div>
+                <div><b>Proposed Target:</b> ${proposed}</div>
+                <div><b>Approvals:</b> ${approvals.toString()}</div>
+                <div><b>Deadline:</b> ${formatTimestamp(deadline)}</div>
+                <div><b>Ready:</b> ${approvals >= threshold ? "✅ Yes" : "❌ No"}</div>
+                <div><b>Executed:</b> ${executed ? "✅ Yes" : "❌ No"}</div>
+                <div class="pt-2 border-t border-slate-700/50"><b>Call Target:</b> ${callTarget}</div>
+                <div><b>Call Data:</b><pre class="whitespace-pre-wrap break-words font-mono text-xs">${callData || "—"}</pre></div>
+                
+                <div class="pt-2 border-t border-slate-700/50">
+                    <b>Last-Honest Veto:</b> ${guardian !== ethers.constants.AddressZero ? guardian : "—"}
+                </div>
+                <div><b>Veto Expiry:</b> ${formatTimestamp(expiry)}</div>
+                <div><b>Current Nonce:</b> ${nonce.toString()}</div>
+
+                <div class="pt-2 border-t border-slate-700/50">
+                    <b>Approvers:</b>
+                    <pre class="whitespace-pre-wrap font-mono text-xs">${approvers.length > 0 ? approvers.join("\n") : "None yet"}</pre>
+                </div>
+            `;
+
+            container.appendChild(block);
         }
-      };
 
-      const kindName =
-        kind === 0 ? "🟢 Deployer" : kind === 1 ? "🛡️ Admin" : "👥 Guardian";
-      const now = Math.floor(Date.now() / 1000);
-
-      let statusText, statusClass;
-      if (executed) {
-        statusText = `${kindName} • 🔴 Executed`;
-        statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white";
-      } else if (deadline > 0 && now > Number(deadline)) {
-        statusText = `${kindName} • ⏰ Expired`;
-        statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-orange-700 text-white";
-      } else if (approvals < threshold) {
-        statusText = `${kindName} • 🟡 Pending Approvals (${approvals}/${threshold})`;
-        statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-yellow-600 text-white";
-      } else {
-        statusText = `${kindName} • 🟢 Ready to Execute`;
-        statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
-      }
-
-      const actionText =
-        callData && callData !== "0x" ? decodeRecoveryAction(callData) : "—";
-
-      // Build UI block
-      const block = document.createElement("div");
-      block.className = "p-3 mb-3 rounded-lg bg-slate-800/60 shadow space-y-2";
-
-      block.innerHTML = `
-        <div class="${statusClass}">${statusText}${
-        actionText !== "—" ? ` • Action: ${actionText}` : ""
-      }</div>
-        <div><b>Proposed:</b> ${proposed}</div>
-        <div><b>Approvals:</b> ${approvals.toString()}</div>
-        <div><b>Deadline:</b> ${formatTimestamp(deadline)}</div>
-        <div><b>Executed:</b> ${executed ? "✅ Yes" : "❌ No"}</div>
-        <div><b>Call Target:</b> ${callTarget}</div>
-        <div><b>Call Data:</b><pre class="whitespace-pre-wrap break-words font-mono text-xs">${
-          callData || "—"
-        }</pre></div>
-        <div><b>Guardian:</b> ${
-          guardian !== ethers.constants.AddressZero ? guardian : "—"
-        }</div>
-        <div><b>Veto Expiry:</b> ${formatTimestamp(expiry)}</div>
-        <div><b>Nonce:</b> ${nonce.toString()}</div>
-        <div><b>Approvers:</b><pre class="whitespace-pre-wrap font-mono text-xs">${
-          approvers.length > 0 ? approvers.join("\n") : "None yet"
-        }</pre></div>
-      `;
-
-      container.appendChild(block);
+        if (!foundAny) {
+            container.innerHTML =
+                '<div class="text-slate-400">⚪ No Active Recovery</div>';
+        }
+    } catch (e) {
+        console.error("fetchAllRecoveryStates err", e);
+        alert("Error loading recovery info: " + (e.message || e));
+    } finally {
+        hideLoading(); // Assuming hideLoading() is defined
     }
-
-    if (!foundAny) {
-      container.innerHTML =
-        '<div class="text-slate-400">⚪ No Active Recovery</div>';
-    }
-  } catch (e) {
-    console.error("fetchAllRecoveryStates err", e);
-    alert("Error loading recovery info: " + (e.message || e));
-  } finally {
-    hideLoading();
-  }
 }
 
 // Bind refresh + debug toggle
 document.getElementById("refreshRecoveryBtn").onclick = fetchAllRecoveryStates;
 document.getElementById("toggleDebugBtn").onclick = () => {
-  document.getElementById("debugOutput").classList.toggle("hidden");
+    document.getElementById("debugOutput").classList.toggle("hidden");
 };
 
-      
+          
 $('refreshDaoBtn').onclick = async () => {
   try {
     showLoading();
