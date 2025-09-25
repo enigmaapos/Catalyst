@@ -2379,11 +2379,6 @@ function parse7(txt) {
 	  
 // ---------- Guardian Council / DAO & Governance ----------
 // ---------- DAO ----------
-// Attach button after DOM loads
-window.addEventListener("DOMContentLoaded", () => {
-  $("proposeDaoBtn").onclick = proposeNewDAO;
-});
-
 async function proposeNewDAO() {
   try {
     if (!contracts.council) {
