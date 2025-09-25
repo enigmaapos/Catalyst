@@ -2534,7 +2534,6 @@ async function fetchRecoveryApprovals(kind) {
                 const hasApproved = await contracts.council.hasApproved(kind, g);
                 if (hasApproved) approvedList.push(g);
             } catch (err) {
-                // Don’t break the loop if one check fails
                 console.warn("Guardian check failed", g, err);
             }
         }
@@ -2550,7 +2549,6 @@ async function fetchRecoveryApprovals(kind) {
     }
 }
 
-// Full recovery state with safety guards
 async function fetchFullRecoveryState() {
     try {
         if (!contracts.council) return alert("Council contract not set");
@@ -2579,6 +2577,14 @@ async function fetchFullRecoveryState() {
             callData = "0x";
         }
 
+        // Fetch threshold for approvals
+        let threshold = 0;
+        try {
+            threshold = await contracts.council.THRESHOLD();
+        } catch (err) {
+            console.warn("Failed to fetch THRESHOLD:", err);
+        }
+
         // Safe fetch for veto
         let guardian = ethers.constants.AddressZero, expiry = 0;
         try {
@@ -2599,7 +2605,7 @@ async function fetchFullRecoveryState() {
             return new Date(Number(ts) * 1000).toLocaleString();
         };
 
-        // 🔴 Update status badge
+        // 🔑 Status badge logic
         if (!hasActiveRequest) {
             $('riStatus').innerText = "⚪ No Active Recovery";
             $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-slate-700 text-slate-300";
@@ -2610,12 +2616,19 @@ async function fetchFullRecoveryState() {
             $('riExecuted').innerText   = "—";
             $('riCallTarget').innerText = "—";
             $('riCallData').innerText   = "—";
+        } else if (executed) {
+            $('riStatus').innerText = "🔴 Executed Recovery";
+            $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white";
+        } else if (approvals < threshold) {
+            $('riStatus').innerText = `🟡 Pending Approvals (${approvals}/${threshold})`;
+            $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-yellow-600 text-white";
         } else {
-            $('riStatus').innerText = executed ? "🔴 Executed Recovery" : "🟢 Active Recovery";
-            $('riStatus').className = executed
-                ? "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white"
-                : "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
+            $('riStatus').innerText = "🟢 Active Recovery (Ready)";
+            $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
+        }
 
+        // Fill in fields if active
+        if (hasActiveRequest) {
             $('riProposed').innerText   = proposed;
             $('riApprovals').innerText  = `${approvals.toString()} approvals`;
             $('riDeadline').innerText   = formatTimestamp(deadline);
@@ -2638,6 +2651,7 @@ async function fetchFullRecoveryState() {
         hideLoading();
     }
 }
+        
 
 
   // ---------- Bind UI on load ----------
