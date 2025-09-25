@@ -2471,7 +2471,7 @@ $('encodeCallDataBtn').onclick = async () => {
   }
 };
 
-// Decode helper
+// Helper: decode calldata into human-readable function
 function decodeRecoveryAction(callData) {
   if (!callData || callData === "0x") return "—";
 
@@ -2538,146 +2538,133 @@ $('vetoRecoveryBtn').onclick = async () => {
 	  // Full recovery state
 // Approvals
 async function fetchRecoveryApprovals(kind) {
-  try {
-    const guardians = await contracts.council.getActiveGuardians();
-    const approvedList = [];
+  const guardians = await contracts.council.getActiveGuardians();
+  const approvedList = [];
 
-    for (const g of guardians) {
-      if (!g || g === ethers.constants.AddressZero) continue;
-      try {
-        if (await contracts.council.hasApproved(kind, g)) approvedList.push(g);
-      } catch {}
-    }
-
-    $("riApprovers").innerText =
-      approvedList.length > 0 ? approvedList.join("\n") : "None yet";
-  } catch (e) {
-    $("riApprovers").innerText = "Error: " + (e.message || e);
+  for (const g of guardians) {
+    if (!g || g === ethers.constants.AddressZero) continue;
+    try {
+      if (await contracts.council.hasApproved(kind, g)) approvedList.push(g);
+    } catch {}
   }
+
+  return approvedList;
 }
 
-// Auto-detect active recovery
-async function fetchFullRecoveryState() {
+// Show ALL recovery states (0,1,2)
+async function fetchAllRecoveryStates() {
   try {
     if (!contracts.council) return alert("Council contract not set");
     showLoading();
 
-    let activeKind = null;
-    let state;
+    const container = document.getElementById("riRecoveries");
+    container.innerHTML = ""; // clear old results
 
-    // Try all 3 kinds (0=Deployer,1=Admin,2=Guardian)
-    for (let k = 0; k <= 2; k++) {
+    let foundAny = false;
+
+    for (let kind = 0; kind <= 2; kind++) {
+      let state;
       try {
-        state = await contracts.council.getRecoveryState(k);
-        const [, approvals, , executed, , callData] = state;
-        // Consider active if not empty
-        if (callData && callData !== "0x" && !executed) {
-          activeKind = k;
-          break;
-        }
-      } catch {}
+        state = await contracts.council.getRecoveryState(kind);
+      } catch (err) {
+        console.warn("getRecoveryState failed for kind", kind, err);
+        continue;
+      }
+
+      const [proposed, approvals, deadline, executed, callTarget, callData] = state;
+
+      // If nothing at all, skip
+      if (
+        proposed === ethers.constants.AddressZero &&
+        (!callData || callData === "0x") &&
+        !executed
+      ) {
+        continue;
+      }
+
+      foundAny = true;
+
+      const threshold = await contracts.council.THRESHOLD();
+      const [guardian, expiry] = await contracts.council.getTempVeto();
+      const nonce = await contracts.council.getRequestNonce(kind);
+      const approvers = await fetchRecoveryApprovals(kind);
+
+      const formatTimestamp = (ts) => {
+        if (!ts || (ts.isZero?.() && ts.isZero()) || ts.toString() === "0")
+          return "—";
+        return new Date(Number(ts) * 1000).toLocaleString();
+      };
+
+      const kindName =
+        kind === 0 ? "🟢 Deployer" : kind === 1 ? "🛡️ Admin" : "👥 Guardian";
+      const now = Math.floor(Date.now() / 1000);
+
+      let statusText, statusClass;
+      if (executed) {
+        statusText = `${kindName} • 🔴 Executed`;
+        statusClass =
+          "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white";
+      } else if (deadline > 0 && now > deadline) {
+        statusText = `${kindName} • ⏰ Expired`;
+        statusClass =
+          "inline-block px-3 py-1 text-xs rounded-full bg-orange-700 text-white";
+      } else if (approvals < threshold) {
+        statusText = `${kindName} • 🟡 Pending Approvals (${approvals}/${threshold})`;
+        statusClass =
+          "inline-block px-3 py-1 text-xs rounded-full bg-yellow-600 text-white";
+      } else {
+        statusText = `${kindName} • 🟢 Ready to Execute`;
+        statusClass =
+          "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
+      }
+
+      const actionText =
+        callData && callData !== "0x" ? decodeRecoveryAction(callData) : "—";
+
+      // Build UI block
+      const block = document.createElement("div");
+      block.className = "p-3 mb-3 rounded-lg bg-slate-800/60 shadow space-y-2";
+
+      block.innerHTML = `
+        <div class="${statusClass}">${statusText}${
+        actionText !== "—" ? ` • Action: ${actionText}` : ""
+      }</div>
+        <div><b>Proposed:</b> ${proposed}</div>
+        <div><b>Approvals:</b> ${approvals.toString()}</div>
+        <div><b>Deadline:</b> ${formatTimestamp(deadline)}</div>
+        <div><b>Executed:</b> ${executed ? "✅ Yes" : "❌ No"}</div>
+        <div><b>Call Target:</b> ${callTarget}</div>
+        <div><b>Call Data:</b><pre class="whitespace-pre-wrap break-words font-mono text-xs">${
+          callData || "—"
+        }</pre></div>
+        <div><b>Guardian:</b> ${
+          guardian !== ethers.constants.AddressZero ? guardian : "—"
+        }</div>
+        <div><b>Veto Expiry:</b> ${formatTimestamp(expiry)}</div>
+        <div><b>Nonce:</b> ${nonce.toString()}</div>
+        <div><b>Approvers:</b><pre class="whitespace-pre-wrap font-mono text-xs">${
+          approvers.length > 0 ? approvers.join("\n") : "None yet"
+        }</pre></div>
+      `;
+
+      container.appendChild(block);
     }
 
-    if (activeKind === null) {
-      // No active recovery
-      $("riStatus").innerText = "⚪ No Active Recovery";
-      $("riStatus").className =
-        "inline-block px-3 py-1 text-xs rounded-full bg-slate-700 text-slate-300";
-
-      // Clear fields
-      $("riProposed").innerText = "—";
-      $("riApprovals").innerText = "—";
-      $("riDeadline").innerText = "—";
-      $("riExecuted").innerText = "—";
-      $("riCallTarget").innerText = "—";
-      $("riCallData").innerText = "—";
-      $("riGuardian").innerText = "—";
-      $("riVetoExpiry").innerText = "—";
-      $("riNonce").innerText = "—";
-      $("riApprovers").innerText = "—";
-
-      return;
+    if (!foundAny) {
+      container.innerHTML =
+        '<div class="text-slate-400">⚪ No Active Recovery</div>';
     }
-
-    // Decode state
-    const [proposed, approvals, deadline, executed, callTarget, callData] =
-      state;
-
-    const threshold = await contracts.council.THRESHOLD();
-    const [guardian, expiry] = await contracts.council.getTempVeto();
-    const nonce = await contracts.council.getRequestNonce(activeKind);
-
-    const formatTimestamp = (ts) => {
-      if (!ts || (ts.isZero?.() && ts.isZero()) || ts.toString() === "0")
-        return "—";
-      return new Date(Number(ts) * 1000).toLocaleString();
-    };
-
-    const kindName =
-      activeKind === 0
-        ? "🟢 Deployer"
-        : activeKind === 1
-        ? "🛡️ Admin"
-        : "👥 Guardian";
-    const now = Math.floor(Date.now() / 1000);
-
-    let statusText, statusClass;
-    if (executed) {
-      statusText = `${kindName} Recovery • 🔴 Executed`;
-      statusClass =
-        "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white";
-    } else if (deadline > 0 && now > deadline) {
-      statusText = `${kindName} Recovery • ⏰ Expired`;
-      statusClass =
-        "inline-block px-3 py-1 text-xs rounded-full bg-orange-700 text-white";
-    } else if (approvals < threshold) {
-      statusText = `${kindName} Recovery • 🟡 Pending Approvals (${approvals}/${threshold})`;
-      statusClass =
-        "inline-block px-3 py-1 text-xs rounded-full bg-yellow-600 text-white";
-    } else {
-      statusText = `${kindName} Recovery • 🟢 Ready to Execute`;
-      statusClass =
-        "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
-    }
-
-    // Decode action
-    const actionText =
-      callData && callData !== "0x" ? decodeRecoveryAction(callData) : "—";
-    if (actionText !== "—") {
-      statusText += ` • Action: ${actionText}`;
-    }
-
-    // Update UI
-    $("riStatus").innerText = statusText;
-    $("riStatus").className = statusClass;
-
-    $("riProposed").innerText =
-      proposed !== ethers.constants.AddressZero ? proposed : "—";
-    $("riApprovals").innerText = approvals.toString();
-    $("riDeadline").innerText = formatTimestamp(deadline);
-    $("riExecuted").innerText = executed ? "✅ Yes" : "❌ No";
-    $("riCallTarget").innerText =
-      callTarget !== ethers.constants.AddressZero ? callTarget : "—";
-    $("riCallData").innerText =
-      callData && callData !== "0x"
-        ? `${actionText}\n\nRaw: ${callData}`
-        : "—";
-
-    $("riGuardian").innerText =
-      guardian !== ethers.constants.AddressZero ? guardian : "—";
-    $("riVetoExpiry").innerText = formatTimestamp(expiry);
-    $("riNonce").innerText = nonce.toString();
-
-    await fetchRecoveryApprovals(activeKind);
   } catch (e) {
-    console.error("fetchFullRecoveryState err", e);
+    console.error("fetchAllRecoveryStates err", e);
     alert("Error loading recovery info: " + (e.message || e));
   } finally {
     hideLoading();
   }
 }
 
+document.getElementById("refreshRecoveryBtn").onclick = fetchAllRecoveryStates;
 
+	  
 $('refreshDaoBtn').onclick = async () => {
   try {
     showLoading();
