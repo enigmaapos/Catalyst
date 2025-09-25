@@ -639,44 +639,49 @@
       </optgroup>
     </select>
 
-	  <!-- single create button -->
+    <!-- Single create button -->
     <button id="createProposalBtn" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
-  </div> <!-- end Proposal Creator card -->
+  </div>
 
-    <!-- Generic proposal fields (must be inside the card) -->
-    <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
-    <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
-    <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
+  <!-- Generic proposal fields -->
+  <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
+  <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
+  <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
 
-    <!-- Tier Upgrade fields -->
-    <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
-      <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
-        <option value="0">UNVERIFIED (0)</option>
-        <option value="1">VERIFIED (1)</option>
-        <option value="2">BLUECHIP (2)</option>
-      </select>
-      <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
-      <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+  <!-- Tier Upgrade fields -->
+  <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
+    <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
+      <option value="0">UNVERIFIED (0)</option>
+      <option value="1">VERIFIED (1)</option>
+      <option value="2">BLUECHIP (2)</option>
+    </select>
+    <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
+    <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+  </div>
+
+  <!-- Council batch reseed fields -->
+  <div id="councilBatchRow" class="hidden space-y-2">
+    <p class="text-xs text-slate-400">Enter 7 guardian addresses for new batch:</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6" />
+      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7" />
     </div>
+  </div>
 
-    <!-- Council batch reseed fields -->
-    <div id="councilBatchRow" class="hidden space-y-2">
-      <p class="text-xs text-slate-400">Enter 7 guardian addresses for new batch:</p>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1" />
-        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2" />
-        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3" />
-        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4" />
-        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5" />
-        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6" />
-        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7" />
-      </div>
-    </div> <!-- <-- important: close councilBatchRow here -->
+  <!-- New DAO address field -->
+  <div id="councilNewDaoRow" class="hidden">
+    <input id="proposalDaoAddr" placeholder="New DAO address" class="w-full p-2 rounded bg-black/20 text-sm" />
+  </div>
 
-    <!-- Upgrade council -->
-    <div id="upgradeCouncilRow" class="hidden">
-      <input id="newCouncilImpl" placeholder="New council implementation address" class="w-full p-2 rounded bg-black/20 text-sm" />
-    </div>
+  <!-- Upgrade council -->
+  <div id="upgradeCouncilRow" class="hidden">
+    <input id="newCouncilImpl" placeholder="New council implementation address" class="w-full p-2 rounded bg-black/20 text-sm" />
+  </div>
 
   <!-- Voting / Execution -->
   <div class="glass p-4 rounded-lg space-y-3 mt-4">
@@ -712,7 +717,7 @@
     </div>
   </div>
 </section>
-
+    
 <section id="council" class="tab-content hidden">
     <h2 class="font-semibold mb-2">DRS Guardian Council</h2>
     <p class="text-sm text-slate-300 mb-3">
