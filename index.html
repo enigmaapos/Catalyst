@@ -1019,6 +1019,17 @@
 	  // App state
 	  let provider = null, signer = null, userAddr = null;
   let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null };
+
+	  let validAddr = false;
+if (ethers.utils && ethers.utils.isAddress) {
+  validAddr = ethers.utils.isAddress(newDao); // v5
+} else if (ethers.isAddress) {
+  validAddr = ethers.isAddress(newDao); // v6
+}
+
+if (!validAddr) {
+  return alert("⚠️ Invalid DAO address");
+}
 	  
 const $ = id => document.getElementById(id);
   function log(...args){
