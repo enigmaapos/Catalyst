@@ -2549,34 +2549,6 @@ $('refreshLockBtn').onclick = async () => {
 
 	  
 // Full recovery state
-async function fetchRecoveryApprovals(kind) {
-    try {
-        if (!contracts.council) return alert("Council contract not set");
-
-        const guardians = await contracts.council.getActiveGuardians();
-        const approvedList = [];
-
-        for (const g of guardians) {
-            if (!g || g === ethers.constants.AddressZero) continue; // skip zero slots
-            try {
-                const hasApproved = await contracts.council.hasApproved(kind, g);
-                if (hasApproved) approvedList.push(g);
-            } catch (err) {
-                console.warn("Guardian check failed", g, err);
-            }
-        }
-
-        $('riApprovers').innerText = approvedList.length > 0
-            ? approvedList.join("\n")
-            : "None yet";
-
-        log("fetchRecoveryApprovals done ✅");
-    } catch (e) {
-        console.error("fetchRecoveryApprovals err", e);
-        $('riApprovers').innerText = "Error: " + (e.message || e);
-    }
-}
-
 async function fetchFullRecoveryState() {
     try {
         if (!contracts.council) return alert("Council contract not set");
@@ -2594,20 +2566,18 @@ async function fetchFullRecoveryState() {
         try {
             [proposed, approvals, deadline, executed, callTarget, callData] =
                 await contracts.council.getRecoveryState(kind);
-
-            // Check expiry
-            const now = Math.floor(Date.now() / 1000);
-            if (deadline > 0 && now > deadline && !executed) {
-                hasActiveRequest = false;
-                $('riStatus').innerText = "⏰ Expired Recovery";
-                $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-orange-700 text-white";
-            }
         } catch (err) {
             console.warn("No active request for this kind:", err);
             hasActiveRequest = false;
+            proposed = ethers.constants.AddressZero;
+            approvals = 0;
+            deadline = 0;
+            executed = false;
+            callTarget = ethers.constants.AddressZero;
+            callData = "0x";
         }
 
-        // Fetch threshold for approvals
+        // Fetch threshold
         let threshold = 0;
         try {
             threshold = await contracts.council.THRESHOLD();
@@ -2615,7 +2585,7 @@ async function fetchFullRecoveryState() {
             console.warn("Failed to fetch THRESHOLD:", err);
         }
 
-        // Safe fetch for veto
+        // Fetch veto
         let guardian = ethers.constants.AddressZero, expiry = 0;
         try {
             [guardian, expiry] = await contracts.council.getTempVeto();
@@ -2623,6 +2593,7 @@ async function fetchFullRecoveryState() {
             console.warn("getTempVeto failed:", err);
         }
 
+        // Fetch nonce
         let nonce = 0;
         try {
             nonce = await contracts.council.getRequestNonce(kind);
@@ -2635,40 +2606,34 @@ async function fetchFullRecoveryState() {
             return new Date(Number(ts) * 1000).toLocaleString();
         };
 
-        // 🔑 Status badge logic
-        if (!hasActiveRequest) {
-            // If expired badge already set above, don’t overwrite it
-            if ($('riStatus').innerText.indexOf("⏰") === -1) {
-                $('riStatus').innerText = "⚪ No Active Recovery";
-                $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-slate-700 text-slate-300";
-            }
+        // 🔑 Status + kind label
+        const kindName = kind === 0 ? "🟢 Default" : kind === 1 ? "🛡️ Social" : "👥 Guardian";
+        const now = Math.floor(Date.now() / 1000);
 
-            $('riProposed').innerText   = "— No active recovery request —";
-            $('riApprovals').innerText  = "—";
-            $('riDeadline').innerText   = "—";
-            $('riExecuted').innerText   = "—";
-            $('riCallTarget').innerText = "—";
-            $('riCallData').innerText   = "—";
+        if (!hasActiveRequest) {
+            $('riStatus').innerText = "⚪ No Active Recovery";
+            $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-slate-700 text-slate-300";
         } else if (executed) {
-            $('riStatus').innerText = "🔴 Executed Recovery";
+            $('riStatus').innerText = `${kindName} Recovery • 🔴 Executed`;
             $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white";
+        } else if (deadline > 0 && now > deadline) {
+            $('riStatus').innerText = `${kindName} Recovery • ⏰ Expired`;
+            $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-orange-700 text-white";
         } else if (approvals < threshold) {
-            $('riStatus').innerText = `🟡 Pending Approvals (${approvals}/${threshold})`;
+            $('riStatus').innerText = `${kindName} Recovery • 🟡 Pending Approvals (${approvals}/${threshold})`;
             $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-yellow-600 text-white";
         } else {
-            $('riStatus').innerText = "🟢 Active Recovery (Ready)";
+            $('riStatus').innerText = `${kindName} Recovery • 🟢 Ready to Execute`;
             $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
         }
 
-        // Fill in fields if active
-        if (hasActiveRequest) {
-            $('riProposed').innerText   = proposed;
-            $('riApprovals').innerText  = `${approvals.toString()} approvals`;
-            $('riDeadline').innerText   = formatTimestamp(deadline);
-            $('riExecuted').innerText   = executed ? "✅ Yes" : "❌ No";
-            $('riCallTarget').innerText = callTarget;
-            $('riCallData').innerText   = callData;
-        }
+        // Always show details (even expired)
+        $('riProposed').innerText   = proposed !== ethers.constants.AddressZero ? proposed : "—";
+        $('riApprovals').innerText  = approvals.toString();
+        $('riDeadline').innerText   = formatTimestamp(deadline);
+        $('riExecuted').innerText   = executed ? "✅ Yes" : "❌ No";
+        $('riCallTarget').innerText = callTarget !== ethers.constants.AddressZero ? callTarget : "—";
+        $('riCallData').innerText   = callData && callData !== "0x" ? callData : "—";
 
         $('riGuardian').innerText   = guardian !== ethers.constants.AddressZero ? guardian : "—";
         $('riVetoExpiry').innerText = formatTimestamp(expiry);
@@ -2683,8 +2648,9 @@ async function fetchFullRecoveryState() {
     } finally {
         hideLoading();
     }
-}     
+}
 
+      
 
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async ()=>{
