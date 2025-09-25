@@ -671,7 +671,7 @@
 
     <!-- New DAO -->
     <div id="newDaoRow" class="hidden">
-      <input id="newDaoAddr" placeholder="New DAO contract address" class="w-full p-2 rounded bg-black/20 text-sm" />
+      <input id="govNewDaoAddr" placeholder="New DAO contract address" class="w-full p-2 rounded bg-black/20 text-sm" />
     </div>
 
     <!-- Upgrade council -->
@@ -725,7 +725,7 @@
   <!-- DAO Rotation -->
   <div class="space-y-2 text-sm">
     <div class="grid grid-cols-2 gap-2">
-      <input id="newDaoAddr" placeholder="New DAO address" class="p-2 rounded bg-black/20" />
+      <input id="councilNewDaoAddr" placeholder="New DAO address" class="p-2 rounded bg-black/20" />
       <button id="proposeDaoBtn" class="p-2 bg-indigo-600 rounded">Propose DAO</button>
     </div>
     <button id="commitDaoBtn" class="w-full p-2 bg-indigo-400 rounded">Commit DAO</button>
@@ -2171,7 +2171,7 @@ $('createProposalBtn').onclick = async () => {
       newValue = 0;
       paramTarget = 0;
     } else if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
-      ctx = $('newDaoAddr').value.trim();
+      ctx = $('govNewDaoAddr').value.trim();
       if (!ethers.utils.isAddress(ctx)) {
         hideLoading();
         return alert("⚠️ Invalid DAO address");
@@ -2271,7 +2271,7 @@ $('proposeDaoBtn').onclick = async () => {
   try {
     if (!contracts.council) return alert("Council not attached");
     showLoading();
-    const newDao = $('newDaoAddr').value.trim();
+    const newDao = $('councilNewDaoAddr').value.trim();
     if (!ethers.utils.isAddress(newDao)) throw new Error("Invalid DAO address");
     const tx = await contracts.council.proposeNewDAO(newDao);
     await tx.wait();
