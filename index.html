@@ -2514,18 +2514,21 @@ $('refreshLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-	  async function fetchRecoveryApprovals(kind) {
+	  
+// Full recovery state
+async function fetchRecoveryApprovals(kind) {
     try {
         if (!contracts.council) return alert("Council contract not set");
-        showLoading();
 
         const guardians = await contracts.council.getActiveGuardians();
-        
         const approvedList = [];
+
         for (const g of guardians) {
-            const hasApproved = await contracts.council.hasApproved(kind, g);
-            if (hasApproved) {
-                approvedList.push(g);
+            try {
+                const hasApproved = await contracts.council.hasApproved(kind, g);
+                if (hasApproved) approvedList.push(g);
+            } catch (err) {
+                console.warn("Error checking approval for", g, err);
             }
         }
 
@@ -2537,12 +2540,9 @@ $('refreshLockBtn').onclick = async () => {
     } catch (e) {
         console.error("fetchRecoveryApprovals err", e);
         $('riApprovers').innerText = "Error: " + (e.message || e);
-    } finally {
-        hideLoading();
     }
 }
 
-// Full recovery state
 async function fetchFullRecoveryState() {
     try {
         if (!contracts.council) return alert("Council contract not set");
@@ -2557,21 +2557,21 @@ async function fetchFullRecoveryState() {
         const [guardian, expiry] = await contracts.council.getTempVeto();
         const nonce = await contracts.council.getRequestNonce(kind);
 
-        const formatTimestamp = (timestamp) => {
-            if (timestamp.isZero() || timestamp.toNumber() === 0) return "—";
-            const date = new Date(timestamp.toNumber() * 1000);
+        const formatTimestamp = (ts) => {
+            if (!ts || ts.isZero?.() || ts.toString() === "0") return "—";
+            const date = new Date(Number(ts) * 1000);
             return date.toLocaleString();
         };
-        
-        $('riProposed').innerText = proposed;
-        $('riApprovals').innerText = `${approvals} approvals`;
-        $('riDeadline').innerText = new Date(deadline * 1000).toLocaleString();
-        $('riExecuted').innerText = executed ? "✅ Yes" : "❌ No";
+
+        $('riProposed').innerText   = proposed;
+        $('riApprovals').innerText  = `${approvals.toString()} approvals`;
+        $('riDeadline').innerText   = formatTimestamp(deadline);
+        $('riExecuted').innerText   = executed ? "✅ Yes" : "❌ No";
         $('riCallTarget').innerText = callTarget;
-        $('riCallData').innerText = callData;
-        $('riGuardian').innerText = guardian;
-        $('riVetoExpiry').innerText = expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "-";
-        $('riNonce').innerText = nonce.toString();
+        $('riCallData').innerText   = callData;
+        $('riGuardian').innerText   = guardian;
+        $('riVetoExpiry').innerText = formatTimestamp(expiry);
+        $('riNonce').innerText      = nonce.toString();
 
         await fetchRecoveryApprovals(kind);
 
@@ -2582,8 +2582,7 @@ async function fetchFullRecoveryState() {
     } finally {
         hideLoading();
     }
-}  
-
+}
 
 
   // ---------- Bind UI on load ----------
