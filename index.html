@@ -2524,11 +2524,13 @@ async function fetchRecoveryApprovals(kind) {
         const approvedList = [];
 
         for (const g of guardians) {
+            if (!g || g === ethers.constants.AddressZero) continue; // skip zero slots
             try {
                 const hasApproved = await contracts.council.hasApproved(kind, g);
                 if (hasApproved) approvedList.push(g);
             } catch (err) {
-                console.warn("Error checking approval for", g, err);
+                // Don’t break the loop if one check fails
+                console.warn("Guardian check failed", g, err);
             }
         }
 
@@ -2543,24 +2545,51 @@ async function fetchRecoveryApprovals(kind) {
     }
 }
 
+// Full recovery state with safety guards
 async function fetchFullRecoveryState() {
     try {
         if (!contracts.council) return alert("Council contract not set");
         showLoading();
 
         const kind = parseInt($('recoveryKind').value, 10);
-        if (isNaN(kind)) return alert("Select a valid recovery kind");
+        if (isNaN(kind)) {
+            alert("Select a valid recovery kind");
+            return;
+        }
 
-        const [proposed, approvals, deadline, executed, callTarget, callData] =
-            await contracts.council.getRecoveryState(kind);
+        // Safe fetch with fallback for "NoActiveRequest"
+        let proposed, approvals, deadline, executed, callTarget, callData;
+        try {
+            [proposed, approvals, deadline, executed, callTarget, callData] =
+                await contracts.council.getRecoveryState(kind);
+        } catch (err) {
+            console.warn("No active request for this kind:", err);
+            proposed = ethers.constants.AddressZero;
+            approvals = 0;
+            deadline = 0;
+            executed = false;
+            callTarget = ethers.constants.AddressZero;
+            callData = "0x";
+        }
 
-        const [guardian, expiry] = await contracts.council.getTempVeto();
-        const nonce = await contracts.council.getRequestNonce(kind);
+        // Safe fetch for veto
+        let guardian = ethers.constants.AddressZero, expiry = 0;
+        try {
+            [guardian, expiry] = await contracts.council.getTempVeto();
+        } catch (err) {
+            console.warn("getTempVeto failed:", err);
+        }
+
+        let nonce = 0;
+        try {
+            nonce = await contracts.council.getRequestNonce(kind);
+        } catch (err) {
+            console.warn("getRequestNonce failed:", err);
+        }
 
         const formatTimestamp = (ts) => {
-            if (!ts || ts.isZero?.() || ts.toString() === "0") return "—";
-            const date = new Date(Number(ts) * 1000);
-            return date.toLocaleString();
+            if (!ts || (ts.isZero?.() && ts.isZero()) || ts.toString() === "0") return "—";
+            return new Date(Number(ts) * 1000).toLocaleString();
         };
 
         $('riProposed').innerText   = proposed;
@@ -2583,6 +2612,7 @@ async function fetchFullRecoveryState() {
         hideLoading();
     }
 }
+
 
 
   // ---------- Bind UI on load ----------
