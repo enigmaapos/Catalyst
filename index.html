@@ -1019,17 +1019,6 @@
 	  // App state
 	  let provider = null, signer = null, userAddr = null;
   let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null };
-
-	  let validAddr = false;
-if (ethers.utils && ethers.utils.isAddress) {
-  validAddr = ethers.utils.isAddress(newDao); // v5
-} else if (ethers.isAddress) {
-  validAddr = ethers.isAddress(newDao); // v6
-}
-
-if (!validAddr) {
-  return alert("⚠️ Invalid DAO address");
-}
 	  
 const $ = id => document.getElementById(id);
   function log(...args){
@@ -2390,23 +2379,43 @@ function parse7(txt) {
 	  
 // ---------- Guardian Council / DAO & Governance ----------
 // ---------- DAO ----------
-  async function proposeNewDAO() {
+// Attach button after DOM loads
+window.addEventListener("DOMContentLoaded", () => {
+  $("proposeDaoBtn").onclick = proposeNewDAO;
+});
+
+async function proposeNewDAO() {
   try {
     if (!contracts.council) {
-      return alert("⚠️ Council contract not attached");
+      alert("⚠️ Council contract not attached");
+      return;
     }
 
     const newDao = $("newDaoAddr").value.trim();
-    console.log("DAO input value:", `"${newDao}"`);
+    console.log("📝 DAO input value:", `"${newDao}"`);
 
-    if (!ethers.utils.isAddress(newDao)) {
-      return alert("⚠️ Invalid DAO address");
+    // ----- Address validation (works for ethers v5 and v6) -----
+    let validAddr = false;
+    if (ethers.utils && ethers.utils.isAddress) {
+      validAddr = ethers.utils.isAddress(newDao); // v5
+    } else if (ethers.isAddress) {
+      validAddr = ethers.isAddress(newDao); // v6
     }
 
+    if (!validAddr) {
+      alert("⚠️ Invalid DAO address");
+      return;
+    }
+
+    // ----- Check current DAO -----
+    const currentDao = await contracts.council.dao();
+    console.log("🏛 Current DAO (on-chain):", currentDao);
+
+    // ----- Send transaction -----
     const tx = await contracts.council.proposeNewDAO(newDao);
     console.log("📤 proposeNewDAO tx:", tx.hash);
-    await tx.wait();
 
+    await tx.wait();
     alert("✅ DAO proposal submitted");
   } catch (err) {
     console.error("❌ proposeNewDAO error:", err);
