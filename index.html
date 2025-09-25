@@ -2379,44 +2379,24 @@ function parse7(txt) {
 	  
 // ---------- Guardian Council / DAO & Governance ----------
 // ---------- DAO ----------
-async function proposeNewDAO() {
-  try {
-    if (!contracts.council) {
-      alert("⚠️ Council contract not attached");
-      return;
+  async function proposeNewDAO() {
+    try {
+      if (!contracts.council) return alert("⚠️ Council contract not attached");
+
+      const newDao = $("newDaoAddr").value.trim();
+      if (!(newDao.startsWith("0x") && newDao.length === 42)) {
+        return alert("⚠️ Invalid DAO address");
+      }
+
+      const tx = await contracts.council.proposeNewDAO(newDao);
+      console.log("📤 proposeNewDAO tx:", tx.hash);
+      await tx.wait();
+      alert("✅ DAO proposal submitted");
+    } catch (err) {
+      console.error("❌ proposeNewDAO error:", err);
+      alert(err.reason || err.message || "Transaction failed");
     }
-
-    const newDao = $("newDaoAddr").value.trim();
-    console.log("📝 DAO input value:", `"${newDao}"`);
-
-    // ----- Address validation (works for ethers v5 and v6) -----
-    let validAddr = false;
-    if (ethers.utils && ethers.utils.isAddress) {
-      validAddr = ethers.utils.isAddress(newDao); // v5
-    } else if (ethers.isAddress) {
-      validAddr = ethers.isAddress(newDao); // v6
-    }
-
-    if (!validAddr) {
-      alert("⚠️ Invalid DAO address");
-      return;
-    }
-
-    // ----- Check current DAO -----
-    const currentDao = await contracts.council.dao();
-    console.log("🏛 Current DAO (on-chain):", currentDao);
-
-    // ----- Send transaction -----
-    const tx = await contracts.council.proposeNewDAO(newDao);
-    console.log("📤 proposeNewDAO tx:", tx.hash);
-
-    await tx.wait();
-    alert("✅ DAO proposal submitted");
-  } catch (err) {
-    console.error("❌ proposeNewDAO error:", err);
-    alert(err.reason || err.message || "Transaction failed");
   }
-}
 
 
 async function commitDao() {
