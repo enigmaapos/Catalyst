@@ -2566,15 +2566,17 @@ async function fetchFullRecoveryState() {
         try {
             [proposed, approvals, deadline, executed, callTarget, callData] =
                 await contracts.council.getRecoveryState(kind);
+
+            // Check expiry
+            const now = Math.floor(Date.now() / 1000);
+            if (deadline > 0 && now > deadline && !executed) {
+                hasActiveRequest = false;
+                $('riStatus').innerText = "⏰ Expired Recovery";
+                $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-orange-700 text-white";
+            }
         } catch (err) {
             console.warn("No active request for this kind:", err);
             hasActiveRequest = false;
-            proposed = ethers.constants.AddressZero;
-            approvals = 0;
-            deadline = 0;
-            executed = false;
-            callTarget = ethers.constants.AddressZero;
-            callData = "0x";
         }
 
         // Fetch threshold for approvals
@@ -2607,8 +2609,11 @@ async function fetchFullRecoveryState() {
 
         // 🔑 Status badge logic
         if (!hasActiveRequest) {
-            $('riStatus').innerText = "⚪ No Active Recovery";
-            $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-slate-700 text-slate-300";
+            // If expired badge already set above, don’t overwrite it
+            if ($('riStatus').innerText.indexOf("⏰") === -1) {
+                $('riStatus').innerText = "⚪ No Active Recovery";
+                $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-slate-700 text-slate-300";
+            }
 
             $('riProposed').innerText   = "— No active recovery request —";
             $('riApprovals').innerText  = "—";
@@ -2650,8 +2655,7 @@ async function fetchFullRecoveryState() {
     } finally {
         hideLoading();
     }
-}
-        
+}     
 
 
   // ---------- Bind UI on load ----------
