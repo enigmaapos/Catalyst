@@ -639,54 +639,52 @@
       </optgroup>
     </select>
 
-    <!-- Single create button -->
+    <!-- Generic fields -->
+    <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
+
+    <!-- Tier Upgrade -->
+    <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
+      <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
+        <option value="0">UNVERIFIED (0)</option>
+        <option value="1">VERIFIED (1)</option>
+        <option value="2">BLUECHIP (2)</option>
+      </select>
+      <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
+      <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+    </div>
+
+    <!-- Council batch -->
+    <div id="councilBatchRow" class="hidden space-y-2">
+      <p class="text-xs text-slate-400">Enter 7 guardian addresses for new batch:</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7" />
+      </div>
+    </div>
+
+    <!-- New DAO -->
+    <div id="newDaoRow" class="hidden">
+      <input id="newDaoAddr" placeholder="New DAO contract address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    </div>
+
+    <!-- Upgrade council -->
+    <div id="upgradeCouncilRow" class="hidden">
+      <input id="newCouncilImpl" placeholder="New council implementation address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    </div>
+
     <button id="createProposalBtn" class="w-full p-2 bg-violet-600 rounded">Create Proposal</button>
   </div>
 
-  <!-- Generic proposal fields -->
-  <input id="proposalValue" placeholder="New numeric value" class="w-full p-2 rounded bg-black/20 text-sm" />
-  <input id="proposalCollectionCtx" placeholder="Collection context (optional)" class="w-full p-2 rounded bg-black/20 text-sm" />
-  <input id="paramTarget" placeholder="paramTarget (for VotingParam/TierUpgrade)" class="w-full p-2 rounded bg-black/20 text-sm" />
-
-  <!-- Tier Upgrade fields -->
-  <div id="tierUpgradeRow" class="grid grid-cols-1 md:grid-cols-3 gap-2 hidden">
-    <select id="tierTo" class="p-2 rounded bg-black/20 text-sm">
-      <option value="0">UNVERIFIED (0)</option>
-      <option value="1">VERIFIED (1)</option>
-      <option value="2">BLUECHIP (2)</option>
-    </select>
-    <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm" />
-    <input id="tierDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
-  </div>
-
-  <!-- Council batch reseed fields -->
-  <div id="councilBatchRow" class="hidden space-y-2">
-    <p class="text-xs text-slate-400">Enter 7 guardian addresses for new batch:</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7" />
-    </div>
-  </div>
-
-  <!-- New DAO address field -->
-  <div id="councilNewDaoRow" class="hidden">
-    <input id="proposalDaoAddr" placeholder="New DAO address" class="w-full p-2 rounded bg-black/20 text-sm" />
-  </div>
-
-  <!-- Upgrade council -->
-  <div id="upgradeCouncilRow" class="hidden">
-    <input id="newCouncilImpl" placeholder="New council implementation address" class="w-full p-2 rounded bg-black/20 text-sm" />
-  </div>
-
-  <!-- Voting / Execution -->
+  <!-- Voting & Execution -->
   <div class="glass p-4 rounded-lg space-y-3 mt-4">
     <h3 class="font-semibold">Vote & Execute</h3>
-
     <input id="proposalId" placeholder="Proposal ID (hex)" class="w-full p-2 rounded bg-black/20 text-sm" />
     <div class="flex gap-2">
       <button id="voteProposalBtn" class="flex-1 p-2 bg-blue-600 rounded">Vote</button>
@@ -717,7 +715,7 @@
     </div>
   </div>
 </section>
-    
+
 <section id="council" class="tab-content hidden">
     <h2 class="font-semibold mb-2">DRS Guardian Council</h2>
     <p class="text-sm text-slate-300 mb-3">
@@ -2195,22 +2193,7 @@ const PROPOSAL_MAPPING = {
   UPGRADE_COUNCIL: 13
 };
 
-// Helpers
-function fmtNum(val) {
-  if (!val) return '0';
-  try { return ethers.BigNumber.isBigNumber(val) ? val.toString() : val.toString(); } catch { return val.toString(); }
-}
-function fmtReadable(val) {
-  if (!val) return '0';
-  try { return Number(val.toString()).toLocaleString(); } catch { return val.toString(); }
-}
-function blocksToDays(blocks) {
-  const avgBlockTimeSec = 12; // adjust if chain differs
-  const sec = Number(blocks) * avgBlockTimeSec;
-  return (sec / 86400).toFixed(2); // days
-}
-
-// Toggle extra input fields when proposal type changes
+// UI toggle fields
 $('proposalType').addEventListener('change', () => {
   const type = $('proposalType').value;
   $('tierUpgradeRow').classList.add('hidden');
@@ -2218,33 +2201,27 @@ $('proposalType').addEventListener('change', () => {
   $('newDaoRow').classList.add('hidden');
   $('upgradeCouncilRow').classList.add('hidden');
 
-  if (type === 'TIER_UPGRADE') {
-    $('tierUpgradeRow').classList.remove('hidden');
-  } else if (type === 'COUNCIL_RESEED_ACTIVE' || type === 'COUNCIL_PROPOSE_STANDBY') {
-    $('councilBatchRow').classList.remove('hidden');
-  } else if (type === 'COUNCIL_PROPOSE_NEW_DAO') {
-    $('newDaoRow').classList.remove('hidden');
-  } else if (type === 'UPGRADE_COUNCIL') {
-    $('upgradeCouncilRow').classList.remove('hidden');
-  }
+  if (type === 'TIER_UPGRADE') $('tierUpgradeRow').classList.remove('hidden');
+  if (type === 'COUNCIL_RESEED_ACTIVE' || type === 'COUNCIL_PROPOSE_STANDBY') $('councilBatchRow').classList.remove('hidden');
+  if (type === 'COUNCIL_PROPOSE_NEW_DAO') $('newDaoRow').classList.remove('hidden');
+  if (type === 'UPGRADE_COUNCIL') $('upgradeCouncilRow').classList.remove('hidden');
 });
-    
+
 // Create Proposal
-async function createProposal() {
+$('createProposalBtn').onclick = async () => {
   try {
     if (!contracts.governance) {
       await attachContractsIfSet();
       if (!contracts.governance) return alert('⚠️ Governance not set');
     }
 
-    $('loadingIndicator').style.display = 'block'; // show loading
+    showLoading();
 
     const typeStr = $('proposalType').value;
     const pType = PROPOSAL_MAPPING[typeStr];
 
     let paramTarget = parseInt($('paramTarget').value || '0');
-    let newValueRaw = $('proposalValue').value.trim() || '0';
-    let newValue = ethers.BigNumber.from(newValueRaw);
+    let newValue = ethers.BigNumber.from($('proposalValue').value.trim() || '0');
     let ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
 
     if (typeStr === 'TIER_UPGRADE') {
@@ -2253,9 +2230,9 @@ async function createProposal() {
       newValue = ethers.BigNumber.from($('tierDeclaredSupply').value || '0');
     } else if (typeStr === 'COUNCIL_RESEED_ACTIVE' || typeStr === 'COUNCIL_PROPOSE_STANDBY') {
       const addrs = Array.from(document.querySelectorAll('.councilAddr')).map(el => el.value.trim());
-      if (addrs.length !== 7 || addrs.some(a => !a)) {
-        $('loadingIndicator').style.display = 'none';
-        return alert('⚠️ Must provide 7 guardian addresses');
+      if (addrs.length !== 7 || addrs.some(a => !ethers.utils.isAddress(a))) {
+        hideLoading();
+        return alert('⚠️ Must provide 7 valid guardian addresses');
       }
       const payload = await contracts.governance.encodeCouncilBatch(addrs);
       ctx = payload;
@@ -2263,113 +2240,91 @@ async function createProposal() {
       paramTarget = 0;
     } else if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
       ctx = $('newDaoAddr').value.trim();
+      if (!ethers.utils.isAddress(ctx)) {
+        hideLoading();
+        return alert("⚠️ Invalid DAO address");
+      }
     } else if (typeStr === 'UPGRADE_COUNCIL') {
       ctx = $('newCouncilImpl').value.trim();
+      if (!ethers.utils.isAddress(ctx)) {
+        hideLoading();
+        return alert("⚠️ Invalid council implementation address");
+      }
     }
 
     const tx = await contracts.governance.propose(pType, paramTarget, newValue, ctx);
     log('propose tx', tx.hash);
     await tx.wait();
 
-    $('loadingIndicator').style.display = 'none';
     alert("✅ Proposal created!");
-    log('proposal created');
   } catch (e) {
-    $('loadingIndicator').style.display = 'none';
-    log('createProposal err', e.message || e);
-    alert("❌ " + (e.message || e));
+    console.error(e);
+    alert("❌ " + (e.reason || e.message || e));
+  } finally {
+    hideLoading();
   }
-}
+};
 
 // Vote
-async function voteProposal() {
+$('voteProposalBtn').onclick = async () => {
   try {
-    if (!contracts.governance) {
-      await attachContractsIfSet();
-      if (!contracts.governance) return alert('⚠️ Governance not set');
-    }
+    if (!contracts.governance) await attachContractsIfSet();
     const id = $('proposalId').value.trim();
     if (!id) return alert('⚠️ Proposal ID required');
 
-    $('loadingIndicator').style.display = 'block';
-
+    showLoading();
     const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
     const tx = await contracts.governance.vote(id, ctx);
-    log('vote tx', tx.hash);
     await tx.wait();
-
-    $('loadingIndicator').style.display = 'none';
     alert("✅ Vote cast!");
-    log('voted');
   } catch (e) {
-    $('loadingIndicator').style.display = 'none';
-    log('voteProposal err', e.message || e);
-    alert("❌ " + (e.message || e));
+    alert("❌ " + (e.reason || e.message || e));
+  } finally {
+    hideLoading();
   }
-}
+};
 
 // Execute
-async function execProposal() {
+$('execProposalBtn').onclick = async () => {
   try {
-    if (!contracts.governance) {
-      await attachContractsIfSet();
-      if (!contracts.governance) return alert('⚠️ Governance not set');
-    }
+    if (!contracts.governance) await attachContractsIfSet();
     const id = $('proposalId').value.trim();
     if (!id) return alert('⚠️ Proposal ID required');
 
-    $('loadingIndicator').style.display = 'block';
-
+    showLoading();
     const tx = await contracts.governance.executeProposal(id);
-    log('exec tx', tx.hash);
     await tx.wait();
-
-    $('loadingIndicator').style.display = 'none';
     alert("✅ Proposal executed!");
-    log('executed');
   } catch (e) {
-    $('loadingIndicator').style.display = 'none';
-    log('execProposal err', e.message || e);
-    alert("❌ " + (e.message || e));
+    alert("❌ " + (e.reason || e.message || e));
+  } finally {
+    hideLoading();
   }
-}
+};
 
-// Fetch Proposal Details
-async function fetchProposal() {
+// Fetch Proposal
+$('fetchProposalBtn').onclick = async () => {
   try {
-    if (!contracts.governance) {
-      await attachContractsIfSet();
-      if (!contracts.governance) return alert('⚠️ Governance not set');
-    }
+    if (!contracts.governance) await attachContractsIfSet();
     const id = $('proposalId').value.trim();
     if (!id) return alert('⚠️ Proposal ID required');
 
-    $('loadingIndicator').style.display = 'block';
-
-    let info = null;
-    try { info = await contracts.governance.proposals(id); } catch (e) {}
-    try { if (!info) info = await contracts.governance.proposalPayloads(id); } catch (e) {}
-
-    $('loadingIndicator').style.display = 'none';
+    showLoading();
+    const info = await contracts.governance.proposals(id).catch(() => null);
+    hideLoading();
 
     if (info) {
-      log('proposal fetch', {
-        ...info,
-        valueReadable: fmtReadable(info.value),
-        blocksAsDays: info.endBlock ? blocksToDays(info.endBlock - info.startBlock) : '—'
-      });
+      log('proposal fetch', info);
     } else {
-      log('proposal fetch', 'no data');
+      alert("⚠️ Proposal not found");
     }
   } catch (e) {
-    $('loadingIndicator').style.display = 'none';
-    log('fetchProposal err', e.message || e);
-    alert("❌ " + (e.message || e));
+    hideLoading();
+    alert("❌ " + (e.reason || e.message || e));
   }
-}
+};
 
-
-
+    
 	  // Parse helper for 7 addresses
 function parse7(txt) {
     const arr = txt.split('\n').map(s => s.trim()).filter(Boolean);
