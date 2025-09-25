@@ -853,6 +853,11 @@
 	<h3 class="text-base font-semibold mt-6 mb-2 text-slate-200 flex items-center gap-2">
             🩹 Recovery State
         </h3>
+	<div class="mb-3">
+  <span id="riStatus" class="inline-block px-3 py-1 text-xs rounded-full bg-slate-700 text-slate-300">
+    ⚪ Checking...
+  </span>
+	</div>
         <div class="flex items-center gap-2 mb-3">
             <select id="recoveryKind" class="rounded-lg px-2 py-1 text-sm text-black">
                 <option value="">Select Recovery Kind</option>
@@ -2557,13 +2562,15 @@ async function fetchFullRecoveryState() {
             return;
         }
 
-        // Safe fetch with fallback for "NoActiveRequest"
         let proposed, approvals, deadline, executed, callTarget, callData;
+        let hasActiveRequest = true;
+
         try {
             [proposed, approvals, deadline, executed, callTarget, callData] =
                 await contracts.council.getRecoveryState(kind);
         } catch (err) {
             console.warn("No active request for this kind:", err);
+            hasActiveRequest = false;
             proposed = ethers.constants.AddressZero;
             approvals = 0;
             deadline = 0;
@@ -2592,13 +2599,32 @@ async function fetchFullRecoveryState() {
             return new Date(Number(ts) * 1000).toLocaleString();
         };
 
-        $('riProposed').innerText   = proposed;
-        $('riApprovals').innerText  = `${approvals.toString()} approvals`;
-        $('riDeadline').innerText   = formatTimestamp(deadline);
-        $('riExecuted').innerText   = executed ? "✅ Yes" : "❌ No";
-        $('riCallTarget').innerText = callTarget;
-        $('riCallData').innerText   = callData;
-        $('riGuardian').innerText   = guardian;
+        // 🔴 Update status badge
+        if (!hasActiveRequest) {
+            $('riStatus').innerText = "⚪ No Active Recovery";
+            $('riStatus').className = "inline-block px-3 py-1 text-xs rounded-full bg-slate-700 text-slate-300";
+
+            $('riProposed').innerText   = "— No active recovery request —";
+            $('riApprovals').innerText  = "—";
+            $('riDeadline').innerText   = "—";
+            $('riExecuted').innerText   = "—";
+            $('riCallTarget').innerText = "—";
+            $('riCallData').innerText   = "—";
+        } else {
+            $('riStatus').innerText = executed ? "🔴 Executed Recovery" : "🟢 Active Recovery";
+            $('riStatus').className = executed
+                ? "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white"
+                : "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
+
+            $('riProposed').innerText   = proposed;
+            $('riApprovals').innerText  = `${approvals.toString()} approvals`;
+            $('riDeadline').innerText   = formatTimestamp(deadline);
+            $('riExecuted').innerText   = executed ? "✅ Yes" : "❌ No";
+            $('riCallTarget').innerText = callTarget;
+            $('riCallData').innerText   = callData;
+        }
+
+        $('riGuardian').innerText   = guardian !== ethers.constants.AddressZero ? guardian : "—";
         $('riVetoExpiry').innerText = formatTimestamp(expiry);
         $('riNonce').innerText      = nonce.toString();
 
@@ -2612,7 +2638,6 @@ async function fetchFullRecoveryState() {
         hideLoading();
     }
 }
-
 
 
   // ---------- Bind UI on load ----------
