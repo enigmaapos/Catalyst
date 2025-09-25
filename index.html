@@ -2537,28 +2537,13 @@ $('vetoRecoveryBtn').onclick = async () => {
 // ---------- Read-only State ----------
 	  // Full recovery state
 // Approvals
-async function fetchRecoveryApprovals(kind) {
-  const guardians = await contracts.council.getActiveGuardians();
-  const approvedList = [];
-
-  for (const g of guardians) {
-    if (!g || g === ethers.constants.AddressZero) continue;
-    try {
-      if (await contracts.council.hasApproved(kind, g)) approvedList.push(g);
-    } catch {}
-  }
-
-  return approvedList;
-}
-
-// Show ALL recovery states (0,1,2)
 async function fetchAllRecoveryStates() {
   try {
     if (!contracts.council) return alert("Council contract not set");
     showLoading();
 
     const container = document.getElementById("riRecoveries");
-    container.innerHTML = ""; // clear old results
+    container.innerHTML = "";
 
     let foundAny = false;
 
@@ -2573,7 +2558,7 @@ async function fetchAllRecoveryStates() {
 
       const [proposed, approvals, deadline, executed, callTarget, callData] = state;
 
-      // If nothing at all, skip
+      // Skip if nothing at all
       if (
         proposed === ethers.constants.AddressZero &&
         (!callData || callData === "0x") &&
@@ -2584,15 +2569,46 @@ async function fetchAllRecoveryStates() {
 
       foundAny = true;
 
-      const threshold = await contracts.council.THRESHOLD();
-      const [guardian, expiry] = await contracts.council.getTempVeto();
-      const nonce = await contracts.council.getRequestNonce(kind);
-      const approvers = await fetchRecoveryApprovals(kind);
+      // Fetch extras safely
+      let threshold = 0;
+      try {
+        threshold = await contracts.council.THRESHOLD();
+      } catch {
+        console.warn("THRESHOLD() missing");
+      }
 
+      let guardian = ethers.constants.AddressZero,
+        expiry = 0;
+      try {
+        [guardian, expiry] = await contracts.council.getTempVeto();
+      } catch {
+        console.warn("getTempVeto() missing");
+      }
+
+      let nonce = 0;
+      try {
+        nonce = await contracts.council.getRequestNonce(kind);
+      } catch {
+        console.warn("getRequestNonce() missing for kind", kind);
+      }
+
+      let approvers = [];
+      try {
+        approvers = await fetchRecoveryApprovals(kind);
+      } catch (e) {
+        console.warn("fetchRecoveryApprovals failed", e);
+      }
+
+      // Formatting helpers
       const formatTimestamp = (ts) => {
-        if (!ts || (ts.isZero?.() && ts.isZero()) || ts.toString() === "0")
+        if (!ts) return "—";
+        try {
+          const num = ethers.BigNumber.isBigNumber(ts) ? ts.toNumber() : Number(ts);
+          if (!num) return "—";
+          return new Date(num * 1000).toLocaleString();
+        } catch {
           return "—";
-        return new Date(Number(ts) * 1000).toLocaleString();
+        }
       };
 
       const kindName =
@@ -2602,26 +2618,22 @@ async function fetchAllRecoveryStates() {
       let statusText, statusClass;
       if (executed) {
         statusText = `${kindName} • 🔴 Executed`;
-        statusClass =
-          "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white";
-      } else if (deadline > 0 && now > deadline) {
+        statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-red-700 text-white";
+      } else if (deadline > 0 && now > Number(deadline)) {
         statusText = `${kindName} • ⏰ Expired`;
-        statusClass =
-          "inline-block px-3 py-1 text-xs rounded-full bg-orange-700 text-white";
+        statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-orange-700 text-white";
       } else if (approvals < threshold) {
         statusText = `${kindName} • 🟡 Pending Approvals (${approvals}/${threshold})`;
-        statusClass =
-          "inline-block px-3 py-1 text-xs rounded-full bg-yellow-600 text-white";
+        statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-yellow-600 text-white";
       } else {
         statusText = `${kindName} • 🟢 Ready to Execute`;
-        statusClass =
-          "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
+        statusClass = "inline-block px-3 py-1 text-xs rounded-full bg-green-700 text-white";
       }
 
       const actionText =
         callData && callData !== "0x" ? decodeRecoveryAction(callData) : "—";
 
-      // Build UI block
+      // Build block
       const block = document.createElement("div");
       block.className = "p-3 mb-3 rounded-lg bg-slate-800/60 shadow space-y-2";
 
@@ -2663,19 +2675,8 @@ async function fetchAllRecoveryStates() {
 }
 
 document.getElementById("refreshRecoveryBtn").onclick = fetchAllRecoveryStates;
-
-	  
-$('refreshDaoBtn').onclick = async () => {
-  try {
-    showLoading();
-    const dao = await contracts.council.dao();
-    const [pending, earliest, deadline] = await contracts.council.getPendingDAOState();
-    $('daoAddr').innerText = dao;
-    $('pendingDaoAddr').innerText = pending;
-    $('pendingDaoWindow').innerText = `Earliest: ${new Date(earliest*1000).toLocaleString()} | Deadline: ${new Date(deadline*1000).toLocaleString()}`;
-  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-};
-
+      
+          
 $('refreshGuardiansBtn').onclick = async () => {
   try {
     showLoading();
