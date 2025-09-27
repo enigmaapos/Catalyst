@@ -731,7 +731,6 @@
     <button id="commitDaoBtn" class="w-full p-2 bg-indigo-400 rounded">Commit DAO</button>
   </div>
 
-
   <hr class="border-slate-700 my-2" />
 
   <!-- Guardian Batches -->
@@ -752,13 +751,6 @@
       <button id="commitStandbyBatchBtn" class="flex-1 p-2 bg-emerald-400 rounded">Commit Standby Batch</button>
     </div>
     <button id="activateStandbyBtn" class="w-full p-2 bg-green-600 rounded mt-2">Activate Standby</button>
-  </div>
-
-  <hr class="border-slate-700 my-2" />
-
-  <!-- Lock -->
-  <div class="space-y-2 text-sm">
-    <button id="clearLockBtn" class="w-full p-2 bg-slate-600 rounded">Clear Lock/Warning</button>
   </div>
 </select>
 	
@@ -797,6 +789,14 @@
             <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 hover:bg-green-700 rounded-lg">Execute</button>
             <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 hover:bg-slate-700 rounded-lg">Veto (Last Honest)</button>
         </div>
+		
+		  <hr class="border-slate-700 my-2" />
+
+  <!-- Lock -->
+  <div class="space-y-2 text-sm">
+    <button id="clearLockBtn" class="w-full p-2 bg-slate-600 rounded">Clear Lock/Warning</button>
+  </div>
+		
     </div>
 </div>
 
@@ -2406,16 +2406,6 @@ $('activateStandbyBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-// Lock
-$('clearLockBtn').onclick = async () => {
-  try {
-    showLoading();
-    const tx = await contracts.council.daoClearLockAndWarning();
-    await tx.wait();
-    alert("✅ Lock cleared");
-  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-};
-
 // ------------------------------------
 // GLOBAL CONSTANTS
 // ------------------------------------
@@ -2516,6 +2506,16 @@ $('vetoRecoveryBtn').onclick = async () => {
         alert("✅ Recovery vetoed");
         await refreshRecoveryState();
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+	  // Lock
+$('clearLockBtn').onclick = async () => {
+  try {
+    showLoading();
+    const tx = await contracts.council.daoClearLockAndWarning();
+    await tx.wait();
+    alert("✅ Lock cleared");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 // ------------------------------------
