@@ -2521,83 +2521,90 @@ $('clearLockBtn').onclick = async () => {
 // ------------------------------------
 // 2. Recovery Status Read Logic (Admin Kind 1)
 // ------------------------------------
+// Helper: decode recovery state nicely
+async function getRecoveryStateDecoded(kind = 1) {
+    const [
+        proposed,
+        approvals,   // uint8
+        deadlineBN,  // uint256
+        executed,
+        callTarget,
+        callData
+    ] = await contracts.council.getRecoveryState(kind);
+
+    return {
+        proposed,
+        approvals: Number(approvals),
+        deadline: deadlineBN.toNumber(),
+        executed,
+        callTarget,
+        callData
+    };
+}
+
+// Refresher
 const refreshRecoveryState = async () => {
-    const kind = 1; // Admin recovery is fixed
+    const kind = 1; // Admin recovery fixed
     $('recoveryKindName').innerText = 'Admin';
 
     try {
         showLoading();
 
-        // Pull state from contract
-        const [
-            proposedAddr,
-            approvals,      // uint8
-            deadlineBN,     // uint256
-            executed,
-            target,
-            calldata
-        ] = await contracts.council.getRecoveryState(kind);
+        // Pull decoded state
+        const state = await getRecoveryStateDecoded(kind);
 
         const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
         const threshold = (await contracts.council.THRESHOLD()).toNumber();
 
-        // Convert values
-        const approvalCount = Number(approvals);
-        const deadline = deadlineBN.toNumber();
+        // --- UI population ---
+        $('statusTarget').innerText   = state.callTarget;
+        $('statusProposed').innerText = state.proposed;
+        $('statusApprovals').innerText = `${state.approvals} / ${guardianCount} (threshold: ${threshold})`;
 
-        // --- Function signature detection ---
-        let functionSignature = 'Unknown Function';
-        if (calldata && calldata.length >= 10) {
-            const selector = calldata.slice(0, 10);
-            if (selector === SWAP_ADMIN_SELECTOR) {
-                functionSignature = 'swapAdmin(address,address)';
-            } else if (selector === '0xba5258f1') {
-                functionSignature = 'upgradeTo(address)';
-            } else if (selector === '0x38d8d32d') {
-                functionSignature = 'pause()';
-            } else if (selector === '0x8456cb59') {
-                functionSignature = 'unpause()';
-            }
-            $('statusCalldata').innerText = `Signature: ${functionSignature}\nCalldata: ${calldata}`;
-        } else {
-            $('statusCalldata').innerText = calldata || '—';
+        // Function signature detection
+        let fnSig = 'Unknown Function';
+        if (state.callData && state.callData.length >= 10) {
+            const selector = state.callData.slice(0, 10);
+            if (selector === SWAP_ADMIN_SELECTOR) fnSig = 'swapAdmin(address,address)';
+            else if (selector === '0xba5258f1') fnSig = 'upgradeTo(address)';
+            else if (selector === '0x38d8d32d') fnSig = 'pause()';
+            else if (selector === '0x8456cb59') fnSig = 'unpause()';
         }
+        $('statusCalldata').innerText =
+            fnSig === 'Unknown Function'
+                ? (state.callData || '—')
+                : `Signature: ${fnSig}\nCalldata: ${state.callData}`;
 
-        // --- Populate UI ---
-        $('statusTarget').innerText = target;
-        $('statusProposed').innerText = proposedAddr;
-        $('statusApprovals').innerText = `${approvalCount} / ${guardianCount} (threshold: ${threshold})`;
-
-        // Handle deadline
-        if (deadline === 0) {
-            $('statusExpiry').innerText = "Not Active";
+        // Deadline logic
+        if (state.deadline === 0) {
+            $('statusExpiry').innerText = "No Active Proposal";
             $('statusTarget').innerText = $('statusProposed').innerText = $('statusCalldata').innerText = "—";
-        } else if (executed) {
+        } else if (state.executed) {
             $('statusExpiry').innerText = "Executed";
         } else {
-            const expiryDate = new Date(deadline * 1000);
-            const now = Date.now();
-            if (expiryDate.getTime() < now) {
+            const expiryDate = new Date(state.deadline * 1000);
+            if (expiryDate.getTime() < Date.now()) {
                 $('statusExpiry').innerText = `Expired: ${expiryDate.toLocaleString()}`;
             } else {
                 $('statusExpiry').innerText = expiryDate.toLocaleString();
             }
         }
 
-        $('statusApprovedBy').innerText = "List of addresses is not directly available (only count exposed).";
+        $('statusApprovedBy').innerText =
+            "List of addresses is not directly available (only count exposed).";
 
     } catch (e) {
         console.error("❌ ERROR fetching Admin Recovery State", e);
-        $('statusTarget').innerText = "N/A (Error or Not Active)";
+        $('statusTarget').innerText   = "N/A (Error or Not Active)";
         $('statusProposed').innerText = "N/A (Error or Not Active)";
         $('statusCalldata').innerText = "N/A (Error or Not Active)";
         $('statusApprovals').innerText = "0 / ?";
-        $('statusExpiry').innerText = "Error";
+        $('statusExpiry').innerText   = "Error";
         $('statusApprovedBy').innerText = "Error fetching data.";
     } finally {
         hideLoading();
     }
-};
+};       
 	    
 // Attach event handlers
 $('refreshRecoveryBtn').onclick = refreshRecoveryState; 
