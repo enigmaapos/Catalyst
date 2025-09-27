@@ -849,6 +849,48 @@
 
         <hr class="border-slate-700 my-4" />
 
+	<!-- Read-only DAO + Guardians -->
+  <h3 class="text-base font-semibold mb-2">DAO State</h3>
+  <div class="p-3 rounded-lg bg-slate-800/60 shadow text-sm space-y-3">
+    <div>
+      <div class="text-slate-400 text-xs">Current DAO</div>
+      <div id="daoAddr" class="font-mono text-slate-100 break-all">—</div>
+    </div>
+    <div>
+      <div class="text-slate-400 text-xs">Pending DAO</div>
+      <div id="pendingDaoAddr" class="font-mono text-slate-100 break-all">—</div>
+    </div>
+    <div>
+      <div class="text-slate-400 text-xs">Commit Window</div>
+      <div id="pendingDaoWindow" class="font-mono text-slate-100">—</div>
+    </div>
+  </div>
+  <button id="refreshDaoBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">🔄 Refresh DAO</button>
+
+  <h3 class="text-base font-semibold mt-6 mb-2">Guardians</h3>
+  <div class="grid grid-cols-2 gap-3 text-sm">
+    <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+      <div class="text-slate-400 text-xs">Active</div>
+      <pre id="activeGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+    </div>
+    <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+      <div class="text-slate-400 text-xs">Standby</div>
+      <pre id="standbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+    </div>
+    <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
+      <div class="text-slate-400 text-xs">Pending Active Batch</div>
+      <pre id="pendingActiveGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+      <div class="text-slate-400 text-xs mt-2">Commitment Window</div>
+      <div id="pendingActiveWindow" class="font-mono text-slate-100">—</div>
+    </div>
+    <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
+      <div class="text-slate-400 text-xs">Pending Standby Batch</div>
+      <pre id="pendingStandbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+      <div class="text-slate-400 text-xs mt-2">Commitment Window</div>
+      <div id="pendingStandbyWindow" class="font-mono text-slate-100">—</div>
+    </div>
+  </div>
+  <button id="refreshGuardiansBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">🔄 Refresh Guardians</button>
 </div>
 
   <h3 class="text-base font-semibold mt-6 mb-2">Lock Status</h3>
