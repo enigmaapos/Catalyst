@@ -2500,13 +2500,18 @@ $('clearLockBtn').onclick = async () => {
         // NEW FUNCTIONALITY: Recovery Status
         // ------------------------------------
         const refreshRecoveryState = async () => {
+    const kind = parseInt($('recoveryKindSelect').value, 10); 
+    
+    // Set UI to loading/error state immediately
+    $('recoveryKindName').innerText = $('recoveryKindSelect').options[$('recoveryKindSelect').selectedIndex].text.split(' ')[0];
+    $('statusTarget').innerText = $('statusProposed').innerText = $('statusCalldata').innerText = "Fetching...";
+    $('statusApprovals').innerText = "0 / 7";
+    $('statusExpiry').innerText = "Loading...";
+    $('statusApprovedBy').innerText = "Loading...";
+
     try {
         showLoading();
-        // Get the kind from the new read-only status selector
-        const kind = parseInt($('recoveryKindSelect').value, 10); 
-        $('recoveryKindName').innerText = $('recoveryKindSelect').options[$('recoveryKindSelect').selectedIndex].text.split(' ')[0];
-
-        // --- 1. Fetch Recovery State using correct ABI output order ---
+        
         // ABI Order: [proposed, approvals, deadline, executed, callTarget, callData]
         const [
             proposedAddr, 
@@ -2515,27 +2520,28 @@ $('clearLockBtn').onclick = async () => {
             executed, 
             target,           
             calldata
-        ] = await contracts.council.getRecoveryState(kind); // Correct function call
+        ] = await contracts.council.getRecoveryState(kind); 
 
-        const expiry = expiryBN.toNumber(); 
-        const approvalCount = approvalsCountBN.toNumber(); // Get the count
-
-        // Assuming GUARDIAN_COUNT (7) is correctly defined elsewhere
+        // Safely extract numbers from BigNumber objects (common failure point)
+        // If the contract is truly inactive, Ethers should return BigNumber(0)
+        // Check if the object has the toNumber method before using it.
+        const expiry = expiryBN && typeof expiryBN.toNumber === 'function' ? expiryBN.toNumber() : 0; 
+        const approvalCount = approvalsCountBN && typeof approvalsCountBN.toNumber === 'function' ? approvalsCountBN.toNumber() : 0; 
+        
         const guardianCount = 7; 
 
-        // --- 2. Update UI with correctly mapped variables ---
+        // --- Update UI with retrieved data ---
         
-        // Recovery details
         $('statusTarget').innerText = target;
         $('statusProposed').innerText = proposedAddr;
         $('statusCalldata').innerText = calldata;
 
-        // Expiry time
         const expiryDate = new Date(expiry * 1000);
         const now = Date.now();
         
-        // Assuming expiryBN.eq(0) works for the Ethers BigNumber object
-        if (expiryBN.eq(0)) {
+        // Use a simple check for zero expiry (if Ethers implementation is inconsistent)
+        // A truly inactive proposal should have an expiry of 0, which should not cause an error.
+        if (expiry === 0 || expiryBN.eq(0)) {
             $('statusExpiry').innerText = "Not Active";
             $('statusTarget').innerText = $('statusProposed').innerText = $('statusCalldata').innerText = "—";
         } else if (expiryDate.getTime() < now) {
@@ -2544,25 +2550,27 @@ $('clearLockBtn').onclick = async () => {
             $('statusExpiry').innerText = expiryDate.toLocaleString();
         }
         
-        // Approvals (Only count is available via getRecoveryState)
         $('statusApprovals').innerText = `${approvalCount} / ${guardianCount}`;
 
-        // Approved guardians list: Set to N/A as the function does not exist
-        $('statusApprovedBy').innerText = "List of addresses is not directly available (Function 'getRecoveryApprovals' is missing in the ABI).";
+        // Approval list is not available in the contract ABI
+        $('statusApprovedBy').innerText = "List of addresses is not directly available (Contract ABI only exposes the count).";
 
 
     } catch (e) { 
-        console.error("Error refreshing recovery state:", e);
-        // Fallback for errors
+        // THIS IS THE CRITICAL LINE: Log the actual error
+        console.error(`❌ ERROR fetching Recovery State (Kind ${kind}). Check Contract/ABI/Arguments.`, e);
+        
+        // Fallback for UI
         $('statusTarget').innerText = "N/A (Error or Not Active)";
         $('statusProposed').innerText = "N/A (Error or Not Active)";
         $('statusCalldata').innerText = "N/A (Error or Not Active)";
         $('statusApprovals').innerText = "0 / 7";
         $('statusExpiry').innerText = "Error";
         $('statusApprovedBy').innerText = "Error fetching data.";
+        
     } finally { hideLoading(); }
 };
-                
+                      
         // Attach the function to the new refresh button and the kind selector change
         $('refreshRecoveryBtn').onclick = refreshRecoveryState;
         $('recoveryKindSelect').onchange = refreshRecoveryState;
