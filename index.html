@@ -768,38 +768,37 @@
 <div class="max-w-xl mx-auto p-4 space-y-4">
     <h1 class="text-2xl font-bold mb-4">BatchGuardianCouncil Console</h1>
 
-    <h2 class="text-xl font-semibold mb-2">1. New Recovery Request</h2>
-    <div class="p-4 rounded-lg bg-slate-800 shadow space-y-3">
-        <h3 class="text-sm font-semibold mb-1">Request Parameters</h3>
-        <div class="space-y-2 text-sm">
-            <select id="recoveryKind" class="w-full p-2 rounded bg-black/20">
-                <option value="0">Deployer (Kind 0)</option>
-                <option value="1" selected>Admin (Kind 1)</option>
+    <h2 class="text-xl font-semibold mb-2">1. New Recovery Request (Admin Only)</h2>
+<div class="p-4 rounded-lg bg-slate-800 shadow space-y-3">
+    <h3 class="text-sm font-semibold mb-1">Request Parameters</h3>
+    <div class="space-y-2 text-sm">
+        
+        <select id="recoveryKind" class="w-full p-2 rounded bg-black/20" disabled>
+            <option value="1" selected>Admin (Kind 1) [Hardcoded]</option>
+        </select>
+        
+        <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
+            <option value="" disabled selected>-- Select Admin Function --</option>
+            <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
+            <option value="changeAdmin(address)">changeAdmin(address)</option>
+            <option value="pause()">pause()</option>
+            <option value="unpause()">unpause()</option>
             </select>
-            
-            <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
-                <option value="">-- Select Common Function --</option>
-                <option value="upgradeTo(address)">upgradeTo(address)</option>
-                <option value="upgradeToAndCall(address,bytes)">upgradeToAndCall(address,bytes)</option>
-                <option value="changeAdmin(address)">changeAdmin(address)</option>
-                <option value="transferOwnership(address)">transferOwnership(address)</option>
-                <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
-                <option value="renounceOwnership()">renounceOwnership()</option>
-            </select>
-            <input id="recoveryProposed" placeholder="Proposed address (new logic contract or owner)" class="w-full p-2 rounded bg-black/20" />
-            <input id="recoveryCallTarget" placeholder="Target contract address (e.g., CataERC20 Proxy)" class="w-full p-2 rounded bg-black/20" />
-            <input id="recoveryFunction" placeholder="Function Signature (e.g., swapAdmin(address,address))" class="w-full p-2 rounded bg-black/20" />
-            <input id="recoveryArgs" placeholder="Arguments (comma-separated, e.g., 0xNewAdmin, 0xOldAdmin)" class="w-full p-2 rounded bg-black/20" />
-            <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
-            <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">Encode CallData</button>
-            <div class="flex gap-2 mt-2">
-                <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 hover:bg-red-700 rounded-lg">Propose</button>
-                <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 hover:bg-orange-700 rounded-lg">Approve</button>
-                <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 hover:bg-green-700 rounded-lg">Execute</button>
-                <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 hover:bg-slate-700 rounded-lg">Veto (Last Honest)</button>
-            </div>
+
+        <input id="recoveryProposed" placeholder="Proposed address (e.g., new Admin)" class="w-full p-2 rounded bg-black/20" />
+        <input id="recoveryCallTarget" placeholder="Target contract address (e.g., CataERC20 Proxy)" class="w-full p-2 rounded bg-black/20" />
+        <input id="recoveryFunction" placeholder="Function Signature (e.g., swapAdmin(address,address))" class="w-full p-2 rounded bg-black/20" />
+        <input id="recoveryArgs" placeholder="Arguments (comma-separated, e.g., 0xNewAdmin, 0xOldAdmin)" class="w-full p-2 rounded bg-black/20" />
+        <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
+        <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">Encode CallData</button>
+        <div class="flex gap-2 mt-2">
+            <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 hover:bg-red-700 rounded-lg">Propose</button>
+            <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 hover:bg-orange-700 rounded-lg">Approve</button>
+            <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 hover:bg-green-700 rounded-lg">Execute</button>
+            <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 hover:bg-slate-700 rounded-lg">Veto (Last Honest)</button>
         </div>
     </div>
+</div>
 
     <hr class="border-slate-700 my-4" />
 
@@ -2417,94 +2416,24 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-// Recovery
-// Encode CallData
-  // NEW: Function to handle the common function dropdown selection
-      // ------------------------------------
-        // 1. Recovery Proposal Setup
-        // ------------------------------------
+// Reset/clear input fields that are not relevant to the new selection
+    $('recoveryProposed').value = ''; 
+    $('recoveryArgs').value = '';
 
-        // Dropdown Logic for common function selection
-        $('recoveryFunctionSelect').onchange = () => {
-            const selectedValue = $('recoveryFunctionSelect').value;
-            $('recoveryFunction').value = selectedValue;
-            
-            if (selectedValue.includes('(address)')) {
-                $('recoveryArgs').value = $('recoveryProposed').value.trim() || '0xProposedAddress';
-            } else if (selectedValue.includes('(address,bytes)')) {
-                $('recoveryArgs').value = ($('recoveryProposed').value.trim() || '0xNewLogicAddr') + ', 0x';
-            } else if (selectedValue.includes('swapAdmin(address,address)')) {
-                // Special case for swapAdmin
-                $('recoveryArgs').value = ($('recoveryProposed').value.trim() || '0xNewAdmin') + ', 0xOldAdmin';
-            } else if (selectedValue.includes('()')) {
-                $('recoveryArgs').value = '';
-            }
-        };
-
-
-        // Encode Calldata Button
-        $('encodeCallDataBtn').onclick = async () => {
-            try {
-                const fnSig = $('recoveryFunction').value.trim();
-                const args = $('recoveryArgs').value.trim().split(',').map(a => a.trim()).filter(Boolean);
-                
-                if (!fnSig) return alert("❌ Function signature is required.");
-                
-                const iface = new ethers.utils.Interface([`function ${fnSig}`]);
-                const fnName = fnSig.split('(')[0];
-
-                $('recoveryCallData').value = iface.encodeFunctionData(fnName, args);
-                alert("✅ Calldata encoded");
-            } catch (e) { alert("❌ Error encoding calldata. Check signature and arguments: " + (e.message || e)); }
-        };
-
-        // Transaction Handlers
-        $('proposeRecoveryBtn').onclick = async () => {
-            try {
-                showLoading();
-                const kind = parseInt($('recoveryKind').value, 10); 
-                const proposed = $('recoveryProposed').value.trim();
-                const target = $('recoveryCallTarget').value.trim();
-                const calldata = $('recoveryCallData').value.trim();
-                const tx = await contracts.council.proposeRecovery(kind, proposed, target, calldata);
-                await tx.wait();
-                alert("✅ Recovery proposed");
-                await refreshRecoveryState(); 
-            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-        };
-
-        $('approveRecoveryBtn').onclick = async () => {
-            try { 
-                showLoading(); 
-                const kind = parseInt($('recoveryKind').value, 10);
-                const tx = await contracts.council.approveRecovery(kind); 
-                await tx.wait(); 
-                alert("✅ Recovery approved");
-                await refreshRecoveryState(); 
-            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-        };
-
-        $('executeRecoveryBtn').onclick = async () => {
-            try { 
-                showLoading(); 
-                const kind = parseInt($('recoveryKind').value, 10);
-                const tx = await contracts.council.executeRecovery(kind); 
-                await tx.wait(); 
-                alert("✅ Recovery executed");
-                await refreshRecoveryState(); 
-            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-        };
-
-        $('vetoRecoveryBtn').onclick = async () => {
-            try { 
-                showLoading(); 
-                const kind = parseInt($('recoveryKind').value, 10);
-                const tx = await contracts.council.lastHonestHaltAndPromote(kind); 
-                await tx.wait(); 
-                alert("✅ Recovery vetoed");
-                await refreshRecoveryState();
-            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-        };
+    if (selectedValue.includes('swapAdmin(address,address)')) {
+        // swapAdmin(address newAdmin, address oldAdmin)
+        $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
+        $('recoveryProposed').value = '0xNewAdmin'; // Pre-fill proposed address with the first argument
+    } else if (selectedValue.includes('changeAdmin(address)')) {
+        // changeAdmin(address newAdmin)
+        $('recoveryArgs').value = '0xNewAdmin';
+        $('recoveryProposed').value = '0xNewAdmin'; // Pre-fill proposed address
+    } else if (selectedValue.includes('()')) {
+        // Functions with no arguments: pause(), unpause(), renounceOwnership()
+        $('recoveryArgs').value = '';
+    }
+    // Note: Calldata is only updated when the user clicks 'Encode CallData'
+};
 
         // ------------------------------------
         // 2. Recovery Status Read Logic
