@@ -2381,27 +2381,29 @@ $('clearLockBtn').onclick = async () => {
 // Recovery
 // Encode CallData
   // NEW: Function to handle the common function dropdown selection
+      // ------------------------------------
+        // 1. Recovery Proposal Setup
+        // ------------------------------------
+
+        // Dropdown Logic for common function selection
         $('recoveryFunctionSelect').onchange = () => {
             const selectedValue = $('recoveryFunctionSelect').value;
             $('recoveryFunction').value = selectedValue;
             
             if (selectedValue.includes('(address)')) {
-                // For functions like upgradeTo(address) or changeAdmin(address)
                 $('recoveryArgs').value = $('recoveryProposed').value.trim() || '0xProposedAddress';
             } else if (selectedValue.includes('(address,bytes)')) {
-                // For upgradeToAndCall(address,bytes)
                 $('recoveryArgs').value = ($('recoveryProposed').value.trim() || '0xNewLogicAddr') + ', 0x';
             } else if (selectedValue.includes('swapAdmin(address,address)')) {
-                // For swapAdmin(address,address)
+                // Special case for swapAdmin
                 $('recoveryArgs').value = ($('recoveryProposed').value.trim() || '0xNewAdmin') + ', 0xOldAdmin';
             } else if (selectedValue.includes('()')) {
-                // For functions like renounceOwnership()
                 $('recoveryArgs').value = '';
             }
         };
 
 
-        // Recovery Transaction Logic
+        // Encode Calldata Button
         $('encodeCallDataBtn').onclick = async () => {
             try {
                 const fnSig = $('recoveryFunction').value.trim();
@@ -2417,11 +2419,56 @@ $('clearLockBtn').onclick = async () => {
             } catch (e) { alert("❌ Error encoding calldata. Check signature and arguments: " + (e.message || e)); }
         };
 
-        // --- Transaction handlers (omitted for brevity, assume they call proposeRecovery) ---
-        // ...
+        // Transaction Handlers
+        $('proposeRecoveryBtn').onclick = async () => {
+            try {
+                showLoading();
+                const kind = parseInt($('recoveryKind').value, 10); 
+                const proposed = $('recoveryProposed').value.trim();
+                const target = $('recoveryCallTarget').value.trim();
+                const calldata = $('recoveryCallData').value.trim();
+                const tx = await contracts.council.proposeRecovery(kind, proposed, target, calldata);
+                await tx.wait();
+                alert("✅ Recovery proposed");
+                await refreshRecoveryState(); 
+            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+        };
+
+        $('approveRecoveryBtn').onclick = async () => {
+            try { 
+                showLoading(); 
+                const kind = parseInt($('recoveryKind').value, 10);
+                const tx = await contracts.council.approveRecovery(kind); 
+                await tx.wait(); 
+                alert("✅ Recovery approved");
+                await refreshRecoveryState(); 
+            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+        };
+
+        $('executeRecoveryBtn').onclick = async () => {
+            try { 
+                showLoading(); 
+                const kind = parseInt($('recoveryKind').value, 10);
+                const tx = await contracts.council.executeRecovery(kind); 
+                await tx.wait(); 
+                alert("✅ Recovery executed");
+                await refreshRecoveryState(); 
+            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+        };
+
+        $('vetoRecoveryBtn').onclick = async () => {
+            try { 
+                showLoading(); 
+                const kind = parseInt($('recoveryKind').value, 10);
+                const tx = await contracts.council.lastHonestHaltAndPromote(kind); 
+                await tx.wait(); 
+                alert("✅ Recovery vetoed");
+                await refreshRecoveryState();
+            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+        };
 
         // ------------------------------------
-        // CORRECTED Recovery Status Logic 
+        // 2. Recovery Status Read Logic
         // ------------------------------------
         const refreshRecoveryState = async () => {
             const kind = parseInt($('recoveryKindSelect').value, 10); 
@@ -2458,22 +2505,23 @@ $('clearLockBtn').onclick = async () => {
                 const expiryDate = new Date(expiry * 1000);
                 const now = Date.now();
                 
-                // Check if the proposal is inactive (expiry is 0 or less than current time)
+                // Check if the proposal is inactive
                 if (expiry === 0 || expiryBN.eq(0)) {
                     $('statusExpiry').innerText = "Not Active";
                     $('statusTarget').innerText = $('statusProposed').innerText = $('statusCalldata').innerText = "—";
+                } else if (executed) {
+                    $('statusExpiry').innerText = "Executed";
                 } else if (expiryDate.getTime() < now) {
                     $('statusExpiry').innerText = `Expired: ${expiryDate.toLocaleString()}`;
                 } else {
                     $('statusExpiry').innerText = expiryDate.toLocaleString();
                 }
                 
-                // Approval list is not available in the contract ABI
                 $('statusApprovedBy').innerText = "List of addresses is not directly available (Contract ABI only exposes the count).";
 
 
             } catch (e) { 
-                console.error(`❌ ERROR fetching Recovery State (Kind ${kind}). Check Contract/ABI/Arguments.`, e);
+                console.error(`❌ ERROR fetching Recovery State (Kind ${kind}).`, e);
                 
                 // Fallback for UI
                 $('statusTarget').innerText = "N/A (Error or Not Active)";
@@ -2486,14 +2534,14 @@ $('clearLockBtn').onclick = async () => {
             } finally { hideLoading(); }
         };
 
-                 
-        // Attach the function to the new refresh button and the kind selector change
+        // Attach event handlers
         $('refreshRecoveryBtn').onclick = refreshRecoveryState;
         $('recoveryKindSelect').onchange = refreshRecoveryState;
 
-
-        // ---------- Read-only DAO State ----------
-        $('refreshDaoBtn').onclick = async () => {
+        // ------------------------------------
+        // 3. DAO State Read Logic
+        // ------------------------------------
+        const refreshDaoState = async () => {
             try {
                 showLoading();
                 const dao = await contracts.council.dao();
@@ -2503,9 +2551,12 @@ $('clearLockBtn').onclick = async () => {
                 $('pendingDaoWindow').innerText = `Earliest: ${new Date(earliest*1000).toLocaleString()} | Deadline: ${new Date(deadline*1000).toLocaleString()}`;
             } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
         };
+        $('refreshDaoBtn').onclick = refreshDaoState;
 
-        // ---------- Read-only Guardian State ----------
-        $('refreshGuardiansBtn').onclick = async () => {
+        // ------------------------------------
+        // 4. Guardians State Read Logic
+        // ------------------------------------
+        const refreshGuardiansState = async () => {
             try {
                 showLoading();
                 const active = await contracts.council.getActiveGuardians();
@@ -2520,7 +2571,7 @@ $('clearLockBtn').onclick = async () => {
                 $('pendingStandbyWindow').innerText = `Earliest: ${new Date(psEarliest*1000).toLocaleString()} | Deadline: ${new Date(psDeadline*1000).toLocaleString()}`;
             } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
         };
-
+        $('refreshGuardiansBtn').onclick = refreshGuardiansState;      
 
 $('refreshLockBtn').onclick = async () => {
   try {
