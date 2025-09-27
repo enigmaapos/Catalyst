@@ -2538,41 +2538,34 @@ $('clearLockBtn').onclick = async () => {
         $('refreshRecoveryBtn').onclick = refreshRecoveryState;
         $('recoveryKindSelect').onchange = refreshRecoveryState;
 
-        // ------------------------------------
-        // 3. DAO State Read Logic
-        // ------------------------------------
-        const refreshDaoState = async () => {
-            try {
-                showLoading();
-                const dao = await contracts.council.dao();
-                const [pending, earliest, deadline] = await contracts.council.getPendingDAOState();
-                $('daoAddr').innerText = dao;
-                $('pendingDaoAddr').innerText = pending;
-                $('pendingDaoWindow').innerText = `Earliest: ${new Date(earliest*1000).toLocaleString()} | Deadline: ${new Date(deadline*1000).toLocaleString()}`;
-            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-        };
-        $('refreshDaoBtn').onclick = refreshDaoState;
+        $('refreshDaoBtn').onclick = async () => {
+  try {
+    showLoading();
+    const dao = await contracts.council.dao();
+    const [pending, earliest, deadline] = await contracts.council.getPendingDAOState();
+    $('daoAddr').innerText = dao;
+    $('pendingDaoAddr').innerText = pending;
+    $('pendingDaoWindow').innerText = `Earliest: ${new Date(earliest*1000).toLocaleString()} | Deadline: ${new Date(deadline*1000).toLocaleString()}`;
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
 
-        // ------------------------------------
-        // 4. Guardians State Read Logic
-        // ------------------------------------
-        const refreshGuardiansState = async () => {
-            try {
-                showLoading();
-                const active = await contracts.council.getActiveGuardians();
-                const standby = await contracts.council.getStandbyGuardians();
-                const [pa, paEarliest, paDeadline] = await contracts.council.getPendingActiveBatchState();
-                const [ps, psEarliest, psDeadline] = await contracts.council.getPendingStandbyBatchState();
-                $('activeGuardians').innerText = active.join("\n");
-                $('standbyGuardians').innerText = standby.join("\n");
-                $('pendingActiveGuardians').innerText = pa.join("\n");
-                $('pendingActiveWindow').innerText = `Earliest: ${new Date(paEarliest*1000).toLocaleString()} | Deadline: ${new Date(paDeadline*1000).toLocaleString()}`;
-                $('pendingStandbyGuardians').innerText = ps.join("\n");
-                $('pendingStandbyWindow').innerText = `Earliest: ${new Date(psEarliest*1000).toLocaleString()} | Deadline: ${new Date(psDeadline*1000).toLocaleString()}`;
-            } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-        };
-        $('refreshGuardiansBtn').onclick = refreshGuardiansState;      
-
+$('refreshGuardiansBtn').onclick = async () => {
+  try {
+    showLoading();
+    const active = await contracts.council.getActiveGuardians();
+    const standby = await contracts.council.getStandbyGuardians();
+    const [pa, paEarliest, paDeadline] = await contracts.council.getPendingActiveBatchState();
+    const [ps, psEarliest, psDeadline] = await contracts.council.getPendingStandbyBatchState();
+    $('activeGuardians').innerText = active.join("\n");
+    $('standbyGuardians').innerText = standby.join("\n");
+    $('pendingActiveGuardians').innerText = pa.join("\n");
+    $('pendingActiveWindow').innerText = `Earliest: ${new Date(paEarliest*1000).toLocaleString()} | Deadline: ${new Date(paDeadline*1000).toLocaleString()}`;
+    $('pendingStandbyGuardians').innerText = ps.join("\n");
+    $('pendingStandbyWindow').innerText = `Earliest: ${new Date(psEarliest*1000).toLocaleString()} | Deadline: ${new Date(psDeadline*1000).toLocaleString()}`;
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+	  
+        
 $('refreshLockBtn').onclick = async () => {
   try {
     showLoading();
