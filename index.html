@@ -776,6 +776,14 @@
                     <option value="0">Deployer (Kind 0)</option>
                     <option value="1">Admin (Kind 1)</option>
                 </select>
+				<select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
+                    <option value="">-- Select Common Function --</option>
+                    <option value="upgradeTo(address)">upgradeTo(address)</option>
+                    <option value="upgradeToAndCall(address,bytes)">upgradeToAndCall(address,bytes)</option>
+                    <option value="changeAdmin(address)">changeAdmin(address)</option>
+                    <option value="transferOwnership(address)">transferOwnership(address)</option>
+                    <option value="renounceOwnership()">renounceOwnership()</option>
+				</select>
                 <input id="recoveryProposed" placeholder="Proposed address (new logic contract or owner)" class="w-full p-2 rounded bg-black/20" />
                 <input id="recoveryCallTarget" placeholder="Target contract address (e.g., Proxy or Token)" class="w-full p-2 rounded bg-black/20" />
                 <input id="recoveryFunction" placeholder="Function Signature (e.g., upgradeTo(address))" class="w-full p-2 rounded bg-black/20" />
@@ -2411,6 +2419,24 @@ $('clearLockBtn').onclick = async () => {
 
 // Recovery
 // Encode CallData
+// NEW: Function to handle the common function dropdown selection
+        $('recoveryFunctionSelect').onchange = () => {
+            const selectedValue = $('recoveryFunctionSelect').value;
+            $('recoveryFunction').value = selectedValue;
+            
+            // Auto-populate recovery args based on function signature
+            if (selectedValue.includes('(address)')) {
+                // For functions like upgradeTo(address) or changeAdmin(address)
+                $('recoveryArgs').value = $('recoveryProposed').value.trim() || '0xProposedAddress';
+            } else if (selectedValue.includes('(address,bytes)')) {
+                // For upgradeToAndCall(address,bytes)
+                $('recoveryArgs').value = ($('recoveryProposed').value.trim() || '0xNewLogicAddr') + ', 0x';
+            } else if (selectedValue.includes('()')) {
+                // For functions like renounceOwnership()
+                $('recoveryArgs').value = '';
+            }
+        };
+	  
    // Recovery Transaction Logic
         $('encodeCallDataBtn').onclick = async () => {
             try {
