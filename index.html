@@ -2518,101 +2518,85 @@ $('vetoRecoveryBtn').onclick = async () => {
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-
 // ------------------------------------
-// 2. Recovery Status Read Logic (HARDCODED to Admin Kind 1)
+// 2. Recovery Status Read Logic (Admin Kind 1)
 // ------------------------------------
 const refreshRecoveryState = async () => {
-    // *** HARDCODE: Only query Admin Recovery (Kind 1) ***
-    const kind = 1; 
-    
-    // Set UI name to Admin since the selector is removed
+    const kind = 1; // Admin recovery is fixed
     $('recoveryKindName').innerText = 'Admin';
-    // *** END MODIFICATION ***
 
     try {
         showLoading();
-        
-        // ABI Order: [proposed, approvals, deadline, executed, callTarget, callData]
+
+        // Pull state from contract
         const [
-            proposedAddr, 
-            approvalsCountBN, 
-            expiryBN,         
-            executed, 
-            target,           
+            proposedAddr,
+            approvals,      // uint8
+            deadlineBN,     // uint256
+            executed,
+            target,
             calldata
-        ] = await contracts.council.getRecoveryState(kind); 
+        ] = await contracts.council.getRecoveryState(kind);
 
-        // Safely extract numbers from BigNumber objects
-        const expiry = expiryBN && typeof expiryBN.toNumber === 'function' ? expiryBN.toNumber() : 0; 
-        const approvalCount = approvalsCountBN && typeof approvalsCountBN.toNumber === 'function' ? approvalsCountBN.toNumber() : 0; 
-        
-        const guardianCount = 7; 
+        const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
+        const threshold = (await contracts.council.THRESHOLD()).toNumber();
 
-        // --- Determine Function Signature ---
+        // Convert values
+        const approvalCount = Number(approvals);
+        const deadline = deadlineBN.toNumber();
+
+        // --- Function signature detection ---
         let functionSignature = 'Unknown Function';
-        
-        // Calldata must be at least 4 bytes long to contain a selector
-        if (calldata && calldata.length >= 10) { 
-            const selector = calldata.slice(0, 10); // Get the first 4 bytes (8 chars + '0x')
-
+        if (calldata && calldata.length >= 10) {
+            const selector = calldata.slice(0, 10);
             if (selector === SWAP_ADMIN_SELECTOR) {
                 functionSignature = 'swapAdmin(address,address)';
-            } else if (selector === '0xba5258f1') { 
-                // We keep this check in case someone uses the input box for upgradeTo, but Admin 
-                // typically doesn't handle the upgrade function on the proxy.
-                functionSignature = 'upgradeTo(address)'; 
-            } else if (calldata.startsWith('0x38d8d32d')) {
+            } else if (selector === '0xba5258f1') {
+                functionSignature = 'upgradeTo(address)';
+            } else if (selector === '0x38d8d32d') {
                 functionSignature = 'pause()';
-            } else if (calldata.startsWith('0x8456cb59')) {
+            } else if (selector === '0x8456cb59') {
                 functionSignature = 'unpause()';
             }
-            // Add other common selectors here if needed
-            
-            // Append the signature to the calldata display for clarity
             $('statusCalldata').innerText = `Signature: ${functionSignature}\nCalldata: ${calldata}`;
-
         } else {
-            // Display raw calldata if no signature can be determined
             $('statusCalldata').innerText = calldata || '—';
         }
 
-        
+        // --- Populate UI ---
         $('statusTarget').innerText = target;
         $('statusProposed').innerText = proposedAddr;
-        
-        $('statusApprovals').innerText = `${approvalCount} / ${guardianCount}`;
+        $('statusApprovals').innerText = `${approvalCount} / ${guardianCount} (threshold: ${threshold})`;
 
-        const expiryDate = new Date(expiry * 1000);
-        const now = Date.now();
-        
-        // Check if the proposal is inactive
-        if (expiry === 0 || expiryBN.eq(0)) {
+        // Handle deadline
+        if (deadline === 0) {
             $('statusExpiry').innerText = "Not Active";
             $('statusTarget').innerText = $('statusProposed').innerText = $('statusCalldata').innerText = "—";
         } else if (executed) {
             $('statusExpiry').innerText = "Executed";
-        } else if (expiryDate.getTime() < now) {
-            $('statusExpiry').innerText = `Expired: ${expiryDate.toLocaleString()}`;
         } else {
-            $('statusExpiry').innerText = expiryDate.toLocaleString();
+            const expiryDate = new Date(deadline * 1000);
+            const now = Date.now();
+            if (expiryDate.getTime() < now) {
+                $('statusExpiry').innerText = `Expired: ${expiryDate.toLocaleString()}`;
+            } else {
+                $('statusExpiry').innerText = expiryDate.toLocaleString();
+            }
         }
-        
-        $('statusApprovedBy').innerText = "List of addresses is not directly available (Contract ABI only exposes the count).";
 
+        $('statusApprovedBy').innerText = "List of addresses is not directly available (only count exposed).";
 
-    } catch (e) { 
-        console.error(`❌ ERROR fetching Admin Recovery State.`, e);
-        
-        // Fallback for UI
+    } catch (e) {
+        console.error("❌ ERROR fetching Admin Recovery State", e);
         $('statusTarget').innerText = "N/A (Error or Not Active)";
         $('statusProposed').innerText = "N/A (Error or Not Active)";
         $('statusCalldata').innerText = "N/A (Error or Not Active)";
-        $('statusApprovals').innerText = "0 / 7";
+        $('statusApprovals').innerText = "0 / ?";
         $('statusExpiry').innerText = "Error";
         $('statusApprovedBy').innerText = "Error fetching data.";
-        
-    } finally { hideLoading(); }
+    } finally {
+        hideLoading();
+    }
 };
 	    
 // Attach event handlers
