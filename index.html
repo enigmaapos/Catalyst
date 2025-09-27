@@ -2500,65 +2500,69 @@ $('clearLockBtn').onclick = async () => {
         // NEW FUNCTIONALITY: Recovery Status
         // ------------------------------------
         const refreshRecoveryState = async () => {
-            try {
-                showLoading();
-                // Get the kind from the new read-only status selector
-                const kind = parseInt($('recoveryKindSelect').value, 10); 
+    try {
+        showLoading();
+        // Get the kind from the new read-only status selector
+        const kind = parseInt($('recoveryKindSelect').value, 10); 
+        $('recoveryKindName').innerText = $('recoveryKindSelect').options[$('recoveryKindSelect').selectedIndex].text.split(' ')[0];
 
-                // Update the title name
-                $('recoveryKindName').innerText = $('recoveryKindSelect').options[$('recoveryKindSelect').selectedIndex].text.split(' ')[0];
+        // --- 1. Fetch Recovery State using correct ABI output order ---
+        // ABI Order: [proposed, approvals, deadline, executed, callTarget, callData]
+        const [
+            proposedAddr, 
+            approvalsCountBN, 
+            expiryBN,         
+            executed, 
+            target,           
+            calldata
+        ] = await contracts.council.getRecoveryState(kind); // Correct function call
 
-                // --- 1. Fetch Recovery State (Target, Calldata, Expiry) ---
-                // NOTE: getRecoveryState is an assumed function based on contract structure
-                const [target, calldata, proposedAddr, expiryBN] = await contracts.council.getRecoveryState(kind);
-                const expiry = expiryBN.toNumber(); 
+        const expiry = expiryBN.toNumber(); 
+        const approvalCount = approvalsCountBN.toNumber(); // Get the count
 
-                // --- 2. Fetch Approvals ---
-                // NOTE: getRecoveryApprovals is an assumed function based on contract structure
-                const approvedGuardians = await contracts.council.getRecoveryApprovals(kind);
+        // Assuming GUARDIAN_COUNT (7) is correctly defined elsewhere
+        const guardianCount = 7; 
+
+        // --- 2. Update UI with correctly mapped variables ---
+        
+        // Recovery details
+        $('statusTarget').innerText = target;
+        $('statusProposed').innerText = proposedAddr;
+        $('statusCalldata').innerText = calldata;
+
+        // Expiry time
+        const expiryDate = new Date(expiry * 1000);
+        const now = Date.now();
+        
+        // Assuming expiryBN.eq(0) works for the Ethers BigNumber object
+        if (expiryBN.eq(0)) {
+            $('statusExpiry').innerText = "Not Active";
+            $('statusTarget').innerText = $('statusProposed').innerText = $('statusCalldata').innerText = "—";
+        } else if (expiryDate.getTime() < now) {
+            $('statusExpiry').innerText = `Expired: ${expiryDate.toLocaleString()}`;
+        } else {
+            $('statusExpiry').innerText = expiryDate.toLocaleString();
+        }
+        
+        // Approvals (Only count is available via getRecoveryState)
+        $('statusApprovals').innerText = `${approvalCount} / ${guardianCount}`;
+
+        // Approved guardians list: Set to N/A as the function does not exist
+        $('statusApprovedBy').innerText = "List of addresses is not directly available (Function 'getRecoveryApprovals' is missing in the ABI).";
+
+
+    } catch (e) { 
+        console.error("Error refreshing recovery state:", e);
+        // Fallback for errors
+        $('statusTarget').innerText = "N/A (Error or Not Active)";
+        $('statusProposed').innerText = "N/A (Error or Not Active)";
+        $('statusCalldata').innerText = "N/A (Error or Not Active)";
+        $('statusApprovals').innerText = "0 / 7";
+        $('statusExpiry').innerText = "Error";
+        $('statusApprovedBy').innerText = "Error fetching data.";
+    } finally { hideLoading(); }
+};
                 
-                // --- 3. Update UI ---
-                
-                // Recovery details
-                $('statusTarget').innerText = target;
-                $('statusProposed').innerText = proposedAddr;
-                $('statusCalldata').innerText = calldata;
-
-                // Expiry time
-                const expiryDate = new Date(expiry * 1000);
-                const now = Date.now();
-                if (expiryBN.eq(0)) {
-                    $('statusExpiry').innerText = "Not Active";
-                    $('statusTarget').innerText = $('statusProposed').innerText = $('statusCalldata').innerText = "—";
-                } else if (expiryDate.getTime() < now) {
-                    $('statusExpiry').innerText = `Expired: ${expiryDate.toLocaleString()}`;
-                } else {
-                    $('statusExpiry').innerText = expiryDate.toLocaleString();
-                }
-                
-                // Approvals
-                const approvalCount = approvedGuardians.length;
-                const guardianCount = 7; 
-                $('statusApprovals').innerText = `${approvalCount} / ${guardianCount}`;
-
-                // Approved guardians list
-                if (approvedGuardians.length > 0) {
-                    $('statusApprovedBy').innerText = approvedGuardians.join("\n");
-                } else {
-                    $('statusApprovedBy').innerText = "None yet.";
-                }
-
-            } catch (e) { 
-                console.error("Error refreshing recovery state:", e);
-                $('statusTarget').innerText = "N/A (Error or Not Active)";
-                $('statusProposed').innerText = "N/A (Error or Not Active)";
-                $('statusCalldata').innerText = "N/A (Error or Not Active)";
-                $('statusApprovals').innerText = "0 / 7";
-                $('statusExpiry').innerText = "Error";
-                $('statusApprovedBy').innerText = "Error fetching data.";
-            } finally { hideLoading(); }
-        };
-
         // Attach the function to the new refresh button and the kind selector change
         $('refreshRecoveryBtn').onclick = refreshRecoveryState;
         $('recoveryKindSelect').onchange = refreshRecoveryState;
