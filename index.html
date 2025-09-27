@@ -2416,35 +2416,112 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-// Reset/clear input fields that are not relevant to the new selection
+// ------------------------------------
+// GLOBAL CONSTANTS
+// ------------------------------------
+const SWAP_ADMIN_SELECTOR = '0x51480f81'; // bytes4(keccak256("swapAdmin(address,address)"))
+
+
+// ------------------------------------
+// 1. Recovery Proposal Setup Logic
+// ------------------------------------
+// Dropdown Logic for common function selection (UPDATED for Admin-only functions)
+$('recoveryFunctionSelect').onchange = () => {
+    const selectedValue = $('recoveryFunctionSelect').value;
+    $('recoveryFunction').value = selectedValue;
+    
+    // Clear proposed and args fields on new selection
     $('recoveryProposed').value = ''; 
     $('recoveryArgs').value = '';
 
     if (selectedValue.includes('swapAdmin(address,address)')) {
         // swapAdmin(address newAdmin, address oldAdmin)
         $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
-        $('recoveryProposed').value = '0xNewAdmin'; // Pre-fill proposed address with the first argument
+        $('recoveryProposed').value = '0xNewAdmin'; // Proposed address is typically the new admin
     } else if (selectedValue.includes('changeAdmin(address)')) {
         // changeAdmin(address newAdmin)
         $('recoveryArgs').value = '0xNewAdmin';
-        $('recoveryProposed').value = '0xNewAdmin'; // Pre-fill proposed address
+        $('recoveryProposed').value = '0xNewAdmin';
     } else if (selectedValue.includes('()')) {
         // Functions with no arguments: pause(), unpause(), renounceOwnership()
         $('recoveryArgs').value = '';
     }
-    // Note: Calldata is only updated when the user clicks 'Encode CallData'
 };
 
-        // ------------------------------------
-        // 2. Recovery Status Read Logic
-        // ------------------------------------
-        // ... [Existing Calldata and Transaction Handlers above this line] ...
+
+// Encode Calldata Button
+$('encodeCallDataBtn').onclick = async () => {
+    try {
+        const fnSig = $('recoveryFunction').value.trim();
+        const args = $('recoveryArgs').value.trim().split(',').map(a => a.trim()).filter(Boolean);
+        
+        if (!fnSig) return alert("❌ Function signature is required.");
+        
+        // Requires ethers.js to be loaded
+        const iface = new ethers.utils.Interface([`function ${fnSig}`]);
+        const fnName = fnSig.split('(')[0];
+
+        $('recoveryCallData').value = iface.encodeFunctionData(fnName, args);
+        alert("✅ Calldata encoded");
+    } catch (e) { alert("❌ Error encoding calldata. Check signature and arguments: " + (e.message || e)); }
+};
+
+$('proposeRecoveryBtn').onclick = async () => {
+    try {
+        showLoading();
+        const kind = parseInt($('recoveryKind').value, 10); 
+        const proposed = $('recoveryProposed').value.trim();
+        const target = $('recoveryCallTarget').value.trim();
+        const calldata = $('recoveryCallData').value.trim();
+        
+        // Add basic validation for Admin kind (callTarget is mandatory)
+        if (!target || target === '0x') return alert("❌ Target contract (CataERC20 Proxy) is required.");
+        if (!calldata || calldata.length < 10) return alert("❌ Calldata must be encoded.");
+
+        const tx = await contracts.council.proposeRecovery(kind, proposed, target, calldata);
+        await tx.wait();
+        alert("✅ Recovery proposed");
+        await refreshRecoveryState(); 
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+$('approveRecoveryBtn').onclick = async () => {
+    try { 
+        showLoading(); 
+        const kind = parseInt($('recoveryKind').value, 10);
+        const tx = await contracts.council.approveRecovery(kind); 
+        await tx.wait(); 
+        alert("✅ Recovery approved");
+        await refreshRecoveryState(); 
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+$('executeRecoveryBtn').onclick = async () => {
+    try { 
+        showLoading(); 
+        const kind = parseInt($('recoveryKind').value, 10);
+        const tx = await contracts.council.executeRecovery(kind); 
+        await tx.wait(); 
+        alert("✅ Recovery executed");
+        await refreshRecoveryState(); 
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+$('vetoRecoveryBtn').onclick = async () => {
+    try { 
+        showLoading(); 
+        const kind = parseInt($('recoveryKind').value, 10);
+        const tx = await contracts.council.lastHonestHaltAndPromote(kind); 
+        await tx.wait(); 
+        alert("✅ Recovery vetoed");
+        await refreshRecoveryState();
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
 
 // ------------------------------------
-// 2. Recovery Status Read Logic (UPDATED FOR ADMIN KIND ONLY)
+// 2. Recovery Status Read Logic (HARDCODED to Admin Kind 1)
 // ------------------------------------
-const SWAP_ADMIN_SELECTOR = '0x51480f81'; // bytes4(keccak256("swapAdmin(address,address)"))
-
 const refreshRecoveryState = async () => {
     // *** HARDCODE: Only query Admin Recovery (Kind 1) ***
     const kind = 1; 
@@ -2482,9 +2559,15 @@ const refreshRecoveryState = async () => {
             if (selector === SWAP_ADMIN_SELECTOR) {
                 functionSignature = 'swapAdmin(address,address)';
             } else if (selector === '0xba5258f1') { 
+                // We keep this check in case someone uses the input box for upgradeTo, but Admin 
+                // typically doesn't handle the upgrade function on the proxy.
                 functionSignature = 'upgradeTo(address)'; 
+            } else if (calldata.startsWith('0x38d8d32d')) {
+                functionSignature = 'pause()';
+            } else if (calldata.startsWith('0x8456cb59')) {
+                functionSignature = 'unpause()';
             }
-            // You can add more known selectors here
+            // Add other common selectors here if needed
             
             // Append the signature to the calldata display for clarity
             $('statusCalldata').innerText = `Signature: ${functionSignature}\nCalldata: ${calldata}`;
@@ -2494,7 +2577,6 @@ const refreshRecoveryState = async () => {
             $('statusCalldata').innerText = calldata || '—';
         }
 
-        // --- Update UI with retrieved data ---
         
         $('statusTarget').innerText = target;
         $('statusProposed').innerText = proposedAddr;
@@ -2534,7 +2616,7 @@ const refreshRecoveryState = async () => {
 };
 	    
 // Attach event handlers
-$('refreshRecoveryBtn').onclick = refreshRecoveryState;
+$('refreshRecoveryBtn').onclick = refreshRecoveryState; 
 
         $('refreshDaoBtn').onclick = async () => {
   try {
