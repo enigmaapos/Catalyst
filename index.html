@@ -1287,15 +1287,15 @@ async function cataSwapAdmin() {
 }
 
 // Transparency (view supply and roles)
-// Global constant for the Admin Role in CataERC20Upgradeable
-const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
+// NOTE: Ensure CATA_TOKEN_ADDRESS, contracts.cata, and provider are defined globally.
+// This requires the provider to be set in your connectWallet function.
+const UUPS_ADMIN_SLOT = '0xb53127684a568b3173ae13b9f8a6016e2439c27d70c4ba5e8006e0c621cf298a'; 
 
-// Transparency (view supply and roles)
 async function fetchTransparency() {
   try {
-    if (!contracts.cata) {
+    if (!contracts.cata || !provider) {
       await attachContractsIfSet();
-      if (!contracts.cata) return alert('Set CATA contract address first');
+      if (!contracts.cata || !provider) return alert('Set CATA contract address and connect wallet first');
     }
 
     showLoading("Fetching transparency...");
@@ -1305,13 +1305,20 @@ async function fetchTransparency() {
     const maxSupply = await contracts.cata.MAX_SUPPLY();
     const remainingMintable = maxSupply.sub(totalSupply);
 
-    // 2. Fetch Key Roles (Admin and Council)
-    // ❌ FIX: CataERC20 uses AccessControl, so we use getRoleMember for the Admin Role.
-    const adminAddress = await contracts.cata.getRoleMember(DEFAULT_ADMIN_ROLE, 0); 
+    // 2. Fetch Key Roles (The simple, correct way)
     
-    // The Council address is correctly exposed via a public view function (from your contract source)
+    // ✅ Council Address: Directly exposed as a public variable/view function
     const councilAddress = await contracts.cata.council(); 
-
+    
+    // ❌ CATA Admin Address: Must be pulled directly from the proxy's storage slot (UUPS pattern)
+    // This is the address that controls upgrade and DEFAULT_ADMIN_ROLE
+    let adminAddressRaw = await provider.getStorageAt(
+        CATA_TOKEN_ADDRESS,
+        UUPS_ADMIN_SLOT
+    );
+    // Slice off the '0x' and the padding to get the 40-character address
+    const adminAddress = ethers.utils.getAddress(adminAddressRaw.slice(26));
+    
     // --- UI Update ---
     
     // Update Role Addresses
@@ -1323,18 +1330,12 @@ async function fetchTransparency() {
     $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
     $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
   } catch (e) {
-    // Check if the error is due to getRoleMember(0, 0) returning address(0) for an empty slot
-    if (e.message.includes('call revert exception') || e.message.includes('getRoleMember')) {
-         // Fallback logic if getRoleMember(0) fails, sometimes used to check for no Admin
-         $('cataAdminAddress').innerText = "0x... (Check role members)";
-    }
     log('fetchTransparency err', e?.message || e);
     alert(`Transparency fetch failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
 }
-
 
 
 /********************************************************************
