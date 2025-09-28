@@ -311,7 +311,6 @@
 	<div class="p-4 rounded-xl bg-slate-800 text-slate-200 space-y-4">
   <div class="text-lg font-bold text-slate-100">⚡ CATA Actions</div>
 
-  <!-- Burn -->
   <div>
     <input id="cataBurnAmt" placeholder="Amount to burn" class="w-full p-2 rounded bg-black/20 text-sm" />
     <button id="cataBurnBtn" class="mt-2 w-full p-2 bg-red-600 hover:bg-red-500 rounded">
@@ -319,7 +318,6 @@
     </button>
   </div>
 
-  <!-- Admin-only: Pause/Unpause -->
   <div class="pt-4 border-t border-slate-700">
     <div class="text-xs text-slate-400 mb-1">Admin Controls</div>
     <div class="flex gap-2">
@@ -332,7 +330,6 @@
     </div>
   </div>
 
-  <!-- Council-only: Swap Admin -->
   <div class="pt-4 border-t border-slate-700">
     <div class="text-xs text-slate-400 mb-1">Council Actions</div>
     <div class="flex gap-2">
@@ -344,10 +341,18 @@
     </button>
   </div>
 
-  <!-- Transparency -->
   <div class="pt-4 border-t border-slate-700">
-    <div class="text-xs text-slate-400 mb-1">Transparency</div>
+    <div class="text-xs text-slate-400 mb-1">Transparency & Key Roles</div>
     <div class="flex flex-col gap-1">
+      
+      <div class="p-2 rounded bg-black/20 text-sm">
+        CATA Admin: <span id="cataAdminAddress" class="font-mono text-purple-400 break-all">…</span>
+      </div>
+      
+      <div class="p-2 rounded bg-black/20 text-sm">
+        CATA Council: <span id="cataCouncilAddress" class="font-mono text-cyan-400 break-all">…</span>
+      </div>
+
       <div class="p-2 rounded bg-black/20 text-sm">
         Remaining Mintable: <span id="cataRemainingMintable" class="font-mono text-green-400">…</span>
       </div>
@@ -362,7 +367,7 @@
       🔍 Refresh Transparency
     </button>
   </div>
-</div>
+	</div>
 </section>
 
     <!-- Collection Registration -->
@@ -1284,19 +1289,35 @@ async function cataSwapAdmin() {
   }
 }
 
-// Transparency (view supply)
+// Transparency (view supply and roles)
 async function fetchTransparency() {
   try {
     if (!contracts.cata) {
-      await attachContractsIfSet();
+      // NOTE: This assumes attachContractsIfSet() works to initialize contracts.cata
+      await attachContractsIfSet(); 
       if (!contracts.cata) return alert('Set CATA contract address first');
     }
 
     showLoading("Fetching transparency...");
+    
+    // 1. Fetch Supply Metrics
     const totalSupply = await contracts.cata.totalSupply();
     const maxSupply = await contracts.cata.MAX_SUPPLY();
     const remainingMintable = maxSupply.sub(totalSupply);
 
+    // 2. Fetch Key Roles (Admin and Council)
+    // The UUPS admin role is the contract's primary admin/owner.
+    const adminAddress = await contracts.cata.owner(); 
+    // The Council address is the one authorized to call swapAdmin()
+    const councilAddress = await contracts.cata.council(); 
+
+    // --- UI Update ---
+    
+    // Update Role Addresses
+    $('cataAdminAddress').innerText = adminAddress;
+    $('cataCouncilAddress').innerText = councilAddress;
+
+    // Update Supply Metrics
     $('cataTotalSupply').innerText = ethers.utils.formatUnits(totalSupply, 18) + " CATA";
     $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
     $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
@@ -1307,6 +1328,7 @@ async function fetchTransparency() {
     hideLoading();
   }
 }
+
 
 /********************************************************************
  * Loading Indicator
