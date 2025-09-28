@@ -1290,11 +1290,14 @@ async function cataSwapAdmin() {
 }
 
 // Transparency (view supply and roles)
+// Global constant for the Admin Role in CataERC20Upgradeable
+const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+// Transparency (view supply and roles)
 async function fetchTransparency() {
   try {
     if (!contracts.cata) {
-      // NOTE: This assumes attachContractsIfSet() works to initialize contracts.cata
-      await attachContractsIfSet(); 
+      await attachContractsIfSet();
       if (!contracts.cata) return alert('Set CATA contract address first');
     }
 
@@ -1306,9 +1309,10 @@ async function fetchTransparency() {
     const remainingMintable = maxSupply.sub(totalSupply);
 
     // 2. Fetch Key Roles (Admin and Council)
-    // The UUPS admin role is the contract's primary admin/owner.
-    const adminAddress = await contracts.cata.owner(); 
-    // The Council address is the one authorized to call swapAdmin()
+    // ❌ FIX: CataERC20 uses AccessControl, so we use getRoleMember for the Admin Role.
+    const adminAddress = await contracts.cata.getRoleMember(DEFAULT_ADMIN_ROLE, 0); 
+    
+    // The Council address is correctly exposed via a public view function (from your contract source)
     const councilAddress = await contracts.cata.council(); 
 
     // --- UI Update ---
@@ -1322,12 +1326,18 @@ async function fetchTransparency() {
     $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
     $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
   } catch (e) {
+    // Check if the error is due to getRoleMember(0, 0) returning address(0) for an empty slot
+    if (e.message.includes('call revert exception') || e.message.includes('getRoleMember')) {
+         // Fallback logic if getRoleMember(0) fails, sometimes used to check for no Admin
+         $('cataAdminAddress').innerText = "0x... (Check role members)";
+    }
     log('fetchTransparency err', e?.message || e);
     alert(`Transparency fetch failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
 }
+
 
 
 /********************************************************************
