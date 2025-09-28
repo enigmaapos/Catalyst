@@ -1014,18 +1014,10 @@
     council: "0xa23ee1856f84D55519054366aC78F724534cE772"
   };
 
-	  // ======================================
-// 0. CONFIGURATION & GLOBAL VARIABLES
-// ======================================
-
-// 🚨 FIX: Ensure CATA_TOKEN_ADDRESS is defined globally
-const COUNCIL_ADDRESS = DEFAULT_ADDRS.council;
-const CATA_TOKEN_ADDRESS = DEFAULT_ADDRS.cata; // <-- NOW CORRECTLY DEFINED!
 	  
 	  // App state
 	  let provider = null, signer = null, userAddr = null;
   let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null };
-	  let currentAccount = null;
 	  
 const $ = id => document.getElementById(id);
   function log(...args){
@@ -1296,14 +1288,10 @@ async function cataSwapAdmin() {
 }
 
 // Transparency (view supply and roles)
-// Define the specific storage slot for the UUPS Admin address
-const UUPS_ADMIN_SLOT = '0xb53127684a568b3173ae13b9f8a6016e2439c27d70c4ba5e8006e0c621cf298a'; 
-
 async function fetchTransparency() {
   try {
-    // Check for initialization (assuming attachContractsIfSet handles contracts.cata and global provider)
+    // Check for initialization
     if (!contracts.cata || !provider) {
-      // You should call your initialization function here if not already done
       if (!contracts.cata) return alert('Please connect wallet and set CATA contract address first');
     }
 
@@ -1314,16 +1302,13 @@ async function fetchTransparency() {
     const maxSupply = await contracts.cata.MAX_SUPPLY();
     const remainingMintable = maxSupply.sub(totalSupply);
 
-    // 2. Fetch Council Address (Public view function on the contract)
+    // 2. Fetch Key Roles (The simple, correct way using the new view function)
+    
+    // ✅ Council Address: Still using the simple view function
     const councilAddress = await contracts.cata.council(); 
     
-    // 3. Fetch Admin Address (Using the CATA_TOKEN_ADDRESS and the UUPS storage slot)
-    let adminAddressRaw = await provider.getStorageAt(
-        CATA_TOKEN_ADDRESS, // <-- This now correctly resolves to "0x0417..."
-        UUPS_ADMIN_SLOT
-    );
-    // Convert the 32-byte slot data to a 20-byte address
-    const adminAddress = ethers.utils.getAddress(adminAddressRaw.slice(26));
+    // ✅ ADMIN Address: Using the new, reliable contract view function
+    const adminAddress = await contracts.cata.getAdmin(); 
     
     // --- UI Update ---
     
@@ -1333,13 +1318,12 @@ async function fetchTransparency() {
     $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
     $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
   } catch (e) {
-    // Display a more specific error for debugging
     log('fetchTransparency err', e?.message || e);
     alert(`Transparency fetch failed: ${e.message || e}. Check the console.`);
   } finally {
     hideLoading();
   }
-}
+		}
 
 /********************************************************************
  * Loading Indicator
