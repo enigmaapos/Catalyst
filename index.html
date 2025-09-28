@@ -1313,7 +1313,7 @@ async function fetchTransparency() {
     // ❌ CATA Admin Address: Must be pulled directly from the proxy's storage slot (UUPS pattern)
     // This is the address that controls upgrade and DEFAULT_ADMIN_ROLE
     let adminAddressRaw = await provider.getStorageAt(
-        CATA_TOKEN_ADDRESS,
+        cata,
         UUPS_ADMIN_SLOT
     );
     // Slice off the '0x' and the padding to get the 40-character address
