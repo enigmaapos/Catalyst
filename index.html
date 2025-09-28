@@ -761,34 +761,38 @@
     <h1 class="text-2xl font-bold mb-4">BatchGuardianCouncil Console</h1>
 
     <h2 class="text-xl font-semibold mb-2">1. New Recovery Request (Admin Only)</h2>
-<div class="p-4 rounded-lg bg-slate-800 shadow space-y-3">
-    <h3 class="text-sm font-semibold mb-1">Request Parameters</h3>
-    <div class="space-y-2 text-sm">
-        
-        <select id="recoveryKind" class="w-full p-2 rounded bg-black/20" disabled>
-            <option value="1" selected>Admin (Kind 1) [Hardcoded]</option>
-        </select>
-        
-        <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
-            <option value="" disabled selected>-- Select Admin Function --</option>
-            <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
-            <option value="changeAdmin(address)">changeAdmin(address)</option>
-            <option value="pause()">pause()</option>
-            <option value="unpause()">unpause()</option>
+    <div class="p-4 rounded-lg bg-slate-800 shadow space-y-3">
+        <h3 class="text-sm font-semibold mb-1">Request Parameters</h3>
+        <div class="space-y-2 text-sm">
+            
+            <select id="recoveryKind" class="w-full p-2 rounded bg-black/20" disabled>
+                <option value="1" selected>Admin (Kind 1) [Hardcoded]</option>
+            </select>
+            
+            <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
+                <option value="" disabled selected>-- Select Admin Function --</option>
+                <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
+                <option value="changeAdmin(address)">changeAdmin(address)</option>
+                <option value="pause()">pause()</option>
+                <option value="unpause()">unpause()</option>
             </select>
 
-        <input id="recoveryProposed" placeholder="Proposed address (e.g., new Admin)" class="w-full p-2 rounded bg-black/20" />
-        <input id="recoveryCallTarget" placeholder="Target contract address (e.g., CataERC20 Proxy)" class="w-full p-2 rounded bg-black/20" />
-        <input id="recoveryFunction" placeholder="Function Signature (e.g., swapAdmin(address,address))" class="w-full p-2 rounded bg-black/20" />
-        <input id="recoveryArgs" placeholder="Arguments (comma-separated, e.g., 0xNewAdmin, 0xOldAdmin)" class="w-full p-2 rounded bg-black/20" />
-        <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
-        <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">Encode CallData</button>
-        <div class="flex gap-2 mt-2">
-            <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 hover:bg-red-700 rounded-lg">Propose</button>
-            <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 hover:bg-orange-700 rounded-lg">Approve</button>
-            <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 hover:bg-green-700 rounded-lg">Execute</button>
-            <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 hover:bg-slate-700 rounded-lg">Veto (Last Honest)</button>
+            <input id="recoveryProposed" placeholder="Proposed address (e.g., new Admin)" class="w-full p-2 rounded bg-black/20" />
+            <input id="recoveryCallTarget" placeholder="Target contract address (e.g., CataERC20 Proxy)" class="w-full p-2 rounded bg-black/20" />
+            <input id="recoveryFunction" placeholder="Function Signature (e.g., swapAdmin(address,address))" class="w-full p-2 rounded bg-black/20" />
+            <input id="recoveryArgs" placeholder="Arguments (comma-separated, e.g., 0xNewAdmin, 0xOldAdmin)" class="w-full p-2 rounded bg-black/20" />
+            <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
+            
+            <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">Encode CallData</button>
+            
+            <div class="flex gap-2 mt-2">
+                <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 hover:bg-red-700 rounded-lg">Propose</button>
+                <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 hover:bg-orange-700 rounded-lg">Approve</button>
+                <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 hover:bg-green-700 rounded-lg">Execute</button>
+                <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 hover:bg-slate-700 rounded-lg">Veto (Last Honest)</button>
+            </div>
         </div>
+	</div>
 		
 		  <hr class="border-slate-700 my-2" />
 
@@ -803,52 +807,46 @@
     <hr class="border-slate-700 my-4" />
 
     <h2 class="text-xl font-semibold mb-2">2. Live Admin Recovery Status (Kind 1)</h2>
+    <div class="p-4 rounded-lg bg-red-900/40 shadow text-sm space-y-3">
+        <h3 class="font-semibold text-lg text-red-300">
+            <span id="recoveryKindName">Admin</span> Proposal Details
+        </h3>
+        
+        <div>
+            <div class="text-slate-400 text-xs">Target Contract (Call Target)</div>
+            <div id="statusTarget" class="font-mono text-slate-100 break-all">—</div>
+        </div>
+        
+        <div>
+            <div class="text-slate-400 text-xs">Proposed New Address (Owner/Admin/Logic)</div>
+            <div id="statusProposed" class="font-mono text-slate-100 break-all">—</div>
+        </div>
 
-<!-- Live Admin Recovery Status -->
-<div class="p-4 rounded-lg bg-red-900/40 shadow text-sm space-y-3">
-  <h3 class="font-semibold text-lg text-red-300">
-    <span id="recoveryKindName">Admin</span> Proposal Details
-  </h3>
+        <div>
+            <div class="text-slate-400 text-xs">Calldata & Function Signature</div>
+            <pre id="statusCalldata" class="font-mono text-slate-100 break-all h-20 overflow-y-auto p-1 bg-black/20 rounded">—</pre>
+        </div>
 
-  <div>
-    <div class="text-slate-400 text-xs">Target Contract (Call Target)</div>
-    <div id="statusTarget" class="font-mono text-slate-100 break-all">—</div>
-  </div>
-
-  <div>
-    <div class="text-slate-400 text-xs">Proposed New Address (Owner/Admin/Logic)</div>
-    <div id="statusProposed" class="font-mono text-slate-100 break-all">—</div>
-  </div>
-
-  <div>
-    <div class="text-slate-400 text-xs">Calldata & Function Signature</div>
-    <pre id="statusCalldata" class="font-mono text-slate-100 break-all h-20 overflow-y-auto p-1 bg-black/20 rounded">—</pre>
-  </div>
-
-  <div class="flex justify-between items-center bg-slate-800 p-2 rounded">
-    <div>
-      <div class="text-slate-400 text-xs">Approvals</div>
-      <div id="statusApprovals" class="font-bold text-3xl text-yellow-300">0 / ?</div>
+        <div class="flex justify-between items-center bg-slate-800 p-2 rounded">
+            <div>
+                <div class="text-slate-400 text-xs">Approvals</div>
+                <div id="statusApprovals" class="font-bold text-3xl text-yellow-300">0 / ?</div>
+            </div>
+            <div>
+                <div class="text-slate-400 text-xs">Status / Expiration</div>
+                <div id="statusExpiry" class="font-mono text-lg text-slate-100">—</div>
+            </div>
+        </div>
+        
+        <div class="mt-2">
+            <div class="text-slate-400 text-xs">Approved By</div>
+            <pre id="statusApprovedBy" class="font-mono text-slate-100 whitespace-pre-wrap h-20 overflow-y-auto">—</pre>
+        </div>
     </div>
-    <div>
-      <div class="text-slate-400 text-xs">Status / Expiration</div>
-      <div id="statusExpiry" class="font-mono text-lg text-slate-100">—</div>
-    </div>
-  </div>
-
-  <div class="mt-2">
-    <div class="text-slate-400 text-xs">Approved By</div>
-    <pre id="statusApprovedBy" class="font-mono text-slate-100 whitespace-pre-wrap h-20 overflow-y-auto">—</pre>
-  </div>
-</div>
-
-<!-- Refresh Button -->
-<button
-  id="refreshRecoveryBtn"
-  class="mt-3 w-full p-2 bg-red-700 hover:bg-red-600 rounded-lg text-sm"
->
-  🔄 Refresh Recovery Status
-</button>
+    
+    <button id="refreshRecoveryBtn" class="mt-3 w-full p-2 bg-red-700 hover:bg-red-600 rounded-lg text-sm">
+        🔄 Refresh Recovery Status
+    </button>
         
         <hr class="border-slate-700 my-4" />
 
@@ -2413,16 +2411,72 @@ $('activateStandbyBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
+
+// ------------------------------------
+// 2. Recovery Status Read Logic (Admin Kind 1)
+// ------------------------------------
+// NOTE: This code assumes the 'ethers' library is loaded and 
+// 'contracts', '$', 'showLoading', and 'hideLoading' are defined globally.
+
 // ------------------------------------
 // GLOBAL CONSTANTS
 // ------------------------------------
 const SWAP_ADMIN_SELECTOR = '0x51480f81'; // bytes4(keccak256("swapAdmin(address,address)"))
+const UPGRADE_TO_SELECTOR = '0xba5258f1'; // bytes4(keccak256("upgradeTo(address)"))
+const PAUSE_SELECTOR = '0x38d8d32d';     // bytes4(keccak256("pause()"))
+const UNPAUSE_SELECTOR = '0x8456cb59';   // bytes4(keccak256("unpause()"))
 
 
 // ------------------------------------
-// 1. Recovery Proposal Setup Logic
+// HELPER FUNCTIONS (Read from Contract)
 // ------------------------------------
-// Dropdown Logic for common function selection (UPDATED for Admin-only functions)
+
+/** Decodes the raw recovery state from the contract into a readable object. */
+async function getRecoveryStateDecoded(kind) {
+    // ABI Order: [proposed, approvals, deadline, executed, callTarget, callData]
+    const [
+        proposed,
+        approvalsBN,    // uint8
+        deadlineBN,     // uint256
+        executed,
+        callTarget,
+        callData
+    ] = await contracts.council.getRecoveryState(kind);
+
+    return {
+        kind,
+        proposed,
+        approvals: Number(approvalsBN),
+        deadline: deadlineBN.toNumber(),
+        executed,
+        callTarget,
+        callData
+    };
+}
+
+/** Fetches the list of guardian addresses that have approved the given kind. */
+async function getApprovedGuardians(kind) {
+    try {
+        const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
+        const approved = [];
+
+        for (let i = 0; i < guardianCount; i++) {
+            const guardian = await contracts.council.GUARDIAN_LIST(i);
+            const has = await contracts.council.hasApproved(kind, guardian);
+            if (has) approved.push(guardian);
+        }
+        return approved;
+    } catch (e) {
+        console.error(`❌ Error fetching guardian approvals for Kind ${kind}`, e);
+        return [];
+    }
+}
+
+
+// ------------------------------------
+// 1. Recovery Proposal Setup Logic (Handlers)
+// ------------------------------------
+// Dropdown Logic for common function selection
 $('recoveryFunctionSelect').onchange = () => {
     const selectedValue = $('recoveryFunctionSelect').value;
     $('recoveryFunction').value = selectedValue;
@@ -2432,19 +2486,16 @@ $('recoveryFunctionSelect').onchange = () => {
     $('recoveryArgs').value = '';
 
     if (selectedValue.includes('swapAdmin(address,address)')) {
-        // swapAdmin(address newAdmin, address oldAdmin)
         $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
-        $('recoveryProposed').value = '0xNewAdmin'; // Proposed address is typically the new admin
+        $('recoveryProposed').value = '0xNewAdmin'; 
     } else if (selectedValue.includes('changeAdmin(address)')) {
-        // changeAdmin(address newAdmin)
         $('recoveryArgs').value = '0xNewAdmin';
         $('recoveryProposed').value = '0xNewAdmin';
     } else if (selectedValue.includes('()')) {
-        // Functions with no arguments: pause(), unpause(), renounceOwnership()
+        // pause(), unpause()
         $('recoveryArgs').value = '';
     }
 };
-
 
 // Encode Calldata Button
 $('encodeCallDataBtn').onclick = async () => {
@@ -2454,7 +2505,6 @@ $('encodeCallDataBtn').onclick = async () => {
         
         if (!fnSig) return alert("❌ Function signature is required.");
         
-        // Requires ethers.js to be loaded
         const iface = new ethers.utils.Interface([`function ${fnSig}`]);
         const fnName = fnSig.split('(')[0];
 
@@ -2463,16 +2513,18 @@ $('encodeCallDataBtn').onclick = async () => {
     } catch (e) { alert("❌ Error encoding calldata. Check signature and arguments: " + (e.message || e)); }
 };
 
+
+// Transaction Handlers (HARDCODED kind = 1 for submission)
+
 $('proposeRecoveryBtn').onclick = async () => {
     try {
         showLoading();
-        const kind = parseInt($('recoveryKind').value, 10); 
+        const kind = 1; // HARDCODED: Admin Kind
         const proposed = $('recoveryProposed').value.trim();
         const target = $('recoveryCallTarget').value.trim();
         const calldata = $('recoveryCallData').value.trim();
         
-        // Add basic validation for Admin kind (callTarget is mandatory)
-        if (!target || target === '0x') return alert("❌ Target contract (CataERC20 Proxy) is required.");
+        if (!target || target === '0x') return alert("❌ Target contract address is required.");
         if (!calldata || calldata.length < 10) return alert("❌ Calldata must be encoded.");
 
         const tx = await contracts.council.proposeRecovery(kind, proposed, target, calldata);
@@ -2485,7 +2537,7 @@ $('proposeRecoveryBtn').onclick = async () => {
 $('approveRecoveryBtn').onclick = async () => {
     try { 
         showLoading(); 
-        const kind = parseInt($('recoveryKind').value, 10);
+        const kind = 1; // HARDCODED: Admin Kind
         const tx = await contracts.council.approveRecovery(kind); 
         await tx.wait(); 
         alert("✅ Recovery approved");
@@ -2496,7 +2548,7 @@ $('approveRecoveryBtn').onclick = async () => {
 $('executeRecoveryBtn').onclick = async () => {
     try { 
         showLoading(); 
-        const kind = parseInt($('recoveryKind').value, 10);
+        const kind = 1; // HARDCODED: Admin Kind
         const tx = await contracts.council.executeRecovery(kind); 
         await tx.wait(); 
         alert("✅ Recovery executed");
@@ -2507,7 +2559,7 @@ $('executeRecoveryBtn').onclick = async () => {
 $('vetoRecoveryBtn').onclick = async () => {
     try { 
         showLoading(); 
-        const kind = parseInt($('recoveryKind').value, 10);
+        const kind = 1; // HARDCODED: Admin Kind
         const tx = await contracts.council.lastHonestHaltAndPromote(kind); 
         await tx.wait(); 
         alert("✅ Recovery vetoed");
@@ -2515,7 +2567,7 @@ $('vetoRecoveryBtn').onclick = async () => {
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-	  // Lock
+	    // Lock
 $('clearLockBtn').onclick = async () => {
   try {
     showLoading();
@@ -2525,65 +2577,37 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
+
 // ------------------------------------
-// 2. Recovery Status Read Logic (Admin Kind 1)
+// 2. Recovery Status Read Logic (Refresher)
 // ------------------------------------
-// Helper: decode recovery state nicely
-async function getRecoveryStateDecoded(kind = 1) {
-    const [
-        proposed,
-        approvals,   // uint8
-        deadlineBN,  // uint256
-        executed,
-        callTarget,
-        callData
-    ] = await contracts.council.getRecoveryState(kind);
-
-    return {
-        proposed,
-        approvals: Number(approvals),
-        deadline: deadlineBN.toNumber(),
-        executed,
-        callTarget,
-        callData
-    };
-}
-
-// Helper: fetch guardians who approved
-async function getApprovedGuardians(kind = 1) {
-    try {
-        const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
-        const approved = [];
-
-        for (let i = 0; i < guardianCount; i++) {
-            const guardian = await contracts.council.GUARDIAN_LIST(i);
-            const has = await contracts.council.hasApproved(kind, guardian);
-            if (has) approved.push(guardian);
-        }
-
-        return approved;
-    } catch (e) {
-        console.error("❌ Error fetching guardian approvals", e);
-        return [];
-    }
-}
-
-// Refresher
 const refreshRecoveryState = async () => {
-    const kind = 1; // Admin recovery fixed
-    $('recoveryKindName').innerText = 'Admin';
+    // 1. Check Kind 1 first (Admin)
+    let state = await getRecoveryStateDecoded(1);
+    
+    // 2. If Kind 1 is inactive, check Kind 0 (Deployer) for cross-check/debugging
+    if (state.deadline === 0) {
+        let stateKind0 = await getRecoveryStateDecoded(0);
+        
+        if (stateKind0.deadline !== 0) {
+            state = stateKind0; // Use Kind 0 data
+            alert("⚠️ WARNING: An **ACTIVE PROPOSAL** was found in **DEPLOYER KIND (Kind 0)**. Displaying its details.");
+        }
+    }
+    
+    const kind = state.kind; // The kind we are displaying (0 or 1)
+    
+    // Set UI name based on the active kind
+    $('recoveryKindName').innerText = kind === 0 && state.deadline !== 0 ? 'Deployer (Kind 0 Active)' : 'Admin';
 
     try {
         showLoading();
-
-        // Pull decoded state
-        const state = await getRecoveryStateDecoded(kind);
 
         const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
         const threshold = (await contracts.council.THRESHOLD()).toNumber();
 
         // --- UI population ---
-        $('statusTarget').innerText   = state.callTarget;
+        $('statusTarget').innerText    = state.callTarget;
         $('statusProposed').innerText = state.proposed;
         $('statusApprovals').innerText = `${state.approvals} / ${guardianCount} (threshold: ${threshold})`;
 
@@ -2592,9 +2616,9 @@ const refreshRecoveryState = async () => {
         if (state.callData && state.callData.length >= 10) {
             const selector = state.callData.slice(0, 10);
             if (selector === SWAP_ADMIN_SELECTOR) fnSig = 'swapAdmin(address,address)';
-            else if (selector === '0xba5258f1') fnSig = 'upgradeTo(address)';
-            else if (selector === '0x38d8d32d') fnSig = 'pause()';
-            else if (selector === '0x8456cb59') fnSig = 'unpause()';
+            else if (selector === UPGRADE_TO_SELECTOR) fnSig = 'upgradeTo(address)';
+            else if (selector === PAUSE_SELECTOR) fnSig = 'pause()';
+            else if (selector === UNPAUSE_SELECTOR) fnSig = 'unpause()';
         }
         $('statusCalldata').innerText =
             fnSig === 'Unknown Function'
@@ -2605,32 +2629,37 @@ const refreshRecoveryState = async () => {
         if (state.deadline === 0) {
             $('statusExpiry').innerText = "No Active Proposal";
             $('statusTarget').innerText = $('statusProposed').innerText = $('statusCalldata').innerText = "—";
+            $('statusApprovedBy').innerText = "No approvals yet.";
+            
         } else if (state.executed) {
             $('statusExpiry').innerText = "Executed";
+            $('statusApprovedBy').innerText = "Proposal already executed.";
         } else {
             const expiryDate = new Date(state.deadline * 1000);
             if (expiryDate.getTime() < Date.now()) {
                 $('statusExpiry').innerText = `Expired: ${expiryDate.toLocaleString()}`;
+                $('statusApprovedBy').innerText = "Proposal has expired.";
             } else {
                 $('statusExpiry').innerText = expiryDate.toLocaleString();
+                // Fetch and display approvals only for active, non-executed proposals
+                const approvedList = await getApprovedGuardians(kind);
+                $('statusApprovedBy').innerText =
+                    approvedList.length > 0
+                        ? approvedList.join("\n")
+                        : "No approvals yet.";
             }
         }
 
-        // Approved By list
-        const approvedList = await getApprovedGuardians(kind);
-        $('statusApprovedBy').innerText =
-            approvedList.length > 0
-                ? approvedList.join("\n")
-                : "No approvals yet.";
-
     } catch (e) {
-        console.error("❌ ERROR fetching Admin Recovery State", e);
-        $('statusTarget').innerText   = "N/A (Error or Not Active)";
-        $('statusProposed').innerText = "N/A (Error or Not Active)";
-        $('statusCalldata').innerText = "N/A (Error or Not Active)";
+        console.error("❌ FATAL ERROR fetching Recovery State", e);
+        
+        $('recoveryKindName').innerText = 'ERROR';
+        $('statusTarget').innerText    = "N/A (FATAL Error)";
+        $('statusProposed').innerText = "N/A (FATAL Error)";
+        $('statusCalldata').innerText = "N/A (FATAL Error)";
         $('statusApprovals').innerText = "0 / ?";
-        $('statusExpiry').innerText   = "Error";
-        $('statusApprovedBy').innerText = "Error fetching data.";
+        $('statusExpiry').innerText    = "FATAL ERROR. Check Console.";
+        $('statusApprovedBy').innerText = "FATAL Error fetching data.";
     } finally {
         hideLoading();
     }
@@ -2638,7 +2667,7 @@ const refreshRecoveryState = async () => {
 
 // Attach event handler
 $('refreshRecoveryBtn').onclick = refreshRecoveryState;
-        
+       
 
         $('refreshDaoBtn').onclick = async () => {
   try {
