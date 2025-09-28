@@ -1288,42 +1288,58 @@ async function cataSwapAdmin() {
 }
 
 // Transparency (view supply and roles)
+// Transparency (view supply and roles)
 async function fetchTransparency() {
   try {
-    // Check for initialization
     if (!contracts.cata || !provider) {
       if (!contracts.cata) return alert('Please connect wallet and set CATA contract address first');
     }
 
     showLoading("Fetching transparency...");
-    
+
     // 1. Fetch Supply Metrics
     const totalSupply = await contracts.cata.totalSupply();
     const maxSupply = await contracts.cata.MAX_SUPPLY();
     const remainingMintable = maxSupply.sub(totalSupply);
 
-    // 2. Fetch Key Roles (The simple, correct way using the new view function)
-    
-    // ✅ Council Address: Still using the simple view function
-    const councilAddress = await contracts.cata.council(); 
-    
-    // ✅ ADMIN Address: Using the new, reliable contract view function
-    const adminAddress = await contracts.cata.getAdmin(); 
-    
+    // 2. Council (direct view function)
+    const councilAddress = await contracts.cata.council();
+
+    // 3. Determine Admin
+    let adminAddress = null;
+
+    // Query AdminSwapped events
+    const adminSwapEvents = await contracts.cata.queryFilter("AdminSwapped", 0, "latest");
+
+    if (adminSwapEvents.length > 0) {
+      // Get the most recent newAdmin
+      const lastSwap = adminSwapEvents[adminSwapEvents.length - 1];
+      adminAddress = lastSwap.args.newAdmin;
+    } else {
+      // No swaps → fallback to initialAdmin via first TokensMinted event
+      const mintedEvents = await contracts.cata.queryFilter("TokensMinted", 0, "latest");
+      if (mintedEvents.length > 0) {
+        const firstMint = mintedEvents[0];
+        adminAddress = firstMint.args.to; // initialAdmin got the initial allocation
+      } else {
+        adminAddress = "⚠️ Unknown (no events found)";
+      }
+    }
+
     // --- UI Update ---
-    
     $('cataAdminAddress').innerText = adminAddress;
     $('cataCouncilAddress').innerText = councilAddress;
     $('cataTotalSupply').innerText = ethers.utils.formatUnits(totalSupply, 18) + " CATA";
     $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
     $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
+
   } catch (e) {
     log('fetchTransparency err', e?.message || e);
     alert(`Transparency fetch failed: ${e.message || e}. Check the console.`);
   } finally {
     hideLoading();
   }
-		}
+}
 
 /********************************************************************
  * Loading Indicator
