@@ -1014,9 +1014,18 @@
     council: "0xa23ee1856f84D55519054366aC78F724534cE772"
   };
 
+	  // ======================================
+// 0. CONFIGURATION & GLOBAL VARIABLES
+// ======================================
+
+// 🚨 FIX: Ensure CATA_TOKEN_ADDRESS is defined globally
+const COUNCIL_ADDRESS = DEFAULT_ADDRS.council;
+const CATA_TOKEN_ADDRESS = DEFAULT_ADDRS.cata; // <-- NOW CORRECTLY DEFINED!
+	  
 	  // App state
 	  let provider = null, signer = null, userAddr = null;
   let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null };
+	  let currentAccount = null;
 	  
 const $ = id => document.getElementById(id);
   function log(...args){
@@ -1287,15 +1296,15 @@ async function cataSwapAdmin() {
 }
 
 // Transparency (view supply and roles)
-// NOTE: Ensure CATA_TOKEN_ADDRESS, contracts.cata, and provider are defined globally.
-// This requires the provider to be set in your connectWallet function.
+// Define the specific storage slot for the UUPS Admin address
 const UUPS_ADMIN_SLOT = '0xb53127684a568b3173ae13b9f8a6016e2439c27d70c4ba5e8006e0c621cf298a'; 
 
 async function fetchTransparency() {
   try {
+    // Check for initialization (assuming attachContractsIfSet handles contracts.cata and global provider)
     if (!contracts.cata || !provider) {
-      await attachContractsIfSet();
-      if (!contracts.cata || !provider) return alert('Set CATA contract address and connect wallet first');
+      // You should call your initialization function here if not already done
+      if (!contracts.cata) return alert('Please connect wallet and set CATA contract address first');
     }
 
     showLoading("Fetching transparency...");
@@ -1305,38 +1314,32 @@ async function fetchTransparency() {
     const maxSupply = await contracts.cata.MAX_SUPPLY();
     const remainingMintable = maxSupply.sub(totalSupply);
 
-    // 2. Fetch Key Roles (The simple, correct way)
-    
-    // ✅ Council Address: Directly exposed as a public variable/view function
+    // 2. Fetch Council Address (Public view function on the contract)
     const councilAddress = await contracts.cata.council(); 
     
-    // ❌ CATA Admin Address: Must be pulled directly from the proxy's storage slot (UUPS pattern)
-    // This is the address that controls upgrade and DEFAULT_ADMIN_ROLE
+    // 3. Fetch Admin Address (Using the CATA_TOKEN_ADDRESS and the UUPS storage slot)
     let adminAddressRaw = await provider.getStorageAt(
-        cata,
+        CATA_TOKEN_ADDRESS, // <-- This now correctly resolves to "0x0417..."
         UUPS_ADMIN_SLOT
     );
-    // Slice off the '0x' and the padding to get the 40-character address
+    // Convert the 32-byte slot data to a 20-byte address
     const adminAddress = ethers.utils.getAddress(adminAddressRaw.slice(26));
     
     // --- UI Update ---
     
-    // Update Role Addresses
     $('cataAdminAddress').innerText = adminAddress;
     $('cataCouncilAddress').innerText = councilAddress;
-
-    // Update Supply Metrics
     $('cataTotalSupply').innerText = ethers.utils.formatUnits(totalSupply, 18) + " CATA";
     $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
     $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
   } catch (e) {
+    // Display a more specific error for debugging
     log('fetchTransparency err', e?.message || e);
-    alert(`Transparency fetch failed: ${e.message || e}`);
+    alert(`Transparency fetch failed: ${e.message || e}. Check the console.`);
   } finally {
     hideLoading();
   }
 }
-
 
 /********************************************************************
  * Loading Indicator
