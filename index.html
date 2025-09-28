@@ -353,6 +353,11 @@
         CATA Council: <span id="cataCouncilAddress" class="font-mono text-cyan-400 break-all">…</span>
       </div>
 
+		<div class="p-2 rounded bg-black/20 text-sm">  
+  CATA Minters:  
+  <div id="cataMinters" class="font-mono text-pink-400 break-all whitespace-pre-wrap">…</div>  
+</div>
+
       <div class="p-2 rounded bg-black/20 text-sm">
         Remaining Mintable: <span id="cataRemainingMintable" class="font-mono text-green-400">…</span>
       </div>
@@ -1287,8 +1292,7 @@ async function cataSwapAdmin() {
   }
 }
 
-// Transparency (view supply and roles)
-// Transparency (view supply and roles)
+// Transparency (view supply, roles, minters)
 async function fetchTransparency() {
   try {
     if (!contracts.cata || !provider) {
@@ -1297,34 +1301,52 @@ async function fetchTransparency() {
 
     showLoading("Fetching transparency...");
 
-    // 1. Fetch Supply Metrics
+    // 1. Supply Metrics
     const totalSupply = await contracts.cata.totalSupply();
     const maxSupply = await contracts.cata.MAX_SUPPLY();
     const remainingMintable = maxSupply.sub(totalSupply);
 
-    // 2. Council (direct view function)
+    // 2. Council
     const councilAddress = await contracts.cata.council();
 
-    // 3. Determine Admin
+    // 3. Admin (initialize or swap)
     let adminAddress = null;
-
-    // Query AdminSwapped events
     const adminSwapEvents = await contracts.cata.queryFilter("AdminSwapped", 0, "latest");
 
     if (adminSwapEvents.length > 0) {
-      // Get the most recent newAdmin
       const lastSwap = adminSwapEvents[adminSwapEvents.length - 1];
       adminAddress = lastSwap.args.newAdmin;
     } else {
-      // No swaps → fallback to initialAdmin via first TokensMinted event
       const mintedEvents = await contracts.cata.queryFilter("TokensMinted", 0, "latest");
       if (mintedEvents.length > 0) {
-        const firstMint = mintedEvents[0];
-        adminAddress = firstMint.args.to; // initialAdmin got the initial allocation
+        adminAddress = mintedEvents[0].args.to;
       } else {
-        adminAddress = "⚠️ Unknown (no events found)";
+        adminAddress = "⚠️ Unknown";
       }
     }
+
+    // 4. Minters (track events)
+    const minterSetEvents = await contracts.cata.queryFilter("MinterSet", 0, "latest");
+    const minterRevokedEvents = await contracts.cata.queryFilter("MinterRevoked", 0, "latest");
+
+    let activeMinters = new Set();
+
+    // Process all MinterSet events
+    for (const evt of minterSetEvents) {
+      const minter = evt.args.newMinter;
+      if (minter && minter !== ethers.ZeroAddress) {
+        activeMinters.add(minter);
+      }
+    }
+
+    // Process all MinterRevoked events
+    for (const evt of minterRevokedEvents) {
+      const revoked = evt.args.revokedMinter;
+      activeMinters.delete(revoked);
+    }
+
+    // Convert to array for display
+    const minterList = Array.from(activeMinters);
 
     // --- UI Update ---
     $('cataAdminAddress').innerText = adminAddress;
@@ -1333,6 +1355,11 @@ async function fetchTransparency() {
     $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
     $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
 
+    // If you add a UI slot for minters:
+    $('cataMinters').innerText = minterList.length > 0 
+  ? minterList.join("\n")   // each minter on its own line
+  : "None";
+	  
   } catch (e) {
     log('fetchTransparency err', e?.message || e);
     alert(`Transparency fetch failed: ${e.message || e}. Check the console.`);
