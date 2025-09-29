@@ -2651,7 +2651,7 @@ async function getApprovedGuardians(kind) {
         const approved = [];
 
         for (let i = 0; i < guardianCount; i++) {
-            const guardian = await contracts.council.GUARDIAN_LIST(i);
+            const guardian = await contracts.council.GUARDIAN_COUNT(i);
             const has = await contracts.council.hasApproved(kind, guardian);
             if (has) approved.push(guardian);
         }
