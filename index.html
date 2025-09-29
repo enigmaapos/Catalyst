@@ -2651,52 +2651,115 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-	  $('refreshRecoveryBtn').onclick = async () => {
+	$('refreshRecoveryBtn').onclick = async () => {
   try {
     showLoading();
 
     const kind = 1; // 1 = Admin, 0 = Deployer
 
-    // Individual fields
-    const proposed   = await contracts.council.getProposed(kind);
-    const approvals  = await contracts.council.getApprovals(kind);
-    const deadlineBN = await contracts.council.getDeadline(kind);
-    const executed   = await contracts.council.getExecuted(kind);
-    const callTarget = await contracts.council.getCallTarget(kind);
-    const callData   = await contracts.council.getCallData(kind);
+    // quick debug: list contract functions in console if you want
+    // console.log("council.functions:", Object.keys(contracts.council.functions || {}));
 
-    // Guardian + threshold info
+    // --- ensure the expected getters exist on the ABI ---
+    const needFns = [
+      'getRecoveryProposed',
+      'getRecoveryApprovals',
+      'getRecoveryDeadline',
+      'getRecoveryExecuted',
+      'getRecoveryCallTarget',
+      'getRecoveryCallData',
+      'getActiveGuardians',
+      'hasApproved',
+      'GUARDIAN_COUNT',
+      'THRESHOLD'
+    ];
+    for (const fn of needFns) {
+      if (typeof contracts.council[fn] !== 'function' && typeof contracts.council.functions?.[fn] !== 'function') {
+        throw new Error(`Missing ABI function: ${fn}() — check BatchGuardianCouncilUpgradeable.json`);
+      }
+    }
+
+    // --- fetch individual fields (no tuple call) ---
+    const proposed   = await contracts.council.getRecoveryProposed(kind);
+    const approvals  = await contracts.council.getRecoveryApprovals(kind); // BigNumber or number-like
+    const deadlineBN = await contracts.council.getRecoveryDeadline(kind);
+    const executed   = await contracts.council.getRecoveryExecuted(kind);
+    const callTarget = await contracts.council.getRecoveryCallTarget(kind);
+    const callData   = await contracts.council.getRecoveryCallData(kind);
+
+    // --- guardian / threshold info ---
     const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
     const threshold = (await contracts.council.THRESHOLD()).toNumber();
 
-    // Fill UI
-    $('recoveryProposed').innerText = proposed;
-    $('recoveryApprovals').innerText = `${approvals} / ${guardianCount} (threshold: ${threshold})`;
-    $('recoveryDeadline').innerText =
-      deadlineBN > 0 ? new Date(deadlineBN * 1000).toLocaleString() : "—";
-    $('recoveryExecuted').innerText = executed ? "✅ Yes" : "❌ No";
+    // --- populate UI fields ---
+    const proposedEl = $('recoveryProposed');
+    proposedEl.innerText = proposed || '—';
+    proposedEl.title = proposed || '';
 
+    $('recoveryApprovals').innerText = `${approvals.toString()} / ${guardianCount} (threshold: ${threshold})`;
+
+    // Deadline + status coloring
+    const deadlineNum = Number(deadlineBN?.toString() || 0);
+    const deadlineEl = $('recoveryDeadline');
+    const executedEl = $('recoveryExecuted');
+    if (deadlineNum === 0) {
+      deadlineEl.innerText = 'No Active Proposal';
+    } else {
+      const expiryDate = new Date(deadlineNum * 1000);
+      deadlineEl.innerText = expiryDate.toLocaleString();
+      if (expiryDate.getTime() < Date.now()) {
+        // expired
+        deadlineEl.classList.add('text-red-400');
+        deadlineEl.classList.remove('text-green-400','text-yellow-400');
+      } else {
+        deadlineEl.classList.add('text-green-400');
+        deadlineEl.classList.remove('text-red-400','text-yellow-400');
+      }
+    }
+
+    // executed
+    if (executed) {
+      executedEl.innerText = 'Executed';
+      executedEl.classList.add('text-gray-400');
+      executedEl.classList.remove('text-green-400','text-red-400');
+    } else {
+      executedEl.innerText = 'Not executed';
+      executedEl.classList.remove('text-gray-400');
+    }
+
+    // Call target + calldata with tooltip / truncation handled via HTML classes
     const callTargetEl = $('recoveryCallTarget');
-    callTargetEl.innerText = callTarget;
-    callTargetEl.title = callTarget;
+    callTargetEl.innerText = callTarget || '—';
+    callTargetEl.title = callTarget || '';
 
     const callDataEl = $('recoveryCallData');
-    callDataEl.innerText = callData && callData.length > 0 ? callData : "—";
-    callDataEl.title = callData;
+    callDataEl.innerText = (callData && callData !== '0x') ? callData : '—';
+    callDataEl.title = (callData && callData !== '0x') ? callData : '';
 
-    // Approved by list
+    // --- Approved by list using getActiveGuardians() + hasApproved() ---
+    const active = await contracts.council.getActiveGuardians(); // returns address[7]
     const approvedList = [];
-    for (let i = 0; i < guardianCount; i++) {
-      const guardian = await contracts.council.GUARDIAN_LIST(i);
-      const has = await contracts.council.hasApproved(kind, guardian);
-      if (has) approvedList.push(guardian);
+
+    for (let i = 0; i < active.length; i++) {
+      const g = active[i];
+      if (!g || g === ethers.constants.AddressZero) continue;
+      let has;
+      try {
+        has = await contracts.council.hasApproved(kind, g);
+      } catch (err) {
+        // safe fallback: skip this guardian if check fails
+        console.warn('hasApproved failed for', g, err);
+        continue;
+      }
+      if (has) approvedList.push(g);
     }
 
     $('recoveryApprovedBy').innerText =
-      approvedList.length > 0 ? approvedList.join("\n") : "No approvals yet.";
+      approvedList.length > 0 ? approvedList.join('\n') : 'No approvals yet.';
 
-  } catch (e) {
-    alert("❌ " + (e.message || e));
+  } catch (err) {
+    console.error(err);
+    alert("❌ " + (err.message || err));
   } finally {
     hideLoading();
   }
