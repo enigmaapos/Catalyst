@@ -2623,7 +2623,6 @@ const UNPAUSE_SELECTOR = '0x8456cb59';   // bytes4(keccak256("unpause()"))
 
 /** Decodes the raw recovery state from the contract into a readable object. */
 async function getRecoveryStateDecoded(kind) {
-    // ABI Order: [proposed, approvals, deadline, executed, callTarget, callData]
     const [
         proposed,
         approvalsBN,    // uint8
@@ -2647,13 +2646,15 @@ async function getRecoveryStateDecoded(kind) {
 /** Fetches the list of guardian addresses that have approved the given kind. */
 async function getApprovedGuardians(kind) {
     try {
-        const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
+        const guardians = await contracts.council.getActiveGuardians(); // returns address[7]
         const approved = [];
 
-        for (let i = 0; i < guardianCount; i++) {
-            const guardian = await contracts.council.GUARDIAN_COUNT(i);
-            const has = await contracts.council.hasApproved(kind, guardian);
-            if (has) approved.push(guardian);
+        for (let i = 0; i < guardians.length; i++) {
+            const guardian = guardians[i];
+            if (guardian !== ethers.constants.AddressZero) {
+                const has = await contracts.council.hasApproved(kind, guardian);
+                if (has) approved.push(guardian);
+            }
         }
         return approved;
     } catch (e) {
@@ -2663,36 +2664,37 @@ async function getApprovedGuardians(kind) {
 }
 	  
 const refreshRecoveryState = async () => {
-    // 1. Check Kind 1 first (Admin)
-    let state = await getRecoveryStateDecoded(1);
-    
-    // 2. If Kind 1 is inactive, check Kind 0 (Deployer) for cross-check/debugging
-    if (state.deadline === 0) {
-        let stateKind0 = await getRecoveryStateDecoded(0);
-        
-        if (stateKind0.deadline !== 0) {
-            state = stateKind0; // Use Kind 0 data
-            alert("⚠️ WARNING: An **ACTIVE PROPOSAL** was found in **DEPLOYER KIND (Kind 0)**. Displaying its details.");
-        }
-    }
-    
-    const kind = state.kind; // The kind we are displaying (0 or 1)
-    
-    // Set UI name based on the active kind
-    $('recoveryKindName').innerText = kind === 0 && state.deadline !== 0 ? 'Deployer (Kind 0 Active)' : 'Admin';
-
     try {
         showLoading();
 
+        // 1. Check Kind 1 first (Admin)
+        let state = await getRecoveryStateDecoded(1);
+
+        // 2. If Kind 1 inactive, check Kind 0 (Deployer)
+        if (state.deadline === 0) {
+            let stateKind0 = await getRecoveryStateDecoded(0);
+            if (stateKind0.deadline !== 0) {
+                state = stateKind0;
+                alert("⚠️ WARNING: An **ACTIVE PROPOSAL** was found in **DEPLOYER KIND (Kind 0)**. Displaying its details.");
+            }
+        }
+
+        const kind = state.kind;
+
+        // UI label
+        $('recoveryKindName').innerText =
+            kind === 0 && state.deadline !== 0 ? 'Deployer (Kind 0 Active)' : 'Admin';
+
+        // Contract constants
         const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
         const threshold = (await contracts.council.THRESHOLD()).toNumber();
 
         // --- UI population ---
-        $('statusTarget').innerText    = state.callTarget;
+        $('statusTarget').innerText = state.callTarget;
         $('statusProposed').innerText = state.proposed;
         $('statusApprovals').innerText = `${state.approvals} / ${guardianCount} (threshold: ${threshold})`;
 
-        // Function signature detection
+        // Detect function signature
         let fnSig = 'Unknown Function';
         if (state.callData && state.callData.length >= 10) {
             const selector = state.callData.slice(0, 10);
@@ -2706,12 +2708,13 @@ const refreshRecoveryState = async () => {
                 ? (state.callData || '—')
                 : `Signature: ${fnSig}\nCalldata: ${state.callData}`;
 
-        // Deadline logic
+        // Deadline + approvals
         if (state.deadline === 0) {
             $('statusExpiry').innerText = "No Active Proposal";
-            $('statusTarget').innerText = $('statusProposed').innerText = $('statusCalldata').innerText = "—";
+            $('statusTarget').innerText =
+                $('statusProposed').innerText =
+                $('statusCalldata').innerText = "—";
             $('statusApprovedBy').innerText = "No approvals yet.";
-            
         } else if (state.executed) {
             $('statusExpiry').innerText = "Executed";
             $('statusApprovedBy').innerText = "Proposal already executed.";
@@ -2722,24 +2725,21 @@ const refreshRecoveryState = async () => {
                 $('statusApprovedBy').innerText = "Proposal has expired.";
             } else {
                 $('statusExpiry').innerText = expiryDate.toLocaleString();
-                // Fetch and display approvals only for active, non-executed proposals
+                // Fetch and display approvals
                 const approvedList = await getApprovedGuardians(kind);
                 $('statusApprovedBy').innerText =
-                    approvedList.length > 0
-                        ? approvedList.join("\n")
-                        : "No approvals yet.";
+                    approvedList.length > 0 ? approvedList.join("\n") : "No approvals yet.";
             }
         }
-
     } catch (e) {
         console.error("❌ FATAL ERROR fetching Recovery State", e);
-        
+
         $('recoveryKindName').innerText = 'ERROR';
-        $('statusTarget').innerText    = "N/A (FATAL Error)";
+        $('statusTarget').innerText = "N/A (FATAL Error)";
         $('statusProposed').innerText = "N/A (FATAL Error)";
         $('statusCalldata').innerText = "N/A (FATAL Error)";
         $('statusApprovals').innerText = "0 / ?";
-        $('statusExpiry').innerText    = "FATAL ERROR. Check Console.";
+        $('statusExpiry').innerText = "FATAL ERROR. Check Console.";
         $('statusApprovedBy').innerText = "FATAL Error fetching data.";
     } finally {
         hideLoading();
