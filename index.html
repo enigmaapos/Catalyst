@@ -1063,25 +1063,50 @@ const $ = id => document.getElementById(id);
   }
 
   function loadSavedAddrs(){
-    try {
-      const raw = localStorage.getItem('catalyst_addrs');
-      if(!raw){
-        // prefill defaults
-        $('addrCata').value = DEFAULT_ADDRS.cata;
-        $('addrStaking').value = DEFAULT_ADDRS.staking;
-        $('addrGovernance').value = DEFAULT_ADDRS.governance;
-        $('addrCouncil').value = DEFAULT_ADDRS.council;
-        log('Prefilled default addresses');
-        return;
-      }
-      const obj = JSON.parse(raw);
-      if(obj.addrCata) $('addrCata').value = obj.addrCata;
-      if(obj.addrStaking) $('addrStaking').value = obj.addrStaking;
-      if(obj.addrGovernance) $('addrGovernance').value = obj.addrGovernance;
-      if(obj.addrCouncil) $('addrCouncil').value = obj.addrCouncil;
-      log('Loaded saved addresses');
-    } catch(e){ log('loadSavedAddrs err', e); }
+  try {
+    const raw = localStorage.getItem('catalyst_addrs');
+    if(!raw){
+      // Prefill defaults
+      $('addrCata').value = DEFAULT_ADDRS.cata;
+      $('addrStaking').value = DEFAULT_ADDRS.staking;
+      $('addrGovernance').value = DEFAULT_ADDRS.governance;
+      $('addrCouncil').value = DEFAULT_ADDRS.council;
+      log('Prefilled default addresses');
+      return;
+    }
+    const obj = JSON.parse(raw);
+
+    // Only apply saved values if they are DIFFERENT from defaults
+    if(obj.addrCata && obj.addrCata !== DEFAULT_ADDRS.cata) {
+      $('addrCata').value = obj.addrCata;
+    } else {
+      $('addrCata').value = DEFAULT_ADDRS.cata;
+    }
+
+    if(obj.addrStaking && obj.addrStaking !== DEFAULT_ADDRS.staking) {
+      $('addrStaking').value = obj.addrStaking;
+    } else {
+      $('addrStaking').value = DEFAULT_ADDRS.staking;
+    }
+
+    if(obj.addrGovernance && obj.addrGovernance !== DEFAULT_ADDRS.governance) {
+      $('addrGovernance').value = obj.addrGovernance;
+    } else {
+      $('addrGovernance').value = DEFAULT_ADDRS.governance;
+    }
+
+    if(obj.addrCouncil && obj.addrCouncil !== DEFAULT_ADDRS.council) {
+      $('addrCouncil').value = obj.addrCouncil;
+    } else {
+      $('addrCouncil').value = DEFAULT_ADDRS.council;
+    }
+
+    log('Loaded saved addresses (with defaults fallback)');
+  } catch(e){
+    log('loadSavedAddrs err', e);
   }
+  }
+  
 
   // Attach contract instances (requires signer)
   async function attachContractsIfSet(){
