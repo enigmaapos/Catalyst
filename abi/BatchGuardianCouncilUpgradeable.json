@@ -879,6 +879,32 @@
 	},
 	{
 		"inputs": [],
+		"name": "getLastHonestExpiry",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getLastHonestGuardian",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "getPendingActiveBatchState",
 		"outputs": [
 			{
@@ -941,6 +967,120 @@
 				"internalType": "uint256",
 				"name": "commitDeadline",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "getRecoveryApprovals",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "getRecoveryCallData",
+		"outputs": [
+			{
+				"internalType": "bytes",
+				"name": "",
+				"type": "bytes"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "getRecoveryCallTarget",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "getRecoveryDeadline",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "getRecoveryExecuted",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum BatchGuardianCouncilUpgradeable.RecovKind",
+				"name": "kind",
+				"type": "uint8"
+			}
+		],
+		"name": "getRecoveryProposed",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -1043,17 +1183,12 @@
 	},
 	{
 		"inputs": [],
-		"name": "getTempVeto",
+		"name": "getWarningFlag",
 		"outputs": [
 			{
-				"internalType": "address",
-				"name": "guardian",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "expiry",
-				"type": "uint256"
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
