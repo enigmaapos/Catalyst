@@ -2725,18 +2725,7 @@ async function getApprovedGuardians(kind) {
 };
 
 // Attach event handler
-$('refreshRecoveryBtn').onclick = async () => {
-  try {
-    showLoading();
-    await refreshRecoveryState();
-    alert("✅ Recovery status refreshed");
-  } catch (e) {
-    console.error("❌ Error refreshing recovery", e);
-    alert("❌ " + (e.message || e));
-  } finally {
-    hideLoading();
-  }
-};
+$('refreshRecoveryBtn').onclick = refreshRecoveryState;
 
         $('refreshDaoBtn').onclick = async () => {
   try {
