@@ -865,103 +865,84 @@
   </div>
 
 	</div>
-
-    <hr class="border-slate-700 my-4" />
-
-    <h2 class="text-xl font-semibold mb-2">2. Live Admin Recovery Status (Kind 1)</h2>
-    <div class="p-4 rounded-lg bg-red-900/40 shadow text-sm space-y-3">
-        <h3 class="font-semibold text-lg text-red-300">
-            <span id="recoveryKindName">Admin</span> Proposal Details
-        </h3>
-        
-        <div>
-            <div class="text-slate-400 text-xs">Target Contract (Call Target)</div>
-            <div id="statusTarget" class="font-mono text-slate-100 break-all">—</div>
-        </div>
-        
-        <div>
-            <div class="text-slate-400 text-xs">Proposed New Address (Owner/Admin/Logic)</div>
-            <div id="statusProposed" class="font-mono text-slate-100 break-all">—</div>
-        </div>
-
-        <div>
-            <div class="text-slate-400 text-xs">Calldata & Function Signature</div>
-            <pre id="statusCalldata" class="font-mono text-slate-100 break-all h-20 overflow-y-auto p-1 bg-black/20 rounded">—</pre>
-        </div>
-
-        <div class="flex justify-between items-center bg-slate-800 p-2 rounded">
-            <div>
-                <div class="text-slate-400 text-xs">Approvals</div>
-                <div id="statusApprovals" class="font-bold text-3xl text-yellow-300">0 / ?</div>
-            </div>
-            <div>
-                <div class="text-slate-400 text-xs">Status / Expiration</div>
-                <div id="statusExpiry" class="font-mono text-lg text-slate-100">—</div>
-            </div>
-        </div>
-        
-        <div class="mt-2">
-            <div class="text-slate-400 text-xs">Approved By</div>
-            <pre id="statusApprovedBy" class="font-mono text-slate-100 whitespace-pre-wrap h-20 overflow-y-auto">—</pre>
-        </div>
-    </div>
-    
-    <button id="refreshRecoveryBtn" class="mt-3 w-full p-2 bg-red-700 hover:bg-red-600 rounded-lg text-sm">
-        🔄 Refresh Recovery Status
-	</button>
-        
+   
         <hr class="border-slate-700 my-4" />
+<div class="space-y-8">
 
-	<!-- Read-only DAO + Guardians -->
-  <h3 class="text-base font-semibold mb-2">DAO State</h3>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow text-sm space-y-3">
-    <div>
-      <div class="text-slate-400 text-xs">Current DAO</div>
-      <div id="daoAddr" class="font-mono text-slate-100 break-all">—</div>
+  <!-- DAO State Card -->
+  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">DAO State</h2>
+      <button id="refreshDaoBtn"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+        🔄 Refresh
+      </button>
     </div>
-    <div>
-      <div class="text-slate-400 text-xs">Pending DAO</div>
-      <div id="pendingDaoAddr" class="font-mono text-slate-100 break-all">—</div>
-    </div>
-    <div>
-      <div class="text-slate-400 text-xs">Commit Window</div>
-      <div id="pendingDaoWindow" class="font-mono text-slate-100">—</div>
+    <div class="space-y-3 text-sm text-gray-300">
+      <div>
+        <div class="text-gray-400 text-xs">Current DAO</div>
+        <div id="daoAddr" class="font-mono text-slate-100 break-all">—</div>
+      </div>
+      <div>
+        <div class="text-gray-400 text-xs">Pending DAO</div>
+        <div id="pendingDaoAddr" class="font-mono text-slate-100 break-all">—</div>
+      </div>
+      <div>
+        <div class="text-gray-400 text-xs">Commit Window</div>
+        <div id="pendingDaoWindow" class="font-mono text-slate-100">—</div>
+      </div>
     </div>
   </div>
-  <button id="refreshDaoBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">🔄 Refresh DAO</button>
 
-  <h3 class="text-base font-semibold mt-6 mb-2">Guardians</h3>
-  <div class="grid grid-cols-2 gap-3 text-sm">
-    <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-      <div class="text-slate-400 text-xs">Active</div>
-      <pre id="activeGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+  <!-- Guardians Card -->
+  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Guardians</h2>
+      <button id="refreshGuardiansBtn"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+        🔄 Refresh
+      </button>
     </div>
-    <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-      <div class="text-slate-400 text-xs">Standby</div>
-      <pre id="standbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
-    </div>
-    <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-      <div class="text-slate-400 text-xs">Pending Active Batch</div>
-      <pre id="pendingActiveGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
-      <div class="text-slate-400 text-xs mt-2">Commitment Window</div>
-      <div id="pendingActiveWindow" class="font-mono text-slate-100">—</div>
-    </div>
-    <div class="col-span-2 p-3 rounded-lg bg-slate-800/60 shadow">
-      <div class="text-slate-400 text-xs">Pending Standby Batch</div>
-      <pre id="pendingStandbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
-      <div class="text-slate-400 text-xs mt-2">Commitment Window</div>
-      <div id="pendingStandbyWindow" class="font-mono text-slate-100">—</div>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div class="bg-gray-900/60 p-3 rounded-lg shadow-inner">
+        <div class="text-gray-400 text-xs">Active</div>
+        <pre id="activeGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+      </div>
+      <div class="bg-gray-900/60 p-3 rounded-lg shadow-inner">
+        <div class="text-gray-400 text-xs">Standby</div>
+        <pre id="standbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+      </div>
+      <div class="col-span-2 bg-gray-900/60 p-3 rounded-lg shadow-inner">
+        <div class="text-gray-400 text-xs">Pending Active Batch</div>
+        <pre id="pendingActiveGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+        <div class="text-gray-400 text-xs mt-2">Commitment Window</div>
+        <div id="pendingActiveWindow" class="font-mono text-slate-100">—</div>
+      </div>
+      <div class="col-span-2 bg-gray-900/60 p-3 rounded-lg shadow-inner">
+        <div class="text-gray-400 text-xs">Pending Standby Batch</div>
+        <pre id="pendingStandbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+        <div class="text-gray-400 text-xs mt-2">Commitment Window</div>
+        <div id="pendingStandbyWindow" class="font-mono text-slate-100">—</div>
+      </div>
     </div>
   </div>
-  <button id="refreshGuardiansBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">🔄 Refresh Guardians</button>
 
-  <h3 class="text-base font-semibold mt-6 mb-2">Lock Status</h3>
-  <div class="p-3 rounded-lg bg-slate-800/60 shadow text-sm">
-    <div class="text-slate-400 text-xs">Status</div>
-    <div id="lockStatus" class="font-mono text-slate-100">—</div>
+  <!-- Lock Status Card -->
+  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Lock Status</h2>
+      <button id="refreshLockBtn"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+        🔄 Refresh
+      </button>
+    </div>
+    <div class="text-sm text-gray-300">
+      <div class="text-gray-400 text-xs">Status</div>
+      <div id="lockStatus" class="font-mono text-slate-100">—</div>
+    </div>
   </div>
-  <button id="refreshLockBtn" class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">🔄 Refresh Lock</button>
-  </div>
+
+</div>
 </section>
          
 
@@ -2695,154 +2676,6 @@ $('clearLockBtn').onclick = async () => {
     hideLoading();
   }
 };
-
-	  // ------------------------------------
-// 2. Recovery Status Read Logic (Admin Kind 1)
-// ------------------------------------
-// NOTE: This code assumes the 'ethers' library is loaded and 
-// 'contracts', '$', 'showLoading', and 'hideLoading' are defined globally.
-
-// ------------------------------------
-// GLOBAL CONSTANTS
-// ------------------------------------
-const SWAP_ADMIN_SELECTOR = '0x51480f81'; // bytes4(keccak256("swapAdmin(address,address)"))
-const UPGRADE_TO_SELECTOR = '0xba5258f1'; // bytes4(keccak256("upgradeTo(address)"))
-const PAUSE_SELECTOR = '0x38d8d32d';     // bytes4(keccak256("pause()"))
-const UNPAUSE_SELECTOR = '0x8456cb59';   // bytes4(keccak256("unpause()"))
-
-
-// ------------------------------------
-// HELPER FUNCTIONS (Read from Contract)
-// ------------------------------------
-
-/** Decodes the raw recovery state from the contract into a readable object. */
-async function getRecoveryStateDecoded(kind) {
-    const [
-        proposed,
-        approvalsBN,    // uint8
-        deadlineBN,     // uint256
-        executed,
-        callTarget,
-        callData
-    ] = await contracts.council.getRecoveryState(kind);
-
-    return {
-        kind,
-        proposed,
-        approvals: Number(approvalsBN),
-        deadline: deadlineBN.toNumber(),
-        executed,
-        callTarget,
-        callData
-    };
-}
-
-/** Fetches the list of guardian addresses that have approved the given kind. */
-async function getApprovedGuardians(kind) {
-    try {
-        const guardians = await contracts.council.getActiveGuardians(); // returns address[7]
-        const approved = [];
-
-        for (let i = 0; i < guardians.length; i++) {
-            const guardian = guardians[i];
-            if (guardian !== ethers.constants.AddressZero) {
-                const has = await contracts.council.hasApproved(kind, guardian);
-                if (has) approved.push(guardian);
-            }
-        }
-        return approved;
-    } catch (e) {
-        console.error(`❌ Error fetching guardian approvals for Kind ${kind}`, e);
-        return [];
-    }
-}
-	  
-const refreshRecoveryState = async () => {
-    try {
-        showLoading();
-
-        // 1. Check Kind 1 first (Admin)
-        let state = await getRecoveryStateDecoded(1);
-
-        // 2. If Kind 1 inactive, check Kind 0 (Deployer)
-        if (state.deadline === 0) {
-            let stateKind0 = await getRecoveryStateDecoded(0);
-            if (stateKind0.deadline !== 0) {
-                state = stateKind0;
-                alert("⚠️ WARNING: An **ACTIVE PROPOSAL** was found in **DEPLOYER KIND (Kind 0)**. Displaying its details.");
-            }
-        }
-
-        const kind = state.kind;
-
-        // UI label
-        $('recoveryKindName').innerText =
-            kind === 0 && state.deadline !== 0 ? 'Deployer (Kind 0 Active)' : 'Admin';
-
-        // Contract constants
-        const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
-        const threshold = (await contracts.council.THRESHOLD()).toNumber();
-
-        // --- UI population ---
-        $('statusTarget').innerText = state.callTarget;
-        $('statusProposed').innerText = state.proposed;
-        $('statusApprovals').innerText = `${state.approvals} / ${guardianCount} (threshold: ${threshold})`;
-
-        // Detect function signature
-        let fnSig = 'Unknown Function';
-        if (state.callData && state.callData.length >= 10) {
-            const selector = state.callData.slice(0, 10);
-            if (selector === SWAP_ADMIN_SELECTOR) fnSig = 'swapAdmin(address,address)';
-            else if (selector === UPGRADE_TO_SELECTOR) fnSig = 'upgradeTo(address)';
-            else if (selector === PAUSE_SELECTOR) fnSig = 'pause()';
-            else if (selector === UNPAUSE_SELECTOR) fnSig = 'unpause()';
-        }
-        $('statusCalldata').innerText =
-            fnSig === 'Unknown Function'
-                ? (state.callData || '—')
-                : `Signature: ${fnSig}\nCalldata: ${state.callData}`;
-
-        // Deadline + approvals
-        if (state.deadline === 0) {
-            $('statusExpiry').innerText = "No Active Proposal";
-            $('statusTarget').innerText =
-                $('statusProposed').innerText =
-                $('statusCalldata').innerText = "—";
-            $('statusApprovedBy').innerText = "No approvals yet.";
-        } else if (state.executed) {
-            $('statusExpiry').innerText = "Executed";
-            $('statusApprovedBy').innerText = "Proposal already executed.";
-        } else {
-            const expiryDate = new Date(state.deadline * 1000);
-            if (expiryDate.getTime() < Date.now()) {
-                $('statusExpiry').innerText = `Expired: ${expiryDate.toLocaleString()}`;
-                $('statusApprovedBy').innerText = "Proposal has expired.";
-            } else {
-                $('statusExpiry').innerText = expiryDate.toLocaleString();
-                // Fetch and display approvals
-                const approvedList = await getApprovedGuardians(kind);
-                $('statusApprovedBy').innerText =
-                    approvedList.length > 0 ? approvedList.join("\n") : "No approvals yet.";
-            }
-        }
-    } catch (e) {
-        console.error("❌ FATAL ERROR fetching Recovery State", e);
-
-        $('recoveryKindName').innerText = 'ERROR';
-        $('statusTarget').innerText = "N/A (FATAL Error)";
-        $('statusProposed').innerText = "N/A (FATAL Error)";
-        $('statusCalldata').innerText = "N/A (FATAL Error)";
-        $('statusApprovals').innerText = "0 / ?";
-        $('statusExpiry').innerText = "FATAL ERROR. Check Console.";
-        $('statusApprovedBy').innerText = "FATAL Error fetching data.";
-    } finally {
-        hideLoading();
-    }
-};
-      
-	  
-// Attach event handler
-$('refreshRecoveryBtn').onclick = refreshRecoveryState;
 
         $('refreshDaoBtn').onclick = async () => {
   try {
