@@ -811,6 +811,17 @@
     <button id="clearLockBtn" class="w-full p-2 bg-slate-600 rounded">Clear Lock/Warning</button>
   </div>
 
+	<button id="refreshRecoveryBtn">🔄 Refresh Recovery State</button>
+
+<div>
+  <strong>Proposed:</strong> <span id="recoveryProposed">—</span><br>
+  <strong>Approvals:</strong> <span id="recoveryApprovals">—</span><br>
+  <strong>Deadline:</strong> <span id="recoveryDeadline">—</span><br>
+  <strong>Executed:</strong> <span id="recoveryExecuted">—</span><br>
+  <strong>Call Target:</strong> <span id="recoveryCallTarget">—</span><br>
+  <strong>Call Data:</strong> <span id="recoveryCallData">—</span>
+</div>
+
     <hr class="border-slate-700 my-4" />
 
     <h2 class="text-xl font-semibold mb-2">2. Live Admin Recovery Status (Kind 1)</h2>
@@ -2601,6 +2612,27 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
+	  $('refreshRecoveryBtn').onclick = async () => {
+  try {
+    showLoading();
+
+    // 1 = Admin, 0 = Deployer
+    const [proposed, approvalsBN, deadlineBN, executed, callTarget, callData] =
+      await contracts.council.getRecoveryState(1);
+
+    $('recoveryProposed').innerText = proposed;
+    $('recoveryApprovals').innerText = approvalsBN.toString();
+    $('recoveryDeadline').innerText = new Date(deadlineBN * 1000).toLocaleString();
+    $('recoveryExecuted').innerText = executed ? "✅ Yes" : "❌ No";
+    $('recoveryCallTarget').innerText = callTarget;
+    $('recoveryCallData').innerText = callData;
+
+  } catch (e) {
+    alert("❌ " + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+};
 
 	  // ------------------------------------
 // 2. Recovery Status Read Logic (Admin Kind 1)
