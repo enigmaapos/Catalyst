@@ -813,35 +813,46 @@
 
 	<div class="space-y-6">
 
-  <!-- Recovery State Card -->
-  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-semibold text-white">Recovery State</h2>
-      <button id="refreshRecoveryBtn"
-        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
-        🔄 Refresh
-      </button>
-    </div>
-    <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-300">
-      <div><strong class="text-gray-400">Proposed:</strong></div>
-      <div id="recoveryProposed">—</div>
+<!-- Recovery State Card -->
+<div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-semibold text-white">Recovery State</h2>
+    <button id="refreshRecoveryBtn"
+      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+      🔄 Refresh
+    </button>
+  </div>
 
-      <div><strong class="text-gray-400">Approvals:</strong></div>
-      <div id="recoveryApprovals">—</div>
+  <div class="grid grid-cols-2 gap-y-3 text-sm text-gray-300">
+    <div class="text-gray-400">Proposed:</div>
+    <div id="recoveryProposed" class="font-mono text-slate-100 break-all">—</div>
 
-      <div><strong class="text-gray-400">Deadline:</strong></div>
-      <div id="recoveryDeadline">—</div>
+    <div class="text-gray-400">Approvals:</div>
+    <div id="recoveryApprovals" class="text-slate-100">—</div>
 
-      <div><strong class="text-gray-400">Executed:</strong></div>
-      <div id="recoveryExecuted">—</div>
+    <div class="text-gray-400">Deadline:</div>
+    <div id="recoveryDeadline" class="text-slate-100">—</div>
 
-      <div><strong class="text-gray-400">Call Target:</strong></div>
-      <div id="recoveryCallTarget" class="truncate">—</div>
+    <div class="text-gray-400">Executed:</div>
+    <div id="recoveryExecuted" class="text-slate-100">—</div>
 
-      <div><strong class="text-gray-400">Call Data:</strong></div>
-      <div id="recoveryCallData" class="break-all">—</div>
+    <div class="text-gray-400">Call Target:</div>
+    <div id="recoveryCallTarget"
+         class="font-mono text-slate-100 truncate max-w-[260px]"
+         title="—">—</div>
+
+    <div class="text-gray-400">Call Data:</div>
+    <div id="recoveryCallData"
+         class="font-mono text-slate-100 break-all"
+         title="—">—</div>
+
+    <div class="col-span-2">
+      <div class="text-gray-400">Approved By:</div>
+      <pre id="recoveryApprovedBy"
+           class="font-mono text-slate-100 whitespace-pre-wrap bg-gray-900/50 p-2 rounded-lg h-24 overflow-y-auto">—</pre>
     </div>
   </div>
+</div>
 
   <!-- Veto & Warning Card -->
 <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
@@ -2644,16 +2655,45 @@ $('clearLockBtn').onclick = async () => {
   try {
     showLoading();
 
-    // 1 = Admin, 0 = Deployer
-    const [proposed, approvalsBN, deadlineBN, executed, callTarget, callData] =
-      await contracts.council.getRecoveryState(1);
+    const kind = 1; // 1 = Admin, 0 = Deployer
 
+    // Individual fields
+    const proposed   = await contracts.council.getProposed(kind);
+    const approvals  = await contracts.council.getApprovals(kind);
+    const deadlineBN = await contracts.council.getDeadline(kind);
+    const executed   = await contracts.council.getExecuted(kind);
+    const callTarget = await contracts.council.getCallTarget(kind);
+    const callData   = await contracts.council.getCallData(kind);
+
+    // Guardian + threshold info
+    const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
+    const threshold = (await contracts.council.THRESHOLD()).toNumber();
+
+    // Fill UI
     $('recoveryProposed').innerText = proposed;
-    $('recoveryApprovals').innerText = approvalsBN.toString();
-    $('recoveryDeadline').innerText = new Date(deadlineBN * 1000).toLocaleString();
+    $('recoveryApprovals').innerText = `${approvals} / ${guardianCount} (threshold: ${threshold})`;
+    $('recoveryDeadline').innerText =
+      deadlineBN > 0 ? new Date(deadlineBN * 1000).toLocaleString() : "—";
     $('recoveryExecuted').innerText = executed ? "✅ Yes" : "❌ No";
-    $('recoveryCallTarget').innerText = callTarget;
-    $('recoveryCallData').innerText = callData;
+
+    const callTargetEl = $('recoveryCallTarget');
+    callTargetEl.innerText = callTarget;
+    callTargetEl.title = callTarget;
+
+    const callDataEl = $('recoveryCallData');
+    callDataEl.innerText = callData && callData.length > 0 ? callData : "—";
+    callDataEl.title = callData;
+
+    // Approved by list
+    const approvedList = [];
+    for (let i = 0; i < guardianCount; i++) {
+      const guardian = await contracts.council.GUARDIAN_LIST(i);
+      const has = await contracts.council.hasApproved(kind, guardian);
+      if (has) approvedList.push(guardian);
+    }
+
+    $('recoveryApprovedBy').innerText =
+      approvedList.length > 0 ? approvedList.join("\n") : "No approvals yet.";
 
   } catch (e) {
     alert("❌ " + (e.message || e));
