@@ -2473,67 +2473,6 @@ $('activateStandbyBtn').onclick = async () => {
 
 
 // ------------------------------------
-// 2. Recovery Status Read Logic (Admin Kind 1)
-// ------------------------------------
-// NOTE: This code assumes the 'ethers' library is loaded and 
-// 'contracts', '$', 'showLoading', and 'hideLoading' are defined globally.
-
-// ------------------------------------
-// GLOBAL CONSTANTS
-// ------------------------------------
-const SWAP_ADMIN_SELECTOR = '0x51480f81'; // bytes4(keccak256("swapAdmin(address,address)"))
-const UPGRADE_TO_SELECTOR = '0xba5258f1'; // bytes4(keccak256("upgradeTo(address)"))
-const PAUSE_SELECTOR = '0x38d8d32d';     // bytes4(keccak256("pause()"))
-const UNPAUSE_SELECTOR = '0x8456cb59';   // bytes4(keccak256("unpause()"))
-
-
-// ------------------------------------
-// HELPER FUNCTIONS (Read from Contract)
-// ------------------------------------
-
-/** Decodes the raw recovery state from the contract into a readable object. */
-async function getRecoveryStateDecoded(kind) {
-    // ABI Order: [proposed, approvals, deadline, executed, callTarget, callData]
-    const [
-        proposed,
-        approvalsBN,    // uint8
-        deadlineBN,     // uint256
-        executed,
-        callTarget,
-        callData
-    ] = await contracts.council.getRecoveryState(kind);
-
-    return {
-        kind,
-        proposed,
-        approvals: Number(approvalsBN),
-        deadline: deadlineBN.toNumber(),
-        executed,
-        callTarget,
-        callData
-    };
-}
-
-/** Fetches the list of guardian addresses that have approved the given kind. */
-async function getApprovedGuardians(kind) {
-    try {
-        const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
-        const approved = [];
-
-        for (let i = 0; i < guardianCount; i++) {
-            const guardian = await contracts.council.GUARDIAN_LIST(i);
-            const has = await contracts.council.hasApproved(kind, guardian);
-            if (has) approved.push(guardian);
-        }
-        return approved;
-    } catch (e) {
-        console.error(`❌ Error fetching guardian approvals for Kind ${kind}`, e);
-        return [];
-    }
-}
-
-
-// ------------------------------------
 // 1. Recovery Proposal Setup Logic (Handlers)
 // ------------------------------------
 // Dropdown Logic for common function selection
@@ -2638,9 +2577,67 @@ $('clearLockBtn').onclick = async () => {
 };
 
 
+	  // ------------------------------------
+// 2. Recovery Status Read Logic (Admin Kind 1)
 // ------------------------------------
-// 2. Recovery Status Read Logic (Refresher)
+// NOTE: This code assumes the 'ethers' library is loaded and 
+// 'contracts', '$', 'showLoading', and 'hideLoading' are defined globally.
+
 // ------------------------------------
+// GLOBAL CONSTANTS
+// ------------------------------------
+const SWAP_ADMIN_SELECTOR = '0x51480f81'; // bytes4(keccak256("swapAdmin(address,address)"))
+const UPGRADE_TO_SELECTOR = '0xba5258f1'; // bytes4(keccak256("upgradeTo(address)"))
+const PAUSE_SELECTOR = '0x38d8d32d';     // bytes4(keccak256("pause()"))
+const UNPAUSE_SELECTOR = '0x8456cb59';   // bytes4(keccak256("unpause()"))
+
+
+// ------------------------------------
+// HELPER FUNCTIONS (Read from Contract)
+// ------------------------------------
+
+/** Decodes the raw recovery state from the contract into a readable object. */
+async function getRecoveryStateDecoded(kind) {
+    // ABI Order: [proposed, approvals, deadline, executed, callTarget, callData]
+    const [
+        proposed,
+        approvalsBN,    // uint8
+        deadlineBN,     // uint256
+        executed,
+        callTarget,
+        callData
+    ] = await contracts.council.getRecoveryState(kind);
+
+    return {
+        kind,
+        proposed,
+        approvals: Number(approvalsBN),
+        deadline: deadlineBN.toNumber(),
+        executed,
+        callTarget,
+        callData
+    };
+}
+
+/** Fetches the list of guardian addresses that have approved the given kind. */
+async function getApprovedGuardians(kind) {
+    try {
+        const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
+        const approved = [];
+
+        for (let i = 0; i < guardianCount; i++) {
+            const guardian = await contracts.council.GUARDIAN_LIST(i);
+            const has = await contracts.council.hasApproved(kind, guardian);
+            if (has) approved.push(guardian);
+        }
+        return approved;
+    } catch (e) {
+        console.error(`❌ Error fetching guardian approvals for Kind ${kind}`, e);
+        return [];
+    }
+}
+	  
+	  
 const refreshRecoveryState = async () => {
     // 1. Check Kind 1 first (Admin)
     let state = await getRecoveryStateDecoded(1);
