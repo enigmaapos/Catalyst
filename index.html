@@ -1577,7 +1577,8 @@ async function fetchTransparency() {
  * Loading Indicator
  ********************************************************************/
 function showLoading() {
-  $('loadingIndicator').style.display = 'block';
+  // Use 'flex' to activate the centering rules defined in your CSS
+  $('loadingIndicator').style.display = 'flex';
 }
 function hideLoading() {
   $('loadingIndicator').style.display = 'none';
