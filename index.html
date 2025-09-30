@@ -345,6 +345,14 @@
       ➕ Grant MINTER_ROLE
     </button>
   </div>
+
+		<div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Revoke Minter Role (Requires DEFAULT_ADMIN_ROLE)</div>
+    <input id="revokeMinterAddress" placeholder="Minter address to revoke" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="revokeMinterRoleBtn" class="mt-2 w-full p-2 bg-red-600 hover:bg-red-500 rounded">
+      ➖ Revoke MINTER_ROLE
+    </button>
+		</div>
   
   <div class="pt-4 border-t border-slate-700">
     <div class="text-xs text-slate-400 mb-1">Council Actions (Requires onlyCouncil)</div>
@@ -1366,6 +1374,42 @@ async function cataSetMinter() {
         hideLoading(); 
     }
 }
+
+			   // Function for Admin to directly revoke the Minter role from an address
+async function cataRevokeMinter() {
+    try {
+        if (!contracts.cata) {
+            await attachContractsIfSet();
+            if (!contracts.cata) return alert('Set CATA contract address first');
+        }
+
+        const minterToRevoke = $('revokeMinterAddress').value.trim();
+        if (!ethers.utils.isAddress(minterToRevoke)) {
+            return alert("❌ Invalid address to revoke.");
+        }
+        
+        showLoading(`Revoking Minter role from ${minterToRevoke}...`);
+        
+        // DIRECT CALL: The connected wallet must be the DEFAULT_ADMIN_ROLE holder.
+        const tx = await contracts.cata.revokeMinter(minterToRevoke);
+        
+        log('cata.revokeMinter tx', tx.hash);
+        await tx.wait();
+        log('cata.revokeMinter completed');
+        
+        alert(`✅ Minter Role successfully revoked from ${minterToRevoke}.`);
+
+    } catch (e) { 
+        log('cataRevokeMinter err', e?.message || e);
+        // This will revert if the connected wallet is NOT the DEFAULT_ADMIN_ROLE holder.
+        alert(`Revoke Minter failed: ${e.message || e}`);
+    } finally { 
+        hideLoading(); 
+    }
+}
+
+// BINDING TO BUTTON
+$('revokeMinterRoleBtn').onclick = cataRevokeMinter;
 
 // BINDING TO BUTTONS (Add this to your main init/binding block)
 $('grantCouncilRoleBtn').onclick = cataSetCouncil;
