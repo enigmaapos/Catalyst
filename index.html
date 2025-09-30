@@ -762,7 +762,6 @@
     </div>
     <button id="activateStandbyBtn" class="w-full p-2 bg-green-600 rounded mt-2">Activate Standby</button>
   </div>
-</select>
 	
   <hr class="border-slate-700 my-2" />
 
@@ -776,22 +775,22 @@
 
   <!-- Select Function -->
   <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
-    <option value="" disabled selected>-- Select Admin Function --</option>
-    <option value="swapAdmin">swapAdmin(address,address)</option>
-    <option value="changeAdmin">changeAdmin(address)</option>
-    <option value="pause">pause()</option>
-    <option value="unpause">unpause()</option>
-  </select>
+  <option value="" disabled selected>-- Select Admin Function --</option>
+  <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
+  <option value="changeAdmin(address)">changeAdmin(address)</option>
+  <option value="pause()">pause()</option>
+  <option value="unpause()">unpause()</option>
+</select>
 
-  <!-- Dynamic argument inputs -->
-  <div id="recoveryArgsContainer" class="space-y-2"></div>
+<input id="recoveryProposed" placeholder="Proposed address (e.g., new Admin)" class="w-full p-2 rounded bg-black/20" />
+<input id="recoveryCallTarget" placeholder="Target contract address (e.g., CataERC20 Proxy)" class="w-full p-2 rounded bg-black/20" />
+<input id="recoveryFunction" placeholder="Function Signature (e.g., swapAdmin(address,address))" class="w-full p-2 rounded bg-black/20" />
+<input id="recoveryArgs" placeholder="Arguments (comma-separated, e.g., 0xNewAdmin, 0xOldAdmin)" class="w-full p-2 rounded bg-black/20" />
+<textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
 
-  <!-- Calldata preview -->
-  <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
-
-  <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">
-    Encode CallData
-  </button>
+<button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">
+  Encode CallData
+</button>
 	
             <div class="flex gap-2 mt-2">
                 <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 hover:bg-red-700 rounded-lg">Propose</button>
