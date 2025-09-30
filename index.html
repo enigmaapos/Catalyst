@@ -773,7 +773,7 @@
 <h2 class="text-xl font-semibold mb-2">1. New Recovery Request (Admin Only)</h2>
 <div class="p-4 rounded-lg bg-slate-800 shadow space-y-3">
   <h3 class="text-sm font-semibold mb-1">Request Parameters</h3>
-  
+
   <!-- Select Function -->
   <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
     <option value="" disabled selected>-- Select Admin Function --</option>
@@ -783,10 +783,7 @@
     <option value="unpause">unpause()</option>
   </select>
 
-  <!-- Target contract -->
-  <input id="recoveryCallTarget" placeholder="Target contract address" class="w-full p-2 rounded bg-black/20" />
-
-  <!-- Dynamic input container -->
+  <!-- Dynamic argument inputs -->
   <div id="recoveryArgsContainer" class="space-y-2"></div>
 
   <!-- Calldata preview -->
@@ -2545,29 +2542,32 @@ const fnSigs = {
   unpause: "function unpause()"
 };
 
-// When dropdown changes → build inputs
 $("recoveryFunctionSelect").onchange = () => {
   const selected = $("recoveryFunctionSelect").value;
   const container = $("recoveryArgsContainer");
-  container.innerHTML = ""; // clear old inputs
-  $("recoveryCallData").value = ""; // reset
+  container.innerHTML = "";
+  $("recoveryCallData").value = "";
 
   if (selected === "swapAdmin") {
     container.innerHTML = `
-      <input id="argNewAdmin" placeholder="New Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
-      <input id="argOldAdmin" placeholder="Old Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
+      <input id="proposedAdmin" placeholder="Proposed (display only)" class="w-full p-2 rounded bg-black/20" />
+      <input id="newAdmin" placeholder="New Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
+      <input id="oldAdmin" placeholder="Old Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
+      <input id="targetContract" placeholder="Target contract address (proxy)" class="w-full p-2 rounded bg-black/20" />
     `;
   } else if (selected === "changeAdmin") {
     container.innerHTML = `
-      <input id="argNewAdmin" placeholder="New Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
+      <input id="proposedAdmin" placeholder="Proposed (New Admin, 0x...)" class="w-full p-2 rounded bg-black/20" />
+      <input id="targetContract" placeholder="Target contract address (proxy)" class="w-full p-2 rounded bg-black/20" />
     `;
   } else if (selected === "pause" || selected === "unpause") {
-    // No args needed
-    container.innerHTML = `<p class="text-gray-400 text-sm">No arguments required</p>`;
+    container.innerHTML = `
+      <input id="targetContract" placeholder="Target contract address (proxy)" class="w-full p-2 rounded bg-black/20" />
+      <p class="text-gray-400 text-sm">No additional arguments required</p>
+    `;
   }
 };
 
-// Encode Calldata
 $("encodeCallDataBtn").onclick = async () => {
   try {
     const selected = $("recoveryFunctionSelect").value;
@@ -2577,11 +2577,15 @@ $("encodeCallDataBtn").onclick = async () => {
     let calldata;
 
     if (selected === "swapAdmin") {
-      const newAdmin = $("argNewAdmin").value.trim();
-      const oldAdmin = $("argOldAdmin").value.trim();
+      const newAdmin = $("newAdmin").value.trim();
+      const oldAdmin = $("oldAdmin").value.trim();
       calldata = iface.encodeFunctionData("swapAdmin", [newAdmin, oldAdmin]);
+
+      // For display only: show proposed
+      $("proposedAdmin").value = newAdmin;
+
     } else if (selected === "changeAdmin") {
-      const newAdmin = $("argNewAdmin").value.trim();
+      const newAdmin = $("proposedAdmin").value.trim();
       calldata = iface.encodeFunctionData("changeAdmin", [newAdmin]);
     } else if (selected === "pause") {
       calldata = iface.encodeFunctionData("pause", []);
