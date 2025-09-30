@@ -2644,7 +2644,7 @@ async function refreshRecovery() {
     // --- Fetch proposed ---
     let proposed = ethers.constants.AddressZero;
     try {
-      proposed = await contracts.council.getRecoveryProposed();
+      proposed = await contracts.council.RecoveryProposed();
     } catch (err) {
       console.warn("getRecoveryProposed failed:", err);
     }
@@ -2683,7 +2683,7 @@ async function refreshRecovery() {
 
     // Call target
     try {
-      const target = await contracts.council.getRecoveryCallTarget();
+      const target = await contracts.council.RecoveryCallTarget();
       $("recoveryCallTarget").innerText = target || "—";
     } catch {
       $("recoveryCallTarget").innerText = "—";
@@ -2691,7 +2691,7 @@ async function refreshRecovery() {
 
     // Call data
     try {
-      const callData = await contracts.council.getRecoveryCallData();
+      const callData = await contracts.council.RecoveryCallData();
       $("recoveryCallData").innerText = callData || "—";
     } catch {
       $("recoveryCallData").innerText = "—";
