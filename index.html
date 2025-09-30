@@ -2636,6 +2636,33 @@ async function refreshRecovery() {
   try {
     showLoading();
 
+    // Deadline first (this tells us if a proposal even exists)
+    let deadlineNum = 0;
+    try {
+      const deadlineBN = await contracts.council.getRecoveryDeadline();
+      deadlineNum = Number(deadlineBN.toString());
+      $("recoveryDeadline").innerText =
+        deadlineNum === 0
+          ? "No Active Proposal"
+          : new Date(deadlineNum * 1000).toLocaleString();
+    } catch (err) {
+      console.error("getRecoveryDeadline failed:", err);
+      $("recoveryDeadline").innerText = "ERROR";
+      errors.push("getRecoveryDeadline()");
+    }
+
+    // 👉 If no active proposal, show placeholders & bail early
+    if (deadlineNum === 0) {
+      $("recoveryProposed").innerText = "—";
+      $("recoveryApprovals").innerText = "—";
+      $("recoveryExecuted").innerText = "❌ Not executed";
+      $("recoveryCallTarget").innerText = "—";
+      $("recoveryCallData").innerText = "—";
+      $("recoveryApprovedBy").innerText = "—";
+      hideLoading();
+      return;
+    }
+
     // Proposed
     try {
       const proposed = await contracts.council.getRecoveryProposed();
@@ -2658,18 +2685,6 @@ async function refreshRecovery() {
       console.error("getRecoveryApprovals failed:", err);
       $("recoveryApprovals").innerText = "ERROR";
       errors.push("getRecoveryApprovals()");
-    }
-
-    // Deadline
-    try {
-      const deadlineBN = await contracts.council.getRecoveryDeadline();
-      const deadlineNum = Number(deadlineBN.toString());
-      $("recoveryDeadline").innerText =
-        deadlineNum === 0 ? "No Active Proposal" : new Date(deadlineNum * 1000).toLocaleString();
-    } catch (err) {
-      console.error("getRecoveryDeadline failed:", err);
-      $("recoveryDeadline").innerText = "ERROR";
-      errors.push("getRecoveryDeadline()");
     }
 
     // Executed
@@ -2730,16 +2745,12 @@ async function refreshRecovery() {
     }
 
     // --- Banner if some calls failed ---
-    if (deadlineNum === 0) {
-  $("recoveryDeadline").innerText = "No Active Proposal";
-  $("recoveryProposed").innerText = "—";
-  $("recoveryApprovals").innerText = "—";
-  $("recoveryCallTarget").innerText = "—";
-  $("recoveryCallData").innerText = "—";
-  $("recoveryExecuted").innerText = "❌ Not executed";
-  $("recoveryApprovedBy").innerText = "—";
-  return;
-	}
+    if (errors.length > 0) {
+      banner.classList.remove("hidden");
+      banner.className =
+        "mb-4 p-2 rounded-lg text-sm font-medium bg-red-900 text-red-200 border border-red-700";
+      banner.innerText = "⚠️ Some calls failed: " + errors.join(", ");
+    }
 
   } catch (err) {
     console.error("FATAL in refreshRecovery:", err);
@@ -2751,7 +2762,7 @@ async function refreshRecovery() {
     hideLoading();
   }
 }
-   
+ 
     
 async function refreshVetoWarning() {
   if (!contracts.council) {
