@@ -775,10 +775,6 @@
         <h3 class="text-sm font-semibold mb-1">Request Parameters</h3>
         <div class="space-y-2 text-sm">
             
-            <select id="recoveryKind" class="w-full p-2 rounded bg-black/20" disabled>
-                <option value="1" selected>Admin (Kind 1) [Hardcoded]</option>
-            </select>
-            
             <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
                 <option value="" disabled selected>-- Select Admin Function --</option>
                 <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
@@ -2598,7 +2594,6 @@ $('encodeCallDataBtn').onclick = async () => {
 $('proposeRecoveryBtn').onclick = async () => {
     try {
         showLoading();
-        const kind = 1; // HARDCODED: Admin Kind
         const proposed = $('recoveryProposed').value.trim();
         const target = $('recoveryCallTarget').value.trim();
         const calldata = $('recoveryCallData').value.trim();
@@ -2606,7 +2601,7 @@ $('proposeRecoveryBtn').onclick = async () => {
         if (!target || target === '0x') return alert("❌ Target contract address is required.");
         if (!calldata || calldata.length < 10) return alert("❌ Calldata must be encoded.");
 
-        const tx = await contracts.council.proposeRecovery(kind, proposed, target, calldata);
+        const tx = await contracts.council.proposeRecovery(proposed, target, calldata);
         await tx.wait();
         alert("✅ Recovery proposed");
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
@@ -2615,8 +2610,7 @@ $('proposeRecoveryBtn').onclick = async () => {
 $('approveRecoveryBtn').onclick = async () => {
     try { 
         showLoading(); 
-        const kind = 1; // HARDCODED: Admin Kind
-        const tx = await contracts.council.approveRecovery(kind); 
+        const tx = await contracts.council.approveRecovery();
         await tx.wait(); 
         alert("✅ Recovery approved");
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
@@ -2625,8 +2619,7 @@ $('approveRecoveryBtn').onclick = async () => {
 $('executeRecoveryBtn').onclick = async () => {
     try { 
         showLoading(); 
-        const kind = 1; // HARDCODED: Admin Kind
-        const tx = await contracts.council.executeRecovery(kind); 
+        const tx = await contracts.council.executeRecovery(); 
         await tx.wait(); 
         alert("✅ Recovery executed");
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
@@ -2635,8 +2628,7 @@ $('executeRecoveryBtn').onclick = async () => {
 $('vetoRecoveryBtn').onclick = async () => {
     try { 
         showLoading(); 
-        const kind = 1; // HARDCODED: Admin Kind
-        const tx = await contracts.council.lastHonestHaltAndPromote(kind); 
+        const tx = await contracts.council.lastHonestHaltAndPromote(); 
         await tx.wait(); 
         alert("✅ Recovery vetoed");
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
@@ -2652,18 +2644,17 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-	$('refreshRecoveryBtn').onclick = async () => {
+$('refreshRecoveryBtn').onclick = async () => {
   const banner = $('recoveryStatusBanner');
   banner.classList.add("hidden"); // reset
 
   const errors = [];
   try {
     showLoading();
-    const kind = 1; // 1 = Admin, 0 = Deployer
 
     // Proposed
     try {
-      const proposed = await contracts.council.getRecoveryProposed(kind);
+      const proposed = await contracts.council.getRecoveryProposed();
       $('recoveryProposed').innerText = proposed || '—';
       $('recoveryProposed').title = proposed || '';
     } catch (err) {
@@ -2674,7 +2665,7 @@ $('clearLockBtn').onclick = async () => {
 
     // Approvals
     try {
-      const approvals  = await contracts.council.getRecoveryApprovals(kind);
+      const approvals  = await contracts.council.getRecoveryApprovals();
       const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
       const threshold = (await contracts.council.THRESHOLD()).toNumber();
       $('recoveryApprovals').innerText = `${approvals.toString()} / ${guardianCount} (threshold: ${threshold})`;
@@ -2686,7 +2677,7 @@ $('clearLockBtn').onclick = async () => {
 
     // Deadline
     try {
-      const deadlineBN = await contracts.council.getRecoveryDeadline(kind);
+      const deadlineBN = await contracts.council.getRecoveryDeadline();
       const deadlineEl = $('recoveryDeadline');
       const deadlineNum = Number(deadlineBN?.toString() || 0);
       if (deadlineNum === 0) {
@@ -2703,7 +2694,7 @@ $('clearLockBtn').onclick = async () => {
 
     // Executed
     try {
-      const executed = await contracts.council.getRecoveryExecuted(kind);
+      const executed = await contracts.council.getRecoveryExecuted();
       $('recoveryExecuted').innerText = executed ? "✅ Executed" : "❌ Not executed";
     } catch (err) {
       console.error("getRecoveryExecuted failed:", err);
@@ -2713,7 +2704,7 @@ $('clearLockBtn').onclick = async () => {
 
     // Call Target
     try {
-      const callTarget = await contracts.council.getRecoveryCallTarget(kind);
+      const callTarget = await contracts.council.getRecoveryCallTarget();
       $('recoveryCallTarget').innerText = callTarget || '—';
       $('recoveryCallTarget').title = callTarget || '';
     } catch (err) {
@@ -2724,7 +2715,7 @@ $('clearLockBtn').onclick = async () => {
 
     // Call Data
     try {
-      const callData = await contracts.council.getRecoveryCallData(kind);
+      const callData = await contracts.council.getRecoveryCallData();
       $('recoveryCallData').innerText = (callData && callData !== '0x') ? callData : '—';
       $('recoveryCallData').title = callData;
     } catch (err) {
@@ -2740,12 +2731,13 @@ $('clearLockBtn').onclick = async () => {
       for (let g of active) {
         if (!g || g === ethers.constants.AddressZero) continue;
         try {
-          const has = await contracts.council.hasApproved(kind, g);
+          const has = await contracts.council.hasApproved(g); // no kind arg
           if (has) approvedList.push(g);
         } catch (err) {
           console.warn("hasApproved failed for", g, err);
         }
       }
+
       $('recoveryApprovedBy').innerText = approvedList.length > 0 ? approvedList.join('\n') : 'No approvals yet.';
     } catch (err) {
       console.error("getActiveGuardians/hasApproved failed:", err);
@@ -2771,6 +2763,7 @@ $('clearLockBtn').onclick = async () => {
     hideLoading();
   }
 };
+    
 
 $('refreshVetoWarningBtn').onclick = async () => {
   try {
