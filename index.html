@@ -2730,12 +2730,16 @@ async function refreshRecovery() {
     }
 
     // --- Banner if some calls failed ---
-    if (errors.length > 0) {
-      banner.classList.remove("hidden");
-      banner.className =
-        "mb-4 p-2 rounded-lg text-sm font-medium bg-red-900 text-red-200 border border-red-700";
-      banner.innerText = "⚠️ Some calls failed: " + errors.join(", ");
-    }
+    if (deadlineNum === 0) {
+  $("recoveryDeadline").innerText = "No Active Proposal";
+  $("recoveryProposed").innerText = "—";
+  $("recoveryApprovals").innerText = "—";
+  $("recoveryCallTarget").innerText = "—";
+  $("recoveryCallData").innerText = "—";
+  $("recoveryExecuted").innerText = "❌ Not executed";
+  $("recoveryApprovedBy").innerText = "—";
+  return;
+	}
 
   } catch (err) {
     console.error("FATAL in refreshRecovery:", err);
