@@ -1299,15 +1299,10 @@ async function cataBurn() {
   }
 }
 
-	  // --- Constants for Role (Assuming standard OZ) ---
-// You MUST ensure this value matches the actual COUNCIL_ROLE hash in your CataERC20 contract.
-const COUNCIL_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("COUNCIL_ROLE")); 
-
-// Handler for the new "Grant COUNCIL_ROLE" button
+// Handler for the "Grant COUNCIL_ROLE" button
 $('grantCouncilRoleBtn').onclick = async () => {
     try {
-        if (!contracts?.council) return alert("Wallet not connected or contracts not initialized.");
-        if (!contracts?.cata) return alert("CATA contract not initialized.");
+        if (!contracts?.council || !contracts?.cata) return alert("Wallet or contracts not initialized.");
         
         showLoading();
         
@@ -1317,31 +1312,26 @@ $('grantCouncilRoleBtn').onclick = async () => {
         }
 
         // --- 1. Encode the Action (The actual function we want the council to execute) ---
-        // This targets the CataERC20 contract's grantRole function
+        // FIX: CALLING setCouncil(address) INSTEAD OF grantRole(bytes32, address)
         const iface = new ethers.utils.Interface([
-            "function grantRole(bytes32 role, address account)"
+            "function setCouncil(address newCouncil)" // Correct function signature
         ]);
 
-        const callData = iface.encodeFunctionData("grantRole", [
-            COUNCIL_ROLE, // Role hash: COUNCIL_ROLE
-            newCouncil    // Account to grant the role to
+        const callData = iface.encodeFunctionData("setCouncil", [
+            newCouncil    // Argument is just the new council address
         ]);
 
-        // --- 2. Propose the Action via the Council Contract ---
-        // The target for the proposal is the CataERC20 token contract.
+        // --- 2. Propose the Action via the Council Contract (unchanged) ---
         const cataAddress = contracts.cata.address;
         
-        // Note: The 'proposed' field is not strictly used by grantRole but is mandatory for proposeRecovery.
-        // We'll set it to the new council address for clarity.
-        
         const tx = await contracts.council.proposeRecovery(
-            newCouncil,   // proposed (Address being proposed in the contract struct)
+            newCouncil,   // proposed (Address being proposed)
             cataAddress,  // callTarget (CataERC20 contract)
-            callData      // callData (The grantRole encoded transaction)
+            callData      // callData (The setCouncil encoded transaction)
         );
         
         await tx.wait();
-        alert(`✅ Proposal to grant COUNCIL_ROLE to ${newCouncil} submitted! Guardians must now approve.`);
+        alert(`✅ Proposal to change Council to ${newCouncil} submitted! Guardians must now approve.`);
         refreshRecovery();
 
     } catch (e) { 
@@ -1350,12 +1340,12 @@ $('grantCouncilRoleBtn').onclick = async () => {
         hideLoading(); 
     }
 };
+	  
 
-	  // --- Constant for Minter Role ---
-// This value is defined in CataERC20Upgradeable.sol: keccak256("MINTER_ROLE")
+	// --- Constant for Minter Role (Not used in callData, but good for reference) ---
 const MINTER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MINTER_ROLE"));
 
-// Handler for the new "Grant MINTER_ROLE" button
+// Handler for the "Grant MINTER_ROLE" button
 $('grantMinterRoleBtn').onclick = async () => {
     try {
         if (!contracts?.council || !contracts?.cata) return alert("Wallet or contracts not initialized.");
@@ -1367,14 +1357,14 @@ $('grantMinterRoleBtn').onclick = async () => {
             return alert("❌ Invalid Minter address.");
         }
 
-        // --- 1. Encode the Action (Call grantRole on CataERC20) ---
+        // --- 1. Encode the Action (Call setMinter(address) on CataERC20) ---
+        // FIX: CALLING setMinter(address) INSTEAD OF grantRole(bytes32, address)
         const iface = new ethers.utils.Interface([
-            "function grantRole(bytes32 role, address account)"
+            "function setMinter(address newMinter)" // Correct function signature
         ]);
 
-        const callData = iface.encodeFunctionData("grantRole", [
-            MINTER_ROLE,  // Role hash: MINTER_ROLE
-            newMinter     // Account to grant the role to
+        const callData = iface.encodeFunctionData("setMinter", [
+            newMinter    // Argument is just the new minter address
         ]);
 
         // --- 2. Propose the Action via the Council Contract ---
@@ -1383,11 +1373,11 @@ $('grantMinterRoleBtn').onclick = async () => {
         const tx = await contracts.council.proposeRecovery(
             newMinter,    // proposed (Address being proposed)
             cataAddress,  // callTarget (CataERC20 contract)
-            callData      // callData (The grantRole encoded transaction)
+            callData      // callData (The setMinter encoded transaction)
         );
         
         await tx.wait();
-        alert(`✅ Proposal to grant MINTER_ROLE to ${newMinter} submitted! Guardians must now approve.`);
+        alert(`✅ Proposal to set Minter to ${newMinter} submitted! Guardians must now approve.`);
         refreshRecovery();
 
     } catch (e) { 
