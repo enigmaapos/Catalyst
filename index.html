@@ -2609,7 +2609,6 @@ $('proposeRecoveryBtn').onclick = async () => {
         const tx = await contracts.council.proposeRecovery(kind, proposed, target, calldata);
         await tx.wait();
         alert("✅ Recovery proposed");
-        await refreshRecoveryState(); 
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
@@ -2620,7 +2619,6 @@ $('approveRecoveryBtn').onclick = async () => {
         const tx = await contracts.council.approveRecovery(kind); 
         await tx.wait(); 
         alert("✅ Recovery approved");
-        await refreshRecoveryState(); 
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
@@ -2631,7 +2629,6 @@ $('executeRecoveryBtn').onclick = async () => {
         const tx = await contracts.council.executeRecovery(kind); 
         await tx.wait(); 
         alert("✅ Recovery executed");
-        await refreshRecoveryState(); 
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
@@ -2642,7 +2639,6 @@ $('vetoRecoveryBtn').onclick = async () => {
         const tx = await contracts.council.lastHonestHaltAndPromote(kind); 
         await tx.wait(); 
         alert("✅ Recovery vetoed");
-        await refreshRecoveryState();
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
