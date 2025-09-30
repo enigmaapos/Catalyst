@@ -2665,13 +2665,42 @@ async function refreshRecovery() {
 }
 
 async function refreshVetoWarning() {
-  const [guardian, expiry] = await contracts.council.tempVeto();
-  const warn = await contracts.council.warning();
-  $("lastHonestGuardian").innerText = guardian;
-  $("lastHonestGuardian").title = guardian;
-  $("lastHonestExpiry").innerText = expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "—";
-  $("warningFlag").innerText = warn ? "⚠️ Warning Active" : "✅ No Warning";
-  $("warningFlag").className = warn ? "text-yellow-400" : "text-green-400";
+  if (!contracts.council) {
+    console.warn("❌ Council contract not attached yet");
+    return;
+  }
+
+  try {
+    const [guardian, expiry] = await contracts.council.tempVeto();
+    const warn = await contracts.council.warning();
+
+    // Guardian field: text + tooltip
+    $("lastHonestGuardian").innerText = guardian;
+    $("lastHonestGuardian").title = guardian;
+
+    // Expiry field
+    $("lastHonestExpiry").innerText =
+      expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "—";
+
+    // Warning field (color coded)
+    const warningEl = $("warningFlag");
+    if (warn) {
+      warningEl.innerText = "⚠️ Warning Active";
+      warningEl.classList.add("text-yellow-400");
+      warningEl.classList.remove("text-green-400");
+    } else {
+      warningEl.innerText = "✅ No Warning";
+      warningEl.classList.add("text-green-400");
+      warningEl.classList.remove("text-yellow-400");
+    }
+  } catch (err) {
+    console.error("refreshVetoWarning failed:", err);
+    $("lastHonestGuardian").innerText = "ERROR";
+    $("lastHonestExpiry").innerText = "ERROR";
+    $("warningFlag").innerText = "ERROR";
+    $("warningFlag").classList.remove("text-green-400", "text-yellow-400");
+    $("warningFlag").classList.add("text-red-400");
+  }
 }
 
 async function refreshDao() {
