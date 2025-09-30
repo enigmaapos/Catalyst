@@ -2642,12 +2642,16 @@ async function refreshRecovery() {
     }
 
     // --- Fetch proposed ---
-    let proposed = ethers.constants.AddressZero;
-    try {
-      proposed = await contracts.council.getRecoveryProposed();
-    } catch (err) {
-      console.warn("getRecoveryProposed failed:", err);
-    }
+    // Proposed
+try {
+  proposed = await contracts.council.getRecoveryProposed();
+  console.log("DEBUG proposed raw:", proposed);
+  proposed = proposed.toString();
+  $("recoveryProposed").innerText =
+    proposed && proposed !== ethers.constants.AddressZero ? proposed : "—";
+} catch (err) {
+  console.warn("getRecoveryProposed failed:", err);
+}
 
     // --- Check validity ---
     const hasProposal =
@@ -2682,20 +2686,26 @@ async function refreshRecovery() {
     $("recoveryExecuted").innerText = executed ? "✅ Executed" : "❌ Not executed";
 
     // Call target
-    try {
-      const target = await contracts.council.getRecoveryCallTarget();
-      $("recoveryCallTarget").innerText = target && target !== ethers.constants.AddressZero ? target : "—";
-    } catch {
-      $("recoveryCallTarget").innerText = "—";
-    }
+try {
+  let target = await contracts.council.getRecoveryCallTarget();
+  console.log("DEBUG callTarget raw:", target);
+  target = target.toString();
+  $("recoveryCallTarget").innerText =
+    target && target !== ethers.constants.AddressZero ? target : "—";
+} catch {
+  $("recoveryCallTarget").innerText = "—";
+}
 
-    // Call data
-    try {
-      const callData = await contracts.council.getRecoveryCallData();
-      $("recoveryCallData").innerText = callData && callData !== "0x" ? callData : "—";
-    } catch {
-      $("recoveryCallData").innerText = "—";
-    }
+// Call data
+try {
+  let callData = await contracts.council.getRecoveryCallData();
+  console.log("DEBUG callData raw:", callData);
+  callData = callData.toString();
+  $("recoveryCallData").innerText =
+    callData && callData !== "0x" ? callData : "—";
+} catch {
+  $("recoveryCallData").innerText = "—";
+}
 
     // Approvals
     try {
