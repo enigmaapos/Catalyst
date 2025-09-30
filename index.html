@@ -12,17 +12,29 @@
 .tabbtn:hover {opacity: 0.85; transform: translateY(-1px);}
 .tab-active {outline: 2px solid white; outline-offset: 2px;}
 
-  /* Center it on the screen */
-  #loadingIndicator {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 9999;
+/* Center it on the screen (FIXED FOR SCROLLING) */
+#loadingIndicator {
+    /* Ensures the element is anchored to the browser window (viewport) */
+    position: fixed; 
+    
+    /* Sets the container to cover the entire viewport area */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    
+    /* Puts it above all other page content */
+    z-index: 9999; 
+    
+    /* Uses Flexbox to center the content (spinner/text) */
     display: flex;
     flex-direction: column;
-    align-items: center;
-  }
+    justify-content: center; /* Centers content vertically */
+    align-items: center;    /* Centers content horizontally */
+    
+    /* Recommended: Add a semi-transparent background to block interaction */
+    background: rgba(0, 0, 0, 0.7); 
+}
 
   /* Spinner circle */
   .spinner {
