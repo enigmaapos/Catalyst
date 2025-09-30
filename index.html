@@ -781,12 +781,12 @@
                 <option value="unpause()">unpause()</option>
             </select>
 
-            <input id="recoveryProposed" placeholder="Proposed address (e.g., new Admin)" class="w-full p-2 rounded bg-black/20" />
-            <input id="recoveryCallTarget" placeholder="Target contract address (e.g., CataERC20 Proxy)" class="w-full p-2 rounded bg-black/20" />
+            <input id="inputRecoveryProposed" placeholder="Proposed address (e.g., new Admin)" class="w-full p-2 rounded bg-black/20" />
+<input id="inputRecoveryCallTarget" placeholder="Target contract address (e.g., CataERC20 Proxy)" class="w-full p-2 rounded bg-black/20" />
             <input id="recoveryFunction" placeholder="Function Signature (e.g., swapAdmin(address,address))" class="w-full p-2 rounded bg-black/20" />
             <input id="recoveryArgs" placeholder="Arguments (comma-separated, e.g., 0xNewAdmin, 0xOldAdmin)" class="w-full p-2 rounded bg-black/20" />
-            <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
-            
+            <textarea id="inputRecoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
+	
             <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">Encode CallData</button>
 	
             <div class="flex gap-2 mt-2">
@@ -2531,20 +2531,21 @@ $('activateStandbyBtn').onclick = async () => {
 
 
 // ------------------------------------
+// Function Signature Select
 $('recoveryFunctionSelect').onchange = () => {
     const selectedValue = $('recoveryFunctionSelect').value;
     $('recoveryFunction').value = selectedValue;
     
     // Clear proposed and args fields on new selection
-    $('recoveryProposed').value = ''; 
+    $('inputRecoveryProposed').value = '';  // UPDATED ID
     $('recoveryArgs').value = '';
 
     if (selectedValue.includes('swapAdmin(address,address)')) {
         $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
-        $('recoveryProposed').value = '0xNewAdmin'; 
+        $('inputRecoveryProposed').value = '0xNewAdmin';  // UPDATED ID
     } else if (selectedValue.includes('changeAdmin(address)')) {
         $('recoveryArgs').value = '0xNewAdmin';
-        $('recoveryProposed').value = '0xNewAdmin';
+        $('inputRecoveryProposed').value = '0xNewAdmin'; // UPDATED ID
     } else if (selectedValue.includes('()')) {
         // pause(), unpause()
         $('recoveryArgs').value = '';
@@ -2562,19 +2563,20 @@ $('encodeCallDataBtn').onclick = async () => {
         const iface = new ethers.utils.Interface([`function ${fnSig}`]);
         const fnName = fnSig.split('(')[0];
 
-        $('recoveryCallData').value = iface.encodeFunctionData(fnName, args);
+        // UPDATED ID
+        $('inputRecoveryCallData').value = iface.encodeFunctionData(fnName, args); 
         alert("✅ Calldata encoded");
     } catch (e) { alert("❌ Error encoding calldata. Check signature and arguments: " + (e.message || e)); }
 };
     
-	  
-
+// Propose Recovery Button
 $('proposeRecoveryBtn').onclick = async () => {
     try {
         showLoading();
-        const proposed = $('recoveryProposed').value.trim();
-        const target = $('recoveryCallTarget').value.trim();
-        const calldata = $('recoveryCallData').value.trim();
+        // UPDATED IDs
+        const proposed = $('inputRecoveryProposed').value.trim(); 
+        const target = $('inputRecoveryCallTarget').value.trim(); 
+        const calldata = $('inputRecoveryCallData').value.trim();
         
         if (!target || target === '0x') return alert("❌ Target contract address is required.");
         if (!calldata || calldata.length < 10) return alert("❌ Calldata must be encoded.");
@@ -2585,6 +2587,7 @@ $('proposeRecoveryBtn').onclick = async () => {
     } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
+	  
 $('approveRecoveryBtn').onclick = async () => {
     try { 
         showLoading(); 
