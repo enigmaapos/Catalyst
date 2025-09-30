@@ -2622,13 +2622,18 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
+	  
 	
 	  async function refreshRecovery() {
   if (!contracts?.council) return;
 
-  showLoading("recovery");
+  // Use a global indicator for any recovery activity
+  showLoading("recovery"); 
 
   try {
+    // NOTE: The previous check for 'hasProposal' is permanently removed
+    // to ensure raw contract values (even zero/empty ones) are displayed.
+
     // --- Fetch deadline ---
     let deadlineNum = 0;
     try {
@@ -2645,9 +2650,12 @@ $('clearLockBtn').onclick = async () => {
     try {
       proposed = await contracts.council.getRecoveryProposed();
     } catch (err) {
-      console.warn("getRecoveryProposed failed:", err);
+      // DEBUG: Log the error if fetching the proposed address fails
+      console.error("DEBUG FAILED: getRecoveryProposed failed.", err);
+      // Set to a failed state, otherwise it might display a default value (AddressZero) incorrectly
+      $("recoveryProposed").innerText = "[!CALL FAILED]";
+      throw new Error("Proposed fetch failed."); // Re-throw to skip subsequent steps if the core proposal data is bad
     }
-
     // FIX: Always display raw proposed address.
     $("recoveryProposed").innerText = proposed;
 
@@ -2666,8 +2674,10 @@ $('clearLockBtn').onclick = async () => {
       const target = await contracts.council.getRecoveryCallTarget();
       // FIX: Always display raw target address.
       $("recoveryCallTarget").innerText = target;
-    } catch {
-      $("recoveryCallTarget").innerText = "—";
+    } catch (err) {
+      // DEBUG: Log the error instead of silently replacing with "—"
+      console.error("DEBUG FAILED: getRecoveryCallTarget failed.", err);
+      $("recoveryCallTarget").innerText = "[!CALL FAILED]";
     }
 
     // Call data
@@ -2675,16 +2685,19 @@ $('clearLockBtn').onclick = async () => {
       const callData = await contracts.council.getRecoveryCallData();
       // FIX: Always display raw callData.
       $("recoveryCallData").innerText = callData;
-    } catch {
-      $("recoveryCallData").innerText = "—";
+    } catch (err) {
+      // DEBUG: Log the error instead of silently replacing with "—"
+      console.error("DEBUG FAILED: getRecoveryCallData failed.", err);
+      $("recoveryCallData").innerText = "[!CALL FAILED]";
     }
 
     // Approvals
     try {
       const approvals = await contracts.council.getRecoveryApprovals();
       $("recoveryApprovals").innerText = approvals.toString();
-    } catch {
-      $("recoveryApprovals").innerText = "—";
+    } catch (err) {
+      console.error("DEBUG FAILED: getRecoveryApprovals failed.", err);
+      $("recoveryApprovals").innerText = "[!CALL FAILED]";
     }
 
     // Approved by (guardians list)
@@ -2694,26 +2707,26 @@ $('clearLockBtn').onclick = async () => {
       const currentNonce = await contracts.council.getAdminRequestNonce(); 
       for (const g of guardians) {
         try {
-          // Check if the guardian has approved the *current* nonce
-          // This check implicitly relies on currentNonce being correct.
           const approved = await contracts.council.hasApproved(g);
           if (approved) approvedBy.push(g);
         } catch {}
       }
       $("recoveryApprovedBy").innerText =
         approvedBy.length > 0 ? approvedBy.join(", ") : "—";
-    } catch {
-      $("recoveryApprovedBy").innerText = "—";
+    } catch (err) {
+      // DEBUG: Log error for the whole approval block
+      console.error("DEBUG FAILED: ApprovedBy block failed.", err);
+      $("recoveryApprovedBy").innerText = "[!BLOCK FAILED]";
     }
   } catch (err) {
-    console.error("refreshRecovery failed:", err);
+    // Catch errors re-thrown from inside the try block (e.g., if proposed fails)
+    console.error("refreshRecovery failed with re-thrown error:", err); 
   }
 
   hideLoading();
-	}
+	  }
 
 
-    
 
 // ===========================
 // Recovery Event Watchers
