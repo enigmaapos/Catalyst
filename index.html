@@ -2697,35 +2697,26 @@ async function refreshRecovery() {
       $("recoveryCallData").innerText = "—";
     }
 
-    // Approvals
-    try {
-      const approvals = await contracts.council.getRecoveryApprovals();
-      $("recoveryApprovals").innerText = approvals.toString();
-    } catch {
-      $("recoveryApprovals").innerText = "—";
-    }
 
-    // Approved by (guardians list)
+	  // Approved by (guardians list)
+try {
+  const guardians = await contracts.council.getActiveGuardians();
+  const approvedBy = [];
+  for (const g of guardians) {
     try {
-      const guardians = await contracts.council.getActiveGuardians();
-      const approvedBy = [];
-      for (const g of guardians) {
-        try {
-          const approved = await contracts.council.hasApprovedRecovery(g);
-          if (approved) approvedBy.push(g);
-        } catch {}
-      }
-      $("recoveryApprovedBy").innerText =
-        approvedBy.length > 0 ? approvedBy.join(", ") : "—";
-    } catch {
-      $("recoveryApprovedBy").innerText = "—";
+      const approved = await contracts.council.hasApproved(g); // 👈 use your original
+      if (approved) approvedBy.push(g);
+    } catch (err) {
+      console.warn("hasApproved failed for", g, err);
     }
-  } catch (err) {
-    console.error("refreshRecovery failed:", err);
   }
-
-  hideLoading();
+  $("recoveryApprovedBy").innerText =
+    approvedBy.length > 0 ? approvedBy.join("\n") : "—";
+} catch (err) {
+  console.error("getActiveGuardians()/hasApproved failed:", err);
+  $("recoveryApprovedBy").innerText = "—";
 }
+
 
 // ===========================
 // Recovery Event Watchers
