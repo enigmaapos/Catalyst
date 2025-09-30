@@ -770,27 +770,32 @@
 <div class="max-w-xl mx-auto p-4 space-y-4">
     <h1 class="text-2xl font-bold mb-4">BatchGuardianCouncil Console</h1>
 
-    <h2 class="text-xl font-semibold mb-2">1. New Recovery Request (Admin Only)</h2>
-    <div class="p-4 rounded-lg bg-slate-800 shadow space-y-3">
-        <h3 class="text-sm font-semibold mb-1">Request Parameters</h3>
-        <div class="space-y-2 text-sm">
-            
-            <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
-                <option value="" disabled selected>-- Select Admin Function --</option>
-                <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
-                <option value="changeAdmin(address)">changeAdmin(address)</option>
-                <option value="pause()">pause()</option>
-                <option value="unpause()">unpause()</option>
-            </select>
+<h2 class="text-xl font-semibold mb-2">1. New Recovery Request (Admin Only)</h2>
+<div class="p-4 rounded-lg bg-slate-800 shadow space-y-3">
+  <h3 class="text-sm font-semibold mb-1">Request Parameters</h3>
+  
+  <!-- Select Function -->
+  <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
+    <option value="" disabled selected>-- Select Admin Function --</option>
+    <option value="swapAdmin">swapAdmin(address,address)</option>
+    <option value="changeAdmin">changeAdmin(address)</option>
+    <option value="pause">pause()</option>
+    <option value="unpause">unpause()</option>
+  </select>
 
-            <input id="recoveryProposed" placeholder="Proposed address (e.g., new Admin)" class="w-full p-2 rounded bg-black/20" />
-            <input id="recoveryCallTarget" placeholder="Target contract address (e.g., CataERC20 Proxy)" class="w-full p-2 rounded bg-black/20" />
-            <input id="recoveryFunction" placeholder="Function Signature (e.g., swapAdmin(address,address))" class="w-full p-2 rounded bg-black/20" />
-            <input id="recoveryArgs" placeholder="Arguments (comma-separated, e.g., 0xNewAdmin, 0xOldAdmin)" class="w-full p-2 rounded bg-black/20" />
-            <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
-            
-            <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">Encode CallData</button>
-            
+  <!-- Target contract -->
+  <input id="recoveryCallTarget" placeholder="Target contract address" class="w-full p-2 rounded bg-black/20" />
+
+  <!-- Dynamic input container -->
+  <div id="recoveryArgsContainer" class="space-y-2"></div>
+
+  <!-- Calldata preview -->
+  <textarea id="recoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
+
+  <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">
+    Encode CallData
+  </button>
+	
             <div class="flex gap-2 mt-2">
                 <button id="proposeRecoveryBtn" class="flex-1 p-2 bg-red-600 hover:bg-red-700 rounded-lg">Propose</button>
                 <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 hover:bg-orange-700 rounded-lg">Approve</button>
@@ -2532,47 +2537,65 @@ $('activateStandbyBtn').onclick = async () => {
 
 
 // ------------------------------------
-// 1. Recovery Proposal Setup Logic (Handlers)
-// ------------------------------------
-// Dropdown Logic for common function selection
-$('recoveryFunctionSelect').onchange = () => {
-    const selectedValue = $('recoveryFunctionSelect').value;
-    $('recoveryFunction').value = selectedValue;
-    
-    // Clear proposed and args fields on new selection
-    $('recoveryProposed').value = ''; 
-    $('recoveryArgs').value = '';
+// Function signatures mapping
+const fnSigs = {
+  swapAdmin: "function swapAdmin(address newAdmin, address oldAdmin)",
+  changeAdmin: "function changeAdmin(address newAdmin)",
+  pause: "function pause()",
+  unpause: "function unpause()"
+};
 
-    if (selectedValue.includes('swapAdmin(address,address)')) {
-        $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
-        $('recoveryProposed').value = '0xNewAdmin'; 
-    } else if (selectedValue.includes('changeAdmin(address)')) {
-        $('recoveryArgs').value = '0xNewAdmin';
-        $('recoveryProposed').value = '0xNewAdmin';
-    } else if (selectedValue.includes('()')) {
-        // pause(), unpause()
-        $('recoveryArgs').value = '';
+// When dropdown changes → build inputs
+$("recoveryFunctionSelect").onchange = () => {
+  const selected = $("recoveryFunctionSelect").value;
+  const container = $("recoveryArgsContainer");
+  container.innerHTML = ""; // clear old inputs
+  $("recoveryCallData").value = ""; // reset
+
+  if (selected === "swapAdmin") {
+    container.innerHTML = `
+      <input id="argNewAdmin" placeholder="New Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
+      <input id="argOldAdmin" placeholder="Old Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
+    `;
+  } else if (selected === "changeAdmin") {
+    container.innerHTML = `
+      <input id="argNewAdmin" placeholder="New Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
+    `;
+  } else if (selected === "pause" || selected === "unpause") {
+    // No args needed
+    container.innerHTML = `<p class="text-gray-400 text-sm">No arguments required</p>`;
+  }
+};
+
+// Encode Calldata
+$("encodeCallDataBtn").onclick = async () => {
+  try {
+    const selected = $("recoveryFunctionSelect").value;
+    if (!selected) return alert("❌ Please select a function");
+
+    const iface = new ethers.utils.Interface([fnSigs[selected]]);
+    let calldata;
+
+    if (selected === "swapAdmin") {
+      const newAdmin = $("argNewAdmin").value.trim();
+      const oldAdmin = $("argOldAdmin").value.trim();
+      calldata = iface.encodeFunctionData("swapAdmin", [newAdmin, oldAdmin]);
+    } else if (selected === "changeAdmin") {
+      const newAdmin = $("argNewAdmin").value.trim();
+      calldata = iface.encodeFunctionData("changeAdmin", [newAdmin]);
+    } else if (selected === "pause") {
+      calldata = iface.encodeFunctionData("pause", []);
+    } else if (selected === "unpause") {
+      calldata = iface.encodeFunctionData("unpause", []);
     }
+
+    $("recoveryCallData").value = calldata;
+    alert("✅ Calldata encoded");
+  } catch (e) {
+    alert("❌ Error encoding calldata: " + (e.message || e));
+  }
 };
-
-// Encode Calldata Button
-$('encodeCallDataBtn').onclick = async () => {
-    try {
-        const fnSig = $('recoveryFunction').value.trim();
-        const args = $('recoveryArgs').value.trim().split(',').map(a => a.trim()).filter(Boolean);
-        
-        if (!fnSig) return alert("❌ Function signature is required.");
-        
-        const iface = new ethers.utils.Interface([`function ${fnSig}`]);
-        const fnName = fnSig.split('(')[0];
-
-        $('recoveryCallData').value = iface.encodeFunctionData(fnName, args);
-        alert("✅ Calldata encoded");
-    } catch (e) { alert("❌ Error encoding calldata. Check signature and arguments: " + (e.message || e)); }
-};
-
-
-// Transaction Handlers (HARDCODED kind = 1 for submission)
+	  
 
 $('proposeRecoveryBtn').onclick = async () => {
     try {
