@@ -2697,25 +2697,29 @@ async function refreshRecovery() {
       $("recoveryCallData").innerText = "—";
     }
 
-
-	  // Approved by (guardians list)
-try {
-  const guardians = await contracts.council.getActiveGuardians();
-  const approvedBy = [];
-  for (const g of guardians) {
+    // Approved By
     try {
-      const approved = await contracts.council.hasApproved(g); // 👈 use your original
-      if (approved) approvedBy.push(g);
+      const active = await contracts.council.getActiveGuardians();
+      const approvedList = [];
+      for (let g of active) {
+        if (!g || g === ethers.constants.AddressZero) continue;
+        try {
+          if (await contracts.council.hasApproved(g)) {
+            approvedList.push(g);
+          }
+        } catch (err) {
+          console.warn("hasApproved failed for", g, err);
+        }
+      }
+      $("recoveryApprovedBy").innerText = approvedList.length
+        ? approvedList.join("\n")
+        : "No approvals yet.";
     } catch (err) {
-      console.warn("hasApproved failed for", g, err);
-    }
-  }
-  $("recoveryApprovedBy").innerText =
-    approvedBy.length > 0 ? approvedBy.join("\n") : "—";
-} catch (err) {
-  console.error("getActiveGuardians()/hasApproved failed:", err);
-  $("recoveryApprovedBy").innerText = "—";
-}
+      console.error("getActiveGuardians/hasApproved failed:", err);
+      $("recoveryApprovedBy").innerText = "ERROR";
+      errors.push("getActiveGuardians()/hasApproved()");
+	}
+
 
 
 // ===========================
