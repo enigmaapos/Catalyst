@@ -319,7 +319,7 @@
   </div>
 
   <div class="pt-4 border-t border-slate-700">
-    <div class="text-xs text-slate-400 mb-1">Admin Controls</div>
+    <div class="text-xs text-slate-400 mb-1">Admin Controls (Requires DEFAULT_ADMIN_ROLE)</div>
     <div class="flex gap-2">
       <button id="pauseBtn" class="flex-1 p-2 bg-yellow-600 hover:bg-yellow-500 rounded">
         ⏸ Pause
@@ -331,7 +331,23 @@
   </div>
 
   <div class="pt-4 border-t border-slate-700">
-    <div class="text-xs text-slate-400 mb-1">Council Actions</div>
+    <div class="text-xs text-slate-400 mb-1">Change Council (Requires DEFAULT_ADMIN_ROLE)</div>
+    <input id="newCouncilAddress" placeholder="New Council contract address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="grantCouncilRoleBtn" class="mt-2 w-full p-2 bg-purple-600 hover:bg-purple-500 rounded">
+      🔄 Grant COUNCIL_ROLE
+    </button>
+  </div>
+
+  <div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Manage Minter Role (Requires DEFAULT_ADMIN_ROLE)</div>
+    <input id="newMinterAddress" placeholder="Address to grant MINTER_ROLE" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="grantMinterRoleBtn" class="mt-2 w-full p-2 bg-pink-600 hover:bg-pink-500 rounded">
+      ➕ Grant MINTER_ROLE
+    </button>
+  </div>
+  
+  <div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Council Actions (Requires onlyCouncil)</div>
     <div class="flex gap-2">
       <input id="swapNewAdmin" placeholder="New admin address" class="flex-1 p-2 rounded bg-black/20 text-sm" />
       <input id="swapOldAdmin" placeholder="Old admin address (optional)" class="flex-1 p-2 rounded bg-black/20 text-sm" />
@@ -340,6 +356,7 @@
       🔑 Swap Admin
     </button>
   </div>
+	</div>
 
   <div class="pt-4 border-t border-slate-700">
     <div class="text-xs text-slate-400 mb-1">Transparency & Key Roles</div>
@@ -1282,6 +1299,104 @@ async function cataBurn() {
   }
 }
 
+	  // --- Constants for Role (Assuming standard OZ) ---
+// You MUST ensure this value matches the actual COUNCIL_ROLE hash in your CataERC20 contract.
+const COUNCIL_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("COUNCIL_ROLE")); 
+
+// Handler for the new "Grant COUNCIL_ROLE" button
+$('grantCouncilRoleBtn').onclick = async () => {
+    try {
+        if (!contracts?.council) return alert("Wallet not connected or contracts not initialized.");
+        if (!contracts?.cata) return alert("CATA contract not initialized.");
+        
+        showLoading();
+        
+        const newCouncil = $('newCouncilAddress').value.trim();
+        if (!ethers.utils.isAddress(newCouncil)) {
+            return alert("❌ Invalid new Council address.");
+        }
+
+        // --- 1. Encode the Action (The actual function we want the council to execute) ---
+        // This targets the CataERC20 contract's grantRole function
+        const iface = new ethers.utils.Interface([
+            "function grantRole(bytes32 role, address account)"
+        ]);
+
+        const callData = iface.encodeFunctionData("grantRole", [
+            COUNCIL_ROLE, // Role hash: COUNCIL_ROLE
+            newCouncil    // Account to grant the role to
+        ]);
+
+        // --- 2. Propose the Action via the Council Contract ---
+        // The target for the proposal is the CataERC20 token contract.
+        const cataAddress = contracts.cata.address;
+        
+        // Note: The 'proposed' field is not strictly used by grantRole but is mandatory for proposeRecovery.
+        // We'll set it to the new council address for clarity.
+        
+        const tx = await contracts.council.proposeRecovery(
+            newCouncil,   // proposed (Address being proposed in the contract struct)
+            cataAddress,  // callTarget (CataERC20 contract)
+            callData      // callData (The grantRole encoded transaction)
+        );
+        
+        await tx.wait();
+        alert(`✅ Proposal to grant COUNCIL_ROLE to ${newCouncil} submitted! Guardians must now approve.`);
+        refreshRecovery();
+
+    } catch (e) { 
+        alert("❌ Proposal failed: " + (e.message || e)); 
+    } finally { 
+        hideLoading(); 
+    }
+};
+
+	  // --- Constant for Minter Role ---
+// This value is defined in CataERC20Upgradeable.sol: keccak256("MINTER_ROLE")
+const MINTER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MINTER_ROLE"));
+
+// Handler for the new "Grant MINTER_ROLE" button
+$('grantMinterRoleBtn').onclick = async () => {
+    try {
+        if (!contracts?.council || !contracts?.cata) return alert("Wallet or contracts not initialized.");
+        
+        showLoading();
+        
+        const newMinter = $('newMinterAddress').value.trim();
+        if (!ethers.utils.isAddress(newMinter)) {
+            return alert("❌ Invalid Minter address.");
+        }
+
+        // --- 1. Encode the Action (Call grantRole on CataERC20) ---
+        const iface = new ethers.utils.Interface([
+            "function grantRole(bytes32 role, address account)"
+        ]);
+
+        const callData = iface.encodeFunctionData("grantRole", [
+            MINTER_ROLE,  // Role hash: MINTER_ROLE
+            newMinter     // Account to grant the role to
+        ]);
+
+        // --- 2. Propose the Action via the Council Contract ---
+        const cataAddress = contracts.cata.address;
+        
+        const tx = await contracts.council.proposeRecovery(
+            newMinter,    // proposed (Address being proposed)
+            cataAddress,  // callTarget (CataERC20 contract)
+            callData      // callData (The grantRole encoded transaction)
+        );
+        
+        await tx.wait();
+        alert(`✅ Proposal to grant MINTER_ROLE to ${newMinter} submitted! Guardians must now approve.`);
+        refreshRecovery();
+
+    } catch (e) { 
+        alert("❌ Proposal failed: " + (e.message || e)); 
+    } finally { 
+        hideLoading(); 
+    }
+};
+
 // Pause (admin only)
 async function cataPause() {
   try {
@@ -1349,6 +1464,8 @@ async function cataSwapAdmin() {
     hideLoading();
   }
 }
+
+	  
 
 // Transparency (view supply, roles, minters)
 async function fetchTransparency() {
@@ -2842,7 +2959,8 @@ async function autoRefreshAll() {
     refreshVetoWarning(),
     refreshDao(),
     refreshGuardians(),
-    refreshLock()
+    refreshLock(),
+	  fetchTransparency()
   ]);
 }
 	  
