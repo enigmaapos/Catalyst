@@ -2644,7 +2644,7 @@ async function refreshRecovery() {
     // --- Fetch proposed ---
     let proposed = ethers.constants.AddressZero;
     try {
-      proposed = await contracts.council.recoveryProposed();
+      proposed = await contracts.council.getRecoveryProposed();
     } catch (err) {
       console.warn("getRecoveryProposed failed:", err);
     }
