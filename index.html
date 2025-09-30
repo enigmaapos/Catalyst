@@ -1574,17 +1574,6 @@ async function fetchTransparency() {
 }
 
 /********************************************************************
- * Loading Indicator
- ********************************************************************/
-function showLoading() {
-  // Use 'flex' to activate the centering rules defined in your CSS
-  $('loadingIndicator').style.display = 'flex';
-}
-function hideLoading() {
-  $('loadingIndicator').style.display = 'none';
-}
-
-/********************************************************************
  * Collection Registration logic
  ********************************************************************/
 const MIN_ERC20_ABI = [
@@ -3118,6 +3107,17 @@ function selectTab(tabId) {
   const section = document.getElementById(tabId);
   if (section) section.classList.remove('hidden');
 		}
+
+	  /********************************************************************
+ * Loading Indicator
+ ********************************************************************/
+function showLoading() {
+  // Use 'flex' to activate the centering rules defined in your CSS
+  $('loadingIndicator').style.display = 'flex';
+}
+function hideLoading() {
+  $('loadingIndicator').style.display = 'none';
+}
 	  
   </script>
 </body>
