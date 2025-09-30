@@ -1228,9 +1228,6 @@ async function connect() {
     // 👇 auto-fetch council state right after connect
     await autoRefreshAll();
 
-	   // attach live event watchers
-  watchRecoveryEvents();
-
   } catch (e) {
     log("connect err", e?.message || e);
   }
@@ -2625,34 +2622,44 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-// ---------- Refreshers ----------
+
+// ===========================
+// Recovery State Refresher
+// ===========================
 async function refreshRecovery() {
-  const banner = $("recoveryStatusBanner");
-  banner.classList.add("hidden"); // reset
+  if (!contracts?.council) return;
 
-  const errors = [];
+  showLoading("recovery");
+
   try {
-    showLoading();
-
-    // Deadline first (this tells us if a proposal even exists)
+    // --- Fetch deadline ---
     let deadlineNum = 0;
     try {
-      const deadlineBN = await contracts.council.getRecoveryDeadline();
-      deadlineNum = Number(deadlineBN.toString());
-      $("recoveryDeadline").innerText =
-        deadlineNum === 0
-          ? "No Active Proposal"
-          : new Date(deadlineNum * 1000).toLocaleString();
+      deadlineNum = await contracts.council.getRecoveryDeadline();
+      deadlineNum = Number(deadlineNum);
     } catch (err) {
-      console.error("getRecoveryDeadline failed:", err);
-      $("recoveryDeadline").innerText = "ERROR";
-      errors.push("getRecoveryDeadline()");
+      console.warn("getRecoveryDeadline failed:", err);
     }
 
-    // 👉 If no active proposal, show placeholders & bail early
-    if (deadlineNum === 0) {
+    // --- Fetch proposed ---
+    let proposed = ethers.constants.AddressZero;
+    try {
+      proposed = await contracts.council.getRecoveryProposed();
+    } catch (err) {
+      console.warn("getRecoveryProposed failed:", err);
+    }
+
+    // --- Check validity ---
+    const hasProposal =
+      deadlineNum > 0 &&
+      proposed &&
+      proposed !== ethers.constants.AddressZero;
+
+    if (!hasProposal) {
+      // No active proposal → reset UI
       $("recoveryProposed").innerText = "—";
       $("recoveryApprovals").innerText = "—";
+      $("recoveryDeadline").innerText = "—";
       $("recoveryExecuted").innerText = "❌ Not executed";
       $("recoveryCallTarget").innerText = "—";
       $("recoveryCallData").innerText = "—";
@@ -2661,131 +2668,102 @@ async function refreshRecovery() {
       return;
     }
 
-    // Proposed
+    // --- If valid, populate UI ---
+    $("recoveryProposed").innerText = proposed;
+    $("recoveryDeadline").innerText = new Date(deadlineNum * 1000).toLocaleString();
+
+    // Executed?
+    let executed = false;
     try {
-      const proposed = await contracts.council.getRecoveryProposed();
-      $("recoveryProposed").innerText =
-        proposed && proposed !== ethers.constants.AddressZero ? proposed : "—";
-      $("recoveryProposed").title = proposed || "";
+      executed = await contracts.council.getRecoveryExecuted();
     } catch (err) {
-      console.error("getRecoveryProposed failed:", err);
-      $("recoveryProposed").innerText = "ERROR";
-      errors.push("getRecoveryProposed()");
+      console.warn("getRecoveryExecuted failed:", err);
+    }
+    $("recoveryExecuted").innerText = executed ? "✅ Executed" : "❌ Not executed";
+
+    // Call target
+    try {
+      const target = await contracts.council.getRecoveryCallTarget();
+      $("recoveryCallTarget").innerText = target || "—";
+    } catch {
+      $("recoveryCallTarget").innerText = "—";
+    }
+
+    // Call data
+    try {
+      const callData = await contracts.council.getRecoveryCallData();
+      $("recoveryCallData").innerText = callData || "—";
+    } catch {
+      $("recoveryCallData").innerText = "—";
     }
 
     // Approvals
     try {
       const approvals = await contracts.council.getRecoveryApprovals();
-      const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
-      const threshold = (await contracts.council.THRESHOLD()).toNumber();
-      $("recoveryApprovals").innerText = `${approvals.toString()} / ${guardianCount} (threshold: ${threshold})`;
-    } catch (err) {
-      console.error("getRecoveryApprovals failed:", err);
-      $("recoveryApprovals").innerText = "ERROR";
-      errors.push("getRecoveryApprovals()");
+      $("recoveryApprovals").innerText = approvals.toString();
+    } catch {
+      $("recoveryApprovals").innerText = "—";
     }
 
-    // Executed
+    // Approved by (guardians list)
     try {
-      const executed = await contracts.council.getRecoveryExecuted();
-      $("recoveryExecuted").innerText = executed ? "✅ Executed" : "❌ Not executed";
-    } catch (err) {
-      console.error("getRecoveryExecuted failed:", err);
-      $("recoveryExecuted").innerText = "ERROR";
-      errors.push("getRecoveryExecuted()");
-    }
-
-    // Call Target
-    try {
-      const callTarget = await contracts.council.getRecoveryCallTarget();
-      $("recoveryCallTarget").innerText =
-        callTarget && callTarget !== ethers.constants.AddressZero ? callTarget : "—";
-      $("recoveryCallTarget").title = callTarget || "";
-    } catch (err) {
-      console.error("getRecoveryCallTarget failed:", err);
-      $("recoveryCallTarget").innerText = "ERROR";
-      errors.push("getRecoveryCallTarget()");
-    }
-
-    // Call Data
-    try {
-      const callData = await contracts.council.getRecoveryCallData();
-      $("recoveryCallData").innerText =
-        callData && callData !== "0x" ? callData : "—";
-      $("recoveryCallData").title = callData || "";
-    } catch (err) {
-      console.error("getRecoveryCallData failed:", err);
-      $("recoveryCallData").innerText = "ERROR";
-      errors.push("getRecoveryCallData()");
-    }
-
-    // Approved By
-    try {
-      const active = await contracts.council.getActiveGuardians();
-      const approvedList = [];
-      for (let g of active) {
-        if (!g || g === ethers.constants.AddressZero) continue;
+      const guardians = await contracts.council.getActiveGuardians();
+      const approvedBy = [];
+      for (const g of guardians) {
         try {
-          if (await contracts.council.hasApproved(g)) {
-            approvedList.push(g);
-          }
-        } catch (err) {
-          console.warn("hasApproved failed for", g, err);
-        }
+          const approved = await contracts.council.hasApprovedRecovery(g);
+          if (approved) approvedBy.push(g);
+        } catch {}
       }
-      $("recoveryApprovedBy").innerText = approvedList.length
-        ? approvedList.join("\n")
-        : "No approvals yet.";
-    } catch (err) {
-      console.error("getActiveGuardians/hasApproved failed:", err);
-      $("recoveryApprovedBy").innerText = "ERROR";
-      errors.push("getActiveGuardians()/hasApproved()");
+      $("recoveryApprovedBy").innerText =
+        approvedBy.length > 0 ? approvedBy.join(", ") : "—";
+    } catch {
+      $("recoveryApprovedBy").innerText = "—";
     }
-
-    // --- Banner if some calls failed ---
-    if (errors.length > 0) {
-      banner.classList.remove("hidden");
-      banner.className =
-        "mb-4 p-2 rounded-lg text-sm font-medium bg-red-900 text-red-200 border border-red-700";
-      banner.innerText = "⚠️ Some calls failed: " + errors.join(", ");
-    }
-
   } catch (err) {
-    console.error("FATAL in refreshRecovery:", err);
-    banner.classList.remove("hidden");
-    banner.className =
-      "mb-4 p-2 rounded-lg text-sm font-medium bg-red-900 text-red-200 border border-red-700";
-    banner.innerText = "❌ Fatal error: " + (err.message || err);
-  } finally {
-    hideLoading();
+    console.error("refreshRecovery failed:", err);
   }
+
+  hideLoading();
 }
 
-	  // ---------- Event Listeners ----------
+// ===========================
+// Recovery Event Watchers
+// ===========================
 function watchRecoveryEvents() {
   if (!contracts?.council) return;
 
-  // Prevent duplicates (important in hot reload/dev)
-  contracts.council.removeAllListeners("RecoveryProposed");
-  contracts.council.removeAllListeners("RecoveryApproved");
-  contracts.council.removeAllListeners("RecoveryExecuted");
-
-  contracts.council.on("RecoveryProposed", () => {
-    console.log("📡 RecoveryProposed event");
+  // Proposal created
+  contracts.council.on("RecoveryProposed", (proposed, deadline, event) => {
+    console.log("⚡ RecoveryProposed", proposed, deadline.toString());
     refreshRecovery();
   });
 
-  contracts.council.on("RecoveryApproved", () => {
-    console.log("📡 RecoveryApproved event");
+  // Approval added
+  contracts.council.on("RecoveryApproved", (guardian, event) => {
+    console.log("⚡ RecoveryApproved by", guardian);
     refreshRecovery();
   });
 
-  contracts.council.on("RecoveryExecuted", () => {
-    console.log("📡 RecoveryExecuted event");
+  // Proposal executed
+  contracts.council.on("RecoveryExecuted", (success, event) => {
+    console.log("⚡ RecoveryExecuted, success:", success);
     refreshRecovery();
   });
 }
- 
+
+// ===========================
+// Initialization Hook
+// ===========================
+// Call this once after contracts are connected
+async function initRecoveryUI() {
+  // First manual refresh
+  await refreshRecovery();
+
+  // Start listening for live events
+  watchRecoveryEvents();
+}
+    
     
 async function refreshVetoWarning() {
   if (!contracts.council) {
@@ -2881,8 +2859,8 @@ async function autoRefreshAll() {
   $('connectBtn').onclick = connect;
   $('disconnectBtn').onclick = disconnect;
 
-$("refreshRecoveryBtn").addEventListener("click", refreshRecovery);
-$("refreshVetoWarningBtn").onclick = refreshVetoWarning;
+$("refreshRecoveryBtn").addEventListener("click", () => {
+  refreshRecovery();
 $("refreshDaoBtn").onclick = refreshDao;
 $("refreshGuardiansBtn").onclick = refreshGuardians;
 $("refreshLockBtn").onclick = refreshLock;
