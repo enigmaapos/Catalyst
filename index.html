@@ -809,80 +809,59 @@
 
 	<div class="space-y-6">
 
-<!-- Recovery State Card -->
-<div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-xl font-semibold text-white">Recovery State</h2>
-    <button id="refreshRecoveryBtn"
-      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
-      🔄 Refresh
-    </button>
-  </div>
-
-  <!-- 🔔 Status Banner -->
-  <div id="recoveryStatusBanner"
-       class="hidden mb-4 p-2 rounded-lg text-sm font-medium"></div>
-
-  <div class="grid grid-cols-2 gap-y-3 text-sm text-gray-300">
-    <div class="text-gray-400">Proposed:</div>
-    <div id="recoveryProposed" class="font-mono text-slate-100 break-all">—</div>
-
-    <div class="text-gray-400">Approvals:</div>
-    <div id="recoveryApprovals" class="text-slate-100">—</div>
-
-    <div class="text-gray-400">Deadline:</div>
-    <div id="recoveryDeadline" class="text-slate-100">—</div>
-
-    <div class="text-gray-400">Executed:</div>
-    <div id="recoveryExecuted" class="text-slate-100">—</div>
-
-    <div class="text-gray-400">Call Target:</div>
-    <div id="recoveryCallTarget"
-         class="font-mono text-slate-100 truncate max-w-[260px]"
-         title="—">—</div>
-
-    <div class="text-gray-400">Call Data:</div>
-    <div id="recoveryCallData"
-         class="font-mono text-slate-100 break-all"
-         title="—">—</div>
-
-    <div class="col-span-2">
-      <div class="text-gray-400">Approved By:</div>
-      <pre id="recoveryApprovedBy"
-           class="font-mono text-slate-100 whitespace-pre-wrap bg-gray-900/50 p-2 rounded-lg h-24 overflow-y-auto">—</pre>
+  <!-- Recovery State Card -->
+  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Recovery State</h2>
+      <button id="refreshRecoveryBtn"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+        🔄 Refresh
+      </button>
+    </div>
+    <div id="recoveryStatusBanner"
+         class="hidden mb-4 p-2 rounded-lg text-sm font-medium"></div>
+    <div class="grid grid-cols-2 gap-y-3 text-sm text-gray-300">
+      <div class="text-gray-400">Proposed:</div>
+      <div id="recoveryProposed" class="font-mono text-slate-100 break-all">—</div>
+      <div class="text-gray-400">Approvals:</div>
+      <div id="recoveryApprovals" class="text-slate-100">—</div>
+      <div class="text-gray-400">Deadline:</div>
+      <div id="recoveryDeadline" class="text-slate-100">—</div>
+      <div class="text-gray-400">Executed:</div>
+      <div id="recoveryExecuted" class="text-slate-100">—</div>
+      <div class="text-gray-400">Call Target:</div>
+      <div id="recoveryCallTarget"
+           class="font-mono text-slate-100 truncate max-w-[260px]" title="—">—</div>
+      <div class="text-gray-400">Call Data:</div>
+      <div id="recoveryCallData"
+           class="font-mono text-slate-100 break-all" title="—">—</div>
+      <div class="col-span-2">
+        <div class="text-gray-400">Approved By:</div>
+        <pre id="recoveryApprovedBy"
+             class="font-mono text-slate-100 whitespace-pre-wrap bg-gray-900/50 p-2 rounded-lg h-24 overflow-y-auto">—</pre>
+      </div>
     </div>
   </div>
-</div>
-
 
   <!-- Veto & Warning Card -->
-<div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-xl font-semibold text-white">Last Honest Guardian & Warning</h2>
-    <button id="refreshVetoWarningBtn"
-      class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg text-sm font-medium shadow-md transition">
-      🔄 Refresh
-    </button>
+  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Last Honest Guardian & Warning</h2>
+      <button id="refreshVetoWarningBtn"
+        class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+        🔄 Refresh
+      </button>
+    </div>
+    <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-300">
+      <div class="text-gray-400">Guardian:</div>
+      <div id="lastHonestGuardian"
+           class="font-mono text-slate-100 truncate max-w-[220px]" title="—">—</div>
+      <div class="text-gray-400">Veto Expiry:</div>
+      <div id="lastHonestExpiry">—</div>
+      <div class="text-gray-400">Warning:</div>
+      <div id="warningFlag">—</div>
+    </div>
   </div>
-  <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-300">
-    
-    <div class="text-gray-400">Guardian:</div>
-    <div id="lastHonestGuardian" 
-         class="font-mono text-slate-100 truncate max-w-[220px]" 
-         title="—">—</div>
-
-    <div class="text-gray-400">Veto Expiry:</div>
-    <div id="lastHonestExpiry">—</div>
-
-    <div class="text-gray-400">Warning:</div>
-    <div id="warningFlag">—</div>
-  </div>
-</div>
-
-	</div>
-   
-        <hr class="border-slate-700 my-4" />
-<div class="space-y-8">
 
   <!-- DAO State Card -->
   <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
@@ -1246,6 +1225,10 @@ async function connect() {
     await attachContractsIfSet();
 
     log("Connected", userAddr);
+
+    // 👇 auto-fetch council state right after connect
+    await autoRefreshAll();
+
   } catch (e) {
     log("connect err", e?.message || e);
   }
@@ -1267,7 +1250,7 @@ function disconnect() {
   $('disconnectBtn').classList.add('hidden');
 
   log("Disconnected");
-}
+	  }
 
 
 // ---------- CATA functions ----------
@@ -2644,197 +2627,90 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-$('refreshRecoveryBtn').onclick = async () => {
-  const banner = $('recoveryStatusBanner');
-  banner.classList.add("hidden"); // reset
-
-  const errors = [];
+// ---------- Refreshers ----------
+async function refreshRecovery() {
   try {
-    showLoading();
+    const proposed = await contracts.council.getRecoveryProposed();
+    $("recoveryProposed").innerText = proposed || "—";
 
-    // Proposed
-    try {
-      const proposed = await contracts.council.getRecoveryProposed();
-      $('recoveryProposed').innerText = proposed || '—';
-      $('recoveryProposed').title = proposed || '';
-    } catch (err) {
-      console.error("getRecoveryProposed failed:", err);
-      $('recoveryProposed').innerText = "ERROR";
-      errors.push("getRecoveryProposed()");
-    }
+    const approvals = await contracts.council.getRecoveryApprovals();
+    const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
+    const threshold = (await contracts.council.THRESHOLD()).toNumber();
+    $("recoveryApprovals").innerText = `${approvals} / ${guardianCount} (threshold: ${threshold})`;
 
-    // Approvals
-    try {
-      const approvals  = await contracts.council.getRecoveryApprovals();
-      const guardianCount = (await contracts.council.GUARDIAN_COUNT()).toNumber();
-      const threshold = (await contracts.council.THRESHOLD()).toNumber();
-      $('recoveryApprovals').innerText = `${approvals.toString()} / ${guardianCount} (threshold: ${threshold})`;
-    } catch (err) {
-      console.error("getRecoveryApprovals failed:", err);
-      $('recoveryApprovals').innerText = "ERROR";
-      errors.push("getRecoveryApprovals()");
-    }
+    const deadline = await contracts.council.getRecoveryDeadline();
+    $("recoveryDeadline").innerText = deadline.eq(0)
+      ? "No Active Proposal"
+      : new Date(deadline.toNumber() * 1000).toLocaleString();
 
-    // Deadline
-    try {
-      const deadlineBN = await contracts.council.getRecoveryDeadline();
-      const deadlineEl = $('recoveryDeadline');
-      const deadlineNum = Number(deadlineBN?.toString() || 0);
-      if (deadlineNum === 0) {
-        deadlineEl.innerText = 'No Active Proposal';
-      } else {
-        const expiryDate = new Date(deadlineNum * 1000);
-        deadlineEl.innerText = expiryDate.toLocaleString();
-      }
-    } catch (err) {
-      console.error("getRecoveryDeadline failed:", err);
-      $('recoveryDeadline').innerText = "ERROR";
-      errors.push("getRecoveryDeadline()");
-    }
+    const executed = await contracts.council.getRecoveryExecuted();
+    $("recoveryExecuted").innerText = executed ? "✅ Executed" : "❌ Not executed";
 
-    // Executed
-    try {
-      const executed = await contracts.council.getRecoveryExecuted();
-      $('recoveryExecuted').innerText = executed ? "✅ Executed" : "❌ Not executed";
-    } catch (err) {
-      console.error("getRecoveryExecuted failed:", err);
-      $('recoveryExecuted').innerText = "ERROR";
-      errors.push("getRecoveryExecuted()");
-    }
+    const callTarget = await contracts.council.getRecoveryCallTarget();
+    $("recoveryCallTarget").innerText = callTarget || "—";
+    $("recoveryCallTarget").title = callTarget || "";
 
-    // Call Target
-    try {
-      const callTarget = await contracts.council.getRecoveryCallTarget();
-      $('recoveryCallTarget').innerText = callTarget || '—';
-      $('recoveryCallTarget').title = callTarget || '';
-    } catch (err) {
-      console.error("getRecoveryCallTarget failed:", err);
-      $('recoveryCallTarget').innerText = "ERROR";
-      errors.push("getRecoveryCallTarget()");
-    }
+    const callData = await contracts.council.getRecoveryCallData();
+    $("recoveryCallData").innerText = (callData && callData !== "0x") ? callData : "—";
+    $("recoveryCallData").title = callData;
 
-    // Call Data
-    try {
-      const callData = await contracts.council.getRecoveryCallData();
-      $('recoveryCallData').innerText = (callData && callData !== '0x') ? callData : '—';
-      $('recoveryCallData').title = callData;
-    } catch (err) {
-      console.error("getRecoveryCallData failed:", err);
-      $('recoveryCallData').innerText = "ERROR";
-      errors.push("getRecoveryCallData()");
-    }
-
-    // Approved By
-    try {
-      const active = await contracts.council.getActiveGuardians();
-      const approvedList = [];
-      for (let g of active) {
-        if (!g || g === ethers.constants.AddressZero) continue;
-        try {
-          const has = await contracts.council.hasApproved(g); // no kind arg
-          if (has) approvedList.push(g);
-        } catch (err) {
-          console.warn("hasApproved failed for", g, err);
-        }
-      }
-
-      $('recoveryApprovedBy').innerText = approvedList.length > 0 ? approvedList.join('\n') : 'No approvals yet.';
-    } catch (err) {
-      console.error("getActiveGuardians/hasApproved failed:", err);
-      $('recoveryApprovedBy').innerText = "ERROR";
-      errors.push("getActiveGuardians() / hasApproved()");
-    }
-
-    // --- show banner if errors happened ---
-    if (errors.length > 0) {
-      banner.classList.remove("hidden");
-      banner.className = "mb-4 p-2 rounded-lg text-sm font-medium bg-red-900 text-red-200 border border-red-700";
-      banner.innerText = "⚠️ Some calls failed: " + errors.join(", ");
-    } else {
-      banner.classList.add("hidden");
-    }
-
-  } catch (err) {
-    console.error("FATAL in refreshRecoveryBtn:", err);
-    banner.classList.remove("hidden");
-    banner.className = "mb-4 p-2 rounded-lg text-sm font-medium bg-red-900 text-red-200 border border-red-700";
-    banner.innerText = "❌ Fatal error: " + (err.message || err);
-  } finally {
-    hideLoading();
-  }
-};
-    
-
-$('refreshVetoWarningBtn').onclick = async () => {
-  try {
-    showLoading();
-
-    const [guardian, expiry] = await contracts.council.tempVeto();
-    const warn = await contracts.council.warning();
-
-    // Guardian field: set text + tooltip
-    const guardianEl = $('lastHonestGuardian');
-    guardianEl.innerText = guardian;
-    guardianEl.title = guardian;  // 👈 shows full address on hover
-
-    // Expiry field
-    $('lastHonestExpiry').innerText =
-      expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "—";
-
-    // Warning field (color-coded)
-    const warningEl = $('warningFlag');
-    if (warn) {
-      warningEl.innerText = "⚠️ Warning Active";
-      warningEl.classList.add("text-yellow-400");
-      warningEl.classList.remove("text-green-400");
-    } else {
-      warningEl.innerText = "✅ No Warning";
-      warningEl.classList.add("text-green-400");
-      warningEl.classList.remove("text-yellow-400");
-    }
-
-  } catch (e) {
-    alert("❌ " + (e.message || e));
-  } finally {
-    hideLoading();
-  }
-};
-
-        $('refreshDaoBtn').onclick = async () => {
-  try {
-    showLoading();
-    const dao = await contracts.council.dao();
-    const [pending, earliest, deadline] = await contracts.council.getPendingDAOState();
-    $('daoAddr').innerText = dao;
-    $('pendingDaoAddr').innerText = pending;
-    $('pendingDaoWindow').innerText = `Earliest: ${new Date(earliest*1000).toLocaleString()} | Deadline: ${new Date(deadline*1000).toLocaleString()}`;
-  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-};
-
-$('refreshGuardiansBtn').onclick = async () => {
-  try {
-    showLoading();
     const active = await contracts.council.getActiveGuardians();
-    const standby = await contracts.council.getStandbyGuardians();
-    const [pa, paEarliest, paDeadline] = await contracts.council.getPendingActiveBatchState();
-    const [ps, psEarliest, psDeadline] = await contracts.council.getPendingStandbyBatchState();
-    $('activeGuardians').innerText = active.join("\n");
-    $('standbyGuardians').innerText = standby.join("\n");
-    $('pendingActiveGuardians').innerText = pa.join("\n");
-    $('pendingActiveWindow').innerText = `Earliest: ${new Date(paEarliest*1000).toLocaleString()} | Deadline: ${new Date(paDeadline*1000).toLocaleString()}`;
-    $('pendingStandbyGuardians').innerText = ps.join("\n");
-    $('pendingStandbyWindow').innerText = `Earliest: ${new Date(psEarliest*1000).toLocaleString()} | Deadline: ${new Date(psDeadline*1000).toLocaleString()}`;
-  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-};
-	  
-        
-$('refreshLockBtn').onclick = async () => {
-  try {
-    showLoading();
-    const locked = await contracts.council.locked();
-    $('lockStatus').innerText = locked ? "🔒 Locked" : "✅ Unlocked";
-  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
-};
+    const approvedList = [];
+    for (let g of active) {
+      if (!g || g === ethers.constants.AddressZero) continue;
+      if (await contracts.council.hasApproved(g)) approvedList.push(g);
+    }
+    $("recoveryApprovedBy").innerText = approvedList.length ? approvedList.join("\n") : "No approvals yet.";
+  } catch (err) { console.error("refreshRecovery failed:", err); }
+}
+
+async function refreshVetoWarning() {
+  const [guardian, expiry] = await contracts.council.tempVeto();
+  const warn = await contracts.council.warning();
+  $("lastHonestGuardian").innerText = guardian;
+  $("lastHonestGuardian").title = guardian;
+  $("lastHonestExpiry").innerText = expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "—";
+  $("warningFlag").innerText = warn ? "⚠️ Warning Active" : "✅ No Warning";
+  $("warningFlag").className = warn ? "text-yellow-400" : "text-green-400";
+}
+
+async function refreshDao() {
+  const dao = await contracts.council.dao();
+  const [pending, earliest, deadline] = await contracts.council.getPendingDAOState();
+  $("daoAddr").innerText = dao;
+  $("pendingDaoAddr").innerText = pending;
+  $("pendingDaoWindow").innerText = `Earliest: ${new Date(earliest*1000).toLocaleString()} | Deadline: ${new Date(deadline*1000).toLocaleString()}`;
+}
+
+async function refreshGuardians() {
+  const active = await contracts.council.getActiveGuardians();
+  const standby = await contracts.council.getStandbyGuardians();
+  const [pa, paEarliest, paDeadline] = await contracts.council.getPendingActiveBatchState();
+  const [ps, psEarliest, psDeadline] = await contracts.council.getPendingStandbyBatchState();
+
+  $("activeGuardians").innerText = active.join("\n");
+  $("standbyGuardians").innerText = standby.join("\n");
+  $("pendingActiveGuardians").innerText = pa.join("\n");
+  $("pendingActiveWindow").innerText = `Earliest: ${new Date(paEarliest*1000).toLocaleString()} | Deadline: ${new Date(paDeadline*1000).toLocaleString()}`;
+  $("pendingStandbyGuardians").innerText = ps.join("\n");
+  $("pendingStandbyWindow").innerText = `Earliest: ${new Date(psEarliest*1000).toLocaleString()} | Deadline: ${new Date(psDeadline*1000).toLocaleString()}`;
+}
+
+async function refreshLock() {
+  const locked = await contracts.council.locked();
+  $("lockStatus").innerText = locked ? "🔒 Locked" : "✅ Unlocked";
+}
+
+// ---------- Aggregator ----------
+async function autoRefreshAll() {
+  await Promise.all([
+    refreshRecovery(),
+    refreshVetoWarning(),
+    refreshDao(),
+    refreshGuardians(),
+    refreshLock()
+  ]);
+}
 
 	  
 
@@ -2852,6 +2728,12 @@ $('refreshLockBtn').onclick = async () => {
   // Connect / disconnect
   $('connectBtn').onclick = connect;
   $('disconnectBtn').onclick = disconnect;
+	  $("refreshRecoveryBtn").onclick = refreshRecovery;
+$("refreshVetoWarningBtn").onclick = refreshVetoWarning;
+$("refreshDaoBtn").onclick = refreshDao;
+$("refreshGuardiansBtn").onclick = refreshGuardians;
+$("refreshLockBtn").onclick = refreshLock;
+    
 
   // Refreshes the contracts based on the addresses in the input fields
   $('saveAddrs').onclick = ()=>{
