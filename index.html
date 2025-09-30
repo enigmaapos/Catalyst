@@ -765,6 +765,18 @@
 	
   <hr class="border-slate-700 my-2" />
 
+	  <h1 class="text-xl font-bold mb-4">Recovery Proposed</h1>
+
+  <button id="fetchProposedBtn"
+    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md">
+    🔄 Fetch Proposed
+  </button>
+
+  <div class="mt-4">
+    <span class="text-gray-400">Proposed Address:</span>
+    <pre id="proposedOutput" class="font-mono text-green-400">—</pre>
+  </div>
+
   <!-- Recovery -->
 <div class="max-w-xl mx-auto p-4 space-y-4">
     <h1 class="text-2xl font-bold mb-4">BatchGuardianCouncil Console</h1>
@@ -2626,6 +2638,45 @@ $('clearLockBtn').onclick = async () => {
 // ===========================
 // Recovery State Refresher
 // ===========================
+async function getRecoveryProposed() {
+  if (!window.ethereum) {
+    alert("MetaMask or a Web3 provider is required");
+    return;
+  }
+
+  // connect provider + signer
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  const signer = provider.getSigner();
+
+  // TODO: replace with your deployed address + ABI
+  const councilAddress = "0xYourCouncilContract"; 
+  const councilAbi = [
+    "function getRecoveryProposed() external view returns (address)"
+  ];
+
+  const council = new ethers.Contract(councilAddress, councilAbi, signer);
+
+  try {
+    const proposed = await council.getRecoveryProposed();
+    console.log("DEBUG Proposed:", proposed);
+
+    document.getElementById("proposedOutput").innerText =
+      proposed && proposed !== ethers.constants.AddressZero
+        ? proposed
+        : "— (no proposal)";
+  } catch (err) {
+    console.error("getRecoveryProposed failed:", err);
+    document.getElementById("proposedOutput").innerText = "ERROR";
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  document
+    .getElementById("fetchProposedBtn")
+    .addEventListener("click", getRecoveryProposed);
+});
+	  
 async function refreshRecovery() {
   if (!contracts?.council) return;
 
