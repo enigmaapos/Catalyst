@@ -2542,83 +2542,48 @@ const fnSigs = {
   unpause: "function unpause()"
 };
 
-$("recoveryFunctionSelect").onchange = () => {
-  const selected = $("recoveryFunctionSelect").value;
-  const container = $("recoveryArgsContainer");
-  container.innerHTML = "";
-  $("recoveryCallData").value = "";
+$('recoveryFunctionSelect').onchange = () => {
+  const selectedValue = $('recoveryFunctionSelect').value;
+  $('recoveryFunction').value = selectedValue;
 
-  if (selected === "swapAdmin") {
-    container.innerHTML = `
-      <input id="proposedAdmin" placeholder="Proposed (display only)" class="w-full p-2 rounded bg-black/20" />
-      <input id="newAdmin" placeholder="New Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
-      <input id="oldAdmin" placeholder="Old Admin (0x...)" class="w-full p-2 rounded bg-black/20" />
-      <input id="targetContract" placeholder="Target contract address (proxy)" class="w-full p-2 rounded bg-black/20" />
-    `;
-  } else if (selected === "changeAdmin") {
-    container.innerHTML = `
-      <input id="proposedAdmin" placeholder="Proposed (New Admin, 0x...)" class="w-full p-2 rounded bg-black/20" />
-      <input id="targetContract" placeholder="Target contract address (proxy)" class="w-full p-2 rounded bg-black/20" />
-    `;
-  } else if (selected === "pause" || selected === "unpause") {
-    container.innerHTML = `
-      <input id="targetContract" placeholder="Target contract address (proxy)" class="w-full p-2 rounded bg-black/20" />
-      <p class="text-gray-400 text-sm">No additional arguments required</p>
-    `;
+  // Clear previous values
+  $('recoveryProposed').value = '';
+  $('recoveryArgs').value = '';
+
+  if (selectedValue === 'swapAdmin(address,address)') {
+    // Show placeholders for two addresses
+    $('recoveryArgs').placeholder = "newAdmin, oldAdmin (comma-separated)";
+    $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
+    $('recoveryProposed').value = '0xNewAdmin'; // for council metadata
+  } 
+  else if (selectedValue === 'changeAdmin(address)') {
+    $('recoveryArgs').placeholder = "newAdmin (comma-separated)";
+    $('recoveryArgs').value = '0xNewAdmin';
+    $('recoveryProposed').value = '0xNewAdmin';
+  } 
+  else if (selectedValue === 'pause()' || selectedValue === 'unpause()') {
+    $('recoveryArgs').placeholder = "No arguments required";
+    $('recoveryArgs').value = '';
+    $('recoveryProposed').value = '';
   }
 };
 
-$("encodeCallDataBtn").onclick = async () => {
+// Encode Calldata Button (same as before, with safe guard)
+$('encodeCallDataBtn').onclick = async () => {
   try {
-    const selected = $("recoveryFunctionSelect").value;
-    if (!selected) return alert("❌ Please select a function");
+    const fnSig = $('recoveryFunction').value.trim();
+    if (!fnSig) return alert("❌ Function signature is required.");
 
-    const sig = fnSigs[selected];
-    if (!sig) return alert("❌ Unsupported function: " + selected);
+    const argsRaw = $('recoveryArgs').value.trim();
+    const args = argsRaw ? argsRaw.split(',').map(a => a.trim()).filter(Boolean) : [];
 
-    const iface = new ethers.utils.Interface([sig]);
-    let calldata;
+    const iface = new ethers.utils.Interface([`function ${fnSig}`]);
+    const fnName = fnSig.split('(')[0];
 
-    if (selected === "swapAdmin") {
-      const newAdminInput = $("newAdmin");
-      const oldAdminInput = $("oldAdmin");
-
-      if (!newAdminInput || !oldAdminInput) {
-        return alert("❌ Missing input fields for swapAdmin. Did you select it from the dropdown?");
-      }
-
-      const newAdmin = newAdminInput.value.trim();
-      const oldAdmin = oldAdminInput.value.trim();
-
-      if (!newAdmin || !oldAdmin) {
-        return alert("❌ Please fill in both New Admin and Old Admin addresses.");
-      }
-
-      calldata = iface.encodeFunctionData("swapAdmin", [newAdmin, oldAdmin]);
-
-      // Mirror newAdmin to proposed field
-      if ($("proposedAdmin")) $("proposedAdmin").value = newAdmin;
-
-    } else if (selected === "changeAdmin") {
-      const proposedInput = $("proposedAdmin");
-      if (!proposedInput) return alert("❌ Missing input field for changeAdmin");
-
-      const newAdmin = proposedInput.value.trim();
-      if (!newAdmin) return alert("❌ Please enter the new admin address");
-
-      calldata = iface.encodeFunctionData("changeAdmin", [newAdmin]);
-
-    } else if (selected === "pause") {
-      calldata = iface.encodeFunctionData("pause", []);
-
-    } else if (selected === "unpause") {
-      calldata = iface.encodeFunctionData("unpause", []);
-    }
-
-    $("recoveryCallData").value = calldata;
+    $('recoveryCallData').value = iface.encodeFunctionData(fnName, args);
     alert("✅ Calldata encoded");
   } catch (e) {
-    console.error(e);
+    console.error("Encode error:", e);
     alert("❌ Error encoding calldata: " + (e.message || e));
   }
 };
