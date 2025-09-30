@@ -1496,9 +1496,7 @@ async function cataSwapAdmin() {
   }
 }
 
-	  
-
-// Transparency (view supply, roles, minters)
+	  // Transparency (view supply, roles, minters) - OPTIMIZED WITH Promise.all
 async function fetchTransparency() {
   try {
     if (!contracts.cata || !provider) {
@@ -1507,64 +1505,73 @@ async function fetchTransparency() {
 
     showLoading("Fetching transparency...");
 
-    // 1. Supply Metrics
-    const totalSupply = await contracts.cata.totalSupply();
-    const maxSupply = await contracts.cata.MAX_SUPPLY();
+    // 1. --- PARALLEL READS (FASTEST PART) ---
+    // Execute all independent state reads simultaneously
+    const [
+      totalSupply, 
+      maxSupply, 
+      councilAddress
+    ] = await Promise.all([
+      contracts.cata.totalSupply(),
+      contracts.cata.MAX_SUPPLY(),
+      contracts.cata.council()
+    ]);
+    
     const remainingMintable = maxSupply.sub(totalSupply);
 
-    // 2. Council
-    const councilAddress = await contracts.cata.council();
+    // 2. --- PARALLEL EVENT LOOKUPS (SLOWEST PART) ---
+    // Execute all necessary historical queries simultaneously
+    const [
+      adminSwapEvents,
+      minterSetEvents,
+      minterRevokedEvents
+    ] = await Promise.all([
+      contracts.cata.queryFilter("AdminSwapped", 0, "latest"),
+      contracts.cata.queryFilter("MinterSet", 0, "latest"),
+      contracts.cata.queryFilter("MinterRevoked", 0, "latest")
+    ]);
 
-    // 3. Admin (initialize or swap)
-    let adminAddress = null;
-    const adminSwapEvents = await contracts.cata.queryFilter("AdminSwapped", 0, "latest");
+
+    // 3. --- POST-PROCESSING LOGIC (Admin Address - Sequential Logic) ---
+    let adminAddress = "⚠️ Unknown";
 
     if (adminSwapEvents.length > 0) {
-      const lastSwap = adminSwapEvents[adminSwapEvents.length - 1];
-      adminAddress = lastSwap.args.newAdmin;
+      // Find the admin via the last 'AdminSwapped' event
+      adminAddress = adminSwapEvents[adminSwapEvents.length - 1].args.newAdmin;
     } else {
+      // Fallback: Check the first ever 'TokensMinted' event (less reliable)
       const mintedEvents = await contracts.cata.queryFilter("TokensMinted", 0, "latest");
       if (mintedEvents.length > 0) {
         adminAddress = mintedEvents[0].args.to;
-      } else {
-        adminAddress = "⚠️ Unknown";
       }
     }
-
-    // 4. Minters (track events)
-    const minterSetEvents = await contracts.cata.queryFilter("MinterSet", 0, "latest");
-    const minterRevokedEvents = await contracts.cata.queryFilter("MinterRevoked", 0, "latest");
-
+    
+    // 4. --- POST-PROCESSING LOGIC (Minters - Sequential Logic) ---
     let activeMinters = new Set();
-
-    // Process all MinterSet events
+    
+    // Process MinterSet and MinterRevoked events
     for (const evt of minterSetEvents) {
       const minter = evt.args.newMinter;
       if (minter && minter !== ethers.ZeroAddress) {
         activeMinters.add(minter);
       }
     }
-
-    // Process all MinterRevoked events
     for (const evt of minterRevokedEvents) {
       const revoked = evt.args.revokedMinter;
       activeMinters.delete(revoked);
     }
-
-    // Convert to array for display
     const minterList = Array.from(activeMinters);
 
-    // --- UI Update ---
+
+    // 5. --- UI Update ---
     $('cataAdminAddress').innerText = adminAddress;
     $('cataCouncilAddress').innerText = councilAddress;
     $('cataTotalSupply').innerText = ethers.utils.formatUnits(totalSupply, 18) + " CATA";
     $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
     $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
-
-    // If you add a UI slot for minters:
     $('cataMinters').innerText = minterList.length > 0 
-  ? minterList.join("\n")   // each minter on its own line
-  : "None";
+      ? minterList.join("\n")
+      : "None";
 	  
   } catch (e) {
     log('fetchTransparency err', e?.message || e);
