@@ -2763,6 +2763,7 @@ async function initRecoveryUI() {
   // Start listening for live events
   watchRecoveryEvents();
 }
+	  
     
     
 async function refreshVetoWarning() {
@@ -2860,7 +2861,7 @@ async function autoRefreshAll() {
   $('disconnectBtn').onclick = disconnect;
 
 $("refreshRecoveryBtn").addEventListener("click", () => {
-  refreshRecovery();
+  refreshRecovery(); });
 $("refreshDaoBtn").onclick = refreshDao;
 $("refreshGuardiansBtn").onclick = refreshGuardians;
 $("refreshLockBtn").onclick = refreshLock;
