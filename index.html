@@ -2683,7 +2683,7 @@ async function refreshRecovery() {
 
     // Call target
     try {
-      const target = await contracts.council.recoveryCallTarget();
+      const target = await contracts.council.getRecoveryCallTarget();
       $("recoveryCallTarget").innerText = target || "—";
     } catch {
       $("recoveryCallTarget").innerText = "—";
@@ -2691,7 +2691,7 @@ async function refreshRecovery() {
 
     // Call data
     try {
-      const callData = await contracts.council.recoveryCallData();
+      const callData = await contracts.council.getRecoveryCallData();
       $("recoveryCallData").innerText = callData || "—";
     } catch {
       $("recoveryCallData").innerText = "—";
@@ -2844,6 +2844,59 @@ async function autoRefreshAll() {
     refreshLock()
   ]);
 }
+
+	  async function debugRefreshRecovery() {
+  if (!contracts?.council) return console.warn("no contract");
+
+  showLoading();
+
+  try {
+    // tuple getter (single guaranteed call)
+    const [proposed, approvals, deadline, executed, callTarget, callData] =
+      await contracts.council.getRecoveryState();
+
+    console.log("getRecoveryState:", {
+      proposed, approvals: approvals.toString(), deadline: Number(deadline), executed, callTarget, callData
+    });
+
+    const deadlineNum = Number(deadline);
+    const hasProposal = deadlineNum > 0 && proposed && proposed !== ethers.constants.AddressZero;
+
+    if (!hasProposal) {
+      $("recoveryProposed").innerText = "—";
+      $("recoveryApprovals").innerText = approvals ? approvals.toString() : "—";
+      $("recoveryDeadline").innerText = "—";
+      $("recoveryExecuted").innerText = executed ? "✅ Executed" : "❌ Not executed";
+      $("recoveryCallTarget").innerText = "—";
+      $("recoveryCallData").innerText = "—";
+      $("recoveryApprovedBy").innerText = "—";
+      return;
+    }
+
+    // populate UI
+    $("recoveryProposed").innerText = proposed;
+    $("recoveryDeadline").innerText = new Date(deadlineNum * 1000).toLocaleString();
+    $("recoveryExecuted").innerText = executed ? "✅ Executed" : "❌ Not executed";
+    $("recoveryCallTarget").innerText = callTarget && callTarget !== ethers.constants.AddressZero ? callTarget : "—";
+    $("recoveryCallData").innerText = callData && callData !== "0x" ? callData : "—";
+    $("recoveryApprovals").innerText = approvals.toString();
+
+    // Approved by
+    const guardians = await contracts.council.getActiveGuardians();
+    const checks = await Promise.all(guardians.map(async g => {
+      if (!g || g === ethers.constants.AddressZero) return null;
+      try { return (await contracts.council.hasApproved(g)) ? g : null; }
+      catch(e) { console.warn("hasApproved for", g, e); return null; }
+    }));
+    const approvedBy = checks.filter(Boolean);
+    $("recoveryApprovedBy").innerText = approvedBy.length ? approvedBy.join("\n") : "—";
+
+  } catch (err) {
+    console.error("debugRefreshRecovery error:", err);
+  } finally {
+    hideLoading();
+  }
+		  }
 
 	  
 
