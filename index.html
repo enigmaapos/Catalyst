@@ -2622,9 +2622,8 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-	  // Recovery State Refresher
-// ===========================	  
-async function refreshRecovery() {
+	
+	  async function refreshRecovery() {
   if (!contracts?.council) return;
 
   showLoading("recovery");
@@ -2633,33 +2632,26 @@ async function refreshRecovery() {
     // --- Fetch deadline ---
     let deadlineNum = 0;
     try {
-      // Fetch deadline
       deadlineNum = await contracts.council.getRecoveryDeadline();
       deadlineNum = Number(deadlineNum);
     } catch (err) {
       console.warn("getRecoveryDeadline failed:", err);
     }
-    
-    // Always display deadline (raw value, even if 0)
+    // FIX: Always display raw deadline.
     $("recoveryDeadline").innerText = deadlineNum > 0 ? new Date(deadlineNum * 1000).toLocaleString() : deadlineNum.toString();
 
     // --- Fetch proposed ---
     let proposed = ethers.constants.AddressZero;
     try {
-      // Fetch proposed address
       proposed = await contracts.council.getRecoveryProposed();
     } catch (err) {
       console.warn("getRecoveryProposed failed:", err);
     }
-    
-    // Always display proposed address (raw value, even if 0x0)
+
+    // FIX: Always display raw proposed address.
     $("recoveryProposed").innerText = proposed;
 
-    // NOTE: Removed the 'hasProposal' check and the full UI reset.
-    // The UI will now display the raw default values (e.g., 0, 0x0...) 
-    // when the proposal is inactive/cleared, similar to Remix.
-
-
+    
     // Executed?
     let executed = false;
     try {
@@ -2672,7 +2664,7 @@ async function refreshRecovery() {
     // Call target
     try {
       const target = await contracts.council.getRecoveryCallTarget();
-      // Always display raw callTarget, even if it is the zero address
+      // FIX: Always display raw target address.
       $("recoveryCallTarget").innerText = target;
     } catch {
       $("recoveryCallTarget").innerText = "—";
@@ -2681,12 +2673,12 @@ async function refreshRecovery() {
     // Call data
     try {
       const callData = await contracts.council.getRecoveryCallData();
-      // Always display raw callData, even if it is the empty bytes "0x"
+      // FIX: Always display raw callData.
       $("recoveryCallData").innerText = callData;
     } catch {
       $("recoveryCallData").innerText = "—";
-	}
-	  
+    }
+
     // Approvals
     try {
       const approvals = await contracts.council.getRecoveryApprovals();
@@ -2699,11 +2691,11 @@ async function refreshRecovery() {
     try {
       const guardians = await contracts.council.getActiveGuardians();
       const approvedBy = [];
-      // This section must remain to only show actively approved guardians
       const currentNonce = await contracts.council.getAdminRequestNonce(); 
       for (const g of guardians) {
         try {
           // Check if the guardian has approved the *current* nonce
+          // This check implicitly relies on currentNonce being correct.
           const approved = await contracts.council.hasApproved(g);
           if (approved) approvedBy.push(g);
         } catch {}
@@ -2718,7 +2710,10 @@ async function refreshRecovery() {
   }
 
   hideLoading();
-}
+	}
+
+
+    
 
 // ===========================
 // Recovery Event Watchers
