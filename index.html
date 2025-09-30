@@ -1299,93 +1299,77 @@ async function cataBurn() {
   }
 }
 
-// Handler for the "Grant COUNCIL_ROLE" button
-$('grantCouncilRoleBtn').onclick = async () => {
+// Function for Admin to directly set a new Council address
+async function cataSetCouncil() {
     try {
-        if (!contracts?.council || !contracts?.cata) return alert("Wallet or contracts not initialized.");
-        
-        showLoading();
-        
+        if (!contracts.cata) {
+            await attachContractsIfSet();
+            if (!contracts.cata) return alert('Set CATA contract address first');
+        }
+
         const newCouncil = $('newCouncilAddress').value.trim();
         if (!ethers.utils.isAddress(newCouncil)) {
             return alert("❌ Invalid new Council address.");
         }
-
-        // --- 1. Encode the Action (The actual function we want the council to execute) ---
-        // FIX: CALLING setCouncil(address) INSTEAD OF grantRole(bytes32, address)
-        const iface = new ethers.utils.Interface([
-            "function setCouncil(address newCouncil)" // Correct function signature
-        ]);
-
-        const callData = iface.encodeFunctionData("setCouncil", [
-            newCouncil    // Argument is just the new council address
-        ]);
-
-        // --- 2. Propose the Action via the Council Contract (unchanged) ---
-        const cataAddress = contracts.cata.address;
         
-        const tx = await contracts.council.proposeRecovery(
-            newCouncil,   // proposed (Address being proposed)
-            cataAddress,  // callTarget (CataERC20 contract)
-            callData      // callData (The setCouncil encoded transaction)
-        );
+        showLoading("Setting new Council...");
         
+        // Direct call to the token contract's setCouncil function
+        const tx = await contracts.cata.setCouncil(newCouncil);
+        
+        log('cata.setCouncil tx', tx.hash);
         await tx.wait();
-        alert(`✅ Proposal to change Council to ${newCouncil} submitted! Guardians must now approve.`);
-        refreshRecovery();
+        log('cata.setCouncil completed');
+        
+        alert(`✅ Council successfully set to ${newCouncil}.`);
 
     } catch (e) { 
-        alert("❌ Proposal failed: " + (e.message || e)); 
+        log('cataSetCouncil err', e?.message || e);
+        // This will revert if the connected wallet is NOT the DEFAULT_ADMIN_ROLE holder.
+        alert(`Set Council failed: ${e.message || e}`);
     } finally { 
         hideLoading(); 
     }
-};
-	  
+}
 
-	// --- Constant for Minter Role (Not used in callData, but good for reference) ---
-const MINTER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MINTER_ROLE"));
+// --------------------------------------------------------------------------------------
 
-// Handler for the "Grant MINTER_ROLE" button
-$('grantMinterRoleBtn').onclick = async () => {
+// Function for Admin to directly set a new Minter address
+async function cataSetMinter() {
     try {
-        if (!contracts?.council || !contracts?.cata) return alert("Wallet or contracts not initialized.");
-        
-        showLoading();
-        
-        const newMinter = $('newMinterAddress').value.trim();
-        if (!ethers.utils.isAddress(newMinter)) {
-            return alert("❌ Invalid Minter address.");
+        if (!contracts.cata) {
+            await attachContractsIfSet();
+            if (!contracts.cata) return alert('Set CATA contract address first');
         }
 
-        // --- 1. Encode the Action (Call setMinter(address) on CataERC20) ---
-        // FIX: CALLING setMinter(address) INSTEAD OF grantRole(bytes32, address)
-        const iface = new ethers.utils.Interface([
-            "function setMinter(address newMinter)" // Correct function signature
-        ]);
-
-        const callData = iface.encodeFunctionData("setMinter", [
-            newMinter    // Argument is just the new minter address
-        ]);
-
-        // --- 2. Propose the Action via the Council Contract ---
-        const cataAddress = contracts.cata.address;
+        const newMinter = $('newMinterAddress').value.trim();
+        if (!ethers.utils.isAddress(newMinter)) {
+            return alert("❌ Invalid new Minter address.");
+        }
         
-        const tx = await contracts.council.proposeRecovery(
-            newMinter,    // proposed (Address being proposed)
-            cataAddress,  // callTarget (CataERC20 contract)
-            callData      // callData (The setMinter encoded transaction)
-        );
+        showLoading("Setting new Minter...");
         
+        // Direct call to the token contract's setMinter function
+        const tx = await contracts.cata.setMinter(newMinter);
+        
+        log('cata.setMinter tx', tx.hash);
         await tx.wait();
-        alert(`✅ Proposal to set Minter to ${newMinter} submitted! Guardians must now approve.`);
-        refreshRecovery();
+        log('cata.setMinter completed');
+        
+        alert(`✅ Minter successfully set to ${newMinter}.`);
 
     } catch (e) { 
-        alert("❌ Proposal failed: " + (e.message || e)); 
+        log('cataSetMinter err', e?.message || e);
+        // This will revert if the connected wallet is NOT the DEFAULT_ADMIN_ROLE holder.
+        alert(`Set Minter failed: ${e.message || e}`);
     } finally { 
         hideLoading(); 
     }
-};
+}
+
+// BINDING TO BUTTONS (Add this to your main init/binding block)
+$('grantCouncilRoleBtn').onclick = cataSetCouncil;
+$('grantMinterRoleBtn').onclick = cataSetMinter;
 
 // Pause (admin only)
 async function cataPause() {
