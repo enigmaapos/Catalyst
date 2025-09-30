@@ -2945,12 +2945,12 @@ async function refreshLock() {
 // ---------- Aggregator ----------
 async function autoRefreshAll() {
   await Promise.all([
-    refreshRecovery(),
+    fetchTransparency(),
+	  refreshRecovery(),
     refreshVetoWarning(),
     refreshDao(),
     refreshGuardians(),
-    refreshLock(),
-	  fetchTransparency()
+    refreshLock()
   ]);
 }
 	  
