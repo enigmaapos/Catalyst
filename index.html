@@ -2573,22 +2573,44 @@ $("encodeCallDataBtn").onclick = async () => {
     const selected = $("recoveryFunctionSelect").value;
     if (!selected) return alert("❌ Please select a function");
 
-    const iface = new ethers.utils.Interface([fnSigs[selected]]);
+    const sig = fnSigs[selected];
+    if (!sig) return alert("❌ Unsupported function: " + selected);
+
+    const iface = new ethers.utils.Interface([sig]);
     let calldata;
 
     if (selected === "swapAdmin") {
-      const newAdmin = $("newAdmin").value.trim();
-      const oldAdmin = $("oldAdmin").value.trim();
+      const newAdminInput = $("newAdmin");
+      const oldAdminInput = $("oldAdmin");
+
+      if (!newAdminInput || !oldAdminInput) {
+        return alert("❌ Missing input fields for swapAdmin. Did you select it from the dropdown?");
+      }
+
+      const newAdmin = newAdminInput.value.trim();
+      const oldAdmin = oldAdminInput.value.trim();
+
+      if (!newAdmin || !oldAdmin) {
+        return alert("❌ Please fill in both New Admin and Old Admin addresses.");
+      }
+
       calldata = iface.encodeFunctionData("swapAdmin", [newAdmin, oldAdmin]);
 
-      // For display only: show proposed
-      $("proposedAdmin").value = newAdmin;
+      // Mirror newAdmin to proposed field
+      if ($("proposedAdmin")) $("proposedAdmin").value = newAdmin;
 
     } else if (selected === "changeAdmin") {
-      const newAdmin = $("proposedAdmin").value.trim();
+      const proposedInput = $("proposedAdmin");
+      if (!proposedInput) return alert("❌ Missing input field for changeAdmin");
+
+      const newAdmin = proposedInput.value.trim();
+      if (!newAdmin) return alert("❌ Please enter the new admin address");
+
       calldata = iface.encodeFunctionData("changeAdmin", [newAdmin]);
+
     } else if (selected === "pause") {
       calldata = iface.encodeFunctionData("pause", []);
+
     } else if (selected === "unpause") {
       calldata = iface.encodeFunctionData("unpause", []);
     }
@@ -2596,6 +2618,7 @@ $("encodeCallDataBtn").onclick = async () => {
     $("recoveryCallData").value = calldata;
     alert("✅ Calldata encoded");
   } catch (e) {
+    console.error(e);
     alert("❌ Error encoding calldata: " + (e.message || e));
   }
 };
