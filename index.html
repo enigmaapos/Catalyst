@@ -1228,6 +1228,9 @@ async function connect() {
     // 👇 auto-fetch council state right after connect
     await autoRefreshAll();
 
+	   // attach live event watchers
+  watchRecoveryEvents();
+
   } catch (e) {
     log("connect err", e?.message || e);
   }
@@ -2757,6 +2760,31 @@ async function refreshRecovery() {
     hideLoading();
   }
 }
+
+	  // ---------- Event Listeners ----------
+function watchRecoveryEvents() {
+  if (!contracts?.council) return;
+
+  // Prevent duplicates (important in hot reload/dev)
+  contracts.council.removeAllListeners("RecoveryProposed");
+  contracts.council.removeAllListeners("RecoveryApproved");
+  contracts.council.removeAllListeners("RecoveryExecuted");
+
+  contracts.council.on("RecoveryProposed", () => {
+    console.log("📡 RecoveryProposed event");
+    refreshRecovery();
+  });
+
+  contracts.council.on("RecoveryApproved", () => {
+    console.log("📡 RecoveryApproved event");
+    refreshRecovery();
+  });
+
+  contracts.council.on("RecoveryExecuted", () => {
+    console.log("📡 RecoveryExecuted event");
+    refreshRecovery();
+  });
+}
  
     
 async function refreshVetoWarning() {
@@ -2852,7 +2880,8 @@ async function autoRefreshAll() {
   // Connect / disconnect
   $('connectBtn').onclick = connect;
   $('disconnectBtn').onclick = disconnect;
-	  $("refreshRecoveryBtn").onclick = refreshRecovery;
+
+$("refreshRecoveryBtn").addEventListener("click", refreshRecovery);
 $("refreshVetoWarningBtn").onclick = refreshVetoWarning;
 $("refreshDaoBtn").onclick = refreshDao;
 $("refreshGuardiansBtn").onclick = refreshGuardians;
