@@ -875,6 +875,12 @@
       <div id="recoveryDeadline" class="text-slate-100">—</div>
       <div class="text-gray-400">Executed:</div>
       <div id="recoveryExecuted" class="text-slate-100">—</div>
+		<div id="recoveryStatusBanner"
+         class="hidden mb-4 p-2 rounded-lg text-sm font-medium"></div>
+    <div class="grid grid-cols-2 gap-y-3 text-sm text-gray-300">
+        <div class="text-gray-400">Ready Time:</div>
+        <div id="recoveryReadyTime" class="text-slate-100">—</div>
+        </div>
       <div class="text-gray-400">Call Target:</div>
       <div id="recoveryCallTarget"
            class="font-mono text-slate-100 truncate max-w-[260px]" title="—">—</div>
@@ -2836,137 +2842,228 @@ $('clearLockBtn').onclick = async () => {
   } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
-	  
-	
-	  async function refreshRecovery() {
-  if (!contracts?.council) return;
 
-  // Use a global indicator for any recovery activity
-  showLoading("recovery"); 
+	  // ===================================
+// UTILITY: Time Formatting Helper
+// ===================================
 
-  try {
-    // NOTE: The previous check for 'hasProposal' is permanently removed
-    // to ensure raw contract values (even zero/empty ones) are displayed.
+/**
+ * Utility function to format seconds into readable Dd Hh Mm Ss format.
+ */
+function formatTimeRemaining(seconds) {
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
 
-    // --- Fetch deadline ---
-    let deadlineNum = 0;
-    try {
-      deadlineNum = await contracts.council.getRecoveryDeadline();
-      deadlineNum = Number(deadlineNum);
-    } catch (err) {
-      console.warn("getRecoveryDeadline failed:", err);
-    }
-    // FIX: Always display raw deadline.
-    $("recoveryDeadline").innerText = deadlineNum > 0 ? new Date(deadlineNum * 1000).toLocaleString() : deadlineNum.toString();
-
-    // --- Fetch proposed ---
-    let proposed = ethers.constants.AddressZero;
-    try {
-      proposed = await contracts.council.getRecoveryProposed();
-    } catch (err) {
-      // DEBUG: Log the error if fetching the proposed address fails
-      console.error("DEBUG FAILED: getRecoveryProposed failed.", err);
-      // Set to a failed state, otherwise it might display a default value (AddressZero) incorrectly
-      $("recoveryProposed").innerText = "[!CALL FAILED]";
-      throw new Error("Proposed fetch failed."); // Re-throw to skip subsequent steps if the core proposal data is bad
-    }
-    // FIX: Always display raw proposed address.
-    $("recoveryProposed").innerText = proposed;
-
+    let parts = [];
+    if (d > 0) parts.push(`${d}d`);
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0 && parts.length < 2) parts.push(`${m}m`);
+    // Only show seconds if less than a minute remaining and not already showing hours/days
+    if (s > 0 && parts.length < 2 && m < 1) parts.push(`${s}s`);
     
-    // Executed?
-    let executed = false;
-    try {
-      executed = await contracts.council.getRecoveryExecuted();
-    } catch (err) {
-      console.warn("getRecoveryExecuted failed:", err);
-    }
-    $("recoveryExecuted").innerText = executed ? "✅ Executed" : "❌ Not executed";
+    // Ensure we show '0s' if time is 0 or less
+    return parts.length > 0 ? parts.join(' ') : '0s';
+}
 
-    // Call target
-    try {
-      const target = await contracts.council.getRecoveryCallTarget();
-      // FIX: Always display raw target address.
-      $("recoveryCallTarget").innerText = target;
-    } catch (err) {
-      // DEBUG: Log the error instead of silently replacing with "—"
-      console.error("DEBUG FAILED: getRecoveryCallTarget failed.", err);
-      $("recoveryCallTarget").innerText = "[!CALL FAILED]";
-    }
 
-    // Call data
-    try {
-      const callData = await contracts.council.getRecoveryCallData();
-      // FIX: Always display raw callData.
-      $("recoveryCallData").innerText = callData;
-    } catch (err) {
-      // DEBUG: Log the error instead of silently replacing with "—"
-      console.error("DEBUG FAILED: getRecoveryCallData failed.", err);
-      $("recoveryCallData").innerText = "[!CALL FAILED]";
-    }
+// ===================================
+// MAIN: REFRESH RECOVERY STATE
+// ===================================
 
-    // Approvals
-    try {
-      const approvals = await contracts.council.getRecoveryApprovals();
-      $("recoveryApprovals").innerText = approvals.toString();
-    } catch (err) {
-      console.error("DEBUG FAILED: getRecoveryApprovals failed.", err);
-      $("recoveryApprovals").innerText = "[!CALL FAILED]";
-    }
+async function refreshRecovery() {
+    if (!contracts?.council) return;
 
-    // Approved by (guardians list)
+    showLoading("recovery");
+
+    // --- Time Lock Expiration Polling (NEW) ---
+    // Clear any existing interval to prevent duplicates
+    if (window.recoveryTimelockInterval) {
+        clearInterval(window.recoveryTimelockInterval);
+    }
+    
     try {
-      const guardians = await contracts.council.getActiveGuardians();
-      const approvedBy = [];
-      const currentNonce = await contracts.council.getAdminRequestNonce(); 
-      for (const g of guardians) {
+        const requiredApprovals = 5; // THRESHOLD constant (5/7)
+        const recoveryReadyTimeEl = $("recoveryReadyTime");
+        const recoveryStatusBanner = $("recoveryStatusBanner");
+
+        // --- Fetch Approvals (Moved to top for conditional checks) ---
+        let approvals = 0;
         try {
-          const approved = await contracts.council.hasApproved(g);
-          if (approved) approvedBy.push(g);
-        } catch {}
-      }
-      $("recoveryApprovedBy").innerText =
-        approvedBy.length > 0 ? approvedBy.join(", ") : "—";
+            approvals = await contracts.council.getRecoveryApprovals();
+            approvals = Number(approvals);
+            $("recoveryApprovals").innerText = approvals.toString();
+        } catch (err) {
+            console.error("DEBUG FAILED: getRecoveryApprovals failed.", err);
+            $("recoveryApprovals").innerText = "[!CALL FAILED]";
+        }
+
+        // --- Fetch Executed Status ---
+        let executed = false;
+        try {
+            executed = await contracts.council.getRecoveryExecuted();
+        } catch (err) {
+            console.warn("getRecoveryExecuted failed:", err);
+        }
+        $("recoveryExecuted").innerText = executed ? "✅ Executed" : "❌ Not executed";
+
+
+        // --- Fetch readyToExecuteTimestamp (NEW) ---
+        let readyTimeNum = 0;
+        try {
+            // ASSUMPTION: This getter function exists on the contract
+            readyTimeNum = await contracts.council.getRecoveryReadyToExecuteTimestamp();
+            readyTimeNum = Number(readyTimeNum);
+        } catch (err) {
+            console.warn("getRecoveryReadyToExecuteTimestamp failed:", err);
+        }
+        
+        // --- TIMELOCK STATUS LOGIC (NEW) ---
+        recoveryReadyTimeEl.innerText = "—";
+        recoveryStatusBanner.classList.add('hidden', 'bg-green-700', 'bg-yellow-700', 'text-white', 'text-black'); // Reset and clean banner classes
+
+        if (readyTimeNum > 0 && approvals >= requiredApprovals && !executed) {
+            const updateStatus = () => {
+                const currentTimeMs = Date.now();
+                const readyTimeMs = readyTimeNum * 1000;
+                const isReady = currentTimeMs >= readyTimeMs;
+                const formattedReadyTime = new Date(readyTimeMs).toLocaleString();
+                
+                if (isReady) {
+                    // State: Approved, Timelock Expired, Not Executed
+                    recoveryReadyTimeEl.innerText = `✅ READY (since ${formattedReadyTime})`;
+                    
+                    // Set status banner to green (Ready)
+                    recoveryStatusBanner.classList.remove('hidden', 'bg-yellow-700', 'text-black');
+                    recoveryStatusBanner.classList.add('bg-green-700', 'text-white');
+                    recoveryStatusBanner.innerText = `EXECUTION READY: Approved by ${approvals}/${requiredApprovals} and timelock has expired.`;
+                    
+                    // Stop the timer once ready
+                    clearInterval(window.recoveryTimelockInterval);
+
+                } else {
+                    // State: Approved, Timelock Active
+                    const timeRemainingSeconds = Math.max(0, Math.floor((readyTimeMs - currentTimeMs) / 1000));
+                    const timeRemainingText = formatTimeRemaining(timeRemainingSeconds);
+
+                    recoveryReadyTimeEl.innerText = `⏳ Executable in ${timeRemainingText}`;
+
+                    // Set status banner to yellow (Pending)
+                    recoveryStatusBanner.classList.remove('hidden', 'bg-green-700', 'text-white');
+                    recoveryStatusBanner.classList.add('bg-yellow-700', 'text-black');
+                    recoveryStatusBanner.innerText = `TIMELOCK ACTIVE: Approved by ${approvals}/${requiredApprovals}. Execution available in ${timeRemainingText}.`;
+                }
+            };
+            
+            // Initial call
+            updateStatus();
+            
+            // Set up a 1-second interval to count down the time remaining
+            window.recoveryTimelockInterval = setInterval(updateStatus, 1000);
+
+        } else if (readyTimeNum > 0) {
+            // State: Proposal exists, but not approved yet (show the target time if it was set)
+             recoveryReadyTimeEl.innerText = `Target: ${new Date(readyTimeNum * 1000).toLocaleString()}`;
+        }
+        // --- END NEW LOGIC ---
+
+        // --- Fetch deadline (Kept for completeness, though Ready Time is more informative) ---
+        let deadlineNum = 0;
+        try {
+            deadlineNum = await contracts.council.getRecoveryDeadline();
+            deadlineNum = Number(deadlineNum);
+        } catch (err) {
+            console.warn("getRecoveryDeadline failed:", err);
+        }
+        $("recoveryDeadline").innerText = deadlineNum > 0 ? new Date(deadlineNum * 1000).toLocaleString() : deadlineNum.toString();
+
+        // --- Fetch proposed (Core status, check for failure) ---
+        let proposed = ethers.constants.AddressZero;
+        try {
+            proposed = await contracts.council.getRecoveryProposed();
+        } catch (err) {
+            console.error("DEBUG FAILED: getRecoveryProposed failed.", err);
+            $("recoveryProposed").innerText = "[!CALL FAILED]";
+            throw new Error("Proposed fetch failed.");
+        }
+        $("recoveryProposed").innerText = proposed;
+
+        // Call target
+        try {
+          const target = await contracts.council.getRecoveryCallTarget();
+          $("recoveryCallTarget").innerText = target;
+        } catch (err) {
+          console.error("DEBUG FAILED: getRecoveryCallTarget failed.", err);
+          $("recoveryCallTarget").innerText = "[!CALL FAILED]";
+        }
+
+        // Call data
+        try {
+          const callData = await contracts.council.getRecoveryCallData();
+          $("recoveryCallData").innerText = callData;
+        } catch (err) {
+          console.error("DEBUG FAILED: getRecoveryCallData failed.", err);
+          $("recoveryCallData").innerText = "[!CALL FAILED]";
+        }
+
+        // Approved by (guardians list)
+        try {
+          const guardians = await contracts.council.getActiveGuardians();
+          const approvedBy = [];
+          const currentNonce = await contracts.council.getAdminRequestNonce(); 
+          for (const g of guardians) {
+            try {
+              const approved = await contracts.council.hasApproved(g);
+              if (approved) approvedBy.push(g);
+            } catch {}
+          }
+          $("recoveryApprovedBy").innerText =
+            approvedBy.length > 0 ? approvedBy.join(", ") : "—";
+        } catch (err) {
+          console.error("DEBUG FAILED: ApprovedBy block failed.", err);
+          $("recoveryApprovedBy").innerText = "[!BLOCK FAILED]";
+        }
+
     } catch (err) {
-      // DEBUG: Log error for the whole approval block
-      console.error("DEBUG FAILED: ApprovedBy block failed.", err);
-      $("recoveryApprovedBy").innerText = "[!BLOCK FAILED]";
+        console.error("refreshRecovery failed with re-thrown error:", err);
+        // Clear interval on failure
+        if (window.recoveryTimelockInterval) {
+             clearInterval(window.recoveryTimelockInterval);
+        }
     }
-  } catch (err) {
-    // Catch errors re-thrown from inside the try block (e.g., if proposed fails)
-    console.error("refreshRecovery failed with re-thrown error:", err); 
-  }
 
-  hideLoading();
-	  }
-
+    hideLoading();
+}
 
 
 // ===========================
 // Recovery Event Watchers
 // ===========================
 function watchRecoveryEvents() {
-  if (!contracts?.council) return;
+  if (!contracts?.council) return;
 
-  // Proposal created
-  contracts.council.on("RecoveryProposed", (proposer, proposed, callTarget, deadline, event) => {
-    console.log("⚡ RecoveryProposed", { proposer, proposed, callTarget, deadline: deadline.toString() });
-    refreshRecovery();
-  });
+  // Proposal created
+  contracts.council.on("RecoveryProposed", (proposer, proposed, callTarget, deadline, event) => {
+    console.log("⚡ RecoveryProposed", { proposer, proposed, callTarget, deadline: deadline.toString() });
+    refreshRecovery();
+  });
 
-  // Approval added
-  contracts.council.on("RecoveryApproved", (guardian, approvals, event) => {
-    console.log("⚡ RecoveryApproved by", guardian, " → approvals:", approvals.toString());
-    refreshRecovery();
-  });
+  // Approval added
+  contracts.council.on("RecoveryApproved", (guardian, approvals, event) => {
+    console.log("⚡ RecoveryApproved by", guardian, " → approvals:", approvals.toString());
+    refreshRecovery();
+  });
 
-  // Proposal executed
-  contracts.council.on("RecoveryExecuted", (proposed, callTarget, event) => {
-    console.log("⚡ RecoveryExecuted", { proposed, callTarget });
-    refreshRecovery();
-  });
-}
+  // Proposal executed
+  contracts.council.on("RecoveryExecuted", (proposed, callTarget, event) => {
+    console.log("⚡ RecoveryExecuted", { proposed, callTarget });
+    refreshRecovery();
+  });
+			}
 
+    
+    
 // ===========================
 // Initialization Hook
 // ===========================
