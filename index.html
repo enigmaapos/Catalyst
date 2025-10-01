@@ -856,44 +856,49 @@
 	<div class="space-y-6">
 
   <!-- Recovery State Card -->
-  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-semibold text-white">Recovery State</h2>
-      <button id="refreshRecoveryBtn"
-        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
-        🔄 Refresh
-      </button>
-    </div>
-    <div id="recoveryStatusBanner"
-         class="hidden mb-4 p-2 rounded-lg text-sm font-medium"></div>
-    <div class="grid grid-cols-2 gap-y-3 text-sm text-gray-300">
-      <div class="text-gray-400">Proposed:</div>
-      <div id="recoveryProposed" class="font-mono text-slate-100 break-all">—</div>
-      <div class="text-gray-400">Approvals:</div>
-      <div id="recoveryApprovals" class="text-slate-100">—</div>
-      <div class="text-gray-400">Deadline:</div>
-      <div id="recoveryDeadline" class="text-slate-100">—</div>
-      <div class="text-gray-400">Executed:</div>
-      <div id="recoveryExecuted" class="text-slate-100">—</div>
-		<div id="recoveryStatusBanner"
-         class="hidden mb-4 p-2 rounded-lg text-sm font-medium"></div>
-    <div class="grid grid-cols-2 gap-y-3 text-sm text-gray-300">
-        <div class="text-gray-400">Ready Time:</div>
-        <div id="recoveryReadyTime" class="text-slate-100">—</div>
-        </div>
-      <div class="text-gray-400">Call Target:</div>
-      <div id="recoveryCallTarget"
-           class="font-mono text-slate-100 truncate max-w-[260px]" title="—">—</div>
-      <div class="text-gray-400">Call Data:</div>
-      <div id="recoveryCallData"
-           class="font-mono text-slate-100 break-all" title="—">—</div>
-      <div class="col-span-2">
-        <div class="text-gray-400">Approved By:</div>
-        <pre id="recoveryApprovedBy"
-             class="font-mono text-slate-100 whitespace-pre-wrap bg-gray-900/50 p-2 rounded-lg h-24 overflow-y-auto">—</pre>
-      </div>
+<div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-semibold text-white">Recovery State</h2>
+    <button id="refreshRecoveryBtn"
+      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+      🔄 Refresh
+    </button>
+  </div>
+  
+  <div id="recoveryStatusBanner"
+       class="hidden mb-4 p-2 rounded-lg text-sm font-medium"></div>
+       
+  <div class="grid grid-cols-2 gap-y-3 text-sm text-gray-300">
+    <div class="text-gray-400">Proposed:</div>
+    <div id="recoveryProposed" class="font-mono text-slate-100 break-all">—</div>
+    
+    <div class="text-gray-400">Approvals:</div>
+    <div id="recoveryApprovals" class="text-slate-100">—</div>
+    
+    <div class="text-gray-400">Deadline:</div>
+    <div id="recoveryDeadline" class="text-slate-100">—</div>
+    
+    <div class="text-gray-400">Executed:</div>
+    <div id="recoveryExecuted" class="text-slate-100">—</div>
+
+    <div class="text-gray-400">Ready Time:</div>
+    <div id="recoveryReadyTime" class="text-slate-100">—</div>
+
+    <div class="text-gray-400">Call Target:</div>
+    <div id="recoveryCallTarget"
+         class="font-mono text-slate-100 truncate max-w-[260px]" title="—">—</div>
+    
+    <div class="text-gray-400">Call Data:</div>
+    <div id="recoveryCallData"
+         class="font-mono text-slate-100 break-all" title="—">—</div>
+         
+    <div class="col-span-2">
+      <div class="text-gray-400">Approved By:</div>
+      <pre id="recoveryApprovedBy"
+           class="font-mono text-slate-100 whitespace-pre-wrap bg-gray-900/50 p-2 rounded-lg h-24 overflow-y-auto">—</pre>
     </div>
   </div>
+</div>
 
   <!-- Veto & Warning Card -->
   <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
