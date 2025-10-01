@@ -2682,18 +2682,54 @@ $('recoveryFunctionSelect').onchange = () => {
     $('recoveryFunction').value = selectedValue;
     
     // Clear proposed and args fields on new selection
-    $('inputRecoveryProposed').value = '';  // UPDATED ID
+    $('inputRecoveryProposed').value = '';
     $('recoveryArgs').value = '';
 
+    // --- ENHANCED LOGIC START ---
+    
+    // Set default values based on the selected function
     if (selectedValue.includes('swapAdmin(address,address)')) {
+        // Swap Admin requires two addresses, and the new Admin is the proposed address
         $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
-        $('inputRecoveryProposed').value = '0xNewAdmin';  // UPDATED ID
+        $('inputRecoveryProposed').value = '0xNewAdmin';
+        $('inputRecoveryProposed').placeholder = 'Proposed address (0xNewAdmin)';
     } else if (selectedValue.includes('changeAdmin(address)')) {
+        // Change Admin requires one address, and that is the proposed address
         $('recoveryArgs').value = '0xNewAdmin';
-        $('inputRecoveryProposed').value = '0xNewAdmin'; // UPDATED ID
-    } else if (selectedValue.includes('()')) {
-        // pause(), unpause()
+        $('inputRecoveryProposed').value = '0xNewAdmin'; 
+        $('inputRecoveryProposed').placeholder = 'Proposed address (0xNewAdmin)';
+    } else if (selectedValue.includes('pause()') || selectedValue.includes('unpause()')) {
+        // Simple calls with no arguments, and the proposed address must be ZERO_ADDRESS
         $('recoveryArgs').value = '';
+        // Set to a recognizable placeholder that the propose button can handle
+        $('inputRecoveryProposed').value = '0x0000000000000000000000000000000000000000'; 
+        $('inputRecoveryProposed').placeholder = '0x00...00 (Not Applicable - Action only)'; 
+    } else if (selectedValue.includes('(address)')) {
+        // Catch-all for single address arguments (e.g., setMinter, setCouncil)
+        $('recoveryArgs').value = '0xAddressToSet';
+        $('inputRecoveryProposed').value = '0xAddressToSet'; 
+        $('inputRecoveryProposed').placeholder = 'Proposed address (Address being set)';
+    } else if (selectedValue.includes('()')) {
+        // General catch-all for functions with no arguments (like initialize)
+        $('recoveryArgs').value = '';
+        $('inputRecoveryProposed').value = '0x0000000000000000000000000000000000000000'; 
+        $('inputRecoveryProposed').placeholder = '0x00...00 (Not Applicable - Action only)';
+    }
+
+    // --- ENSURE CALCULATION IS IMMEDIATE AFTER SELECTION ---
+    // If you have enough info, try to encode immediately for feedback
+    try {
+         const fnSig = $('recoveryFunction').value.trim();
+         const args = $('recoveryArgs').value.trim().split(',').map(a => a.trim()).filter(Boolean);
+         
+         if (fnSig && !args.includes('0xNewAdmin') && !args.includes('0xOldAdmin') && !args.includes('0xAddressToSet')) {
+              const iface = new ethers.utils.Interface([`function ${fnSig}`]);
+              const fnName = fnSig.split('(')[0];
+              $('inputRecoveryCallData').value = iface.encodeFunctionData(fnName, args);
+              // Do not alert, just auto-populate
+         }
+    } catch (e) {
+         // Ignore silent encoding errors
     }
 };
 
