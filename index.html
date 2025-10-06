@@ -562,6 +562,39 @@ Catalyst Whitepaper
     <!-- Staking -->
 <section id="staking" class="tab-content hidden">
   <h2 class="font-semibold mb-2">Staking</h2>
+	<!-- 🔹 Staking Contract Transparency -->
+<div class="pt-4 border-t border-slate-700">
+  <div class="text-xs text-slate-400 mb-1">Staking Contract Transparency</div>
+
+  <div class="flex flex-col gap-1">
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Staking Council:</span><br />
+      <span id="stakingCouncilAddress" class="font-mono text-cyan-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Deployer Council:</span><br />
+      <span id="stakingDeployerCouncil" class="font-mono text-purple-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Deployer Address:</span><br />
+      <span id="stakingDeployerAddress" class="font-mono text-yellow-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Current Admin:</span><br />
+      <span id="stakingAdminAddress" class="font-mono text-green-400 break-all">—</span>
+    </div>
+
+  </div>
+
+  <button id="refreshStakingTransparencyBtn"
+    class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 active:bg-slate-800 rounded-lg font-medium text-sm transition">
+    🔍 Refresh Staking Transparency
+  </button>
+</div>
   <p class="text-sm text-slate-300 mb-3">Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake</p>
   
   <div class="space-y-2 text-sm">
@@ -2017,6 +2050,81 @@ async function refreshBluechip(){
 }
 	  
 // ---------- NFT approval ----------
+async function fetchStakingTransparency() {
+  try {
+    if (!contracts.staking || !provider) {
+      if (!contracts.staking) return alert('Please connect wallet and set Staking contract first');
+    }
+
+    showLoading("Fetching staking transparency...");
+
+    // 1. --- PARALLEL READS (FASTEST PART) ---
+    const [
+      councilAddress,
+      deployerCouncilAddress,
+      deployerAddress
+    ] = await Promise.all([
+      contracts.staking.council(),
+      contracts.staking.deployerCouncil(),
+      contracts.staking.deployerAddress()
+    ]);
+
+    // 2. --- PARALLEL EVENT LOOKUPS (SLOWEST PART) ---
+    const [
+      councilSetEvents,
+      deployerCouncilSetEvents,
+      deployerAddrUpdatedEvents,
+      adminSwappedEvents
+    ] = await Promise.all([
+      contracts.staking.queryFilter("CouncilSet", 0, "latest"),
+      contracts.staking.queryFilter("DeployerCouncilSet", 0, "latest"),
+      contracts.staking.queryFilter("DeployerAddressUpdated", 0, "latest"),
+      contracts.staking.queryFilter("AdminSwapped", 0, "latest")
+    ]);
+
+    // 3. --- POST-PROCESSING LOGIC (Latest Admin via Council Swap) ---
+    let currentAdmin = "⚠️ Unknown";
+    if (adminSwappedEvents.length > 0) {
+      const last = adminSwappedEvents[adminSwappedEvents.length - 1];
+      currentAdmin = last.args.newAdmin;
+    }
+
+    // 4. --- POST-PROCESSING LOGIC (Last Council Updates) ---
+    let lastCouncil = councilAddress;
+    if (councilSetEvents.length > 0) {
+      const last = councilSetEvents[councilSetEvents.length - 1];
+      lastCouncil = last.args.newCouncil;
+    }
+
+    let lastDeployerCouncil = deployerCouncilAddress;
+    if (deployerCouncilSetEvents.length > 0) {
+      const last = deployerCouncilSetEvents[deployerCouncilSetEvents.length - 1];
+      lastDeployerCouncil = last.args.newCouncil;
+    }
+
+    let lastDeployerAddress = deployerAddress;
+    if (deployerAddrUpdatedEvents.length > 0) {
+      const last = deployerAddrUpdatedEvents[deployerAddrUpdatedEvents.length - 1];
+      lastDeployerAddress = last.args.newDeployer;
+    }
+
+    // 5. --- UI Update ---
+    $('stakingCouncilAddress').innerText = lastCouncil || '—';
+    $('stakingDeployerCouncil').innerText = lastDeployerCouncil || '—';
+    $('stakingDeployerAddress').innerText = lastDeployerAddress || '—';
+
+    // Optional — show admin swap too if you want extra transparency
+    if ($('stakingAdminAddress'))
+      $('stakingAdminAddress').innerText = currentAdmin || '—';
+
+  } catch (e) {
+    log('fetchStakingTransparency err', e?.message || e);
+    alert(`Staking transparency fetch failed: ${e.message || e}. Check console.`);
+  } finally {
+    hideLoading();
+  }
+}
+	  
 async function approveNFT(){
   try {
     const collection = $('nftCollection').value.trim();
@@ -3151,7 +3259,8 @@ async function autoRefreshAll() {
     refreshGuardians(),
     refreshLock(),
 	  refreshStakingStats(),
-	  refreshBluechip()
+	  refreshBluechip(),
+	  fetchStakingTransparency()
   ]);
 }
 	  
@@ -3218,6 +3327,7 @@ $('harvestBluechipBtn').onclick = harvestBluechip;
 $('refreshBluechipBtn').onclick = refreshBluechip;
 	  
     // Staking single
+	  $('refreshStakingTransparencyBtn').onclick = fetchStakingTransparency;
     $('approveNFTBtn').onclick = approveNFT;
     $('termStakeBtn').onclick = termStake;
     $('permApproveFeeBtn').onclick = async ()=>{ // approve CATA tokens for fees if CATA ABI exists
