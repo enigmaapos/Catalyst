@@ -2765,71 +2765,32 @@ $('execProposalBtn').onclick = async () => {
   }
 };
 
-	  // ======== Fetch Governance Proposals ========
+	// ======== Fetch Governance Proposals ========
 async function fetchProposalsExplorer() {
   try {
-    if (!contracts.governance) {
-      await attachContractsIfSet();
-      if (!contracts.governance) return alert('⚠️ Governance contract not bound.');
-    }
+    if (!contracts.governance) return alert('⚠️ Bind the Governance contract first.');
 
     showLoading("Fetching proposals...");
 
-    // 🔍 Auto-detect contract version
-    let ids = [];
-    if (typeof contracts.governance.getAllProposalIds === 'function') {
-      ids = await contracts.governance.getAllProposalIds();
-      log(`getAllProposalIds() returned ${ids.length} entries`);
-    } else if (typeof contracts.governance.getProposalCount === 'function') {
-      const total = Number(await contracts.governance.getProposalCount());
-      log(`getProposalCount() = ${total}`);
-      ids = Array.from({ length: total }, (_, i) => i);
-    } else {
-      throw new Error("Governance contract does not expose proposal listing methods.");
-    }
-
-    const total = ids.length;
+    const total = Number(await contracts.governance.proposalCount());
     const currentBlock = await provider.getBlockNumber();
     const tbody = $('proposalsTbody');
     tbody.innerHTML = "";
+
     $('proposalCount').innerText = `Total: ${total} proposal${total === 1 ? '' : 's'}`;
 
-    // 🧩 Iterate through proposals
-    for (let i = 0; i < total; i++) {
-      const id = ids[i];
-      let p;
+    for (let i = 1; i <= total; i++) {
+      const p = await contracts.governance.proposals(i);
 
-      try {
-        // Try both bytes32 and numeric index formats
-        if (typeof id === "string" && id.startsWith("0x")) {
-          p = await contracts.governance.getProposal(id);
-        } else {
-          p = await contracts.governance.getProposal
-            ? await contracts.governance.getProposal(id)
-            : await contracts.governance.proposals(id);
-        }
-      } catch (err) {
-        console.error(`❌ Failed to fetch proposal [${i}]`, err);
-        continue; // Skip broken entries but keep going
-      }
+      const typeName = Object.keys(PROPOSAL_MAPPING).find(
+        key => PROPOSAL_MAPPING[key] === Number(p.proposalType)
+      ) || "Unknown";
 
-      if (!p) continue;
-
-      // --- Readable formatting ---
-      const typeName =
-        Object.keys(PROPOSAL_MAPPING).find(
-          (key) => PROPOSAL_MAPPING[key] === Number(p.proposalType)
-        ) || "Unknown";
-
-      const proposer = p.proposer || "—";
-      const endBlock = Number(p.endBlock || 0);
-      const executed = p.executed || false;
-      const votesFor = p.votesForScaled
-        ? ethers.utils.formatUnits(p.votesForScaled, 18)
-        : "0";
-      const votesAgainst = p.votesAgainstScaled
-        ? ethers.utils.formatUnits(p.votesAgainstScaled, 18)
-        : "0";
+      const proposer = p.proposer;
+      const endBlock = Number(p.endBlock);
+      const executed = p.executed;
+      const votesFor = ethers.utils.formatUnits(p.votesForScaled, 18);
+      const votesAgainst = ethers.utils.formatUnits(p.votesAgainstScaled, 18);
       const isActive = currentBlock < endBlock;
 
       const status = executed
@@ -2838,22 +2799,20 @@ async function fetchProposalsExplorer() {
         ? `🟡 Active (${endBlock - currentBlock} blocks left)`
         : "⛔ Ended";
 
-      // --- Action Buttons ---
       let actionHTML = `<span class="text-slate-500">—</span>`;
       if (isActive) {
         actionHTML = `
-          <button onclick="voteOnProposal('${id}')" class="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs">🗳 Vote</button>
+          <button onclick="voteOnProposal(${i})" class="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs">🗳 Vote</button>
         `;
       } else if (!executed) {
         actionHTML = `
-          <button onclick="executeProposal('${id}')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs">⚙️ Execute</button>
+          <button onclick="executeProposal(${i})" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs">⚙️ Execute</button>
         `;
       }
 
-      // --- Table Row ---
       const row = `
         <tr class="border-t border-slate-700 hover:bg-slate-800/30">
-          <td class="p-2 text-center">${i + 1}</td>
+          <td class="p-2 text-center">${i}</td>
           <td class="p-2 text-center font-semibold">${typeName}</td>
           <td class="p-2 text-center text-cyan-400 break-all">${proposer}</td>
           <td class="p-2 text-center">
@@ -2868,14 +2827,15 @@ async function fetchProposalsExplorer() {
       tbody.insertAdjacentHTML("beforeend", row);
     }
 
-    log(`✅ fetchProposalsExplorer done (${total} proposals loaded)`);
+    log(`fetchProposalsExplorer done (${total} proposals loaded)`);
   } catch (e) {
-    console.error("❌ fetchProposalsExplorer err:", e);
-    alert(`Failed to fetch proposals: ${e?.reason || e?.message || JSON.stringify(e)}`);
+    log('fetchProposalsExplorer err', e);
+    alert(`Failed to fetch proposals: ${e.message || e}`);
   } finally {
     hideLoading();
   }
-}
+}  
+    
 
 function formatVotingDuration(blocks) {
   const seconds = blocks * 12; // adjust block time if needed
