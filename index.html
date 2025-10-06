@@ -2736,6 +2736,78 @@ $('fetchProposalBtn').onclick = async () => {
   }
 };
 
+	  // ======== Fetch Governance Proposals ========
+async function fetchProposalsExplorer() {
+  try {
+    if (!contracts.governance) {
+      return alert('Please bind Governance contract first.');
+    }
+
+    showLoading("Fetching proposals...");
+
+    const total = await contracts.governance.getProposalCount();
+    const currentBlock = await provider.getBlockNumber();
+    const tbody = $('proposalsTbody');
+    tbody.innerHTML = "";
+
+    for (let i = 0; i < total; i++) {
+      const p = await contracts.governance.getProposal(i);
+
+      const id = i;
+      const proposer = p.proposer;
+      const title = p.title;
+      const description = p.description;
+      const endBlock = Number(p.endBlock);
+      const votesFor = ethers.utils.formatUnits(p.votesForScaled, 18);
+      const votesAgainst = ethers.utils.formatUnits(p.votesAgainstScaled, 18);
+      const executed = p.executed;
+      const active = currentBlock < endBlock;
+      const status = executed
+        ? "✅"
+        : active
+        ? "🟡 Active"
+        : "⛔ Ended";
+
+      // optional type/context columns — adjust as you need
+      const type = title?.length ? "Proposal" : "—";
+      const value = description?.slice(0, 30) + (description.length > 30 ? "..." : "");
+      const context = `${votesFor}/${votesAgainst}`;
+
+      // Create table row
+      const row = `
+        <tr class="border-t border-slate-700 hover:bg-slate-800/30">
+          <td class="p-2 text-center">${id}</td>
+          <td class="p-2 text-center">${type}</td>
+          <td class="p-2 text-center">${value}</td>
+          <td class="p-2 text-center">${context}</td>
+          <td class="p-2 text-center text-cyan-400 break-all">${proposer}</td>
+          <td class="p-2 text-center">
+            <span class="text-green-400">${votesFor}</span> /
+            <span class="text-red-400">${votesAgainst}</span>
+          </td>
+          <td class="p-2 text-center">${status}</td>
+          <td class="p-2 text-center">
+            ${
+              !executed && !active
+                ? `<button class="px-2 py-1 bg-indigo-600 rounded text-xs" onclick="executeProposal(${id})">Execute</button>`
+                : `<span class="text-slate-500">—</span>`
+            }
+          </td>
+        </tr>
+      `;
+
+      tbody.insertAdjacentHTML("beforeend", row);
+    }
+
+    log(`fetchProposalsExplorer done (${total} proposals loaded)`);
+  } catch (e) {
+    log('fetchProposalsExplorer err', e);
+    alert(`Failed to fetch proposals: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
 function formatVotingDuration(blocks) {
   const seconds = blocks * 12; // adjust block time if needed
   const days = Math.floor(seconds / 86400);
@@ -3338,7 +3410,8 @@ async function autoRefreshAll() {
 	  refreshStakingStats(),
 	  refreshBluechip(),
 	  fetchStakingTransparency(),
-	  fetchGovernanceTransparency()
+	  fetchGovernanceTransparency(),
+	  fetchProposalsExplorer()
   ]);
 }
 	  
@@ -3436,6 +3509,7 @@ $('pendingRewardsBtn').onclick = checkPendingRewards;
 $('viewPortfolioBtn').onclick = viewPortfolio;
 
 	  // Governance 
+	  $('refreshProposalsBtn').onclick = fetchProposalsExplorer;
 	    $('refreshGovernanceTransparencyBtn').onclick = fetchGovernanceTransparency;
     
 
