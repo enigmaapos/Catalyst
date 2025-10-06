@@ -2484,7 +2484,9 @@ async function checkPendingRewards() {
   }
 }
 
-	  async function fetchStakingTransparency() {
+	  
+// ======== Fetch Staking Transparency ========
+async function fetchStakingTransparency() {
   try {
     if (!contracts.staking || !provider) {
       if (!contracts.staking) return alert('Please connect wallet and set Staking contract first');
@@ -2492,7 +2494,7 @@ async function checkPendingRewards() {
 
     showLoading("Fetching staking transparency...");
 
-    // 1. --- PARALLEL READS (FASTEST PART) ---
+    // --- Parallel Reads ---
     const [
       councilAddress,
       deployerCouncilAddress,
@@ -2503,66 +2505,44 @@ async function checkPendingRewards() {
       contracts.staking.deployerAddress()
     ]);
 
-    // 2. --- PARALLEL EVENT LOOKUPS (SLOWEST PART) ---
+    // --- Event Lookups ---
     const [
-      councilSetEvents,
-      deployerCouncilSetEvents,
+      adminSwappedEvents,
       deployerAddrUpdatedEvents,
-      adminSwappedEvents
+      councilSetEvents,
+      deployerCouncilSetEvents
     ] = await Promise.all([
-      contracts.staking.queryFilter("CouncilSet", 0, "latest"),
-      contracts.staking.queryFilter("DeployerCouncilSet", 0, "latest"),
+      contracts.staking.queryFilter("AdminSwapped", 0, "latest"),
       contracts.staking.queryFilter("DeployerAddressUpdated", 0, "latest"),
-      contracts.staking.queryFilter("AdminSwapped", 0, "latest")
+      contracts.staking.queryFilter("CouncilSet", 0, "latest"),
+      contracts.staking.queryFilter("DeployerCouncilSet", 0, "latest")
     ]);
 
-    // 3. --- POST-PROCESSING LOGIC (Latest Admin via Council Swap) ---
+    // --- Admin Resolution (same logic style as CATA) ---
     let currentAdmin = "⚠️ Unknown";
 
-try {
-  const adminRole = await contracts.staking.DEFAULT_ADMIN_ROLE();
-  const adminCount = await contracts.staking.getRoleMemberCount(adminRole);
-  if (adminCount > 0) {
-    // Just get the first admin if there are multiple
-    currentAdmin = await contracts.staking.getRoleMember(adminRole, 0);
-  }
-} catch (err) {
-  console.warn('Failed to read admin role from staking:', err);
-}
-
-// Still check for event history if present (priority)
-if (adminSwappedEvents.length > 0) {
-  const last = adminSwappedEvents[adminSwappedEvents.length - 1];
-  currentAdmin = last.args.newAdmin;
-}
-
-    // 4. --- POST-PROCESSING LOGIC (Last Council Updates) ---
-    let lastCouncil = councilAddress;
-    if (councilSetEvents.length > 0) {
-      const last = councilSetEvents[councilSetEvents.length - 1];
-      lastCouncil = last.args.newCouncil;
+    if (adminSwappedEvents.length > 0) {
+      currentAdmin = adminSwappedEvents[adminSwappedEvents.length - 1].args.newAdmin;
+    } else if (deployerAddrUpdatedEvents.length > 0) {
+      currentAdmin = deployerAddrUpdatedEvents[0].args.newDeployer;
+    } else if (councilSetEvents.length > 0) {
+      currentAdmin = councilSetEvents[0].args.newCouncil;
+    } else {
+      try {
+        const deployerAddr = await contracts.staking.deployerAddress();
+        if (deployerAddr && deployerAddr !== ethers.ZeroAddress) {
+          currentAdmin = deployerAddr;
+        }
+      } catch (e) {
+        console.warn("Could not read deployerAddress():", e);
+      }
     }
 
-    let lastDeployerCouncil = deployerCouncilAddress;
-    if (deployerCouncilSetEvents.length > 0) {
-      const last = deployerCouncilSetEvents[deployerCouncilSetEvents.length - 1];
-      lastDeployerCouncil = last.args.newCouncil;
-    }
-
-    let lastDeployerAddress = deployerAddress;
-    if (deployerAddrUpdatedEvents.length > 0) {
-      const last = deployerAddrUpdatedEvents[deployerAddrUpdatedEvents.length - 1];
-      lastDeployerAddress = last.args.newDeployer;
-    }
-
-    // 5. --- UI Update ---
-    $('stakingCouncilAddress').innerText = lastCouncil || '—';
-    $('stakingDeployerCouncil').innerText = lastDeployerCouncil || '—';
-    $('stakingDeployerAddress').innerText = lastDeployerAddress || '—';
-
-    // Optional — show admin swap too if you want extra transparency
-    if ($('stakingAdminAddress'))
-      $('stakingAdminAddress').innerText = currentAdmin || '—';
+    // --- UI Update ---
+    $('stakingCouncilAddress').innerText = councilAddress || '—';
+    $('stakingDeployerCouncil').innerText = deployerCouncilAddress || '—';
+    $('stakingDeployerAddress').innerText = deployerAddress || '—';
+    $('stakingAdminAddress').innerText = currentAdmin || '—';
 
   } catch (e) {
     log('fetchStakingTransparency err', e?.message || e);
@@ -2570,7 +2550,7 @@ if (adminSwappedEvents.length > 0) {
   } finally {
     hideLoading();
   }
-	  }
+}
 
 
   // ---------- Governance Section ----------
