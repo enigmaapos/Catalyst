@@ -3141,22 +3141,15 @@ async function refreshLock() {
 
 // ---------- Aggregator ----------
 async function autoRefreshAll() {
-  showLoading("Refreshing all data...");
-
-  try {
-    fetchTransparency();
-    refreshRecovery();
-    refreshVetoWarning();
-    refreshDao();
-    refreshGuardians();
-    refreshLock();
-    refreshStakingStats();
-  } catch (e) {
-    log('autoRefreshAll error', e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
+  await Promise.all([
+    fetchTransparency(),
+	  refreshRecovery(),
+    refreshVetoWarning(),
+    refreshDao(),
+    refreshGuardians(),
+    refreshLock(),
+	  refreshStakingStats()
+  ]);
 }
 	  
 
@@ -3248,7 +3241,7 @@ $('batchHarvestBtn').onclick = batchHarvest;
 
 	  // Extra staking binds
 $('pendingRewardsBtn').onclick = checkPendingRewards;
-$('refreshStakingStatsBtn').onclick = refreshStakingStats;
+	  $('refreshStakingStatsBtn').onclick = refreshStakingStats;
 $('viewPortfolioBtn').onclick = viewPortfolio;
 
 	  
