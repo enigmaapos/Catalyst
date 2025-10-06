@@ -194,6 +194,11 @@
 	},
 	{
 		"inputs": [],
+		"name": "TooManyParticipants",
+		"type": "error"
+	},
+	{
+		"inputs": [],
 		"name": "TransferFailed",
 		"type": "error"
 	},
@@ -842,6 +847,19 @@
 	},
 	{
 		"inputs": [],
+		"name": "MAX_PARTICIPANTS_LIMIT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "MAX_STAKE_PER_COLLECTION",
 		"outputs": [
 			{
@@ -921,6 +939,32 @@
 	{
 		"inputs": [],
 		"name": "TERM_NFT_CAP",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "TOP_BURNER_PERCENT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "TREASURY_BONUS_BP",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -1080,6 +1124,19 @@
 				"internalType": "bool",
 				"name": "",
 				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "bonusModule",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -1526,6 +1583,25 @@
 				"type": "address"
 			}
 		],
+		"name": "lastBonusBlock",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
 		"name": "lastBurnBlock",
 		"outputs": [
 			{
@@ -1869,6 +1945,19 @@
 			}
 		],
 		"name": "setBluechipCollection",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newModule",
+				"type": "address"
+			}
+		],
+		"name": "setBonusModule",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -2241,6 +2330,13 @@
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "triggerTopBurnerBonus",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
