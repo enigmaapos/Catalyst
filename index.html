@@ -3141,15 +3141,22 @@ async function refreshLock() {
 
 // ---------- Aggregator ----------
 async function autoRefreshAll() {
-  await Promise.all([
-    fetchTransparency(),
-	  refreshRecovery(),
-    refreshVetoWarning(),
-    refreshDao(),
-    refreshGuardians(),
-    refreshLock(),
-	  refreshStakingStats()
-  ]);
+  showLoading("Refreshing all data...");
+
+  try {
+    await fetchTransparency();
+    await refreshRecovery();
+    await refreshVetoWarning();
+    await refreshDao();
+    await refreshGuardians();
+    await refreshLock();
+    await refreshStakingStats();
+  } catch (e) {
+    log('autoRefreshAll error', e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
 }
 	  
 
