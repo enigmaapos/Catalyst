@@ -819,6 +819,36 @@ Catalyst Whitepaper
       </table>
     </div>
   </div>
+
+	<div class="pt-4 border-t border-slate-700">
+  <div class="text-xs text-slate-400 mb-1">Governance Contract Transparency</div>
+
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Guardian Council: <br />
+    <span id="govCouncil" class="font-mono text-cyan-400 break-all">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Linked Staking Contract: <br />
+    <span id="govStaking" class="font-mono text-purple-400 break-all">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Voting Duration: <br />
+    <span id="govVotingDuration" class="font-mono text-yellow-400">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Min Votes Required: <br />
+    <span id="govMinVotes" class="font-mono text-green-400">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Cap Percent: <br />
+    <span id="govCapPercent" class="font-mono text-indigo-400">—</span>
+  </div>
+
+  <button id="refreshGovernanceTransparencyBtn"
+    class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded">
+    🔍 Refresh Governance Transparency
+  </button>
+	</div>
 </section>
 
 <section id="council" class="tab-content hidden">
@@ -2706,6 +2736,42 @@ $('fetchProposalBtn').onclick = async () => {
   }
 };
 
+	  async function fetchGovernanceTransparency() {
+  try {
+    if (!contracts.governance) return alert('Bind governance contract first');
+
+    showLoading("Fetching governance transparency...");
+
+    const [
+      council,
+      stakingAddr,
+      votingDuration,
+      minVotes,
+      capPercent
+    ] = await Promise.all([
+      contracts.governance.guardianCouncil(),
+      contracts.governance.staking(),
+      contracts.governance.votingDuration(),
+      contracts.governance.minVotesRequiredScaled(),
+      contracts.governance.collectionVoteCapPercent(),
+    ]);
+
+    $('govCouncil').innerText = council;
+    $('govStaking').innerText = stakingAddr;
+    $('govVotingDuration').innerText = votingDuration.toString();
+    $('govMinVotes').innerText = ethers.utils.formatUnits(minVotes, 18) + " votes";
+    $('govCapPercent').innerText = capPercent.toString() + "%";
+
+    log('fetchGovernanceTransparency done');
+  } catch (e) {
+    log('fetchGovernanceTransparency err', e);
+    alert('Failed to fetch governance transparency.');
+  } finally {
+    hideLoading();
+  }
+}
+
+	  $('refreshGovernanceTransparencyBtn').onclick = fetchGovernanceTransparency;
     
 	  // Parse helper for 7 addresses
 function parse7(txt) {
