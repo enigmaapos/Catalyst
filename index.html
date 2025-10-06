@@ -744,6 +744,13 @@ Catalyst Whitepaper
       <option value="COUNCIL_CLEAR_LOCK">Clear Council Lock/Warning</option>
       <option value="UPGRADE_COUNCIL">Upgrade Council Implementation</option>
     </optgroup>
+
+	  <optgroup label="🏛 Governance DAO Operations">
+  <option value="UPGRADE_GOVERNANCE">Upgrade Governance DAO</option>
+  <option value="SET_NEW_COUNCIL">Set / Replace Guardian Council</option>
+  <option value="DAO_PAUSE">Pause Governance DAO</option>
+  <option value="DAO_UNPAUSE">Unpause Governance DAO</option>
+	  </optgroup>
   </select>
 
   <!-- 2. Generic Fields -->
@@ -2642,7 +2649,12 @@ const PROPOSAL_MAPPING = {
   COUNCIL_PROPOSE_NEW_DAO: 10,
   COUNCIL_COMMIT_NEW_DAO: 11,
   COUNCIL_CLEAR_LOCK: 12,
-  UPGRADE_COUNCIL: 13
+  UPGRADE_COUNCIL: 13,
+  // New governance-level types:
+  UPGRADE_GOVERNANCE: 14,
+  SET_NEW_COUNCIL: 15,
+  DAO_PAUSE: 16,
+  DAO_UNPAUSE: 17
 };
 
 // UI toggle fields
