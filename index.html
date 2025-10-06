@@ -1649,6 +1649,8 @@ async function fetchTransparency() {
     $('cataMinters').innerText = minterList.length > 0 
       ? minterList.join("\n")
       : "None";
+
+	   log('fetchTransparency done');
 	  
   } catch (e) {
     log('fetchTransparency err', e?.message || e);
@@ -2543,6 +2545,8 @@ async function fetchStakingTransparency() {
     $('stakingDeployerCouncil').innerText = deployerCouncilAddress || '—';
     $('stakingDeployerAddress').innerText = deployerAddress || '—';
     $('stakingAdminAddress').innerText = currentAdmin || '—';
+
+	   log('fetchStakingTransparency done');
 
   } catch (e) {
     log('fetchStakingTransparency err', e?.message || e);
