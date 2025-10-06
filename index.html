@@ -855,21 +855,30 @@ Catalyst Whitepaper
   <div class="text-xs text-slate-400 mb-1">Governance Contract Transparency</div>
 
   <div class="p-2 rounded bg-black/20 text-sm">
+    Current Admin: <br />
+    <span id="govAdmin" class="font-mono text-amber-400 break-all">—</span>
+  </div>
+
+  <div class="p-2 rounded bg-black/20 text-sm">
     Guardian Council: <br />
     <span id="govCouncil" class="font-mono text-cyan-400 break-all">—</span>
   </div>
+
   <div class="p-2 rounded bg-black/20 text-sm">
     Linked Staking Contract: <br />
     <span id="govStaking" class="font-mono text-purple-400 break-all">—</span>
   </div>
+
   <div class="p-2 rounded bg-black/20 text-sm">
     Voting Duration: <br />
     <span id="govVotingDuration" class="font-mono text-yellow-400">—</span>
   </div>
+
   <div class="p-2 rounded bg-black/20 text-sm">
     Min Votes Required: <br />
     <span id="govMinVotes" class="font-mono text-green-400">—</span>
   </div>
+
   <div class="p-2 rounded bg-black/20 text-sm">
     Cap Percent: <br />
     <span id="govCapPercent" class="font-mono text-indigo-400">—</span>
@@ -2861,38 +2870,51 @@ function formatVotingDuration(blocks) {
 	  
 	  async function fetchGovernanceTransparency() {
   try {
-    if (!contracts.governance) return alert('Bind governance contract first');
-
+    if (!contracts.governance) return alert('⚠️ Bind the Governance contract first.');
     showLoading("Fetching governance transparency...");
 
-    const [
-      council,
-      stakingAddr,
-      votingDuration,
-      minVotes,
-      capPercent
-    ] = await Promise.all([
-      contracts.governance.council(),                // ✅ FIXED
-      contracts.governance.staking(),                // ✅
-      contracts.governance.votingDurationBlocks(),   // ✅ FIXED
-      contracts.governance.minVotesRequiredScaled(), // ✅
-      contracts.governance.collectionVoteCapPercent()// ✅
+    // Basic reads
+    const [council, staking, votingDuration, minVotes, capPercent] = await Promise.all([
+      contracts.governance.council(),
+      contracts.governance.staking(),
+      contracts.governance.votingDurationBlocks(),
+      contracts.governance.minVotesRequiredScaled(),
+      contracts.governance.collectionVoteCapPercent()
     ]);
 
+    // Admin lookup — try roleMember or fallback to event
+    let adminAddress = "⚠️ Unknown";
+    try {
+      const DEFAULT_ADMIN_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("DEFAULT_ADMIN_ROLE"));
+      const count = await contracts.governance.getRoleMemberCount(DEFAULT_ADMIN_ROLE);
+      if (count > 0) adminAddress = await contracts.governance.getRoleMember(DEFAULT_ADMIN_ROLE, 0);
+    } catch {
+      // fallback via events
+      const events = await contracts.governance.queryFilter("AdminSwapped", 0, "latest");
+      if (events.length > 0) adminAddress = events[events.length - 1].args.newAdmin;
+    }
+
+    // Format duration in human-friendly days
+    const durationBlocks = Number(votingDuration);
+    const days = (durationBlocks * 12) / (60 * 60 * 24); // assume 12s block time
+
+    // Update UI
+    $('govAdmin').innerText = adminAddress;
     $('govCouncil').innerText = council;
-    $('govStaking').innerText = stakingAddr;
-    $('govVotingDuration').innerText = formatVotingDuration(Number(votingDuration));
-    $('govMinVotes').innerText = ethers.utils.formatUnits(minVotes, 18) + " votes";
-    $('govCapPercent').innerText = capPercent.toString() + "%";
+    $('govStaking').innerText = staking;
+    $('govVotingDuration').innerText = `${durationBlocks} blocks (~${days.toFixed(1)} days)`;
+    $('govMinVotes').innerText = ethers.utils.formatUnits(minVotes, 18);
+    $('govCapPercent').innerText = capPercent + "%";
 
     log('fetchGovernanceTransparency done');
   } catch (e) {
     log('fetchGovernanceTransparency err', e);
-    alert('Failed to fetch governance transparency. Check console for details.');
+    alert("Failed to fetch governance transparency: " + (e.message || e));
   } finally {
     hideLoading();
   }
 }
+
 
 
 	  // Parse helper for 7 addresses
