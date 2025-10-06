@@ -2749,27 +2749,28 @@ $('fetchProposalBtn').onclick = async () => {
       minVotes,
       capPercent
     ] = await Promise.all([
-      contracts.governance.guardianCouncil(),
-      contracts.governance.staking(),
-      contracts.governance.votingDuration(),
-      contracts.governance.minVotesRequiredScaled(),
-      contracts.governance.collectionVoteCapPercent(),
+      contracts.governance.council(),                // ✅ FIXED
+      contracts.governance.staking(),                // ✅
+      contracts.governance.votingDurationBlocks(),   // ✅ FIXED
+      contracts.governance.minVotesRequiredScaled(), // ✅
+      contracts.governance.collectionVoteCapPercent()// ✅
     ]);
 
     $('govCouncil').innerText = council;
     $('govStaking').innerText = stakingAddr;
-    $('govVotingDuration').innerText = votingDuration.toString();
+    $('govVotingDuration').innerText = votingDuration.toString() + " blocks";
     $('govMinVotes').innerText = ethers.utils.formatUnits(minVotes, 18) + " votes";
     $('govCapPercent').innerText = capPercent.toString() + "%";
 
     log('fetchGovernanceTransparency done');
   } catch (e) {
     log('fetchGovernanceTransparency err', e);
-    alert('Failed to fetch governance transparency.');
+    alert('Failed to fetch governance transparency. Check console for details.');
   } finally {
     hideLoading();
   }
 }
+
 
 	  // Parse helper for 7 addresses
 function parse7(txt) {
