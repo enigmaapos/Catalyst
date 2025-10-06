@@ -3144,13 +3144,13 @@ async function autoRefreshAll() {
   showLoading("Refreshing all data...");
 
   try {
-    await fetchTransparency();
-    await refreshRecovery();
-    await refreshVetoWarning();
-    await refreshDao();
-    await refreshGuardians();
-    await refreshLock();
-    await refreshStakingStats();
+    fetchTransparency();
+    refreshRecovery();
+    refreshVetoWarning();
+    refreshDao();
+    refreshGuardians();
+    refreshLock();
+    refreshStakingStats();
   } catch (e) {
     log('autoRefreshAll error', e);
     alert(e.message || e);
