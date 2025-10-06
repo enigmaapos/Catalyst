@@ -2328,15 +2328,17 @@ function formatAmount(amount, decimals = 18) {
   }
 }
 	  
-
 // ======== Refresh Global Stats ========
 async function refreshStakingStats() {
   try {
-    showLoading();
+    showLoading("Refreshing staking stats..."); // ✅ Pass a string, not the function
 
     if (!contracts.staking) {
       await attachContractsIfSet();
-      if (!contracts.staking) return alert('Set staking contract first.');
+      if (!contracts.staking) {
+        alert('Set staking contract first.');
+        return;
+      }
     }
 
     if (typeof contracts.staking.totalStakedAll === 'function') {
@@ -2350,7 +2352,7 @@ async function refreshStakingStats() {
       $('stakedTerm').innerText = formatAmount(term);
       $('stakedPerm').innerText = formatAmount(perm);
 
-      $('stakingStatsUpdated').innerText =
+      $('stakingStatsUpdated').innerText = 
         `Updated: ${new Date().toLocaleTimeString()}`;
 
       log('✅ Staking stats refreshed');
