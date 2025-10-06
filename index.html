@@ -2868,13 +2868,16 @@ function formatVotingDuration(blocks) {
   return `${blocks} blocks`;
 }
 	  
-	  async function fetchGovernanceTransparency() {
+	 async function fetchGovernanceTransparency() {
   try {
-    if (!contracts.governance) return alert('⚠️ Bind the Governance contract first.');
-    showLoading("Fetching governance transparency...");
+    if (!contracts.governance || !provider) {
+      if (!contracts.governance) return alert('⚠️ Please bind Governance contract first');
+    }
 
-    // Basic reads
-    const [council, staking, votingDuration, minVotes, capPercent] = await Promise.all([
+    showLoading("Fetching transparency...");
+
+    // --- Basic contract state reads (in parallel)
+    const [councilAddress, stakingAddress, votingDuration, minVotes, capPercent] = await Promise.all([
       contracts.governance.council(),
       contracts.governance.staking(),
       contracts.governance.votingDurationBlocks(),
@@ -2882,39 +2885,42 @@ function formatVotingDuration(blocks) {
       contracts.governance.collectionVoteCapPercent()
     ]);
 
-    // Admin lookup — try roleMember or fallback to event
+    // --- Determine current admin like in CATA
     let adminAddress = "⚠️ Unknown";
-    try {
-      const DEFAULT_ADMIN_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("DEFAULT_ADMIN_ROLE"));
-      const count = await contracts.governance.getRoleMemberCount(DEFAULT_ADMIN_ROLE);
-      if (count > 0) adminAddress = await contracts.governance.getRoleMember(DEFAULT_ADMIN_ROLE, 0);
-    } catch {
-      // fallback via events
-      const events = await contracts.governance.queryFilter("AdminSwapped", 0, "latest");
-      if (events.length > 0) adminAddress = events[events.length - 1].args.newAdmin;
+
+    const adminSwapEvents = await contracts.governance.queryFilter("AdminSwapped", 0, "latest");
+    if (adminSwapEvents.length > 0) {
+      adminAddress = adminSwapEvents[adminSwapEvents.length - 1].args.newAdmin;
+    } else {
+      // fallback: read directly from AccessControl if possible
+      try {
+        const DEFAULT_ADMIN_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("DEFAULT_ADMIN_ROLE"));
+        adminAddress = await contracts.governance.getRoleMember(DEFAULT_ADMIN_ROLE, 0);
+      } catch {
+        // leave unknown
+      }
     }
 
-    // Format duration in human-friendly days
+    // --- Convert voting duration (blocks → days)
     const durationBlocks = Number(votingDuration);
-    const days = (durationBlocks * 12) / (60 * 60 * 24); // assume 12s block time
+    const approxDays = (durationBlocks * 12) / (60 * 60 * 24); // 12s block time
 
-    // Update UI
-    $('govAdmin').innerText = adminAddress;
-    $('govCouncil').innerText = council;
-    $('govStaking').innerText = staking;
-    $('govVotingDuration').innerText = `${durationBlocks} blocks (~${days.toFixed(1)} days)`;
+    // --- UI updates
+    $('govAdminAddress').innerText = adminAddress;
+    $('govCouncilAddress').innerText = councilAddress;
+    $('govStakingAddress').innerText = stakingAddress;
+    $('govVotingDuration').innerText = `${durationBlocks} blocks (~${approxDays.toFixed(1)} days)`;
     $('govMinVotes').innerText = ethers.utils.formatUnits(minVotes, 18);
-    $('govCapPercent').innerText = capPercent + "%";
+    $('govCapPercent').innerText = `${capPercent}%`;
 
     log('fetchGovernanceTransparency done');
   } catch (e) {
     log('fetchGovernanceTransparency err', e);
-    alert("Failed to fetch governance transparency: " + (e.message || e));
+    alert(`Transparency fetch failed: ${e.message || e}. Check console for details.`);
   } finally {
     hideLoading();
   }
 }
-
 
 
 	  // Parse helper for 7 addresses
