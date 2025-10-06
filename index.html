@@ -2771,8 +2771,6 @@ $('fetchProposalBtn').onclick = async () => {
   }
 }
 
-	  $('refreshGovernanceTransparencyBtn').onclick = fetchGovernanceTransparency;
-    
 	  // Parse helper for 7 addresses
 function parse7(txt) {
     const arr = txt.split('\n').map(s => s.trim()).filter(Boolean);
@@ -3326,7 +3324,8 @@ async function autoRefreshAll() {
     refreshLock(),
 	  refreshStakingStats(),
 	  refreshBluechip(),
-	  fetchStakingTransparency()
+	  fetchStakingTransparency(),
+	  fetchGovernanceTransparency()
   ]);
 }
 	  
@@ -3422,6 +3421,10 @@ $('batchHarvestBtn').onclick = batchHarvest;
 $('pendingRewardsBtn').onclick = checkPendingRewards;
 	  $('refreshStakingStatsBtn').onclick = refreshStakingStats;
 $('viewPortfolioBtn').onclick = viewPortfolio;
+
+	  // Governance 
+	    $('refreshGovernanceTransparencyBtn').onclick = fetchGovernanceTransparency;
+    
 
 	  
     log('UI ready');
