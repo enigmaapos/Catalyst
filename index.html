@@ -2518,10 +2518,23 @@ async function checkPendingRewards() {
 
     // 3. --- POST-PROCESSING LOGIC (Latest Admin via Council Swap) ---
     let currentAdmin = "⚠️ Unknown";
-    if (adminSwappedEvents.length > 0) {
-      const last = adminSwappedEvents[adminSwappedEvents.length - 1];
-      currentAdmin = last.args.newAdmin;
-    }
+
+try {
+  const adminRole = await contracts.staking.DEFAULT_ADMIN_ROLE();
+  const adminCount = await contracts.staking.getRoleMemberCount(adminRole);
+  if (adminCount > 0) {
+    // Just get the first admin if there are multiple
+    currentAdmin = await contracts.staking.getRoleMember(adminRole, 0);
+  }
+} catch (err) {
+  console.warn('Failed to read admin role from staking:', err);
+}
+
+// Still check for event history if present (priority)
+if (adminSwappedEvents.length > 0) {
+  const last = adminSwappedEvents[adminSwappedEvents.length - 1];
+  currentAdmin = last.args.newAdmin;
+}
 
     // 4. --- POST-PROCESSING LOGIC (Last Council Updates) ---
     let lastCouncil = councilAddress;
