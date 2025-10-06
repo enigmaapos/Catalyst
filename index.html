@@ -795,30 +795,37 @@ Catalyst Whitepaper
       <button id="voteProposalBtn" class="flex-1 p-2 bg-blue-600 rounded">Vote</button>
       <button id="execProposalBtn" class="flex-1 p-2 bg-green-700 rounded">Execute</button>
     </div>
-    <button id="refreshProposalsBtn" class="w-full p-2 bg-slate-600 rounded">Refresh Proposal Details</button>
   </div>
 
-  <!-- Proposals Explorer -->
-  <div class="glass p-4 rounded-lg mt-4">
-    <h3 class="font-semibold mb-2">Proposals Explorer</h3>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="text-xs text-slate-400">
-          <tr>
-            <th class="p-2">ID</th>
-            <th class="p-2">Type</th>
-            <th class="p-2">Value</th>
-            <th class="p-2">Context</th>
-            <th class="p-2">Proposer</th>
-            <th class="p-2">Votes</th>
-            <th class="p-2">Executed</th>
-            <th class="p-2">Action</th>
-          </tr>
-        </thead>
-        <tbody id="proposalsTbody"></tbody>
-      </table>
-    </div>
+<!-- 🔹 Proposals Explorer -->
+<div class="glass p-4 rounded-lg mt-4">
+  <h3 class="font-semibold mb-2">Proposals Explorer</h3>
+
+  <div class="flex justify-between items-center mb-2">
+    <button id="refreshProposalsBtn"
+      class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">
+      🔄 Refresh
+    </button>
+    <div id="proposalCount" class="text-xs text-slate-400"></div>
   </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-xs text-slate-400 border-b border-slate-700">
+        <tr>
+          <th class="p-2">ID</th>
+          <th class="p-2">Title</th>
+          <th class="p-2">Description</th>
+          <th class="p-2">Proposer</th>
+          <th class="p-2">Votes (For / Against)</th>
+          <th class="p-2">Status</th>
+          <th class="p-2">Action</th>
+        </tr>
+      </thead>
+      <tbody id="proposalsTbody"></tbody>
+    </table>
+  </div>
+</div>
 
 	<div class="pt-4 border-t border-slate-700">
   <div class="text-xs text-slate-400 mb-1">Governance Contract Transparency</div>
@@ -2619,12 +2626,12 @@ $('proposalType').addEventListener('change', () => {
   if (type === 'UPGRADE_COUNCIL') $('upgradeCouncilRow').classList.remove('hidden');
 });
 
-// Create Proposal
+// ======== Create Proposal ========
 $('createProposalBtn').onclick = async () => {
   try {
     if (!contracts.governance) {
       await attachContractsIfSet();
-      if (!contracts.governance) return alert('⚠️ Governance not set');
+      if (!contracts.governance) return alert('⚠️ Governance contract not set.');
     }
 
     showLoading();
@@ -2636,10 +2643,12 @@ $('createProposalBtn').onclick = async () => {
     let newValue = ethers.BigNumber.from($('proposalValue').value.trim() || '0');
     let ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
 
+    // --- Special logic for certain proposal types ---
     if (typeStr === 'TIER_UPGRADE') {
       ctx = $('tierCollection').value.trim();
       paramTarget = parseInt($('tierTo').value);
       newValue = ethers.BigNumber.from($('tierDeclaredSupply').value || '0');
+
     } else if (typeStr === 'COUNCIL_RESEED_ACTIVE' || typeStr === 'COUNCIL_PROPOSE_STANDBY') {
       const addrs = Array.from(document.querySelectorAll('.councilAddr')).map(el => el.value.trim());
       if (addrs.length !== 7 || addrs.some(a => !ethers.utils.isAddress(a))) {
@@ -2650,12 +2659,14 @@ $('createProposalBtn').onclick = async () => {
       ctx = payload;
       newValue = 0;
       paramTarget = 0;
+
     } else if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
       ctx = $('govNewDaoAddr').value.trim();
       if (!ethers.utils.isAddress(ctx)) {
         hideLoading();
         return alert("⚠️ Invalid DAO address");
       }
+
     } else if (typeStr === 'UPGRADE_COUNCIL') {
       ctx = $('newCouncilImpl').value.trim();
       if (!ethers.utils.isAddress(ctx)) {
@@ -2664,11 +2675,12 @@ $('createProposalBtn').onclick = async () => {
       }
     }
 
+    // --- Execute transaction ---
     const tx = await contracts.governance.propose(pType, paramTarget, newValue, ctx);
     log('propose tx', tx.hash);
     await tx.wait();
 
-    alert("✅ Proposal created!");
+    alert("✅ Proposal created successfully!");
   } catch (e) {
     console.error(e);
     alert("❌ " + (e.reason || e.message || e));
@@ -2677,122 +2689,118 @@ $('createProposalBtn').onclick = async () => {
   }
 };
 
-// Vote
+	  // ======== Vote ========
 $('voteProposalBtn').onclick = async () => {
   try {
     if (!contracts.governance) await attachContractsIfSet();
+
     const id = $('proposalId').value.trim();
     if (!id) return alert('⚠️ Proposal ID required');
 
-    showLoading();
-    const ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
+    // Ask user to confirm voting intent
+    const support = confirm("Vote FOR this proposal?\nPress Cancel to vote AGAINST.");
+
+    // Determine collection context (if any)
+    let ctx = $('proposalCollectionCtx').value.trim();
+    if (!ethers.utils.isAddress(ctx)) ctx = ethers.constants.AddressZero;
+
+    showLoading("Casting vote...");
+
+    // Send transaction
     const tx = await contracts.governance.vote(id, ctx);
     await tx.wait();
-    alert("✅ Vote cast!");
+
+    alert(`✅ Vote cast ${support ? "FOR" : "AGAINST"} (context: ${ctx})`);
   } catch (e) {
+    console.error(e);
     alert("❌ " + (e.reason || e.message || e));
   } finally {
     hideLoading();
   }
 };
 
-// Execute
+// ======== Execute ========
 $('execProposalBtn').onclick = async () => {
   try {
     if (!contracts.governance) await attachContractsIfSet();
+
     const id = $('proposalId').value.trim();
     if (!id) return alert('⚠️ Proposal ID required');
 
-    showLoading();
+    showLoading("Executing proposal...");
+
     const tx = await contracts.governance.executeProposal(id);
     await tx.wait();
+
     alert("✅ Proposal executed!");
   } catch (e) {
+    console.error(e);
     alert("❌ " + (e.reason || e.message || e));
   } finally {
     hideLoading();
   }
 };
 
-// Fetch Proposal
-$('fetchProposalBtn').onclick = async () => {
-  try {
-    if (!contracts.governance) await attachContractsIfSet();
-    const id = $('proposalId').value.trim();
-    if (!id) return alert('⚠️ Proposal ID required');
-
-    showLoading();
-    const info = await contracts.governance.proposals(id).catch(() => null);
-    hideLoading();
-
-    if (info) {
-      log('proposal fetch', info);
-    } else {
-      alert("⚠️ Proposal not found");
-    }
-  } catch (e) {
-    hideLoading();
-    alert("❌ " + (e.reason || e.message || e));
-  }
-};
-
-	  // ======== Fetch Governance Proposals ========
+// ======== Fetch Governance Proposals ========
 async function fetchProposalsExplorer() {
   try {
-    if (!contracts.governance) {
-      return alert('Please bind Governance contract first.');
-    }
+    if (!contracts.governance) return alert('⚠️ Bind the Governance contract first.');
 
     showLoading("Fetching proposals...");
 
-    const total = await contracts.governance.getProposalCount();
+    const ids = await contracts.governance.getAllProposalIds();
+    const total = ids.length;
     const currentBlock = await provider.getBlockNumber();
     const tbody = $('proposalsTbody');
     tbody.innerHTML = "";
 
-    for (let i = 0; i < total; i++) {
-      const p = await contracts.governance.getProposal(i);
+    $('proposalCount').innerText = `Total: ${total} proposal${total === 1 ? '' : 's'}`;
 
-      const id = i;
+    for (let i = 0; i < total; i++) {
+      const id = ids[i];
+      const p = await contracts.governance.getProposal(id);
+
+      // Derive readable info
+      const typeName = Object.keys(PROPOSAL_MAPPING).find(
+        key => PROPOSAL_MAPPING[key] === Number(p.proposalType)
+      ) || "Unknown";
+
       const proposer = p.proposer;
-      const title = p.title;
-      const description = p.description;
       const endBlock = Number(p.endBlock);
+      const executed = p.executed;
       const votesFor = ethers.utils.formatUnits(p.votesForScaled, 18);
       const votesAgainst = ethers.utils.formatUnits(p.votesAgainstScaled, 18);
-      const executed = p.executed;
-      const active = currentBlock < endBlock;
+      const isActive = currentBlock < endBlock;
+
       const status = executed
-        ? "✅"
-        : active
-        ? "🟡 Active"
+        ? "✅ Executed"
+        : isActive
+        ? `🟡 Active (${endBlock - currentBlock} blocks left)`
         : "⛔ Ended";
 
-      // optional type/context columns — adjust as you need
-      const type = title?.length ? "Proposal" : "—";
-      const value = description?.slice(0, 30) + (description.length > 30 ? "..." : "");
-      const context = `${votesFor}/${votesAgainst}`;
+      // Action buttons
+      let actionHTML = `<span class="text-slate-500">—</span>`;
+      if (isActive) {
+        actionHTML = `
+          <button onclick="voteOnProposal('${id}')" class="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs">🗳 Vote</button>
+        `;
+      } else if (!executed) {
+        actionHTML = `
+          <button onclick="executeProposal('${id}')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs">⚙️ Execute</button>
+        `;
+      }
 
-      // Create table row
       const row = `
         <tr class="border-t border-slate-700 hover:bg-slate-800/30">
-          <td class="p-2 text-center">${id}</td>
-          <td class="p-2 text-center">${type}</td>
-          <td class="p-2 text-center">${value}</td>
-          <td class="p-2 text-center">${context}</td>
+          <td class="p-2 text-center">${i + 1}</td>
+          <td class="p-2 text-center font-semibold">${typeName}</td>
           <td class="p-2 text-center text-cyan-400 break-all">${proposer}</td>
           <td class="p-2 text-center">
             <span class="text-green-400">${votesFor}</span> /
             <span class="text-red-400">${votesAgainst}</span>
           </td>
           <td class="p-2 text-center">${status}</td>
-          <td class="p-2 text-center">
-            ${
-              !executed && !active
-                ? `<button class="px-2 py-1 bg-indigo-600 rounded text-xs" onclick="executeProposal(${id})">Execute</button>`
-                : `<span class="text-slate-500">—</span>`
-            }
-          </td>
+          <td class="p-2 text-center">${actionHTML}</td>
         </tr>
       `;
 
