@@ -2677,8 +2677,7 @@ $('proposalType').addEventListener('change', () => {
   if (type === 'UPGRADE_COUNCIL') $('upgradeCouncilRow').classList.remove('hidden');
 });
 
-	  
-// ======== Create Proposal ========
+	// ======== Create Proposal ========
 $('createProposalBtn').onclick = async () => {
   try {
     if (!contracts.governance) {
@@ -2699,6 +2698,7 @@ $('createProposalBtn').onclick = async () => {
       ctx = $('tierCollection').value.trim();
       paramTarget = parseInt($('tierTo').value);
       newValue = ethers.BigNumber.from($('tierDeclaredSupply').value || '0');
+
     } else if (typeStr === 'COUNCIL_RESEED_ACTIVE' || typeStr === 'COUNCIL_PROPOSE_STANDBY') {
       const addrs = Array.from(document.querySelectorAll('.councilAddr')).map(el => el.value.trim());
       if (addrs.length !== 7 || addrs.some(a => !ethers.utils.isAddress(a))) {
@@ -2709,12 +2709,14 @@ $('createProposalBtn').onclick = async () => {
       ctx = payload;
       newValue = 0;
       paramTarget = 0;
+
     } else if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
       ctx = $('govNewDaoAddr').value.trim();
       if (!ethers.utils.isAddress(ctx)) {
         hideLoading();
         return alert("⚠️ Invalid DAO address");
       }
+
     } else if (typeStr === 'UPGRADE_COUNCIL') {
       ctx = $('newCouncilImpl').value.trim();
       if (!ethers.utils.isAddress(ctx)) {
@@ -2723,25 +2725,13 @@ $('createProposalBtn').onclick = async () => {
       }
     }
 
-    // ✅ Confirmation popup — RIGHT HERE
+    // ✅ Confirmation popup — before sending the tx
     if (!confirm(`Create proposal?\n\nType: ${typeStr}\nValue: ${$('proposalValue').value}\nTarget: ${ctx}\n\nPress OK to confirm or Cancel to review.`)) {
       hideLoading();
       return;
     }
 
-    // 🔗 Send proposal to the blockchain
-    const tx = await contracts.governance.createProposal(pType, paramTarget, newValue, ctx);
-    await tx.wait();
-    alert('✅ Proposal created successfully!');
-  } catch (e) {
-    hideLoading();
-    alert(`Proposal creation failed: ${e.message || e}`);
-  } finally {
-    hideLoading();
-  }
-};
-
-    // --- Execute transaction ---
+    // 🔗 Execute the transaction (only once)
     const tx = await contracts.governance.propose(pType, paramTarget, newValue, ctx);
     log('propose tx', tx.hash);
     await tx.wait();
@@ -2753,7 +2743,8 @@ $('createProposalBtn').onclick = async () => {
   } finally {
     hideLoading();
   }
-};
+};  
+
 
 	  // ======== Vote ========
 $('voteProposalBtn').onclick = async () => {
