@@ -908,12 +908,12 @@
 		"inputs": [
 			{
 				"internalType": "bytes32",
-				"name": "role",
+				"name": "",
 				"type": "bytes32"
 			},
 			{
 				"internalType": "address",
-				"name": "account",
+				"name": "",
 				"type": "address"
 			}
 		],
@@ -1374,12 +1374,12 @@
 		"inputs": [
 			{
 				"internalType": "bytes32",
-				"name": "role",
+				"name": "",
 				"type": "bytes32"
 			},
 			{
 				"internalType": "address",
-				"name": "callerConfirmation",
+				"name": "",
 				"type": "address"
 			}
 		],
@@ -1392,12 +1392,12 @@
 		"inputs": [
 			{
 				"internalType": "bytes32",
-				"name": "role",
+				"name": "",
 				"type": "bytes32"
 			},
 			{
 				"internalType": "address",
-				"name": "account",
+				"name": "",
 				"type": "address"
 			}
 		],
