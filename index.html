@@ -858,6 +858,26 @@ Catalyst Whitepaper
   </div>
 </div>
 
+	<!-- ===================================== -->
+<!-- 🏛 READY EXECUTION (Governance DAO) -->
+<!-- ===================================== -->
+<div class="glass p-4 rounded-lg space-y-4">
+  <h2 class="text-lg font-semibold">🏛 Ready-to-Execute Governance Proposals</h2>
+  <p class="text-sm text-slate-400">
+    Shows passed proposals from the Governance DAO. Guardians can select and submit them for Council execution.
+  </p>
+
+  <!-- Load list button -->
+  <button id="loadReadyProposalsBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold">
+    🔄 Load Ready Proposals
+  </button>
+
+  <!-- Table of proposals -->
+  <div id="readyProposalsList" class="space-y-2 mt-3">
+    <p class="text-sm text-slate-400">Click “Execute” beside a passed proposal to propose recovery.</p>
+  </div>
+</div>
+
 	<div class="pt-4 border-t border-slate-700">
   <div class="text-xs text-slate-400 mb-1">Governance Contract Transparency</div>
 
@@ -2878,6 +2898,97 @@ async function fetchProposalsExplorer() {
     hideLoading();
   }
 }
+
+	  // ===============================
+// 🏛 Ready Execution Section
+// ===============================
+
+// Uses your default Governance + Council addresses
+const GOVERNANCE = contracts.governance;
+const COUNCIL = contracts.council;
+
+// Load ready proposals (passed but not executed)
+$('loadReadyProposalsBtn').onclick = async () => {
+  try {
+    showLoading("Fetching passed proposals...");
+
+    // Fetch proposal count
+    const count = await GOVERNANCE.proposalCount();
+    const container = $('readyProposalsList');
+    container.innerHTML = '';
+
+    let found = 0;
+
+    for (let i = 0; i < count; i++) {
+      const proposalId = await GOVERNANCE.proposalIds(i);
+      const info = await GOVERNANCE.proposals(proposalId);
+
+      const passed = await GOVERNANCE.isProposalPassed(proposalId);
+      const executed = info.executed;
+
+      if (passed && !executed) {
+        found++;
+
+        // Fetch readable type name (optional)
+        const typeIndex = info.pType;
+        const typeName = Object.keys(PROPOSAL_MAPPING).find(k => PROPOSAL_MAPPING[k] == typeIndex) || "Unknown";
+
+        // Create card
+        const card = document.createElement('div');
+        card.className = 'p-3 rounded-lg bg-black/30 border border-white/10 space-y-1';
+        card.innerHTML = `
+          <div class="text-sm"><b>ID:</b> ${proposalId}</div>
+          <div class="text-sm"><b>Type:</b> ${typeName}</div>
+          <div class="text-sm"><b>Value:</b> ${ethers.utils.formatEther(info.newValue || 0)} ETH</div>
+          <div class="text-xs text-slate-400">Target: ${info.collectionContext}</div>
+          <button class="executeReadyBtn w-full mt-2 bg-violet-600 hover:bg-violet-500 rounded p-1 text-sm font-semibold" data-id="${proposalId}">
+            🚀 Execute via Council
+          </button>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    if (found === 0) {
+      container.innerHTML = `<p class="text-slate-400 text-sm">No ready proposals found.</p>`;
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error loading proposals: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
+// Handle execution button
+document.addEventListener('click', async (e) => {
+  if (e.target && e.target.classList.contains('executeReadyBtn')) {
+    const proposalId = e.target.dataset.id;
+
+    try {
+      const iface = new ethers.utils.Interface(["function executeProposal(bytes32)"]);
+      const calldata = iface.encodeFunctionData("executeProposal", [proposalId]);
+
+      if (!confirm(`Submit to Council for execution?\nProposal ID: ${proposalId}`)) return;
+
+      showLoading("Submitting Council proposal...");
+      const tx = await COUNCIL.proposeRecovery(
+        ethers.constants.AddressZero,
+        DEFAULT_ADDRS.governance,
+        calldata
+      );
+      await tx.wait();
+
+      alert("✅ Submitted to Council for 5-of-7 approval.");
+    } catch (err) {
+      console.error(err);
+      alert("❌ " + (err.message || err));
+    } finally {
+      hideLoading();
+    }
+  }
+});
 
 // ===============================
 // Governance Transparency (Optimized Like CATA)
