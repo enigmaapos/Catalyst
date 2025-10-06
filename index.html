@@ -2319,6 +2319,15 @@ function parseBatchHarvestPairs() {
   }
 }
 
+	  // format big numbers to readable decimals (18 by default)
+function formatAmount(amount, decimals = 18) {
+  try {
+    return ethers.utils.formatUnits(amount, decimals);
+  } catch {
+    return amount.toString();
+  }
+}
+	  
 
 // ======== Refresh Global Stats ========
 async function refreshStakingStats() {
@@ -3141,7 +3150,6 @@ async function autoRefreshAll() {
     refreshLock(),
 	  refreshStakingStats(),
 	  viewPortfolio(),
-	  checkPendingRewards()
   ]);
 }
 	  
