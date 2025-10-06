@@ -2765,32 +2765,45 @@ $('execProposalBtn').onclick = async () => {
   }
 };
 
-	// ======== Fetch Governance Proposals ========
+	// ======== Fetch Governance Proposals (for current contract ABI) ========
 async function fetchProposalsExplorer() {
   try {
     if (!contracts.governance) return alert('⚠️ Bind the Governance contract first.');
-
     showLoading("Fetching proposals...");
 
-    const total = Number(await contracts.governance.proposalCount());
-    const currentBlock = await provider.getBlockNumber();
     const tbody = $('proposalsTbody');
     tbody.innerHTML = "";
 
+    let ids = [];
+    let i = 0;
+    while (true) {
+      try {
+        const id = await contracts.governance.proposalIds(i);
+        if (id === ethers.ZeroHash) break; // stop at empty slot
+        ids.push(id);
+        i++;
+      } catch {
+        break; // stop if array index out of range
+      }
+    }
+
+    const total = ids.length;
     $('proposalCount').innerText = `Total: ${total} proposal${total === 1 ? '' : 's'}`;
 
-    for (let i = 1; i <= total; i++) {
-      const p = await contracts.governance.proposals(i);
+    const currentBlock = await provider.getBlockNumber();
 
-      const typeName = Object.keys(PROPOSAL_MAPPING).find(
-        key => PROPOSAL_MAPPING[key] === Number(p.proposalType)
-      ) || "Unknown";
+    for (const [idx, id] of ids.entries()) {
+      const p = await contracts.governance.getProposalInfo(id);
+
+      const typeName =
+        Object.keys(PROPOSAL_MAPPING).find(
+          key => PROPOSAL_MAPPING[key] === Number(p.pType)
+        ) || "Unknown";
 
       const proposer = p.proposer;
       const endBlock = Number(p.endBlock);
       const executed = p.executed;
-      const votesFor = ethers.utils.formatUnits(p.votesForScaled, 18);
-      const votesAgainst = ethers.utils.formatUnits(p.votesAgainstScaled, 18);
+      const votes = ethers.utils.formatUnits(p.votesScaled, 18);
       const isActive = currentBlock < endBlock;
 
       const status = executed
@@ -2802,23 +2815,20 @@ async function fetchProposalsExplorer() {
       let actionHTML = `<span class="text-slate-500">—</span>`;
       if (isActive) {
         actionHTML = `
-          <button onclick="voteOnProposal(${i})" class="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs">🗳 Vote</button>
+          <button onclick="voteOnProposal('${id}')" class="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs">🗳 Vote</button>
         `;
       } else if (!executed) {
         actionHTML = `
-          <button onclick="executeProposal(${i})" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs">⚙️ Execute</button>
+          <button onclick="executeProposal('${id}')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs">⚙️ Execute</button>
         `;
       }
 
       const row = `
         <tr class="border-t border-slate-700 hover:bg-slate-800/30">
-          <td class="p-2 text-center">${i}</td>
+          <td class="p-2 text-center">${idx + 1}</td>
           <td class="p-2 text-center font-semibold">${typeName}</td>
           <td class="p-2 text-center text-cyan-400 break-all">${proposer}</td>
-          <td class="p-2 text-center">
-            <span class="text-green-400">${votesFor}</span> /
-            <span class="text-red-400">${votesAgainst}</span>
-          </td>
+          <td class="p-2 text-center text-green-400">${votes}</td>
           <td class="p-2 text-center">${status}</td>
           <td class="p-2 text-center">${actionHTML}</td>
         </tr>
@@ -2834,9 +2844,9 @@ async function fetchProposalsExplorer() {
   } finally {
     hideLoading();
   }
-}  
-    
+}
 
+      
 function formatVotingDuration(blocks) {
   const seconds = blocks * 12; // adjust block time if needed
   const days = Math.floor(seconds / 86400);
