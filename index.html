@@ -2736,6 +2736,18 @@ $('fetchProposalBtn').onclick = async () => {
   }
 };
 
+function formatVotingDuration(blocks) {
+  const seconds = blocks * 12; // adjust block time if needed
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) return `≈ ${days} day${days > 1 ? 's' : ''} (${blocks} blocks @12s)`;
+  if (hours > 0) return `≈ ${hours} hr${hours > 1 ? 's' : ''} (${blocks} blocks @12s)`;
+  if (minutes > 0) return `≈ ${minutes} min${minutes > 1 ? 's' : ''} (${blocks} blocks @12s)`;
+  return `${blocks} blocks`;
+}
+	  
 	  async function fetchGovernanceTransparency() {
   try {
     if (!contracts.governance) return alert('Bind governance contract first');
@@ -2758,7 +2770,7 @@ $('fetchProposalBtn').onclick = async () => {
 
     $('govCouncil').innerText = council;
     $('govStaking').innerText = stakingAddr;
-    $('govVotingDuration').innerText = votingDuration.toString() + " blocks";
+    $('govVotingDuration').innerText = formatVotingDuration(Number(votingDuration));
     $('govMinVotes').innerText = ethers.utils.formatUnits(minVotes, 18) + " votes";
     $('govCapPercent').innerText = capPercent.toString() + "%";
 
