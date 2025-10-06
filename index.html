@@ -2855,20 +2855,7 @@ async function fetchProposalsExplorer() {
   }
 }
 
-      
-function formatVotingDuration(blocks) {
-  const seconds = blocks * 12; // adjust block time if needed
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  if (days > 0) return `≈ ${days} day${days > 1 ? 's' : ''} (${blocks} blocks @12s)`;
-  if (hours > 0) return `≈ ${hours} hr${hours > 1 ? 's' : ''} (${blocks} blocks @12s)`;
-  if (minutes > 0) return `≈ ${minutes} min${minutes > 1 ? 's' : ''} (${blocks} blocks @12s)`;
-  return `${blocks} blocks`;
-}
-	  
-	// ===============================
+// ===============================
 // Governance Transparency (Optimized Like CATA)
 // ===============================
 async function fetchGovernanceTransparency() {
@@ -2946,6 +2933,7 @@ async function fetchGovernanceTransparency() {
     hideLoading();
   }
 }
+
 
 
 	  // Parse helper for 7 addresses
