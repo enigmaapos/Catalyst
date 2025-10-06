@@ -32,6 +32,31 @@
 		"type": "error"
 	},
 	{
+		"inputs": [],
+		"name": "AlreadyReg",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "AlreadyStaked",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "BadAddr",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "BatchLimit",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "Cap20k",
+		"type": "error"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -49,7 +74,27 @@
 	},
 	{
 		"inputs": [],
+		"name": "EscrowMissing",
+		"type": "error"
+	},
+	{
+		"inputs": [],
 		"name": "FailedCall",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "FeeRequired",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "GlobalCap",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InsufficientCATA",
 		"type": "error"
 	},
 	{
@@ -59,7 +104,97 @@
 	},
 	{
 		"inputs": [],
+		"name": "Mismatch",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NoBlocks",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NoEscrow",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NoToken",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotBluechip",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotCouncil",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotCurrentDeployer",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotEnrolled",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotExpired",
+		"type": "error"
+	},
+	{
+		"inputs": [],
 		"name": "NotInitializing",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotOwnerOfZero",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotReg",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotStaked",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotUnverified",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "PermCap",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "SupplyRange",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "TermActive",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "TermCap",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "TransferFailed",
 		"type": "error"
 	},
 	{
@@ -76,6 +211,31 @@
 			}
 		],
 		"name": "UUPSUnsupportedProxiableUUID",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "UnauthorizedRoleGrant",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "UnauthorizedRoleRenouncement",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "UnauthorizedRoleRevocation",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ZeroAddr",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ZeroFee",
 		"type": "error"
 	},
 	{
@@ -240,6 +400,25 @@
 			}
 		],
 		"name": "DeployerAddressUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "oldCouncil",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newCouncil",
+				"type": "address"
+			}
+		],
+		"name": "DeployerCouncilSet",
 		"type": "event"
 	},
 	{
@@ -1071,6 +1250,19 @@
 	},
 	{
 		"inputs": [],
+		"name": "deployerCouncil",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "eligibleCount",
 		"outputs": [
 			{
@@ -1144,12 +1336,12 @@
 		"inputs": [
 			{
 				"internalType": "bytes32",
-				"name": "role",
+				"name": "",
 				"type": "bytes32"
 			},
 			{
 				"internalType": "address",
-				"name": "account",
+				"name": "",
 				"type": "address"
 			}
 		],
@@ -1356,6 +1548,29 @@
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "oldAccount",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "newAccount",
+				"type": "address"
+			}
+		],
+		"name": "onDRSRecover",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1595,12 +1810,12 @@
 		"inputs": [
 			{
 				"internalType": "bytes32",
-				"name": "role",
+				"name": "",
 				"type": "bytes32"
 			},
 			{
 				"internalType": "address",
-				"name": "callerConfirmation",
+				"name": "",
 				"type": "address"
 			}
 		],
@@ -1613,12 +1828,12 @@
 		"inputs": [
 			{
 				"internalType": "bytes32",
-				"name": "role",
+				"name": "",
 				"type": "bytes32"
 			},
 			{
 				"internalType": "address",
-				"name": "account",
+				"name": "",
 				"type": "address"
 			}
 		],
@@ -1716,6 +1931,19 @@
 			}
 		],
 		"name": "setDeployerAddress",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newCouncil",
+				"type": "address"
+			}
+		],
+		"name": "setDeployerCouncil",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
