@@ -2106,10 +2106,14 @@ async function handleToggleBluechip() {
 
 
 	  async function fetchCollectionStatus(addr) {
-  if (!addr || addr.length !== 42) return "—"; // basic ETH address check
+  if (!addr || addr.length !== 42 || !addr.startsWith("0x")) {
+    return "—"; // Basic ETH address validation
+  }
 
   try {
-    const status = await contract.methods.getCollectionStatus(addr).call();
+    // ✅ Use ethers instance — not web3
+    const status = await contracts.staking.getCollectionStatus(addr);
+
     switch (parseInt(status)) {
       case 0: return "❌ Not Registered";
       case 1: return "⚪ Unverified";
@@ -2117,11 +2121,17 @@ async function handleToggleBluechip() {
       case 3: return "💎 Bluechip";
       default: return "—";
     }
+
   } catch (err) {
     const msg = (err?.message || "").toLowerCase();
 
-    // ✅ Graceful handling for "not registered" reverts
-    if (msg.includes("not registered") || msg.includes("revert")) {
+    // ✅ Handle all "not registered" revert variants gracefully
+    if (
+      msg.includes("notregistered") ||
+      msg.includes("not registered") ||
+      msg.includes("execution reverted") ||
+      msg.includes("revert")
+    ) {
       console.warn("Collection not registered, safe fallback.");
       return "❌ Not Registered";
     }
@@ -2129,7 +2139,7 @@ async function handleToggleBluechip() {
     console.error("Status check error:", err);
     return "⚠️ Error fetching status";
   }
-	  }
+	}
 	  
 
 	  function attachStatusChecker(inputId, statusDivId) {
@@ -2145,10 +2155,17 @@ async function handleToggleBluechip() {
     }
 
     statusEl.innerText = "⏳ Checking...";
-    const result = await fetchCollectionStatus(addr);
-    statusEl.innerText = `Status: ${result}`;
+    const statusText = await fetchCollectionStatus(addr);
+
+    // ✅ Optional: Prevent registering existing collections
+    if (statusText.includes("✅") || statusText.includes("💎")) {
+      alert("This collection is already registered or bluechip.");
+      hideLoading?.(); // optional if you're showing a loader
+    }
+
+    statusEl.innerText = `Status: ${statusText}`;
   });
-	  }
+	 }
 
 // Attach to each field
 attachStatusChecker("regCollectionAddr", "regStatusInfo");
