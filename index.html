@@ -2302,6 +2302,19 @@ async function approveNFT(){
   }
 }
 
+	  $('permApproveFeeBtn').onclick = async ()=>{ // approve CATA tokens for fees if CATA ABI exists
+      try {
+        if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract'); }
+        const stakingAddr = $('addrStaking').value.trim();
+        if(!stakingAddr) return alert('staking address required');
+        const amt = ethers.constants.MaxUint256;
+        const tx = await contracts.cata.approve(stakingAddr, amt);
+        log('approve CATA tx', tx.hash);
+        await tx.wait();
+        log('approve CATA done');
+      } catch(e){ log('permApproveFee err', e && e.message ? e.message : e); }
+    };
+
 // ---------- Staking single ----------
 async function termStake(){
   try {
@@ -3880,18 +3893,6 @@ $('refreshBluechipBtn').onclick = refreshBluechip;
 	  $('refreshStakingTransparencyBtn').onclick = fetchStakingTransparency;
     $('approveNFTBtn').onclick = approveNFT;
     $('termStakeBtn').onclick = termStake;
-    $('permApproveFeeBtn').onclick = async ()=>{ // approve CATA tokens for fees if CATA ABI exists
-      try {
-        if(!contracts.cata) { await attachContractsIfSet(); if(!contracts.cata) return alert('Set CATA contract'); }
-        const stakingAddr = $('addrStaking').value.trim();
-        if(!stakingAddr) return alert('staking address required');
-        const amt = ethers.constants.MaxUint256;
-        const tx = await contracts.cata.approve(stakingAddr, amt);
-        log('approve CATA tx', tx.hash);
-        await tx.wait();
-        log('approve CATA done');
-      } catch(e){ log('permApproveFee err', e && e.message ? e.message : e); }
-    };
     $('permStakeBtn').onclick = permanentStake;
     $('unstakeBtn').onclick = unstake;
     $('harvestBtn').onclick = harvest;
