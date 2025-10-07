@@ -710,214 +710,159 @@ Catalyst Whitepaper
 </div>
 </section>
 
-<!-- Governance -->
+<!-- 🏛 GOVERNANCE DAO SECTION -->
 <section id="governance" class="tab-content hidden">
-  <h2 class="font-semibold mb-2">Governance DAO</h2>
+  <h2 class="font-semibold mb-2 text-xl">Governance DAO</h2>
   <p class="text-sm text-slate-300 mb-3">
-    Create proposals, vote, execute them, and monitor governance activity.
+    Manage proposals, votes, Guardian approvals, and transparency.
   </p>
 
-<!-- Proposal Creator -->
-<div class="glass p-4 rounded-lg space-y-4">
-  <h3 class="font-semibold text-lg">🗳 Create New Governance Proposal</h3>
+  <!-- 🗳 CREATE NEW PROPOSAL -->
+  <div class="glass p-4 rounded-lg space-y-4">
+    <h3 class="font-semibold text-lg">🗳 Create Proposal</h3>
 
-  <!-- 1. Proposal type -->
-  <label class="text-sm font-medium">Proposal Type</label>
-  <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
-    <optgroup label="📊 Protocol Parameters">
-      <option value="">-- Select a proposal type --</option>
-      <option value="BASE_REWARD">Change Base Reward</option>
-      <option value="HARVEST_FEE">Adjust Harvest Fee</option>
-      <option value="UNSTAKE_FEE">Adjust Unstake Fee</option>
-      <option value="REGISTRATION_FEE_FALLBACK">Registration Fee (Fallback)</option>
-      <option value="VOTING_PARAM">Update Voting Parameter</option>
-      <option value="TIER_UPGRADE">Tier Upgrade</option>
-    </optgroup>
+    <label class="text-sm font-medium">Proposal Type</label>
+    <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
+      <optgroup label="📊 Protocol Parameters">
+        <option value="">-- Select type --</option>
+        <option value="BASE_REWARD">Change Base Reward</option>
+        <option value="HARVEST_FEE">Adjust Harvest Fee</option>
+        <option value="UNSTAKE_FEE">Adjust Unstake Fee</option>
+        <option value="REGISTRATION_FEE_FALLBACK">Registration Fee (Fallback)</option>
+        <option value="VOTING_PARAM">Update Voting Parameter</option>
+        <option value="TIER_UPGRADE">Tier Upgrade</option>
+      </optgroup>
 
-    <optgroup label="🛡 Guardian Council Operations">
-      <option value="COUNCIL_RESEED_ACTIVE">Reseed Guardians (Active Set)</option>
-      <option value="COUNCIL_PROPOSE_STANDBY">Propose Guardians (Standby Set)</option>
-      <option value="COUNCIL_COMMIT_STANDBY">Commit Guardians (Standby)</option>
-      <option value="COUNCIL_ACTIVATE_STANDBY">Activate Standby Guardians</option>
-      <option value="COUNCIL_PROPOSE_NEW_DAO">Propose New DAO Contract</option>
-      <option value="COUNCIL_COMMIT_NEW_DAO">Commit New DAO</option>
-      <option value="COUNCIL_CLEAR_LOCK">Clear Council Lock/Warning</option>
-      <option value="UPGRADE_COUNCIL">Upgrade Council Implementation</option>
-    </optgroup>
+      <optgroup label="🛡 Guardian Council Operations">
+        <option value="COUNCIL_RESEED_ACTIVE">Reseed Guardians (Active)</option>
+        <option value="COUNCIL_PROPOSE_STANDBY">Propose Standby Guardians</option>
+        <option value="COUNCIL_COMMIT_STANDBY">Commit Standby Guardians</option>
+        <option value="COUNCIL_ACTIVATE_STANDBY">Activate Standby Guardians</option>
+        <option value="COUNCIL_PROPOSE_NEW_DAO">Propose New DAO Contract</option>
+        <option value="COUNCIL_COMMIT_NEW_DAO">Commit New DAO</option>
+        <option value="COUNCIL_CLEAR_LOCK">Clear Council Lock</option>
+        <option value="UPGRADE_COUNCIL">Upgrade Council Implementation</option>
+      </optgroup>
 
-	  <optgroup label="🏛 Governance DAO Operations">
-  <option value="UPGRADE_GOVERNANCE">Upgrade Governance DAO</option>
-  <option value="SET_NEW_COUNCIL">Set / Replace Guardian Council</option>
-  <option value="DAO_PAUSE">Pause Governance DAO</option>
-  <option value="DAO_UNPAUSE">Unpause Governance DAO</option>
-	  </optgroup>
-  </select>
-
-  <!-- 2. Generic Fields -->
-  <div class="space-y-2">
-    <label class="text-sm font-medium">Proposed New Value</label>
-    <input id="proposalValue" type="number" placeholder="Example: 500 or 0.05" class="w-full p-2 rounded bg-black/20 text-sm" />
-    <small class="text-xs text-slate-400 block">Numeric value for base reward, fees, or thresholds.</small>
-
-    <label class="text-sm font-medium">Target Contract / Collection (optional)</label>
-    <input id="proposalCollectionCtx" placeholder="0x123... (leave blank if not needed)" class="w-full p-2 rounded bg-black/20 text-sm" />
-    <small class="text-xs text-slate-400 block">If proposal affects a specific collection, enter its address.</small>
-
-    <label class="text-sm font-medium">Parameter Index</label>
-    <input id="paramTarget" type="number" placeholder="Usually 0 unless specified" class="w-full p-2 rounded bg-black/20 text-sm" />
-    <small class="text-xs text-slate-400 block">For voting/tier parameters — leave as 0 if unsure.</small>
-  </div>
-
-  <!-- 3. Tier Upgrade Section -->
-  <div id="tierUpgradeRow" class="hidden mt-2 space-y-2">
-    <h4 class="font-semibold text-sm">Tier Upgrade Settings</h4>
-    <select id="tierTo" class="p-2 rounded bg-black/20 text-sm w-full">
-      <option value="0">Unverified Tier (0)</option>
-      <option value="1">Verified Tier (1)</option>
-      <option value="2">Blue Chip Tier (2)</option>
+      <optgroup label="🏛 Governance DAO Operations">
+        <option value="UPGRADE_GOVERNANCE">Upgrade Governance DAO</option>
+        <option value="SET_NEW_COUNCIL">Set / Replace Guardian Council</option>
+        <option value="DAO_PAUSE">Pause DAO</option>
+        <option value="DAO_UNPAUSE">Unpause DAO</option>
+      </optgroup>
     </select>
-    <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm w-full" />
-    <input id="tierDeclaredSupply" type="number" placeholder="Declared Supply" class="p-2 rounded bg-black/20 text-sm w-full" />
+
+    <div class="space-y-2">
+      <label class="text-sm font-medium">Proposed New Value</label>
+      <input id="proposalValue" type="number" placeholder="Example: 500 or 0.05"
+        class="w-full p-2 rounded bg-black/20 text-sm" />
+
+      <label class="text-sm font-medium">Target Contract / Collection</label>
+      <input id="proposalCollectionCtx" placeholder="0x..." class="w-full p-2 rounded bg-black/20 text-sm" />
+
+      <label class="text-sm font-medium">Parameter Index</label>
+      <input id="paramTarget" type="number" placeholder="Usually 0" class="w-full p-2 rounded bg-black/20 text-sm" />
+    </div>
+
+    <button id="createProposalBtn"
+      class="w-full p-2 bg-violet-600 hover:bg-violet-500 rounded font-semibold">
+      ➕ Create Proposal
+    </button>
   </div>
 
-  <!-- 4. Council Batch -->
-  <div id="councilBatchRow" class="hidden space-y-2">
-    <h4 class="font-semibold text-sm">Guardian Council Batch</h4>
-    <p class="text-xs text-slate-400">Provide 7 guardian wallet addresses for reseeding or standby.</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1 (0x...)" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2 (0x...)" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3 (0x...)" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4 (0x...)" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5 (0x...)" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6 (0x...)" />
-      <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7 (0x...)" />
+  <!-- 🗳 VOTE + EXECUTE -->
+  <div class="glass p-4 rounded-lg space-y-3 mt-6">
+    <h3 class="font-semibold text-lg">🗳 Vote & Execute</h3>
+    <input id="proposalId" placeholder="Proposal ID (0x...)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <div class="flex gap-2 mt-2">
+      <button id="voteProposalBtn" class="flex-1 p-2 bg-blue-600 hover:bg-blue-500 rounded">Vote</button>
+      <button id="execProposalBtn" class="flex-1 p-2 bg-green-700 hover:bg-green-600 rounded">Execute</button>
     </div>
   </div>
 
-  <!-- 5. New DAO -->
-  <div id="newDaoRow" class="hidden space-y-1">
-    <label class="text-sm font-medium">New DAO Contract Address</label>
-    <input id="govNewDaoAddr" placeholder="0x..." class="w-full p-2 rounded bg-black/20 text-sm" />
-    <small class="text-xs text-slate-400">Must be a valid deployed DAO contract address.</small>
+  <!-- 📋 PROPOSALS EXPLORER -->
+  <div class="glass p-4 rounded-lg mt-6">
+    <h3 class="font-semibold mb-2">📋 Proposals Explorer</h3>
+    <div class="flex justify-between items-center mb-2">
+      <button id="refreshProposalsBtn" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">
+        🔄 Refresh
+      </button>
+      <div id="proposalCount" class="text-xs text-slate-400"></div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-slate-400 border-b border-slate-700">
+          <tr>
+            <th class="p-2">ID</th>
+            <th class="p-2">Type</th>
+            <th class="p-2">Proposer</th>
+            <th class="p-2">Votes</th>
+            <th class="p-2">Status</th>
+          </tr>
+        </thead>
+        <tbody id="proposalsTbody"></tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- 6. Upgrade Council -->
-  <div id="upgradeCouncilRow" class="hidden space-y-1">
-    <label class="text-sm font-medium">New Council Implementation Address</label>
-    <input id="newCouncilImpl" placeholder="0x..." class="w-full p-2 rounded bg-black/20 text-sm" />
-    <small class="text-xs text-slate-400">Address of the upgraded Guardian Council contract implementation.</small>
-  </div>
-
-  <!-- 7. Create Button -->
-  <button id="createProposalBtn" class="w-full p-2 bg-violet-600 hover:bg-violet-500 rounded font-semibold">
-    ➕ Create Proposal
-  </button>
-</div>
-
-<!-- Voting & Execution -->
-<div class="glass p-4 rounded-lg space-y-3 mt-6">
-  <h3 class="font-semibold text-lg">🗳 Vote & Execute</h3>
-  <label class="text-sm font-medium">Proposal ID (bytes32)</label>
-  <input id="proposalId" placeholder="0x..." class="w-full p-2 rounded bg-black/20 text-sm" />
-  <small class="text-xs text-slate-400 block mb-2">Copy the proposal ID from the Explorer list.</small>
-
-  <div class="flex gap-2">
-    <button id="voteProposalBtn" class="flex-1 p-2 bg-blue-600 hover:bg-blue-500 rounded">Vote</button>
-    <button id="execProposalBtn" class="flex-1 p-2 bg-green-700 hover:bg-green-600 rounded">Execute</button>
-  </div>
-</div>
-
-<!-- 🔹 Proposals Explorer -->
-<div class="glass p-4 rounded-lg mt-4">
-  <h3 class="font-semibold mb-2">Proposals Explorer</h3>
-
-  <div class="flex justify-between items-center mb-2">
-    <button id="refreshProposalsBtn"
-      class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">
+  <!-- ⚖️ READY TO EXECUTE -->
+  <div class="glass p-4 rounded-lg mt-6">
+    <h3 class="font-semibold text-lg">⚖️ Ready-to-Execute Proposals</h3>
+    <p class="text-xs text-slate-400 mb-2">
+      Passed proposals awaiting Guardian Council approval or execution.
+    </p>
+    <button id="loadReadyProposalsBtn"
+      class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm mb-2">
       🔄 Refresh
     </button>
-    <div id="proposalCount" class="text-xs text-slate-400"></div>
+    <div id="readyProposalCount" class="text-xs text-slate-400"></div>
+
+    <div class="overflow-x-auto mt-2">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-slate-400 border-b border-slate-700">
+          <tr>
+            <th class="p-2">ID</th>
+            <th class="p-2">Type</th>
+            <th class="p-2">Proposer</th>
+            <th class="p-2">Votes</th>
+            <th class="p-2">Council Approvals</th>
+            <th class="p-2">Action</th>
+          </tr>
+        </thead>
+        <tbody id="readyProposalsTbody"></tbody>
+      </table>
+    </div>
   </div>
 
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead class="text-xs text-slate-400 border-b border-slate-700">
-        <tr>
-          <th class="p-2">ID</th>
-          <th class="p-2">Title</th>
-          <th class="p-2">Description</th>
-          <th class="p-2">Proposer</th>
-          <th class="p-2">Votes (For / Against)</th>
-          <th class="p-2">Status</th>
-          <th class="p-2">Action</th>
-        </tr>
-      </thead>
-      <tbody id="proposalsTbody"></tbody>
-    </table>
+  <!-- 🧾 TRANSPARENCY PANEL -->
+  <div class="pt-4 border-t border-slate-700 mt-6">
+    <div class="text-xs text-slate-400 mb-1">Governance Transparency</div>
+    <div class="p-2 rounded bg-black/20 text-sm">
+      Admin: <span id="govAdminAddress" class="font-mono text-amber-400 break-all">—</span>
+    </div>
+    <div class="p-2 rounded bg-black/20 text-sm">
+      Council: <span id="govCouncilAddress" class="font-mono text-cyan-400 break-all">—</span>
+    </div>
+    <div class="p-2 rounded bg-black/20 text-sm">
+      Staking: <span id="govStakingAddress" class="font-mono text-purple-400 break-all">—</span>
+    </div>
+    <div class="p-2 rounded bg-black/20 text-sm">
+      Voting Duration: <span id="govVotingDuration" class="font-mono text-yellow-400">—</span>
+    </div>
+    <div class="p-2 rounded bg-black/20 text-sm">
+      Min Votes: <span id="govMinVotes" class="font-mono text-green-400">—</span>
+    </div>
+    <div class="p-2 rounded bg-black/20 text-sm">
+      Cap Percent: <span id="govCapPercent" class="font-mono text-indigo-400">—</span>
+    </div>
+    <button id="refreshGovernanceTransparencyBtn"
+      class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded">
+      🔍 Refresh Transparency
+    </button>
   </div>
-</div>
-
-	<!-- ===================================== -->
-<!-- 🏛 READY EXECUTION (Governance DAO) -->
-<!-- ===================================== -->
-<div class="glass p-4 rounded-lg space-y-4">
-  <h2 class="text-lg font-semibold">🏛 Ready-to-Execute Governance Proposals</h2>
-  <p class="text-sm text-slate-400">
-    Shows passed proposals from the Governance DAO. Guardians can select and submit them for Council execution.
-  </p>
-
-  <!-- Load list button -->
-  <button id="loadReadyProposalsBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold">
-    🔄 Load Ready Proposals
-  </button>
-
-  <!-- Table of proposals -->
-  <div id="readyProposalsList" class="space-y-2 mt-3">
-    <p class="text-sm text-slate-400">Click “Execute” beside a passed proposal to propose recovery.</p>
-  </div>
-</div>
-
-	<div class="pt-4 border-t border-slate-700">
-  <div class="text-xs text-slate-400 mb-1">Governance Contract Transparency</div>
-
-  <div class="p-2 rounded bg-black/20 text-sm">
-    Current Admin: <br />
-    <span id="govAdminAddress" class="font-mono text-amber-400 break-all">—</span>
-  </div>
-
-  <div class="p-2 rounded bg-black/20 text-sm">
-    Guardian Council: <br />
-    <span id="govCouncilAddress" class="font-mono text-cyan-400 break-all">—</span>
-  </div>
-
-  <div class="p-2 rounded bg-black/20 text-sm">
-    Linked Staking Contract: <br />
-    <span id="govStakingAddress" class="font-mono text-purple-400 break-all">—</span>
-  </div>
-
-  <div class="p-2 rounded bg-black/20 text-sm">
-    Voting Duration: <br />
-    <span id="govVotingDuration" class="font-mono text-yellow-400">—</span>
-  </div>
-
-  <div class="p-2 rounded bg-black/20 text-sm">
-    Min Votes Required: <br />
-    <span id="govMinVotes" class="font-mono text-green-400">—</span>
-  </div>
-
-  <div class="p-2 rounded bg-black/20 text-sm">
-    Cap Percent: <br />
-    <span id="govCapPercent" class="font-mono text-indigo-400">—</span>
-  </div>
-
-  <button id="refreshGovernanceTransparencyBtn"
-    class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded">
-    🔍 Refresh Governance Transparency
-  </button>
-	</div>
 </section>
 
+  
 <section id="council" class="tab-content hidden">
   <h2 class="font-semibold mb-2">Governance DAO Console</h2>
   <p class="text-sm text-slate-300 mb-3">
@@ -2899,90 +2844,146 @@ async function fetchProposalsExplorer() {
   }
 }
 
-	  // ===============================
-// 🏛 Ready Execution Section
-// ===============================
+	  // =====================================================
+// ⚖️ READY-TO-EXECUTE PROPOSALS (Guardian-Aware)
+// =====================================================
 
-// Uses your default Governance + Council addresses
-const GOVERNANCE = contracts.governance;
-const COUNCIL = contracts.council;
+// Track whether the connected user is a Guardian
+let isGuardian = false;
 
-// Load ready proposals (passed but not executed)
+// --- Detect Guardian Role ---
+async function detectGuardianRole() {
+  try {
+    const signerAddr = await signer.getAddress();
+    const activeGuardians = await contracts.council.getActiveGuardians();
+    isGuardian = activeGuardians.map(a => a.toLowerCase()).includes(signerAddr.toLowerCase());
+    log("Guardian detection:", isGuardian ? "🛡 Guardian" : "👤 Regular user");
+  } catch (err) {
+    console.warn("Guardian detection failed:", err.message || err);
+    isGuardian = false;
+  }
+}
+
+// --- Load Ready Proposals ---
 $('loadReadyProposalsBtn').onclick = async () => {
   try {
-    showLoading("Fetching passed proposals...");
+    showLoading("Loading passed proposals...");
+    await detectGuardianRole();
 
-    // Fetch proposal count
-    const count = await GOVERNANCE.proposalCount();
-    const container = $('readyProposalsList');
-    container.innerHTML = '';
+    const tbody = $('readyProposalsTbody');
+    tbody.innerHTML = '';
 
-    let found = 0;
+    const count = await contracts.governance.proposalCount();
+    let readyCount = 0;
 
     for (let i = 0; i < count; i++) {
-      const proposalId = await GOVERNANCE.proposalIds(i);
-      const info = await GOVERNANCE.proposals(proposalId);
+      const id = await contracts.governance.proposalIds(i);
+      const p = await contracts.governance.proposals(id);
+      const passed = await contracts.governance.isProposalPassed(id);
+      if (!passed || p.executed) continue;
 
-      const passed = await GOVERNANCE.isProposalPassed(proposalId);
-      const executed = info.executed;
+      readyCount++;
+      const proposer = p.proposer || "N/A";
+      const typeName =
+        Object.keys(PROPOSAL_MAPPING).find(k => PROPOSAL_MAPPING[k] == p.pType) || "Unknown";
+      const forVotes = Number(p.forVotes) / 1e18;
+      const againstVotes = Number(p.againstVotes) / 1e18;
 
-      if (passed && !executed) {
-        found++;
+      // Get Guardian approval status
+      let approvals = 0;
+      try {
+        const recoveryId = await contracts.council.deriveRecoveryId(DEFAULT_ADDRS.governance, id);
+        approvals = await contracts.council.getApprovalCount(recoveryId);
+      } catch {}
 
-        // Fetch readable type name (optional)
-        const typeIndex = info.pType;
-        const typeName = Object.keys(PROPOSAL_MAPPING).find(k => PROPOSAL_MAPPING[k] == typeIndex) || "Unknown";
+      // Calculate progress bar
+      const percent = Math.min((approvals / 7) * 100, 100);
+      const barColor =
+        approvals >= 5 ? "bg-green-600"
+        : approvals >= 3 ? "bg-yellow-500"
+        : "bg-red-600";
 
-        // Create card
-        const card = document.createElement('div');
-        card.className = 'p-3 rounded-lg bg-black/30 border border-white/10 space-y-1';
-        card.innerHTML = `
-          <div class="text-sm"><b>ID:</b> ${proposalId}</div>
-          <div class="text-sm"><b>Type:</b> ${typeName}</div>
-          <div class="text-sm"><b>Value:</b> ${ethers.utils.formatEther(info.newValue || 0)} ETH</div>
-          <div class="text-xs text-slate-400">Target: ${info.collectionContext}</div>
-          <button class="executeReadyBtn w-full mt-2 bg-violet-600 hover:bg-violet-500 rounded p-1 text-sm font-semibold" data-id="${proposalId}">
-            🚀 Execute via Council
-          </button>
-        `;
-        container.appendChild(card);
+      // Decide which button to show
+      const canExecute = approvals >= 5;
+      let actionBtn = "";
+
+      if (canExecute) {
+        actionBtn = `<button class="execBtn bg-green-600 hover:bg-green-500 text-xs rounded px-2 py-1" data-id="${id}">
+          ✅ Execute
+        </button>`;
+      } else if (isGuardian) {
+        actionBtn = `<button class="approveBtn bg-blue-600 hover:bg-blue-500 text-xs rounded px-2 py-1" data-id="${id}">
+          👍 Approve
+        </button>`;
+      } else {
+        actionBtn = `<span class="text-slate-500 text-xs">Waiting approval</span>`;
       }
+
+      // Render table row
+      const row = `
+        <tr>
+          <td class="p-2 font-mono text-xs">${id.slice(0, 10)}...</td>
+          <td class="p-2">${typeName}</td>
+          <td class="p-2">${proposer.slice(0, 8)}...</td>
+          <td class="p-2">${forVotes.toFixed(1)} / ${againstVotes.toFixed(1)}</td>
+          <td class="p-2">
+            <div class="w-full bg-slate-800 rounded-full h-2">
+              <div class="${barColor} h-2 rounded-full" style="width:${percent}%"></div>
+            </div>
+            <div class="text-xs text-center text-slate-400 mt-1">${approvals}/7 approved</div>
+          </td>
+          <td class="p-2 text-center">${actionBtn}</td>
+        </tr>`;
+      tbody.insertAdjacentHTML('beforeend', row);
     }
 
-    if (found === 0) {
-      container.innerHTML = `<p class="text-slate-400 text-sm">No ready proposals found.</p>`;
-    }
-
+    $('readyProposalCount').innerText = `${readyCount} ready`;
+    if (readyCount === 0)
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-500 p-2">No ready proposals found.</td></tr>`;
   } catch (err) {
-    console.error(err);
-    alert("❌ Error loading proposals: " + (err.message || err));
+    alert("❌ " + (err.message || err));
   } finally {
     hideLoading();
   }
 };
 
-// Handle execution button
-document.addEventListener('click', async (e) => {
-  if (e.target && e.target.classList.contains('executeReadyBtn')) {
-    const proposalId = e.target.dataset.id;
+// --- Guardian Approve Handler ---
+document.addEventListener("click", async e => {
+  if (e.target.classList.contains("approveBtn")) {
+    const id = e.target.dataset.id;
+    if (!confirm(`Approve execution of proposal ${id.slice(0, 10)}...?`)) return;
 
     try {
+      showLoading("Submitting approval...");
       const iface = new ethers.utils.Interface(["function executeProposal(bytes32)"]);
-      const calldata = iface.encodeFunctionData("executeProposal", [proposalId]);
-
-      if (!confirm(`Submit to Council for execution?\nProposal ID: ${proposalId}`)) return;
-
-      showLoading("Submitting Council proposal...");
-      const tx = await COUNCIL.proposeRecovery(
+      const data = iface.encodeFunctionData("executeProposal", [id]);
+      const tx = await contracts.council.proposeRecovery(
         ethers.constants.AddressZero,
         DEFAULT_ADDRS.governance,
-        calldata
+        data
       );
       await tx.wait();
-
-      alert("✅ Submitted to Council for 5-of-7 approval.");
+      alert("✅ Guardian approval recorded!");
+      $('loadReadyProposalsBtn').click();
     } catch (err) {
-      console.error(err);
+      alert("❌ " + (err.message || err));
+    } finally {
+      hideLoading();
+    }
+  }
+
+  // --- Execute after 5/7 approvals ---
+  if (e.target.classList.contains("execBtn")) {
+    const id = e.target.dataset.id;
+    if (!confirm(`Execute proposal ${id.slice(0, 10)} now?`)) return;
+
+    try {
+      showLoading("Executing...");
+      const tx = await contracts.governance.executeProposal(id);
+      await tx.wait();
+      alert("✅ Proposal executed successfully!");
+      $('loadReadyProposalsBtn').click();
+    } catch (err) {
       alert("❌ " + (err.message || err));
     } finally {
       hideLoading();
