@@ -675,14 +675,14 @@ Catalyst Whitepaper
   </div>
 </div>
 
-	  <!-- 🔹 Staking Contract Transparency -->
+	<!-- 🔹 Staking Contract Transparency -->
 <div class="pt-4 border-t border-slate-700">
   <div class="text-xs text-slate-400 mb-1">Staking Contract Transparency</div>
 
   <div class="flex flex-col gap-1">
 
     <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">Staking Guardian Council:</span><br />
+      <span class="font-semibold text-slate-300">Guardian Council:</span><br />
       <span id="stakingCouncilAddress" class="font-mono text-cyan-400 break-all">—</span>
     </div>
 
@@ -697,7 +697,27 @@ Catalyst Whitepaper
     </div>
 
     <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">Current Admin/Governance Dao:</span><br />
+      <span class="font-semibold text-slate-300">Bonus Module:</span><br />
+      <span id="stakingBonusModule" class="font-mono text-rose-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">CATA Token:</span><br />
+      <span id="stakingCataToken" class="font-mono text-emerald-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">DEFAULT_ADMIN_ROLE Holder:</span><br />
+      <span id="stakingDefaultAdmin" class="font-mono text-blue-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">CONTRACT_ADMIN_ROLE Holder:</span><br />
+      <span id="stakingContractAdmin" class="font-mono text-indigo-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Current Admin / Governance DAO:</span><br />
       <span id="stakingAdminAddress" class="font-mono text-green-400 break-all">—</span>
     </div>
 
@@ -2650,12 +2670,12 @@ async function checkPendingRewards() {
   }
 }
 
-	  
-// ======== Fetch Staking Transparency ========
+
+    // ======== Fetch Staking Transparency ========
 async function fetchStakingTransparency() {
   try {
     if (!contracts.staking || !provider) {
-      if (!contracts.staking) return alert('Please connect wallet and set Staking contract first');
+      return alert('⚠️ Please connect wallet and set Staking contract first');
     }
 
     showLoading("Fetching staking transparency...");
@@ -2664,14 +2684,30 @@ async function fetchStakingTransparency() {
     const [
       councilAddress,
       deployerCouncilAddress,
-      deployerAddress
+      deployerAddress,
+      bonusModule,
+      cataToken
     ] = await Promise.all([
       contracts.staking.council(),
       contracts.staking.deployerCouncil(),
-      contracts.staking.deployerAddress()
+      contracts.staking.deployerAddress(),
+      contracts.staking.bonusModule(),
+      contracts.staking.cata()
     ]);
 
-    // --- Event Lookups ---
+    // --- AccessControl Roles ---
+    let defaultAdminHolder = "—";
+    let contractAdminHolder = "—";
+    try {
+      const defaultRole = await contracts.staking.DEFAULT_ADMIN_ROLE();
+      const contractRole = await contracts.staking.CONTRACT_ADMIN_ROLE();
+      defaultAdminHolder = await contracts.staking.getRoleMember(defaultRole, 0);
+      contractAdminHolder = await contracts.staking.getRoleMember(contractRole, 0);
+    } catch (e) {
+      console.warn("AccessControl roles unavailable:", e);
+    }
+
+    // --- Admin/Ownership Resolution ---
     const [
       adminSwappedEvents,
       deployerAddrUpdatedEvents,
@@ -2684,21 +2720,18 @@ async function fetchStakingTransparency() {
       contracts.staking.queryFilter("DeployerCouncilSet", 0, "latest")
     ]);
 
-    // --- Admin Resolution (same logic style as CATA) ---
     let currentAdmin = "⚠️ Unknown";
-
     if (adminSwappedEvents.length > 0) {
-      currentAdmin = adminSwappedEvents[adminSwappedEvents.length - 1].args.newAdmin;
+      currentAdmin = adminSwappedEvents.at(-1).args.newAdmin;
     } else if (deployerAddrUpdatedEvents.length > 0) {
-      currentAdmin = deployerAddrUpdatedEvents[0].args.newDeployer;
+      currentAdmin = deployerAddrUpdatedEvents.at(-1).args.newDeployer;
     } else if (councilSetEvents.length > 0) {
-      currentAdmin = councilSetEvents[0].args.newCouncil;
+      currentAdmin = councilSetEvents.at(-1).args.newCouncil;
     } else {
       try {
         const deployerAddr = await contracts.staking.deployerAddress();
-        if (deployerAddr && deployerAddr !== ethers.ZeroAddress) {
+        if (deployerAddr && deployerAddr !== ethers.ZeroAddress)
           currentAdmin = deployerAddr;
-        }
       } catch (e) {
         console.warn("Could not read deployerAddress():", e);
       }
@@ -2708,17 +2741,23 @@ async function fetchStakingTransparency() {
     $('stakingCouncilAddress').innerText = councilAddress || '—';
     $('stakingDeployerCouncil').innerText = deployerCouncilAddress || '—';
     $('stakingDeployerAddress').innerText = deployerAddress || '—';
+    $('stakingBonusModule').innerText = bonusModule || '—';
+    $('stakingCataToken').innerText = cataToken || '—';
+    $('stakingDefaultAdmin').innerText = defaultAdminHolder || '—';
+    $('stakingContractAdmin').innerText = contractAdminHolder || '—';
     $('stakingAdminAddress').innerText = currentAdmin || '—';
 
-	   log('fetchStakingTransparency done');
+    log('✅ Staking transparency fetched');
 
   } catch (e) {
-    log('fetchStakingTransparency err', e?.message || e);
+    log('❌ fetchStakingTransparency error', e?.message || e);
     alert(`Staking transparency fetch failed: ${e.message || e}. Check console.`);
   } finally {
     hideLoading();
   }
 }
+
+
 
 	  // ================================
 // 🛡️ CHECK STAKING ADMIN ROLE
