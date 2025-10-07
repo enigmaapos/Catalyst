@@ -2710,21 +2710,25 @@ async function fetchStakingTransparency() {
 // ================================
 async function checkStakingAdmin() {
   try {
+    if (!signer || !contracts?.staking) {
+      console.warn("⚠️ Admin check skipped — wallet or contract not ready");
+      return;
+    }
+
     const user = await signer.getAddress();
-    const isAdmin = await contracts.staking.hasRole(
-      await contracts.staking.DEFAULT_ADMIN_ROLE(),
-      user
-    );
+    const role = await contracts.staking.DEFAULT_ADMIN_ROLE();
+    const isAdmin = await contracts.staking.hasRole(role, user);
+
+    const panel = document.querySelector('#stakingAdminPanel');
+    if (!panel) return;
 
     if (!isAdmin) {
-      console.log("👤 Not staking admin — hiding panel");
-      document.querySelector('#stakingAdminPanel').classList.add('hidden');
+      panel.classList.add('hidden');
     } else {
-      console.log("🛡 Staking admin detected");
-      document.querySelector('#stakingAdminPanel').classList.remove('hidden');
+      panel.classList.remove('hidden');
     }
-  } catch (e) {
-    console.warn("⚠️ Admin check failed:", e.message || e);
+  } catch (err) {
+    console.warn("⚠️ Admin check failed:", err.message || err);
   }
 }
 
