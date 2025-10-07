@@ -1038,14 +1038,18 @@ Catalyst Whitepaper
 <div class="space-y-3">
     
     <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
-        <option value="" disabled selected>-- Select Admin Function --</option>
-        <option value="setCouncil(address)">setCouncil(address)</option>
-        <option value="setMinter(address)">setMinter(address)</option>
-        <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
-        <option value="pause()">pause()</option>
-        <option value="unpause()">unpause()</option>
-        <option value="upgradeTo(address)">upgradeTo(address) - UUPS</option>
-    </select>
+  <option value="" disabled selected>-- Select Admin Function --</option>
+  <option value="setCouncil(address)">setCouncil(address)</option>
+  <option value="setMinter(address)">setMinter(address)</option>
+  <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
+  <option value="pause()">pause()</option>
+  <option value="unpause()">unpause()</option>
+  <option value="upgradeTo(address)">upgradeTo(address) - UUPS</option>
+
+  <!-- 🔹 NEW OPTIONS -->
+  <option value="setBonusModule(address)">setBonusModule(address)</option>
+  <option value="setCata(address)">setCata(address)</option>
+	</select>
     
     <input id="inputRecoveryProposed" placeholder="Proposed address (e.g., new Admin or set address)" class="w-full p-2 rounded bg-black/20" />
     
@@ -3319,69 +3323,58 @@ $('activateStandbyBtn').onclick = async () => {
 // ------------------------------------
 // Function Signature Select - Handles UI Visibility and Pre-populates fields
 $('recoveryFunctionSelect').onchange = () => {
-    const selectedValue = $('recoveryFunctionSelect').value;
-    $('recoveryFunction').value = selectedValue;
-    
-    // Clear fields on new selection
-    $('inputRecoveryProposed').value = '';
-    $('recoveryArgs').value = '';
-    $('inputRecoveryCallData').value = ''; // Clear calldata output
-    
-    // Get references to elements for dynamic visibility
-    const argContainer = $('recoveryArgInputs');
-    const proposedInput = $('inputRecoveryProposed');
-    
-    // Reset properties
-    argContainer.style.display = 'block'; 
-    proposedInput.readOnly = false;
-    proposedInput.placeholder = 'Proposed address (e.g., new Admin or set address)';
-    
-    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-    let autoEncode = false;
+  const selectedValue = $('recoveryFunctionSelect').value;
+  $('recoveryFunction').value = selectedValue;
 
-    if (selectedValue.includes('()')) {
-        // Case 1: No arguments (e.g., pause(), unpause())
-        
-        // HIDE argument inputs
-        argContainer.style.display = 'none'; 
-        
-        // Use ZERO_ADDRESS placeholder as the 'proposed' address
-        proposedInput.value = ZERO_ADDRESS; 
-        proposedInput.placeholder = '0x00...00 (Not Applicable - Action only)';
-        proposedInput.readOnly = true; // Lock it to prevent errors
-        autoEncode = true;
+  $('inputRecoveryProposed').value = '';
+  $('recoveryArgs').value = '';
+  $('inputRecoveryCallData').value = '';
 
-    } else if (selectedValue.includes('swapAdmin(address,address)')) {
-        // Case 2: Two address arguments (swapAdmin)
-        
-        $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
-        proposedInput.value = '0xNewAdmin';
-        proposedInput.placeholder = 'Proposed address (0xNewAdmin)';
-        
-    } else if (selectedValue.includes('(address)')) {
-        // Case 3: Single address argument (setCouncil, setMinter, changeAdmin, upgradeTo)
-        
-        $('recoveryArgs').value = '0xAddressToSet';
-        proposedInput.value = '0xAddressToSet'; 
-        proposedInput.placeholder = 'Proposed address (Address being set)';
+  const argContainer = $('recoveryArgInputs');
+  const proposedInput = $('inputRecoveryProposed');
+
+  argContainer.style.display = 'block'; 
+  proposedInput.readOnly = false;
+  proposedInput.placeholder = 'Proposed address (e.g., new Admin or set address)';
+
+  const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+  let autoEncode = false;
+
+  if (selectedValue.includes('()')) {
+    argContainer.style.display = 'none'; 
+    proposedInput.value = ZERO_ADDRESS;
+    proposedInput.placeholder = '0x00...00 (Not Applicable - Action only)';
+    proposedInput.readOnly = true;
+    autoEncode = true;
+
+  } else if (selectedValue.includes('swapAdmin(address,address)')) {
+    $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
+    proposedInput.value = '0xNewAdmin';
+    proposedInput.placeholder = 'Proposed address (0xNewAdmin)';
+
+  } else if (
+    selectedValue.includes('(address)')
+  ) {
+    // Includes setCouncil, setMinter, upgradeTo, setBonusModule, setCata
+    $('recoveryArgs').value = '0xAddressToSet';
+    proposedInput.value = '0xAddressToSet';
+    proposedInput.placeholder = 'Proposed address (Address being set)';
+  }
+
+  if (autoEncode) {
+    try {
+      const fnSig = $('recoveryFunction').value.trim();
+      const iface = new ethers.utils.Interface([`function ${fnSig}`]);
+      const fnName = fnSig.split('(')[0];
+      $('inputRecoveryCallData').value = iface.encodeFunctionData(fnName, []);
+    } catch (e) {
+      $('inputRecoveryCallData').value = "Error during auto-encode.";
+      console.error(e);
     }
-
-    // --- AUTO-ENCODE SIMPLE CALLS ---
-    // Auto-encode if no arguments are required (e.g., pause, unpause)
-    if (autoEncode) {
-        try {
-            const fnSig = $('recoveryFunction').value.trim();
-            const iface = new ethers.utils.Interface([`function ${fnSig}`]);
-            const fnName = fnSig.split('(')[0];
-            // Encode with an empty array of arguments
-            $('inputRecoveryCallData').value = iface.encodeFunctionData(fnName, []); 
-        } catch (e) {
-            $('inputRecoveryCallData').value = "Error during auto-encode. Check console.";
-            console.error(e);
-        }
-    }
+  }
 };
 
+	  
 // Encode Calldata Button - User clicks this after inputting addresses
 $('encodeCallDataBtn').onclick = async () => {
     try {
