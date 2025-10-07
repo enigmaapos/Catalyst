@@ -3122,7 +3122,7 @@ async function fetchProposalsExplorer() {
 }
 
 // =====================================================
-// ⚖️ READY-TO-EXECUTE PROPOSALS (Timelock Model)
+// ⚖️ READY-TO-EXECUTE PROPOSALS (Timelock Model, Event-Based)
 // =====================================================
 
 $('loadReadyProposalsBtn').onclick = async () => {
@@ -3132,18 +3132,21 @@ $('loadReadyProposalsBtn').onclick = async () => {
     const tbody = $('readyProposalsTbody');
     tbody.innerHTML = '';
 
-    const count = await contracts.governance.proposalCount();
-    let readyCount = 0;
+    // ✅ Pull proposals from on-chain events instead of proposalCount()
+    const proposalEvents = await contracts.governance.queryFilter("ProposalCreated", 0, "latest");
+    const count = proposalEvents.length;
     const now = Math.floor(Date.now() / 1000);
+    let readyCount = 0;
 
     for (let i = 0; i < count; i++) {
-      const id = await contracts.governance.proposalIds(i);
+      const id = proposalEvents[i].args.id || proposalEvents[i].args.proposalId;
+      const proposer = proposalEvents[i].args.proposer || "N/A";
+
       const p = await contracts.governance.proposals(id);
       const passed = await contracts.governance.isProposalPassed(id);
       if (!passed || p.executed) continue;
 
       readyCount++;
-      const proposer = p.proposer || "N/A";
       const typeName =
         Object.keys(PROPOSAL_MAPPING).find(k => PROPOSAL_MAPPING[k] == p.pType) || "Unknown";
       const forVotes = Number(p.forVotes) / 1e18;
@@ -3209,6 +3212,7 @@ document.addEventListener("click", async e => {
     }
   }
 });
+	  
 
 // ===============================
 // Governance Transparency 
