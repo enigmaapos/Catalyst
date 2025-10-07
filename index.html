@@ -890,31 +890,35 @@ Catalyst Whitepaper
   </div>
 
   <!-- 🧾 TRANSPARENCY PANEL -->
-  <div class="pt-4 border-t border-slate-700 mt-6">
-    <div class="text-xs text-slate-400 mb-1">Governance Transparency</div>
-    <div class="p-2 rounded bg-black/20 text-sm">
-      Admin: <span id="govAdminAddress" class="font-mono text-amber-400 break-all">—</span>
-    </div>
-    <div class="p-2 rounded bg-black/20 text-sm">
-      Council: <span id="govCouncilAddress" class="font-mono text-cyan-400 break-all">—</span>
-    </div>
-    <div class="p-2 rounded bg-black/20 text-sm">
-      Staking: <span id="govStakingAddress" class="font-mono text-purple-400 break-all">—</span>
-    </div>
-    <div class="p-2 rounded bg-black/20 text-sm">
-      Voting Duration: <span id="govVotingDuration" class="font-mono text-yellow-400">—</span>
-    </div>
-    <div class="p-2 rounded bg-black/20 text-sm">
-      Min Votes: <span id="govMinVotes" class="font-mono text-green-400">—</span>
-    </div>
-    <div class="p-2 rounded bg-black/20 text-sm">
-      Cap Percent: <span id="govCapPercent" class="font-mono text-indigo-400">—</span>
-    </div>
-    <button id="refreshGovernanceTransparencyBtn"
-      class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded">
-      🔍 Refresh Transparency
-    </button>
+	<div class="pt-4 border-t border-slate-700">
+  <div class="text-xs text-slate-400 mb-1">Governance Contract Transparency</div>
+
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Guardian Council: <br />
+    <span id="govCouncil" class="font-mono text-cyan-400 break-all">—</span>
   </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Linked Staking Contract: <br />
+    <span id="govStaking" class="font-mono text-purple-400 break-all">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Voting Duration: <br />
+    <span id="govVotingDuration" class="font-mono text-yellow-400">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Min Votes Required: <br />
+    <span id="govMinVotes" class="font-mono text-green-400">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Cap Percent: <br />
+    <span id="govCapPercent" class="font-mono text-indigo-400">—</span>
+  </div>
+
+  <button id="refreshGovernanceTransparencyBtn"
+    class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded">
+    🔍 Refresh Governance Transparency
+  </button>
+	</div>
 </section>
 
   
@@ -3047,83 +3051,54 @@ document.addEventListener("click", async e => {
 });
 
 // ===============================
-// Governance Transparency (Optimized Like CATA)
+// Governance Transparency 
 // ===============================
-async function fetchGovernanceTransparency() {
+function formatVotingDuration(blocks) {
+  const seconds = blocks * 12; // adjust block time if needed
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) return `≈ ${days} day${days > 1 ? 's' : ''} (${blocks} blocks @12s)`;
+  if (hours > 0) return `≈ ${hours} hr${hours > 1 ? 's' : ''} (${blocks} blocks @12s)`;
+  if (minutes > 0) return `≈ ${minutes} min${minutes > 1 ? 's' : ''} (${blocks} blocks @12s)`;
+  return `${blocks} blocks`;
+}
+	  
+	  async function fetchGovernanceTransparency() {
   try {
-    if (!contracts.governance || !provider) {
-      if (!contracts.governance) return alert('Please connect wallet and set Governance contract first');
-    }
+    if (!contracts.governance) return alert('Bind governance contract first');
 
     showLoading("Fetching governance transparency...");
 
-    // 1. --- PARALLEL READS ---
     const [
-      councilAddress,
-      stakingAddress,
+      council,
+      stakingAddr,
       votingDuration,
-      minVotesScaled,
+      minVotes,
       capPercent
     ] = await Promise.all([
-      contracts.governance.council(),
-      contracts.governance.staking(),
-      contracts.governance.votingDurationBlocks(),
-      contracts.governance.minVotesRequiredScaled(),
-      contracts.governance.collectionVoteCapPercent()
+      contracts.governance.council(),                // ✅ FIXED
+      contracts.governance.staking(),                // ✅
+      contracts.governance.votingDurationBlocks(),   // ✅ FIXED
+      contracts.governance.minVotesRequiredScaled(), // ✅
+      contracts.governance.collectionVoteCapPercent()// ✅
     ]);
 
-    // 2. --- PARALLEL EVENT LOOKUPS ---
-    const [
-      adminSwappedEvents,
-      councilUpdatedEvents
-    ] = await Promise.all([
-      contracts.governance.queryFilter("AdminSwapped", 0, "latest"),
-      contracts.governance.queryFilter("GuardianCouncilUpdated", 0, "latest")
-    ]);
-
-    // 3. --- POST-PROCESSING (Admin Detection) ---
-    let adminAddress = "⚠️ Unknown";
-
-    if (adminSwappedEvents.length > 0) {
-      adminAddress = adminSwappedEvents[adminSwappedEvents.length - 1].args.newAdmin;
-    } else {
-      // fallback: get first DEFAULT_ADMIN_ROLE member
-      try {
-        const DEFAULT_ADMIN_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("DEFAULT_ADMIN_ROLE"));
-        adminAddress = await contracts.governance.getRoleMember(DEFAULT_ADMIN_ROLE, 0);
-      } catch (err) {
-        console.warn("⚠️ No admin role info available:", err.message || err);
-      }
-    }
-
-    // 4. --- POST-PROCESSING (Council Update Tracking) ---
-    let latestCouncil = councilAddress;
-    if (councilUpdatedEvents.length > 0) {
-      latestCouncil = councilUpdatedEvents[councilUpdatedEvents.length - 1].args.newCouncil;
-    }
-
-    // 5. --- FORMAT NUMERIC VALUES ---
-    const durationBlocks = Number(votingDuration);
-    const approxDays = (durationBlocks * 12) / (60 * 60 * 24); // 12s block time avg
-
-    const minVotesReadable = ethers.utils.formatUnits(minVotesScaled, 18);
-
-    // 6. --- UI UPDATE ---
-    $('govAdminAddress').innerText = adminAddress;
-    $('govCouncilAddress').innerText = latestCouncil;
-    $('govStakingAddress').innerText = stakingAddress;
-    $('govVotingDuration').innerText = `${durationBlocks} blocks (~${approxDays.toFixed(2)} days)`;
-    $('govMinVotes').innerText = `${minVotesReadable}`;
-    $('govCapPercent').innerText = `${capPercent}%`;
+    $('govCouncil').innerText = council;
+    $('govStaking').innerText = stakingAddr;
+    $('govVotingDuration').innerText = formatVotingDuration(Number(votingDuration));
+    $('govMinVotes').innerText = ethers.utils.formatUnits(minVotes, 18) + " votes";
+    $('govCapPercent').innerText = capPercent.toString() + "%";
 
     log('fetchGovernanceTransparency done');
   } catch (e) {
-    log('fetchGovernanceTransparency err', e?.message || e);
-    alert(`Governance transparency fetch failed: ${e.message || e}. Check console for details.`);
+    log('fetchGovernanceTransparency err', e);
+    alert('Failed to fetch governance transparency. Check console for details.');
   } finally {
     hideLoading();
   }
-}
+	  }
 
 
 
