@@ -708,6 +708,38 @@ Catalyst Whitepaper
     🔍 Refresh Staking Transparency
   </button>
 </div>
+
+	  <!-- ============================== -->
+<!-- 🛡️ Staking Admin Panel (Visible only to Admin) -->
+<!-- ============================== -->
+<div id="stakingAdminPanel" class="glass p-4 rounded-lg space-y-3 mt-6 hidden">
+  <h3 class="font-semibold text-lg">🛡️ Staking Admin Panel</h3>
+  <p class="text-sm text-slate-400">Restricted to Governance or Guardian Council admins.</p>
+
+  <div class="space-y-2">
+    <!-- Treasury Withdraw -->
+    <label class="text-sm font-medium">Withdraw Treasury</label>
+    <input id="withdrawTo" placeholder="Recipient address (0x...)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <input id="withdrawAmount" type="number" placeholder="Amount (CATA)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="withdrawTreasuryBtn" class="w-full p-2 bg-red-600 hover:bg-red-500 rounded font-semibold">
+      💰 Withdraw Treasury
+    </button>
+
+    <!-- Bonus Module -->
+    <hr class="border-slate-700 my-2" />
+    <label class="text-sm font-medium">Set Bonus Module</label>
+    <input id="bonusModuleAddr" placeholder="Bonus module address (0x...)" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="setBonusModuleBtn" class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded font-semibold">
+      ⚙️ Set Bonus Module
+    </button>
+
+    <!-- Trigger Top Burner Bonus -->
+    <hr class="border-slate-700 my-2" />
+    <button id="triggerTopBurnerBtn" class="w-full p-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold">
+      🔥 Trigger Top Burner Bonus
+    </button>
+  </div>
+</div>
 </section>
 
 <!-- 🏛 GOVERNANCE DAO SECTION -->
@@ -1438,6 +1470,7 @@ async function connect() {
     // Load contracts
     await loadABIs();
     await attachContractsIfSet();
+await checkStakingAdmin();
 
     log("Connected", userAddr);
 
@@ -2657,6 +2690,89 @@ async function fetchStakingTransparency() {
   }
 }
 
+	  // ================================
+// 🛡️ CHECK STAKING ADMIN ROLE
+// ================================
+async function checkStakingAdmin() {
+  try {
+    const user = await signer.getAddress();
+    const isAdmin = await contracts.staking.hasRole(
+      await contracts.staking.DEFAULT_ADMIN_ROLE(),
+      user
+    );
+
+    if (!isAdmin) {
+      console.log("👤 Not staking admin — hiding panel");
+      document.querySelector('#stakingAdminPanel').classList.add('hidden');
+    } else {
+      console.log("🛡 Staking admin detected");
+      document.querySelector('#stakingAdminPanel').classList.remove('hidden');
+    }
+  } catch (e) {
+    console.warn("⚠️ Admin check failed:", e.message || e);
+  }
+}
+
+	  // ============================================
+// 🧩 Staking Admin Panel — Button Actions
+// ============================================
+
+// Withdraw Treasury
+$('withdrawTreasuryBtn').onclick = async () => {
+  try {
+    const to = $('withdrawTo').value.trim();
+    const amount = ethers.utils.parseEther($('withdrawAmount').value.trim());
+    if (!ethers.utils.isAddress(to)) return alert("⚠️ Invalid recipient address");
+    if (amount.isZero()) return alert("⚠️ Amount must be > 0");
+
+    showLoading("Withdrawing from treasury...");
+    const tx = await contracts.staking.withdrawTreasury(to, amount);
+    await tx.wait();
+
+    alert("✅ Treasury withdrawn successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Withdraw failed: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
+// Set Bonus Module
+$('setBonusModuleBtn').onclick = async () => {
+  try {
+    const addr = $('bonusModuleAddr').value.trim();
+    if (!ethers.utils.isAddress(addr)) return alert("⚠️ Invalid address");
+
+    showLoading("Setting new bonus module...");
+    const tx = await contracts.staking.setBonusModule(addr);
+    await tx.wait();
+
+    alert("✅ Bonus module updated!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to set bonus module: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
+// Trigger Top Burner Bonus
+$('triggerTopBurnerBtn').onclick = async () => {
+  try {
+    showLoading("Triggering top burner bonus...");
+    const tx = await contracts.staking.triggerTopBurnerBonus();
+    await tx.wait();
+
+    alert("🔥 Top burner bonus triggered successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to trigger bonus: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
 
   // ---------- Governance Section ----------
 const PROPOSAL_MAPPING = {
@@ -3672,6 +3788,7 @@ async function autoRefreshAll() {
 
   await loadABIs();
 	  await attachContractsIfSet();
+	  await checkStakingAdmin();
 
   // Connect / disconnect
   $('connectBtn').onclick = connect;
@@ -3801,6 +3918,13 @@ function showLoading() {
 function hideLoading() {
   $('loadingIndicator').style.display = 'none';
 }
+
+	  if (window.ethereum) {
+  ethereum.on('accountsChanged', async () => {
+    await attachContractsIfSet();
+    await checkStakingAdmin();
+  });
+	  }
 	  
   </script>
 </body>
