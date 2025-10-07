@@ -3897,13 +3897,6 @@ $('viewPortfolioBtn').onclick = viewPortfolio;
 
 	  
     log('UI ready');
-
-	    if (window.ethereum) {
-  ethereum.on('accountsChanged', async () => {
-    await attachContractsIfSet();
-    await checkStakingAdmin();
-  });
-		}
   });
 
 	// Tab switching for top nav buttons
