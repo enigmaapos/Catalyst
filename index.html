@@ -2118,10 +2118,19 @@ async function handleToggleBluechip() {
       default: return "—";
     }
   } catch (err) {
+    const msg = (err?.message || "").toLowerCase();
+
+    // ✅ Graceful handling for "not registered" reverts
+    if (msg.includes("not registered") || msg.includes("revert")) {
+      console.warn("Collection not registered, safe fallback.");
+      return "❌ Not Registered";
+    }
+
     console.error("Status check error:", err);
     return "⚠️ Error fetching status";
   }
-}
+	  }
+	  
 
 	  function attachStatusChecker(inputId, statusDivId) {
   const inputEl = document.getElementById(inputId);
@@ -2129,11 +2138,17 @@ async function handleToggleBluechip() {
 
   inputEl.addEventListener("input", async () => {
     const addr = inputEl.value.trim();
+
+    if (addr.length !== 42 || !addr.startsWith("0x")) {
+      statusEl.innerText = "Status: —";
+      return;
+    }
+
     statusEl.innerText = "⏳ Checking...";
     const result = await fetchCollectionStatus(addr);
     statusEl.innerText = `Status: ${result}`;
   });
-}
+	  }
 
 // Attach to each field
 attachStatusChecker("regCollectionAddr", "regStatusInfo");
