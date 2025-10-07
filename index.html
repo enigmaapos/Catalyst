@@ -1437,48 +1437,52 @@ $('cataBal').innerText = ethers.utils.formatEther(bal) + ' CATA';
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
-
 // ---------- Connect / Disconnect ----------
 async function connect() {
   try {
-    if (!window.ethereum) return alert('No Web3 wallet (install MetaMask)');
+    if (!window.ethereum) return alert('❌ No Web3 wallet detected. Please install MetaMask.');
 
     provider = new ethers.providers.Web3Provider(window.ethereum);
     await provider.send('eth_requestAccounts', []);
     signer = provider.getSigner();
     userAddr = await signer.getAddress();
 
-    // Shortened address + tooltip
+    // 🪪 Display wallet info
     const addrEl = $('addr');
     addrEl.innerText = shortenAddress(userAddr);
     addrEl.title = userAddr;
 
-    // Setup copy button
+    // 📋 Copy address
     $('copyAddrBtn').onclick = () => {
       navigator.clipboard.writeText(userAddr);
-      alert("✅ Address copied!");
+      alert("✅ Address copied to clipboard!");
     };
 
-    // Network
+    // 🌐 Show network
     const net = await provider.getNetwork();
-    $('networkText').innerText = net.name + " (" + net.chainId + ")";
+    $('networkText').innerText = `${net.name} (${net.chainId})`;
 
-    // Toggle buttons
+    // 🔄 Toggle UI buttons
     $('connectBtn').classList.add('hidden');
     $('disconnectBtn').classList.remove('hidden');
 
-    // Load contracts
+    // ⚙️ Load contract ABIs and attach
     await loadABIs();
     await attachContractsIfSet();
-await checkStakingAdmin();
 
-    log("Connected", userAddr);
+    // 🧩 Check if user is staking admin
+    if (contracts?.staking) await checkStakingAdmin();
 
-    // 👇 auto-fetch council state right after connect
-    await autoRefreshAll();
+    log("✅ Connected:", userAddr);
+
+    // 🧠 Optional auto-refresh (only if defined)
+    if (typeof autoRefreshAll === "function") {
+      await autoRefreshAll();
+    }
 
   } catch (e) {
-    log("connect err", e?.message || e);
+    log("❌ connect() error:", e?.message || e);
+    alert("Connection failed. Check console for details.");
   }
 }
 
@@ -1486,19 +1490,30 @@ function disconnect() {
   provider = signer = userAddr = null;
   contracts = { cata: null, staking: null, governance: null, council: null };
 
-  // Reset UI
+  // 🔄 Reset UI
   const addrEl = $('addr');
   addrEl.innerText = "Not connected";
   addrEl.title = "";
-
   $('networkText').innerText = "—";
   $('cataBal').innerText = "—";
 
   $('connectBtn').classList.remove('hidden');
   $('disconnectBtn').classList.add('hidden');
 
-  log("Disconnected");
-	  }
+  log("🔌 Disconnected");
+}
+
+// ✅ React to account changes safely
+if (window.ethereum) {
+  ethereum.on('accountsChanged', async (accounts) => {
+    if (accounts.length === 0) {
+      disconnect();
+      return;
+    }
+    await attachContractsIfSet();
+    if (contracts?.staking) await checkStakingAdmin();
+  });
+}
 
 
 // ---------- CATA functions ----------
