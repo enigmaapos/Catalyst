@@ -510,7 +510,7 @@ Catalyst Whitepaper
     </div>
 
     <!-- Harvest -->
-    <div class="grid grid-cols-2 gap-2">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
       <input
         id="bluechipCollectionInput"
         placeholder="Bluechip Collection Address"
@@ -2141,31 +2141,30 @@ async function handleToggleBluechip() {
   }
 	}
 	  
-
-	  function attachStatusChecker(inputId, statusDivId) {
+function attachStatusChecker(inputId, statusDivId) {
   const inputEl = document.getElementById(inputId);
   const statusEl = document.getElementById(statusDivId);
+  let debounceTimer;
 
-  inputEl.addEventListener("input", async () => {
-    const addr = inputEl.value.trim();
+  inputEl.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      const addr = inputEl.value.trim();
+      if (addr.length !== 42 || !addr.startsWith("0x")) {
+        statusEl.innerText = "Status: —";
+        return;
+      }
 
-    if (addr.length !== 42 || !addr.startsWith("0x")) {
-      statusEl.innerText = "Status: —";
-      return;
-    }
-
-    statusEl.innerText = "⏳ Checking...";
-    const statusText = await fetchCollectionStatus(addr);
-
-    // ✅ Optional: Prevent registering existing collections
-    if (statusText.includes("✅") || statusText.includes("💎")) {
-      alert("This collection is already registered or bluechip.");
-      hideLoading?.(); // optional if you're showing a loader
-    }
-
-    statusEl.innerText = `Status: ${statusText}`;
+      statusEl.innerText = "⏳ Checking...";
+      const statusText = await fetchCollectionStatus(addr);
+      if (statusText.includes("✅") || statusText.includes("💎")) {
+        alert("This collection is already registered or bluechip.");
+      }
+      statusEl.innerText = `Status: ${statusText}`;
+    }, 1000); // waits 1 second after typing stops
   });
-	 }
+}
+	  
 
 // Attach to each field
 attachStatusChecker("regCollectionAddr", "regStatusInfo");
