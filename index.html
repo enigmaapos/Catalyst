@@ -893,33 +893,35 @@ Catalyst Whitepaper
 
     
   <!-- ⚖️ READY TO EXECUTE -->
-  <div class="glass p-4 rounded-lg mt-6">
-    <h3 class="font-semibold text-lg">⚖️ Ready-to-Execute Proposals</h3>
-    <p class="text-xs text-slate-400 mb-2">
-      Passed proposals awaiting Guardian Council approval or execution.
-    </p>
-    <button id="loadReadyProposalsBtn"
-      class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm mb-2">
-      🔄 Refresh
-    </button>
-    <div id="readyProposalCount" class="text-xs text-slate-400"></div>
+<div class="glass p-4 rounded-lg mt-6">
+  <h3 class="font-semibold text-lg">⚖️ Ready-to-Execute Proposals</h3>
+  <p class="text-xs text-slate-400 mb-2">
+    Passed proposals waiting for timelock to expire before anyone can execute.
+  </p>
 
-    <div class="overflow-x-auto mt-2">
-      <table class="w-full text-sm">
-        <thead class="text-xs text-slate-400 border-b border-slate-700">
-          <tr>
-            <th class="p-2">ID</th>
-            <th class="p-2">Type</th>
-            <th class="p-2">Proposer</th>
-            <th class="p-2">Votes</th>
-            <th class="p-2">Council Approvals</th>
-            <th class="p-2">Action</th>
-          </tr>
-        </thead>
-        <tbody id="readyProposalsTbody"></tbody>
-      </table>
-    </div>
+  <button id="loadReadyProposalsBtn"
+    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm mb-2">
+    🔄 Refresh
+  </button>
+
+  <div id="readyProposalCount" class="text-xs text-slate-400"></div>
+
+  <div class="overflow-x-auto mt-2">
+    <table class="w-full text-sm">
+      <thead class="text-xs text-slate-400 border-b border-slate-700">
+        <tr>
+          <th class="p-2">ID</th>
+          <th class="p-2">Type</th>
+          <th class="p-2">Proposer</th>
+          <th class="p-2">Votes</th>
+          <th class="p-2">Timelock Status</th>
+          <th class="p-2 text-center">Action</th>
+        </tr>
+      </thead>
+      <tbody id="readyProposalsTbody"></tbody>
+    </table>
   </div>
+</div>
 
   <!-- 🧾 TRANSPARENCY PANEL -->
 	<div class="pt-4 border-t border-slate-700">
@@ -3038,37 +3040,20 @@ async function fetchProposalsExplorer() {
   }
 }
 
-	  // =====================================================
-// ⚖️ READY-TO-EXECUTE PROPOSALS (Guardian-Aware)
+// =====================================================
+// ⚖️ READY-TO-EXECUTE PROPOSALS (Timelock Model)
 // =====================================================
 
-// Track whether the connected user is a Guardian
-let isGuardian = false;
-
-// --- Detect Guardian Role ---
-async function detectGuardianRole() {
-  try {
-    const signerAddr = await signer.getAddress();
-    const activeGuardians = await contracts.council.getActiveGuardians();
-    isGuardian = activeGuardians.map(a => a.toLowerCase()).includes(signerAddr.toLowerCase());
-    log("Guardian detection:", isGuardian ? "🛡 Guardian" : "👤 Regular user");
-  } catch (err) {
-    console.warn("Guardian detection failed:", err.message || err);
-    isGuardian = false;
-  }
-}
-
-// --- Load Ready Proposals ---
 $('loadReadyProposalsBtn').onclick = async () => {
   try {
     showLoading("Loading passed proposals...");
-    await detectGuardianRole();
 
     const tbody = $('readyProposalsTbody');
     tbody.innerHTML = '';
 
     const count = await contracts.governance.proposalCount();
     let readyCount = 0;
+    const now = Math.floor(Date.now() / 1000);
 
     for (let i = 0; i < count; i++) {
       const id = await contracts.governance.proposalIds(i);
@@ -3083,49 +3068,32 @@ $('loadReadyProposalsBtn').onclick = async () => {
       const forVotes = Number(p.forVotes) / 1e18;
       const againstVotes = Number(p.againstVotes) / 1e18;
 
-      // Get Guardian approval status
-      let approvals = 0;
+      // --- Timelock handling ---
+      let unlockTime = 0;
       try {
-        const recoveryId = await contracts.council.deriveRecoveryId(DEFAULT_ADDRS.governance, id);
-        approvals = await contracts.council.getApprovalCount(recoveryId);
+        unlockTime = await contracts.governance.proposalReadyTime(id);
       } catch {}
+      const remaining = unlockTime > now ? unlockTime - now : 0;
+      const hoursLeft = (remaining / 3600).toFixed(2);
+      const canExecute = remaining <= 0;
 
-      // Calculate progress bar
-      const percent = Math.min((approvals / 7) * 100, 100);
-      const barColor =
-        approvals >= 5 ? "bg-green-600"
-        : approvals >= 3 ? "bg-yellow-500"
-        : "bg-red-600";
+      const status = canExecute
+        ? `<span class="text-green-400 text-xs font-semibold">✅ Ready</span>`
+        : `<span class="text-yellow-400 text-xs">⏳ ${hoursLeft}h remaining</span>`;
 
-      // Decide which button to show
-      const canExecute = approvals >= 5;
-      let actionBtn = "";
+      const actionBtn = canExecute
+        ? `<button class="execBtn bg-green-600 hover:bg-green-500 text-xs rounded px-2 py-1" data-id="${id}">
+             ⚙️ Execute
+           </button>`
+        : `<span class="text-slate-500 text-xs">Waiting</span>`;
 
-      if (canExecute) {
-        actionBtn = `<button class="execBtn bg-green-600 hover:bg-green-500 text-xs rounded px-2 py-1" data-id="${id}">
-          ✅ Execute
-        </button>`;
-      } else if (isGuardian) {
-        actionBtn = `<button class="approveBtn bg-blue-600 hover:bg-blue-500 text-xs rounded px-2 py-1" data-id="${id}">
-          👍 Approve
-        </button>`;
-      } else {
-        actionBtn = `<span class="text-slate-500 text-xs">Waiting approval</span>`;
-      }
-
-      // Render table row
       const row = `
         <tr>
           <td class="p-2 font-mono text-xs">${id.slice(0, 10)}...</td>
           <td class="p-2">${typeName}</td>
           <td class="p-2">${proposer.slice(0, 8)}...</td>
           <td class="p-2">${forVotes.toFixed(1)} / ${againstVotes.toFixed(1)}</td>
-          <td class="p-2">
-            <div class="w-full bg-slate-800 rounded-full h-2">
-              <div class="${barColor} h-2 rounded-full" style="width:${percent}%"></div>
-            </div>
-            <div class="text-xs text-center text-slate-400 mt-1">${approvals}/7 approved</div>
-          </td>
+          <td class="p-2 text-center">${status}</td>
           <td class="p-2 text-center">${actionBtn}</td>
         </tr>`;
       tbody.insertAdjacentHTML('beforeend', row);
@@ -3141,32 +3109,8 @@ $('loadReadyProposalsBtn').onclick = async () => {
   }
 };
 
-// --- Guardian Approve Handler ---
+// --- Execute Proposal Handler ---
 document.addEventListener("click", async e => {
-  if (e.target.classList.contains("approveBtn")) {
-    const id = e.target.dataset.id;
-    if (!confirm(`Approve execution of proposal ${id.slice(0, 10)}...?`)) return;
-
-    try {
-      showLoading("Submitting approval...");
-      const iface = new ethers.utils.Interface(["function executeProposal(bytes32)"]);
-      const data = iface.encodeFunctionData("executeProposal", [id]);
-      const tx = await contracts.council.proposeRecovery(
-        ethers.constants.AddressZero,
-        DEFAULT_ADDRS.governance,
-        data
-      );
-      await tx.wait();
-      alert("✅ Guardian approval recorded!");
-      $('loadReadyProposalsBtn').click();
-    } catch (err) {
-      alert("❌ " + (err.message || err));
-    } finally {
-      hideLoading();
-    }
-  }
-
-  // --- Execute after 5/7 approvals ---
   if (e.target.classList.contains("execBtn")) {
     const id = e.target.dataset.id;
     if (!confirm(`Execute proposal ${id.slice(0, 10)} now?`)) return;
