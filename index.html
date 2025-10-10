@@ -2590,7 +2590,18 @@ function parseBatchHarvestPairs() {
 }
 
 	  // format big numbers to readable decimals (18 by default)
-
+function formatAmount(amount) {
+  try {
+    // ERC721 values are integers (BigNumber)
+    if (ethers.BigNumber.isBigNumber(amount)) {
+      return amount.toString(); // just show as plain number
+    }
+    return String(amount);
+  } catch {
+    return amount?.toString?.() ?? String(amount);
+  }
+	  }
+	  
 	  
 // ======== Refresh Global Stats ========
 async function refreshStakingStats() {
