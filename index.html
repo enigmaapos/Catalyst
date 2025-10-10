@@ -2592,11 +2592,15 @@ function parseBatchHarvestPairs() {
 	  // format big numbers to readable decimals (18 by default)
 function formatAmount(amount, decimals = 18) {
   try {
-    const formatted = parseFloat(ethers.utils.formatUnits(amount, decimals));
-    if (formatted < 0.000001 && formatted > 0) return formatted.toExponential(2); // tiny numbers
-    return formatted.toFixed(6).replace(/\.?0+$/, ''); // trim extra zeros
+    const num = Number(ethers.utils.formatUnits(amount, decimals));
+    // show up to 6 decimals, no scientific notation
+    return num.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 6,
+      useGrouping: false
+    });
   } catch {
-    return amount.toString();
+    return amount?.toString?.() ?? String(amount);
   }
 }
 	  
