@@ -776,31 +776,45 @@ Catalyst Whitepaper
 <!-- ======================== -->
 <div id="stakingDashboard" class="space-y-6 text-slate-100">
 
-  <!-- Section: Staking Stats -->
-  <div>
-    <h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
-      📊 Staking Stats
-      <button id="refreshStakingStatsBtn"
-              class="ml-auto px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs transition">
-        🔄 Refresh
-      </button>
-    </h3>
-    <div class="grid grid-cols-3 gap-3 text-center">
-      <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-        <div class="text-slate-400 text-xs">Total</div>
-        <div id="stakedAll" class="font-bold text-lg text-slate-100">—</div>
-      </div>
-      <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-        <div class="text-slate-400 text-xs">Term</div>
-        <div id="stakedTerm" class="font-bold text-lg text-indigo-400">—</div>
-      </div>
-      <div class="p-3 rounded-lg bg-slate-800/60 shadow">
-        <div class="text-slate-400 text-xs">Perm</div>
-        <div id="stakedPerm" class="font-bold text-lg text-emerald-400">—</div>
+  <!-- Section: My Staking Overview -->
+<div>
+  <h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
+    🧍 My Staking Overview
+    <button id="refreshStakingStatsBtn"
+            class="ml-auto px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs transition">
+      🔄 Refresh
+    </button>
+  </h3>
+
+  <div class="grid grid-cols-3 gap-3 text-center">
+    <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+      <div class="text-slate-400 text-xs">My Total NFTs Staked</div>
+      <div id="userStakedTotal" class="font-bold text-lg text-slate-100">—</div>
+    </div>
+    <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+      <div class="text-slate-400 text-xs">My Term NFTs</div>
+      <div id="userStakedTerm" class="font-bold text-lg text-indigo-400">—</div>
+    </div>
+    <div class="p-3 rounded-lg bg-slate-800/60 shadow">
+      <div class="text-slate-400 text-xs">My Perm NFTs</div>
+      <div id="userStakedPerm" class="font-bold text-lg text-emerald-400">—</div>
+    </div>
+  </div>
+
+  <!-- Small animated bar showing utilization -->
+  <div class="mt-3">
+    <div class="text-slate-400 text-xs mb-1">Your Staking Utilization</div>
+    <div class="w-full bg-slate-700/60 rounded-full h-2 overflow-hidden">
+      <div id="userStakingUsageBar"
+           class="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-[1000ms] ease-in-out"
+           style="width: 0%">
       </div>
     </div>
-    <div id="stakingStatsUpdated" class="mt-1 text-xs text-slate-500 text-right">—</div>
+    <div id="userStakingUsageText" class="text-xs text-slate-400 mt-1">—</div>
   </div>
+
+  <div id="stakingStatsUpdated" class="mt-2 text-xs text-slate-500 text-right">—</div>
+</div>
 
   <!-- ======== Section: Other Actions ======== -->
 <div>
@@ -3115,40 +3129,69 @@ function parseBatchHarvestPairs() {
 
 	  
 	  
-// ======== Refresh Global Stats ========
+// ======== Refresh User-Only Staking Stats ========
 async function refreshStakingStats() {
   try {
-    showLoading("Refreshing staking stats..."); // ✅ Pass a string, not the function
+    showLoading("Fetching your staking stats...");
 
-    if (!contracts.staking) {
+    if (!contracts.staking || !userAddr) {
       await attachContractsIfSet();
       if (!contracts.staking) {
-        alert('Set staking contract first.');
+        alert('Staking contract not found.');
         return;
       }
     }
 
-    if (typeof contracts.staking.totalStakedAll === 'function') {
-      const [all, term, perm] = await Promise.all([
-        contracts.staking.totalStakedAll(),
-        contracts.staking.totalStakedTerm(),
-        contracts.staking.totalStakedPerm()
-      ]);
+    // 🔍 Fetch user-level staking info (safe)
+    const safeCall = async (fn) => {
+      try {
+        return await fn();
+      } catch {
+        return undefined;
+      }
+    };
 
-      $('stakedAll').innerText  = formatAmount(all);
-      $('stakedTerm').innerText = formatAmount(term);
-      $('stakedPerm').innerText = formatAmount(perm);
+    const [userTotal, userTerm, userPerm, globalCap] = await Promise.all([
+      safeCall(() => contracts.staking.userTotalStaked?.(userAddr)),
+      safeCall(() => contracts.staking.userTermStaked?.(userAddr)),
+      safeCall(() => contracts.staking.userPermStaked?.(userAddr)),
+      safeCall(() => contracts.staking.GLOBAL_NFT_CAP?.())
+    ]);
 
-      $('stakingStatsUpdated').innerText = 
-        `Updated: ${new Date().toLocaleTimeString()}`;
+    // Display values
+    $("userStakedTotal").innerText = formatAmount(userTotal, 0);
+    $("userStakedTerm").innerText = formatAmount(userTerm, 0);
+    $("userStakedPerm").innerText = formatAmount(userPerm, 0);
 
-      log('✅ Staking stats refreshed');
-    } else {
-      alert('Staking stats functions not found in ABI.');
+    // ⚡ Compute and animate user utilization
+    let percent = 0;
+    if (userTotal && globalCap && Number(globalCap) > 0) {
+      percent = ((Number(userTotal) / Number(globalCap)) * 100).toFixed(2);
     }
 
+    const bar = $("userStakingUsageBar");
+    const text = $("userStakingUsageText");
+
+    if (bar) {
+      // Color gradient depending on usage %
+      if (percent < 50)
+        bar.style.background = "linear-gradient(to right, #10B981, #34D399)";
+      else if (percent < 80)
+        bar.style.background = "linear-gradient(to right, #FBBF24, #FACC15)";
+      else
+        bar.style.background = "linear-gradient(to right, #EF4444, #F87171)";
+
+      requestAnimationFrame(() => {
+        bar.style.width = `${percent}%`;
+      });
+    }
+
+    if (text) text.innerText = `${percent}% of Global Cap`;
+
+    $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+    log("✅ User staking stats refreshed");
   } catch (e) {
-    log('refreshStakingStats error', e);
+    log("❌ refreshStakingStats error:", e);
     alert(e.message || e);
   } finally {
     hideLoading();
