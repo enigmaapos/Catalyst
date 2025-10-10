@@ -1657,11 +1657,11 @@ if (window.ethereum) {
 
 		  function formatAmount(amount, decimals = 18) {
   try {
-    const formatted = parseFloat(ethers.utils.formatUnits(amount, decimals));
-    if (formatted >= 1) return formatted.toFixed(2);
-    if (formatted >= 0.001) return formatted.toFixed(4);
-    if (formatted > 0) return formatted.toExponential(2);
-    return "0";
+    const formatted = Number(ethers.utils.formatUnits(amount, decimals));
+    return formatted.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 6,
+    });
   } catch {
     return amount?.toString() || "0";
   }
@@ -1678,46 +1678,59 @@ async function refreshQuickStatus() {
       if (!contracts.staking) return alert("Set staking contract first.");
     }
 
-    const [
-      baseRewardRate,
-      blocksPerUnit,
-      rewardRateIncrementPerNFT,
-      welcomeBonusBaseRate,
-      welcomeBonusIncrementPerNFT,
-      termDurationBlocks,
-      unstakeBurnFee,
-      permanentStakeFeeBase,
-      globalCap,
-      termCap,
-      permCap,
-      bpDenom,
-      burnBP,
-      treasuryBP,
-      deployerBP,
-      topPercent,
-      treasuryBalance,
-      maxParticipantsLimit,
-      topBurnerPercent,
-      treasuryBonusBP
-    ] = await Promise.all([
-      contracts.staking.baseRewardRate(),
-      contracts.staking.numberOfBlocksPerRewardUnit(),
-      contracts.staking.rewardRateIncrementPerNFT(),
-      contracts.staking.welcomeBonusBaseRate(),
-      contracts.staking.welcomeBonusIncrementPerNFT(),
-      contracts.staking.termDurationBlocks(),
-      contracts.staking.unstakeBurnFee(),
-      contracts.staking.permanentStakeFeeBase(),
-      contracts.staking.BP_DENOM(),
-      contracts.staking.BURN_BP(),
-      contracts.staking.TREASURY_BP(),
-      contracts.staking.DEPLOYER_BP(),
-      contracts.staking.topPercent(),
-      contracts.staking.treasuryBalance(),
-      contracts.staking.MAX_PARTICIPANTS_LIMIT(),
-      contracts.staking.TOP_BURNER_PERCENT(),
-      contracts.staking.TREASURY_BONUS_BP()
-    ]);
+    // --- Try fetching safely with optional chaining ---
+const safeCall = async (fn) => {
+  try {
+    const result = await fn();
+    return result;
+  } catch {
+    return undefined;
+  }
+};
+
+const [
+  baseRewardRate,
+  blocksPerUnit,
+  rewardRateIncrementPerNFT,
+  welcomeBonusBaseRate,
+  welcomeBonusIncrementPerNFT,
+  termDurationBlocks,
+  unstakeBurnFee,
+  permanentStakeFeeBase,
+  globalCap,
+  termCap,
+  permCap,
+  bpDenom,
+  burnBP,
+  treasuryBP,
+  deployerBP,
+  topPercent,
+  treasuryBalance,
+  maxParticipantsLimit,
+  topBurnerPercent,
+  treasuryBonusBP
+] = await Promise.all([
+  safeCall(() => contracts.staking.baseRewardRate()),
+  safeCall(() => contracts.staking.numberOfBlocksPerRewardUnit()),
+  safeCall(() => contracts.staking.rewardRateIncrementPerNFT()),
+  safeCall(() => contracts.staking.welcomeBonusBaseRate()),
+  safeCall(() => contracts.staking.welcomeBonusIncrementPerNFT()),
+  safeCall(() => contracts.staking.termDurationBlocks()),
+  safeCall(() => contracts.staking.unstakeBurnFee()),
+  safeCall(() => contracts.staking.permanentStakeFeeBase()),
+  safeCall(() => contracts.staking.GLOBAL_NFT_CAP()),
+  safeCall(() => contracts.staking.TERM_NFT_CAP()),
+  safeCall(() => contracts.staking.PERM_NFT_CAP()),
+  safeCall(() => contracts.staking.BP_DENOM()),
+  safeCall(() => contracts.staking.BURN_BP()),
+  safeCall(() => contracts.staking.TREASURY_BP()),
+  safeCall(() => contracts.staking.DEPLOYER_BP()),
+  safeCall(() => contracts.staking.topPercent()),
+  safeCall(() => contracts.staking.treasuryBalance()),
+  safeCall(() => contracts.staking.MAX_PARTICIPANTS_LIMIT?.()), // might not exist
+  safeCall(() => contracts.staking.TOP_BURNER_PERCENT?.()),
+  safeCall(() => contracts.staking.TREASURY_BONUS_BP?.())
+]);
 
     // Compute daily reward (approx.)
     const blocksPerDay = 7200;
