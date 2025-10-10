@@ -2641,7 +2641,7 @@ async function refreshStakingStats() {
 }
 
 
-	  // ======== View Portfolio (no getAccount) ========
+	  // ======== View Portfolio (using existing wallet logic) ========
 async function viewPortfolio() {
   try {
     showLoading();
@@ -2654,21 +2654,23 @@ async function viewPortfolio() {
       if (!contracts.staking) return alert('Set staking contract.');
     }
 
-    const account = connectedAddress || window.account || selectedAccount;
-    if (!account) return alert('Please connect your wallet first.');
+    if (!userAddr) return alert('Please connect your wallet first.');
 
     const tokenIds = [];
     for (let i = 0; i < 1000; i++) {
       try {
-        const tokenId = await contracts.staking.stakePortfolioByUser(collection, account, i);
+        const tokenId = await contracts.staking.stakePortfolioByUser(collection, userAddr, i);
         tokenIds.push(tokenId.toString());
       } catch {
         break;
       }
     }
 
-    $('portfolioResult').innerText =
-      tokenIds.length > 0 ? tokenIds.join(', ') : 'No NFTs staked.';
+    if (tokenIds.length === 0) {
+      $('portfolioResult').innerText = 'No NFTs staked.';
+    } else {
+      $('portfolioResult').innerText = tokenIds.join(', ');
+    }
 
     $('portfolioResult').innerHTML +=
       `<br><span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
@@ -2681,7 +2683,7 @@ async function viewPortfolio() {
   }
 }
 
-// ======== Check Pending Rewards (no getAccount) ========
+// ======== Check Pending Rewards (using existing wallet logic) ========
 async function checkPendingRewards() {
   try {
     showLoading();
@@ -2696,11 +2698,11 @@ async function checkPendingRewards() {
       if (!contracts.staking) return alert('Set staking contract.');
     }
 
-    const account = connectedAddress || window.account || selectedAccount;
-    if (!account) return alert('Please connect your wallet first.');
+    if (!userAddr) return alert('Please connect your wallet first.');
 
+    // Fetch staking data
     const [currentlyStaked, , , , lastHarvestBlock] =
-      await contracts.staking.stakeLog(collection, account, tokenId);
+      await contracts.staking.stakeLog(collection, userAddr, tokenId);
 
     if (!currentlyStaked) {
       $('pendingRewardsResult').innerText = 'NFT not currently staked.';
