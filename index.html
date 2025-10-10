@@ -244,8 +244,8 @@ Catalyst Whitepaper
 </section>
 	  
 <!-- Quick Status -->
-<section id="quickstatus" class="tab-content hidden">
-  <h2 class="font-semibold mb-3 text-lg text-slate-100">⚡ Quick Status</h2>
+    <section id="quickstatus" class="tab-content hidden">
+  <h2 class="font-semibold mb-3 text-lg text-slate-100">⚡ Full Quick Status</h2>
 
   <!-- Responsive 2-column layout (1 on small screens) -->
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -256,58 +256,102 @@ Catalyst Whitepaper
       <div id="cataBal" class="font-semibold text-green-400">—</div>
     </div>
 
-    <!-- Base Reward Rate -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Base Reward Rate</div>
       <div id="baseRewardRate" class="font-semibold text-yellow-400">—</div>
     </div>
 
-    <!-- Blocks per Reward Unit -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Blocks per Reward Unit</div>
       <div id="blocksPerUnit" class="font-semibold text-blue-400">—</div>
     </div>
 
-    <!-- Claim Fee (bps) -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-      <div class="text-slate-400 text-xs">Claim Fee (bps)</div>
-      <div id="claimFeeBps" class="font-semibold text-red-400">—</div>
+      <div class="text-slate-400 text-xs">Reward Increment / NFT</div>
+      <div id="rewardIncrement" class="font-semibold text-emerald-400">—</div>
     </div>
 
-    <!-- Bonus Rate -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-      <div class="text-slate-400 text-xs">Bonus Rate</div>
-      <div id="bonusRate" class="font-semibold text-green-400">—</div>
+      <div class="text-slate-400 text-xs">Welcome Bonus Base</div>
+      <div id="welcomeBonusBase" class="font-semibold text-green-400">—</div>
     </div>
 
-    <!-- Harvest Cooldown -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-      <div class="text-slate-400 text-xs">Harvest Cooldown (blocks)</div>
-      <div id="harvestCooldownBlocks" class="font-semibold text-purple-400">—</div>
+      <div class="text-slate-400 text-xs">Welcome Bonus Increment</div>
+      <div id="welcomeBonusInc" class="font-semibold text-green-400">—</div>
     </div>
 
-    <!-- Total Rewards Distributed -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-      <div class="text-slate-400 text-xs">Total Rewards Distributed</div>
-      <div id="rewardsDistributed" class="font-semibold text-orange-400">—</div>
+      <div class="text-slate-400 text-xs">Term Duration (blocks)</div>
+      <div id="termDuration" class="font-semibold text-sky-400">—</div>
     </div>
 
-    <!-- Total Staked NFTs -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-      <div class="text-slate-400 text-xs">Total Staked NFTs</div>
-      <div id="globalStaked" class="font-semibold text-indigo-400">—</div>
+      <div class="text-slate-400 text-xs">Unstake Burn Fee</div>
+      <div id="unstakeBurnFee" class="font-semibold text-red-400">—</div>
     </div>
 
-    <!-- Est. Daily Reward -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Permanent Stake Fee</div>
+      <div id="permStakeFee" class="font-semibold text-red-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Global NFT Cap</div>
+      <div id="globalCap" class="font-semibold text-indigo-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Term NFT Cap</div>
+      <div id="termCap" class="font-semibold text-indigo-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Perm NFT Cap</div>
+      <div id="permCap" class="font-semibold text-indigo-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Burn / Treasury / Deployer Split (bps)</div>
+      <div id="burnBP" class="font-semibold text-orange-400">—</div>
+      <div id="treasuryBP" class="font-semibold text-orange-400">—</div>
+      <div id="deployerBP" class="font-semibold text-orange-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Treasury Balance</div>
+      <div id="treasuryBalance" class="font-semibold text-green-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Top Percent (Leaderboard)</div>
+      <div id="topPercent" class="font-semibold text-cyan-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Max Participants</div>
+      <div id="maxParticipants" class="font-semibold text-amber-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Top Burner Percent</div>
+      <div id="topBurnerPercent" class="font-semibold text-amber-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Treasury Bonus BP</div>
+      <div id="treasuryBonusBP" class="font-semibold text-amber-400">—</div>
+    </div>
+
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Est. Daily Reward / NFT</div>
       <div id="estimatedDailyReward" class="font-semibold text-emerald-400">—</div>
     </div>
-
   </div>
 
-  <!-- Last updated timestamp -->
   <div id="quickStatusUpdated" class="text-xs text-slate-500 mt-2">—</div>
+</section>
 
   <hr class="my-3 border-slate-700" />
 <div class="glass rounded-xl border border-slate-700 shadow-lg p-4 space-y-4">
@@ -1597,101 +1641,106 @@ if (window.ethereum) {
   });
 }
 
-	  // ======== Refresh Extended Quick Status ========
+// ======== Refresh Full Quick Status ========
 async function refreshQuickStatus() {
   try {
-    showLoading("Loading quick status...");
+    showLoading("Loading full quick status...");
 
-    // ✅ Make sure staking contract is attached
     if (!contracts.staking) {
       await attachContractsIfSet();
       if (!contracts.staking) return alert("Set staking contract first.");
     }
 
-    // 🧩 Safe data placeholders
-    let baseRewardRate = "—";
-    let blocksPerUnit = "—";
-    let totalStakedAll = "—";
-    let harvestCooldownBlocks = "—";
-    let totalRewardsDistributed = "—";
-    let claimFeeBps = "—";
-    let bonusRate = "—";
+    // --- Reward Config ---
+    const [
+      baseRewardRate,
+      blocksPerUnit,
+      rewardRateIncrementPerNFT,
+      welcomeBonusBaseRate,
+      welcomeBonusIncrementPerNFT,
+      termDurationBlocks,
+      unstakeBurnFee,
+      permanentStakeFeeBase,
+      globalCap,
+      termCap,
+      permCap,
+      bpDenom,
+      burnBP,
+      treasuryBP,
+      deployerBP,
+      topPercent,
+      treasuryBalance,
+      maxParticipantsLimit,
+      topBurnerPercent,
+      treasuryBonusBP
+    ] = await Promise.all([
+      contracts.staking.baseRewardRate(),
+      contracts.staking.numberOfBlocksPerRewardUnit(),
+      contracts.staking.rewardRateIncrementPerNFT(),
+      contracts.staking.welcomeBonusBaseRate(),
+      contracts.staking.welcomeBonusIncrementPerNFT(),
+      contracts.staking.termDurationBlocks(),
+      contracts.staking.unstakeBurnFee(),
+      contracts.staking.permanentStakeFeeBase(),
+      contracts.staking.GLOBAL_NFT_CAP(),
+      contracts.staking.TERM_NFT_CAP(),
+      contracts.staking.PERM_NFT_CAP(),
+      contracts.staking.BP_DENOM(),
+      contracts.staking.BURN_BP(),
+      contracts.staking.TREASURY_BP(),
+      contracts.staking.DEPLOYER_BP(),
+      contracts.staking.topPercent(),
+      contracts.staking.treasuryBalance(),
+      contracts.staking.MAX_PARTICIPANTS_LIMIT(),
+      contracts.staking.TOP_BURNER_PERCENT(),
+      contracts.staking.TREASURY_BONUS_BP()
+    ]);
 
-    // ✅ Try public variables safely
-    try {
-      if (typeof contracts.staking.baseRewardRate === "function")
-        baseRewardRate = (await contracts.staking.baseRewardRate()).toString();
+    // --- Estimated Daily Reward ---
+    const blocksPerDay = 7200;
+    const dailyReward = (
+      Number(baseRewardRate) *
+      (blocksPerDay / Number(blocksPerUnit))
+    ).toFixed(2);
 
-      if (typeof contracts.staking.numberOfBlocksPerRewardUnit === "function")
-        blocksPerUnit = (await contracts.staking.numberOfBlocksPerRewardUnit()).toString();
+    // --- Update UI ---
+    $("baseRewardRate").innerText = baseRewardRate.toString();
+    $("blocksPerUnit").innerText = blocksPerUnit.toString();
+    $("rewardIncrement").innerText = rewardRateIncrementPerNFT.toString();
+    $("welcomeBonusBase").innerText = welcomeBonusBaseRate.toString();
+    $("welcomeBonusInc").innerText = welcomeBonusIncrementPerNFT.toString();
+    $("termDuration").innerText = termDurationBlocks.toString();
+    $("unstakeBurnFee").innerText = formatAmount(unstakeBurnFee, 18) + " CATA";
+    $("permStakeFee").innerText = formatAmount(permanentStakeFeeBase, 18) + " CATA";
 
-      if (typeof contracts.staking.totalStakedAll === "function")
-        totalStakedAll = (await contracts.staking.totalStakedAll()).toString();
+    $("globalCap").innerText = globalCap.toString();
+    $("termCap").innerText = termCap.toString();
+    $("permCap").innerText = permCap.toString();
 
-      if (typeof contracts.staking.harvestCooldownBlocks === "function")
-        harvestCooldownBlocks = (await contracts.staking.harvestCooldownBlocks()).toString();
+    $("bpDenom").innerText = bpDenom.toString();
+    $("burnBP").innerText = burnBP.toString();
+    $("treasuryBP").innerText = treasuryBP.toString();
+    $("deployerBP").innerText = deployerBP.toString();
 
-      if (typeof contracts.staking.totalRewardsDistributed === "function")
-        totalRewardsDistributed = (await contracts.staking.totalRewardsDistributed()).toString();
-    } catch (err) {
-      log("⚠️ Some public variable fetch failed:", err.message);
-    }
+    $("topPercent").innerText = topPercent.toString();
+    $("treasuryBalance").innerText = formatAmount(treasuryBalance, 18) + " CATA";
 
-    // ✅ Try config struct (s_config) if available
-    try {
-      if (typeof contracts.staking.s_config === "function") {
-        const cfg = await contracts.staking.s_config();
-        if (cfg.claimFeeBps) claimFeeBps = cfg.claimFeeBps.toString() + " bps";
-        if (cfg.bonusRate) bonusRate = cfg.bonusRate.toString() + " %";
-      }
-    } catch (err) {
-      log("⚠️ s_config() fetch failed:", err.message);
-    }
+    $("maxParticipants").innerText = maxParticipantsLimit.toString();
+    $("topBurnerPercent").innerText = topBurnerPercent.toString() + " %";
+    $("treasuryBonusBP").innerText = treasuryBonusBP.toString() + " bps";
 
-    // ✅ Try stats struct (s_stats) if totalRewardsDistributed wasn't found
-    if (totalRewardsDistributed === "—") {
-      try {
-        if (typeof contracts.staking.s_stats === "function") {
-          const stats = await contracts.staking.s_stats();
-          if (stats.totalRewardsDistributed)
-            totalRewardsDistributed = stats.totalRewardsDistributed.toString();
-        }
-      } catch (err) {
-        log("⚠️ s_stats() fetch failed:", err.message);
-      }
-    }
-
-    // ✅ Compute estimated daily reward per NFT (approx)
-    const blocksPerDay = 7200; // ~12s/block assumption
-    let dailyReward = "—";
-    if (!isNaN(Number(baseRewardRate)) && !isNaN(Number(blocksPerUnit)) && Number(blocksPerUnit) > 0) {
-      dailyReward = (
-        Number(baseRewardRate) *
-        (blocksPerDay / Number(blocksPerUnit))
-      ).toFixed(2);
-    }
-
-    // ✅ Update UI safely
-    $("baseRewardRate").innerText = baseRewardRate;
-    $("blocksPerUnit").innerText = blocksPerUnit;
-    $("claimFeeBps").innerText = claimFeeBps;
-    $("bonusRate").innerText = bonusRate;
-    $("harvestCooldownBlocks").innerText = harvestCooldownBlocks;
-    $("rewardsDistributed").innerText = totalRewardsDistributed;
-    $("globalStaked").innerText = totalStakedAll;
-    $("estimatedDailyReward").innerText =
-      dailyReward === "—" ? "—" : `${dailyReward} CATA (est.)`;
-
+    $("estimatedDailyReward").innerText = `${dailyReward} CATA (est.)`;
     $("quickStatusUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
-    log("✅ Quick status updated successfully");
+    log("✅ Full Quick Status updated");
+
   } catch (e) {
     log("❌ refreshQuickStatus error:", e);
     alert(e.message || e);
   } finally {
     hideLoading();
   }
-}
+		}
 
 // ---------- CATA functions ----------
 // Burn (any holder)
