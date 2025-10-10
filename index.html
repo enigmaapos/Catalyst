@@ -2503,7 +2503,7 @@ attachStatusChecker("manageCollAddr", "manageStatusInfo");
 attachStatusChecker("bluechipCollectionInput", "bluechipStatusInfo");
 attachStatusChecker("nftCollection", "nftStatusInfo");	  
 
-	  // ======== Fetch and Display Top Collections (UI only, no Solidity change) ========
+	// ======== Fetch and Display Top Collections (UI only, no Solidity change) ========
 async function fetchTopCollectionsUI() {
   try {
     showLoading("Loading top collections...");
@@ -2513,17 +2513,35 @@ async function fetchTopCollectionsUI() {
       if (!contracts.staking) return log("⚠️ Staking contract not set.");
     }
 
-    // Try to read number of registered collections
-    const total = await contracts.staking.registeredCollectionsLength?.() 
-      || (await contracts.staking.registeredCollections()).length;
+    // Try to detect total collections
+    let total = 0;
+    try {
+      // If your Solidity has this view helper:
+      if (typeof contracts.staking.registeredCollectionsLength === "function") {
+        total = await contracts.staking.registeredCollectionsLength();
+      } else {
+        // fallback: attempt to iterate until failure (safe limit)
+        for (let i = 0; i < 1000; i++) {
+          try {
+            await contracts.staking.registeredCollections(i);
+            total++;
+          } catch {
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      log("⚠️ Could not determine total collections:", err.message);
+    }
 
     if (!total || total === 0) {
-      $("topCollectionsList").innerHTML = "<p class='text-slate-400 text-xs'>No collections registered yet.</p>";
+      $("topCollectionsList").innerHTML =
+        "<p class='text-slate-400 text-xs'>No collections registered yet.</p>";
       hideLoading();
       return;
     }
 
-    const limit = Math.min(Number(total), 50); // limit fetch for safety
+    const limit = Math.min(Number(total), 50); // safety limit
     const collections = [];
 
     for (let i = 0; i < limit; i++) {
@@ -2531,6 +2549,7 @@ async function fetchTopCollectionsUI() {
         const addr = await contracts.staking.registeredCollections(i);
         const statusEnum = await contracts.staking.getCollectionStatus(addr);
         const meta = await contracts.staking.collectionMeta(addr);
+
         collections.push({
           address: addr,
           tier: Number(meta.tier),
@@ -2550,11 +2569,29 @@ async function fetchTopCollectionsUI() {
     const html = `
       <div class="mt-3">
         <h4 class="text-sm font-semibold text-green-400 mb-1">✅ Top 10 VERIFIED</h4>
-        ${verified.length ? verified.map(c => `<div class="text-xs text-slate-300 break-all">${c.address}</div>`).join('') : '<p class="text-xs text-slate-500">None yet.</p>'}
+        ${
+          verified.length
+            ? verified
+                .map(
+                  c =>
+                    `<div class="text-xs text-slate-300 break-all">${c.address}</div>`
+                )
+                .join("")
+            : '<p class="text-xs text-slate-500">None yet.</p>'
+        }
       </div>
       <div class="mt-3">
         <h4 class="text-sm font-semibold text-amber-400 mb-1">🕵️ Top 10 UNVERIFIED</h4>
-        ${unverified.length ? unverified.map(c => `<div class="text-xs text-slate-300 break-all">${c.address}</div>`).join('') : '<p class="text-xs text-slate-500">None yet.</p>'}
+        ${
+          unverified.length
+            ? unverified
+                .map(
+                  c =>
+                    `<div class="text-xs text-slate-300 break-all">${c.address}</div>`
+                )
+                .join("")
+            : '<p class="text-xs text-slate-500">None yet.</p>'
+        }
       </div>
     `;
 
@@ -2566,18 +2603,41 @@ async function fetchTopCollectionsUI() {
   } finally {
     hideLoading();
   }
-		  }
+}
+	  
 
 function renderTopCollections(data, listId) {
   const el = $(listId);
-  if (!data.length) {
-    el.innerHTML = "<li>No collections found.</li>";
+
+  if (!data || !data.length) {
+    el.innerHTML = "<li class='text-xs text-slate-400'>No collections found.</li>";
     return;
   }
+
   el.innerHTML = data
-    .map((d, i) => 
-      `<li>#${i + 1}: <span class="text-sky-400">${d.addr}</span> — 🔥 ${d.burned.toLocaleString()} CATA burned</li>`
-    )
+    .map((d, i) => {
+      const addr = d.address || d.addr || "—";
+      const burned = d.burned !== undefined
+        ? Number(d.burned).toLocaleString(undefined, { maximumFractionDigits: 2 })
+        : "0";
+      const tierLabel =
+        d.tier === 2
+          ? "💎 BLUECHIP"
+          : d.tier === 1
+          ? "✅ VERIFIED"
+          : "🕵️ UNVERIFIED";
+
+      return `
+        <li class="flex flex-col text-xs border-b border-slate-700/40 py-1">
+          <div>
+            <span class="text-slate-400">#${i + 1}:</span>
+            <span class="text-sky-400 break-all font-mono">${addr}</span>
+          </div>
+          <div class="text-slate-500 ml-5">
+            ${tierLabel} — 🔥 ${burned} CATA burned
+          </div>
+        </li>`;
+    })
     .join("");
 }
 	  
