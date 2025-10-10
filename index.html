@@ -483,38 +483,57 @@ Catalyst Whitepaper
   </div>
 	</div>
 
-  <div class="pt-4 border-t border-slate-700">
-    <div class="text-xs text-slate-400 mb-1">Transparency & Key Roles</div>
-    <div class="flex flex-col gap-1">
-      
-      <div class="p-2 rounded bg-black/20 text-sm">
-        CATA Admin/Governance Dao: <span id="cataAdminAddress" class="font-mono text-purple-400 break-all">…</span>
-      </div>
-      
-      <div class="p-2 rounded bg-black/20 text-sm">
-        CATA Council: <span id="cataCouncilAddress" class="font-mono text-cyan-400 break-all">…</span>
-      </div>
+  <!-- 🌐 Transparency & Key Roles -->
+<div class="pt-4 border-t border-slate-700">
+  <div class="text-xs text-slate-400 mb-2 uppercase tracking-wide">Transparency & Key Roles</div>
 
-		<div class="p-2 rounded bg-black/20 text-sm">  
-  CATA Minters:  
-  <div id="cataMinters" class="font-mono text-pink-400 break-all whitespace-pre-wrap">…</div>  
-</div>
+  <div class="flex flex-col gap-2 text-sm">
 
-      <div class="p-2 rounded bg-black/20 text-sm">
-        Remaining Mintable: <span id="cataRemainingMintable" class="font-mono text-green-400">…</span>
-      </div>
-      <div class="p-2 rounded bg-black/20 text-sm">
-        Total Supply: <span id="cataTotalSupply" class="font-mono text-blue-400">…</span>
-      </div>
-      <div class="p-2 rounded bg-black/20 text-sm">
-        Max Supply: <span id="cataMaxSupply" class="font-mono text-yellow-400">…</span>
-      </div>
+    <!-- Admin / DAO -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">CATA Admin / Governance DAO</div>
+      <div id="cataAdminAddress" class="font-mono text-purple-400 break-all">—</div>
     </div>
-    <button id="refreshTransparencyBtn" class="mt-2 w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded">
-      🔍 Refresh Transparency
-    </button>
+
+    <!-- Council -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">CATA Council</div>
+      <div id="cataCouncilAddress" class="font-mono text-cyan-400 break-all">—</div>
+    </div>
+
+    <!-- Minters -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">CATA Minters</div>
+      <div id="cataMinters" class="font-mono text-pink-400 break-all whitespace-pre-wrap">—</div>
+    </div>
+
+    <!-- Remaining Mintable -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">Remaining Mintable</div>
+      <div id="cataRemainingMintable" class="font-mono text-green-400">—</div>
+    </div>
+
+    <!-- Total Supply -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">Total Supply</div>
+      <div id="cataTotalSupply" class="font-mono text-blue-400">—</div>
+    </div>
+
+    <!-- Max Supply -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">Max Supply</div>
+      <div id="cataMaxSupply" class="font-mono text-yellow-400">—</div>
+    </div>
+
   </div>
-	</div>
+
+  <!-- Refresh Button -->
+  <button
+    id="refreshTransparencyBtn"
+    class="mt-3 w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition">
+    🔍 Refresh Transparency
+  </button>
+</div>
 </section>
 
     <!-- Collection Registration -->
