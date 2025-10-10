@@ -2115,9 +2115,23 @@ async function fetchTransparency() {
     // 5. --- UI Update ---
     $('cataAdminAddress').innerText = adminAddress;
     $('cataCouncilAddress').innerText = councilAddress;
-    $('cataTotalSupply').innerText = ethers.utils.formatUnits(totalSupply, 18) + " CATA";
-    $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
-    $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
+    $('cataTotalSupply').innerText =
+  Number(ethers.utils.formatUnits(totalSupply, 18)).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }) + " CATA";
+
+$('cataMaxSupply').innerText =
+  Number(ethers.utils.formatUnits(maxSupply, 18)).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }) + " CATA";
+
+$('cataRemainingMintable').innerText =
+  Number(ethers.utils.formatUnits(remainingMintable, 18)).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }) + " CATA";
     $('cataMinters').innerText = minterList.length > 0 
       ? minterList.join("\n")
       : "None";
