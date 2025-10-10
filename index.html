@@ -2641,98 +2641,92 @@ async function refreshStakingStats() {
 }
 
 
-	    // ======== View Portfolio (no contract edit required) ========
-  async function viewPortfolio() {
-    try {
-      showLoading();
-      const collection = $('portfolioCollection').value.trim() || $('nftCollection')?.value.trim();
-      if (!collection) return alert('Enter a collection address.');
+	  // ======== View Portfolio (no getAccount) ========
+async function viewPortfolio() {
+  try {
+    showLoading();
 
-      if (!contracts.staking) {
-        await attachContractsIfSet();
-        if (!contracts.staking) return alert('Set staking contract.');
-      }
+    const collection = $('nftCollection').value.trim();
+    if (!collection) return alert('Enter a collection address.');
 
-      const account = await getAccount();
-      const tokenIds = [];
-
-      // Read sequentially until it fails
-      for (let i = 0; i < 1000; i++) {
-        try {
-          const tokenId = await contracts.staking.stakePortfolioByUser(collection, account, i);
-          tokenIds.push(tokenId.toString());
-        } catch {
-          break;
-        }
-      }
-
-      if (tokenIds.length === 0) {
-        $('portfolioResult').innerText = 'No NFTs staked.';
-      } else {
-        $('portfolioResult').innerText = tokenIds.join(', ');
-      }
-
-      $('portfolioResult').innerHTML +=
-        `<br><span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
-      log('✅ Portfolio loaded', tokenIds);
-    } catch (e) {
-      log('viewPortfolio error', e);
-      alert(e.message || e);
-    } finally {
-      hideLoading();
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Set staking contract.');
     }
-  }
 
-  // ======== Check Pending Rewards (client-side estimate) ========
-  async function checkPendingRewards() {
-    try {
-      showLoading();
+    const account = connectedAddress || window.account || selectedAccount;
+    if (!account) return alert('Please connect your wallet first.');
 
-      const collection = $('nftCollection').value.trim();
-      const tokenId = parseInt($('nftTokenId').value.trim(), 10);
-      if (!collection) return alert('Enter a collection address.');
-      if (isNaN(tokenId)) return alert('Enter a valid token ID.');
-
-      if (!contracts.staking) {
-        await attachContractsIfSet();
-        if (!contracts.staking) return alert('Set staking contract.');
+    const tokenIds = [];
+    for (let i = 0; i < 1000; i++) {
+      try {
+        const tokenId = await contracts.staking.stakePortfolioByUser(collection, account, i);
+        tokenIds.push(tokenId.toString());
+      } catch {
+        break;
       }
-
-      const account = await getAccount();
-
-      // Fetch staking data for the NFT
-      const [currentlyStaked, isPermanent, stakeBlock, unstakeDeadlineBlock, lastHarvestBlock] =
-        await contracts.staking.stakeLog(collection, account, tokenId);
-
-      if (!currentlyStaked) {
-        $('pendingRewardsResult').innerText = 'NFT not currently staked.';
-        return;
-      }
-
-      // Get rate parameters
-      const baseRewardRate = await contracts.staking.baseRewardRate();
-      const numberOfBlocksPerRewardUnit = await contracts.staking.numberOfBlocksPerRewardUnit();
-
-      // Compute block difference
-      const currentBlock = await ethers.provider.getBlockNumber();
-      const blocksElapsed = currentBlock - lastHarvestBlock.toNumber();
-
-      // Estimate rewards
-      const reward = (blocksElapsed * baseRewardRate.toNumber()) / numberOfBlocksPerRewardUnit.toNumber();
-
-      $('pendingRewardsResult').innerHTML =
-        `${reward.toFixed(4)} <span class="text-slate-500">CATA (estimated)</span><br>
-         <span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
-
-      log('✅ Estimated pending rewards:', reward);
-    } catch (e) {
-      log('checkPendingRewards error', e);
-      alert(e.message || e);
-    } finally {
-      hideLoading();
     }
-  }
 
+    $('portfolioResult').innerText =
+      tokenIds.length > 0 ? tokenIds.join(', ') : 'No NFTs staked.';
+
+    $('portfolioResult').innerHTML +=
+      `<br><span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
+    log('✅ Portfolio loaded', tokenIds);
+  } catch (e) {
+    log('viewPortfolio error', e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ======== Check Pending Rewards (no getAccount) ========
+async function checkPendingRewards() {
+  try {
+    showLoading();
+
+    const collection = $('nftCollection').value.trim();
+    const tokenId = parseInt($('nftTokenId').value.trim(), 10);
+    if (!collection) return alert('Enter a collection address.');
+    if (isNaN(tokenId)) return alert('Enter a valid token ID.');
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Set staking contract.');
+    }
+
+    const account = connectedAddress || window.account || selectedAccount;
+    if (!account) return alert('Please connect your wallet first.');
+
+    const [currentlyStaked, , , , lastHarvestBlock] =
+      await contracts.staking.stakeLog(collection, account, tokenId);
+
+    if (!currentlyStaked) {
+      $('pendingRewardsResult').innerText = 'NFT not currently staked.';
+      return;
+    }
+
+    const baseRewardRate = await contracts.staking.baseRewardRate();
+    const blocksPerUnit = await contracts.staking.numberOfBlocksPerRewardUnit();
+    const currentBlock = await ethers.provider.getBlockNumber();
+
+    const blocksElapsed = currentBlock - lastHarvestBlock.toNumber();
+    const reward = (blocksElapsed * baseRewardRate.toNumber()) / blocksPerUnit.toNumber();
+
+    $('pendingRewardsResult').innerHTML =
+      `${reward.toFixed(4)} <span class="text-slate-500">CATA (estimated)</span><br>
+       <span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
+
+    log('✅ Estimated pending rewards:', reward);
+  } catch (e) {
+    log('checkPendingRewards error', e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+	  
 
     // ======== Fetch Staking Transparency ========
 async function fetchStakingTransparency() {
