@@ -2502,8 +2502,9 @@ attachStatusChecker("manageCollAddr", "manageStatusInfo");
 // Attach status checkers to new fields
 attachStatusChecker("bluechipCollectionInput", "bluechipStatusInfo");
 attachStatusChecker("nftCollection", "nftStatusInfo");	  
+	  
 
-	// ======== Fetch and Display Top Collections (UI only, no Solidity change) ========
+// ======== Fetch and Display Top Collections (UI only, no Solidity change) ========
 async function fetchTopCollectionsUI() {
   try {
     showLoading("Loading top collections...");
@@ -2513,14 +2514,12 @@ async function fetchTopCollectionsUI() {
       if (!contracts.staking) return log("⚠️ Staking contract not set.");
     }
 
-    // Try to detect total collections
+    // Detect total number of collections
     let total = 0;
     try {
-      // If your Solidity has this view helper:
       if (typeof contracts.staking.registeredCollectionsLength === "function") {
         total = await contracts.staking.registeredCollectionsLength();
       } else {
-        // fallback: attempt to iterate until failure (safe limit)
         for (let i = 0; i < 1000; i++) {
           try {
             await contracts.staking.registeredCollections(i);
@@ -2541,57 +2540,69 @@ async function fetchTopCollectionsUI() {
       return;
     }
 
-    const limit = Math.min(Number(total), 50); // safety limit
+    const limit = Math.min(Number(total), 50);
     const collections = [];
 
+    // 🔁 Fetch each collection
     for (let i = 0; i < limit; i++) {
       try {
         const addr = await contracts.staking.registeredCollections(i);
         const statusEnum = await contracts.staking.getCollectionStatus(addr);
         const meta = await contracts.staking.collectionMeta(addr);
+        const burned = await contracts.staking.burnedCatalystByCollection(addr); // ✅ added line
 
+        // ✅ Push full data
         collections.push({
           address: addr,
           tier: Number(meta.tier),
           status: Number(statusEnum),
-          registeredAt: Number(meta.registeredAtBlock)
+          registeredAt: Number(meta.registeredAtBlock),
+          burned: Number(ethers.utils.formatEther(burned))
         });
       } catch (err) {
         break;
       }
     }
 
+    // 🔢 Sort by burned amount (descending)
+    collections.sort((a, b) => b.burned - a.burned);
+
     // Split by tier
     const verified = collections.filter(c => c.tier === 1).slice(0, 10);
     const unverified = collections.filter(c => c.tier === 0).slice(0, 10);
 
-    // Build UI list
+    // 🧩 Build UI list
     const html = `
       <div class="mt-3">
         <h4 class="text-sm font-semibold text-green-400 mb-1">✅ Top 10 VERIFIED</h4>
-        ${
-          verified.length
-            ? verified
-                .map(
-                  c =>
-                    `<div class="text-xs text-slate-300 break-all">${c.address}</div>`
-                )
-                .join("")
-            : '<p class="text-xs text-slate-500">None yet.</p>'
-        }
+        <ul class="text-xs space-y-1">
+          ${
+            verified.length
+              ? verified
+                  .map(
+                    (c, i) =>
+                      `<li>#${i + 1}: <span class="text-sky-400 break-all">${c.address}</span> — 🔥 ${c.burned.toLocaleString(undefined, {maximumFractionDigits: 2})} CATA burned</li>`
+                  )
+                  .join("")
+              : "<li class='text-slate-500'>None yet.</li>"
+          }
+        </ul>
       </div>
-      <div class="mt-3">
+
+      <div class="mt-4">
         <h4 class="text-sm font-semibold text-amber-400 mb-1">🕵️ Top 10 UNVERIFIED</h4>
-        ${
-          unverified.length
-            ? unverified
-                .map(
-                  c =>
-                    `<div class="text-xs text-slate-300 break-all">${c.address}</div>`
-                )
-                .join("")
-            : '<p class="text-xs text-slate-500">None yet.</p>'
-        }
+        <ul class="text-xs space-y-1">
+          ${
+            unverified.length
+              ? unverified
+                  .map(
+                    (c, i) =>
+                      `<li>#${i + 1}: <span class="text-sky-400 break-all">${c.address}</span> — 🔥 ${c.burned.toLocaleString(undefined, {maximumFractionDigits: 2})} CATA burned</li>`
+                  )
+                  .join("")
+              : "<li class='text-slate-500'>None yet.</li>"
+          }
+        </ul>
       </div>
     `;
 
@@ -2603,7 +2614,8 @@ async function fetchTopCollectionsUI() {
   } finally {
     hideLoading();
   }
-}
+			}
+
 	  
 
 function renderTopCollections(data, listId) {
