@@ -1778,27 +1778,28 @@ const [
     };
 
     // --- Update UI safely ---
-    setText("baseRewardRate", baseRewardRate.toString());
-    setText("blocksPerUnit", blocksPerUnit.toString());
-    setText("rewardIncrement", rewardRateIncrementPerNFT.toString());
-    setText("welcomeBonusBase", welcomeBonusBaseRate.toString());
-    setText("welcomeBonusInc", welcomeBonusIncrementPerNFT.toString());
-    setText("termDuration", termDurationBlocks.toString());
-    setText("unstakeBurnFee", formatAmount(unstakeBurnFee, 18) + " CATA");
-    setText("permStakeFee", formatAmount(permanentStakeFeeBase, 18) + " CATA");
-    setText("globalCap", globalCap.toString());
-    setText("termCap", termCap.toString());
-    setText("permCap", permCap.toString());
-    setText("burnBP", burnBP.toString());
-    setText("treasuryBP", treasuryBP.toString());
-    setText("deployerBP", deployerBP.toString());
-    setText("treasuryBalance", formatAmount(treasuryBalance, 18) + " CATA");
-    setText("topPercent", topPercent.toString());
-    setText("maxParticipants", maxParticipantsLimit.toString());
-    setText("topBurnerPercent", topBurnerPercent.toString() + " %");
-    setText("treasuryBonusBP", treasuryBonusBP.toString() + " bps");
-    setText("estimatedDailyReward", `${dailyReward} CATA (est.)`);
-    setText("quickStatusUpdated", `Updated: ${new Date().toLocaleTimeString()}`);
+    // --- Update UI safely ---
+setText("baseRewardRate", formatAmount(baseRewardRate, 0));
+setText("blocksPerUnit", formatAmount(blocksPerUnit, 0));
+setText("rewardIncrement", formatAmount(rewardRateIncrementPerNFT, 0));
+setText("welcomeBonusBase", formatAmount(welcomeBonusBaseRate, 0));
+setText("welcomeBonusInc", formatAmount(welcomeBonusIncrementPerNFT, 0));
+setText("termDuration", formatAmount(termDurationBlocks, 0, "block"));
+setText("unstakeBurnFee", formatAmount(unstakeBurnFee, 18, "fee"));
+setText("permStakeFee", formatAmount(permanentStakeFeeBase, 18, "fee"));
+setText("globalCap", formatAmount(globalCap, 0, "nft"));
+setText("termCap", formatAmount(termCap, 0, "nft"));
+setText("permCap", formatAmount(permCap, 0, "nft"));
+setText("burnBP", formatAmount(burnBP, 0, "bps"));
+setText("treasuryBP", formatAmount(treasuryBP, 0, "bps"));
+setText("deployerBP", formatAmount(deployerBP, 0, "bps"));
+setText("treasuryBalance", formatAmount(treasuryBalance, 18, "treasury"));
+setText("topPercent", formatAmount(topPercent, 0, "percent"));
+setText("maxParticipants", formatAmount(maxParticipantsLimit, 0));
+setText("topBurnerPercent", formatAmount(topBurnerPercent, 0, "percent"));
+setText("treasuryBonusBP", formatAmount(treasuryBonusBP, 0, "bps"));
+setText("estimatedDailyReward", formatAmount(dailyReward, 18, "reward"));
+setText("quickStatusUpdated", `Updated: ${new Date().toLocaleTimeString()}`);
 
     log("✅ Full Quick Status updated");
 
