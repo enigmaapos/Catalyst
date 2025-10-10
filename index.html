@@ -334,21 +334,34 @@ Catalyst Whitepaper
       <div id="treasuryBalance" class="font-semibold text-green-400">—</div>
     </div>
 
-	  <!-- Staking Stats -->
-<div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-  <div class="text-slate-400 text-xs">Total NFTs Staked (All)</div>
-  <div id="stakedAll" class="font-semibold text-emerald-400">—</div>
-</div>
+    <!-- Staking Stats -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Total NFTs Staked (All)</div>
+      <div id="stakedAll" class="font-semibold text-emerald-400">—</div>
+    </div>
 
-<div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-  <div class="text-slate-400 text-xs">Term Staked NFTs</div>
-  <div id="stakedTerm" class="font-semibold text-blue-400">—</div>
-</div>
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Term Staked NFTs</div>
+      <div id="stakedTerm" class="font-semibold text-blue-400">—</div>
+    </div>
 
-<div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-  <div class="text-slate-400 text-xs">Permanent Staked NFTs</div>
-  <div id="stakedPerm" class="font-semibold text-purple-400">—</div>
-</div>
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Permanent Staked NFTs</div>
+      <div id="stakedPerm" class="font-semibold text-purple-400">—</div>
+    </div>
+
+    <!-- 🔋 Staking Utilization -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">Staking Utilization</div>
+      <div class="w-full bg-slate-700/60 rounded-full h-2 overflow-hidden">
+        <div
+          id="stakingUsageBar"
+          class="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-[1200ms] ease-in-out"
+          style="width: 0%"
+        ></div>
+      </div>
+      <div id="stakingUsage" class="text-xs text-slate-300 mt-1">—</div>
+    </div>
 
     <!-- Top Percent -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
@@ -382,7 +395,6 @@ Catalyst Whitepaper
   </div>
 
   <div id="quickStatusUpdated" class="text-xs text-slate-500 mt-2">—</div>
-
 
 	<!-- 🌐 Transparency & Key Roles -->
 <div class="pt-4 border-t border-slate-700">
@@ -1808,8 +1820,6 @@ if (window.ethereum) {
   }
 		  }
 
-
-	  // ======== Refresh Full Quick Status (Safe version) ========
 async function refreshQuickStatus() {
   try {
     showLoading("Loading full quick status...");
@@ -1819,112 +1829,137 @@ async function refreshQuickStatus() {
       if (!contracts.staking) return alert("Set staking contract first.");
     }
 
-    // --- Try fetching safely with optional chaining ---
-const safeCall = async (fn) => {
-  try {
-    const result = await fn();
-    return result;
-  } catch {
-    return undefined;
-  }
-};
+    const safeCall = async (fn) => {
+      try {
+        return await fn();
+      } catch {
+        return undefined;
+      }
+    };
 
-const [
-  baseRewardRate,
-  blocksPerUnit,
-  rewardRateIncrementPerNFT,
-  welcomeBonusBaseRate,
-  welcomeBonusIncrementPerNFT,
-  termDurationBlocks,
-  unstakeBurnFee,
-  permanentStakeFeeBase,
-  globalCap,
-  termCap,
-  permCap,
-  bpDenom,
-  burnBP,
-  treasuryBP,
-  deployerBP,
-  topPercent,
-  treasuryBalance,
-  maxParticipantsLimit,
-  topBurnerPercent,
-  treasuryBonusBP
-] = await Promise.all([
-  safeCall(() => contracts.staking.baseRewardRate()),
-  safeCall(() => contracts.staking.numberOfBlocksPerRewardUnit()),
-  safeCall(() => contracts.staking.rewardRateIncrementPerNFT()),
-  safeCall(() => contracts.staking.welcomeBonusBaseRate()),
-  safeCall(() => contracts.staking.welcomeBonusIncrementPerNFT()),
-  safeCall(() => contracts.staking.termDurationBlocks()),
-  safeCall(() => contracts.staking.unstakeBurnFee()),
-  safeCall(() => contracts.staking.permanentStakeFeeBase()),
-  safeCall(() => contracts.staking.GLOBAL_NFT_CAP()),
-  safeCall(() => contracts.staking.TERM_NFT_CAP()),
-  safeCall(() => contracts.staking.PERM_NFT_CAP()),
-  safeCall(() => contracts.staking.BP_DENOM()),
-  safeCall(() => contracts.staking.BURN_BP()),
-  safeCall(() => contracts.staking.TREASURY_BP()),
-  safeCall(() => contracts.staking.DEPLOYER_BP()),
-  safeCall(() => contracts.staking.topPercent()),
-  safeCall(() => contracts.staking.treasuryBalance()),
-	 safeCall(() => contracts.staking.totalStakedAll?.()),
-  safeCall(() => contracts.staking.totalStakedTerm?.()),
-  safeCall(() => contracts.staking.totalStakedPerm?.()),
-  safeCall(() => contracts.staking.MAX_PARTICIPANTS_LIMIT?.()), // might not exist
-  safeCall(() => contracts.staking.TOP_BURNER_PERCENT?.()),
-  safeCall(() => contracts.staking.TREASURY_BONUS_BP?.())
-]);
+    const [
+      baseRewardRate,
+      blocksPerUnit,
+      rewardRateIncrementPerNFT,
+      welcomeBonusBaseRate,
+      welcomeBonusIncrementPerNFT,
+      termDurationBlocks,
+      unstakeBurnFee,
+      permanentStakeFeeBase,
+      globalCap,
+      termCap,
+      permCap,
+      burnBP,
+      treasuryBP,
+      deployerBP,
+      topPercent,
+      treasuryBalance,
+      totalStakedAll,
+      totalStakedTerm,
+      totalStakedPerm,
+      maxParticipantsLimit,
+      topBurnerPercent,
+      treasuryBonusBP
+    ] = await Promise.all([
+      safeCall(() => contracts.staking.baseRewardRate()),
+      safeCall(() => contracts.staking.numberOfBlocksPerRewardUnit()),
+      safeCall(() => contracts.staking.rewardRateIncrementPerNFT()),
+      safeCall(() => contracts.staking.welcomeBonusBaseRate()),
+      safeCall(() => contracts.staking.welcomeBonusIncrementPerNFT()),
+      safeCall(() => contracts.staking.termDurationBlocks()),
+      safeCall(() => contracts.staking.unstakeBurnFee()),
+      safeCall(() => contracts.staking.permanentStakeFeeBase()),
+      safeCall(() => contracts.staking.GLOBAL_NFT_CAP()),
+      safeCall(() => contracts.staking.TERM_NFT_CAP()),
+      safeCall(() => contracts.staking.PERM_NFT_CAP()),
+      safeCall(() => contracts.staking.BURN_BP()),
+      safeCall(() => contracts.staking.TREASURY_BP()),
+      safeCall(() => contracts.staking.DEPLOYER_BP()),
+      safeCall(() => contracts.staking.topPercent()),
+      safeCall(() => contracts.staking.treasuryBalance()),
+      safeCall(() => contracts.staking.totalStakedAll?.()),
+      safeCall(() => contracts.staking.totalStakedTerm?.()),
+      safeCall(() => contracts.staking.totalStakedPerm?.()),
+      safeCall(() => contracts.staking.MAX_PARTICIPANTS_LIMIT?.()),
+      safeCall(() => contracts.staking.TOP_BURNER_PERCENT?.()),
+      safeCall(() => contracts.staking.TREASURY_BONUS_BP?.())
+    ]);
 
-    // Compute daily reward (approx.)
     const blocksPerDay = 7200;
     const dailyReward = (
       Number(baseRewardRate) * (blocksPerDay / Number(blocksPerUnit))
     ).toFixed(2);
 
-    // ✅ Safe setter function
     const setText = (id, value) => {
       const el = document.getElementById(id);
       if (el) el.innerText = value;
     };
 
-    // --- Update UI safely ---
-    // --- Update UI safely ---
-setText("baseRewardRate", formatAmount(baseRewardRate, 0));
-setText("blocksPerUnit", formatAmount(blocksPerUnit, 0));
-setText("rewardIncrement", formatAmount(rewardRateIncrementPerNFT, 0));
-setText("welcomeBonusBase", formatAmount(welcomeBonusBaseRate, 0));
-setText("welcomeBonusInc", formatAmount(welcomeBonusIncrementPerNFT, 0));
-setText("termDuration", formatAmount(termDurationBlocks, 0, "block"));
-setText("unstakeBurnFee", formatAmount(unstakeBurnFee, 18, "fee"));
-setText("permStakeFee", formatAmount(permanentStakeFeeBase, 18, "fee"));
-setText("globalCap", formatAmount(globalCap, 0, "nft"));
-setText("termCap", formatAmount(termCap, 0, "nft"));
-setText("permCap", formatAmount(permCap, 0, "nft"));
-setText("burnBP", formatAmount(burnBP, 0, "bps"));
-setText("treasuryBP", formatAmount(treasuryBP, 0, "bps"));
-setText("deployerBP", formatAmount(deployerBP, 0, "bps"));
-setText("treasuryBalance", formatAmount(treasuryBalance, 18, "treasury"));
-setText("topPercent", formatAmount(topPercent, 0, "percent"));
-setText("maxParticipants", formatAmount(maxParticipantsLimit, 0));
-setText("topBurnerPercent", formatAmount(topBurnerPercent, 0, "percent"));
-setText("treasuryBonusBP", formatAmount(treasuryBonusBP, 0, "bps"));
-	  setText("stakedAll", formatAmount(totalStakedAll, 0));
-setText("stakedTerm", formatAmount(totalStakedTerm, 0));
-setText("stakedPerm", formatAmount(totalStakedPerm, 0));
-setText("estimatedDailyReward", formatAmount(dailyReward, 18, "reward"));
-setText("quickStatusUpdated", `Updated: ${new Date().toLocaleTimeString()}`);
+    setText("baseRewardRate", formatAmount(baseRewardRate, 0));
+    setText("blocksPerUnit", formatAmount(blocksPerUnit, 0));
+    setText("rewardIncrement", formatAmount(rewardRateIncrementPerNFT, 0));
+    setText("welcomeBonusBase", formatAmount(welcomeBonusBaseRate, 0));
+    setText("welcomeBonusInc", formatAmount(welcomeBonusIncrementPerNFT, 0));
+    setText("termDuration", formatAmount(termDurationBlocks, 0, "block"));
+    setText("unstakeBurnFee", formatAmount(unstakeBurnFee, 18, "fee"));
+    setText("permStakeFee", formatAmount(permanentStakeFeeBase, 18, "fee"));
+    setText("globalCap", formatAmount(globalCap, 0, "nft"));
+    setText("termCap", formatAmount(termCap, 0, "nft"));
+    setText("permCap", formatAmount(permCap, 0, "nft"));
+    setText("burnBP", formatAmount(burnBP, 0, "bps"));
+    setText("treasuryBP", formatAmount(treasuryBP, 0, "bps"));
+    setText("deployerBP", formatAmount(deployerBP, 0, "bps"));
+    setText("treasuryBalance", formatAmount(treasuryBalance, 18, "treasury"));
+    setText("topPercent", formatAmount(topPercent, 0, "percent"));
+    setText("maxParticipants", formatAmount(maxParticipantsLimit, 0));
+    setText("topBurnerPercent", formatAmount(topBurnerPercent, 0, "percent"));
+    setText("treasuryBonusBP", formatAmount(treasuryBonusBP, 0, "bps"));
+    setText("stakedAll", formatAmount(totalStakedAll, 0));
+    setText("stakedTerm", formatAmount(totalStakedTerm, 0));
+    setText("stakedPerm", formatAmount(totalStakedPerm, 0));
+    setText("estimatedDailyReward", formatAmount(dailyReward, 18, "reward"));
 
+    // 🔋 Compute staking utilization
+    let stakingUsagePercent = 0;
+    if (globalCap && totalStakedAll) {
+      const staked = Number(totalStakedAll);
+      const cap = Number(globalCap);
+      stakingUsagePercent = cap > 0 ? ((staked / cap) * 100).toFixed(2) : 0;
+    }
+
+    // 🎨 Animate bar
+    const usageBar = document.getElementById("stakingUsageBar");
+    const usageText = document.getElementById("stakingUsage");
+
+    if (usageBar) {
+      if (stakingUsagePercent < 50)
+        usageBar.style.background =
+          "linear-gradient(to right, #10B981, #34D399)";
+      else if (stakingUsagePercent < 80)
+        usageBar.style.background =
+          "linear-gradient(to right, #FBBF24, #FACC15)";
+      else
+        usageBar.style.background =
+          "linear-gradient(to right, #EF4444, #F87171)";
+
+      requestAnimationFrame(() => {
+        usageBar.style.width = `${stakingUsagePercent}%`;
+      });
+    }
+
+    if (usageText)
+      usageText.innerText = `${stakingUsagePercent}% of Global Cap`;
+
+    setText("quickStatusUpdated", `Updated: ${new Date().toLocaleTimeString()}`);
     log("✅ Full Quick Status updated");
-
   } catch (e) {
     log("❌ refreshQuickStatus error:", e);
     alert(e.message || e);
   } finally {
     hideLoading();
   }
-}
-    
+	  }
+
 
 // ---------- CATA functions ----------
 // Burn (any holder)
