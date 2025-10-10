@@ -334,6 +334,22 @@ Catalyst Whitepaper
       <div id="treasuryBalance" class="font-semibold text-green-400">—</div>
     </div>
 
+	  <!-- Staking Stats -->
+<div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+  <div class="text-slate-400 text-xs">Total NFTs Staked (All)</div>
+  <div id="stakedAll" class="font-semibold text-emerald-400">—</div>
+</div>
+
+<div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+  <div class="text-slate-400 text-xs">Term Staked NFTs</div>
+  <div id="stakedTerm" class="font-semibold text-blue-400">—</div>
+</div>
+
+<div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+  <div class="text-slate-400 text-xs">Permanent Staked NFTs</div>
+  <div id="stakedPerm" class="font-semibold text-purple-400">—</div>
+</div>
+
     <!-- Top Percent -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Top Percent (Leaderboard)</div>
@@ -1852,6 +1868,9 @@ const [
   safeCall(() => contracts.staking.DEPLOYER_BP()),
   safeCall(() => contracts.staking.topPercent()),
   safeCall(() => contracts.staking.treasuryBalance()),
+	 safeCall(() => contracts.staking.totalStakedAll?.()),
+  safeCall(() => contracts.staking.totalStakedTerm?.()),
+  safeCall(() => contracts.staking.totalStakedPerm?.()),
   safeCall(() => contracts.staking.MAX_PARTICIPANTS_LIMIT?.()), // might not exist
   safeCall(() => contracts.staking.TOP_BURNER_PERCENT?.()),
   safeCall(() => contracts.staking.TREASURY_BONUS_BP?.())
@@ -1890,6 +1909,9 @@ setText("topPercent", formatAmount(topPercent, 0, "percent"));
 setText("maxParticipants", formatAmount(maxParticipantsLimit, 0));
 setText("topBurnerPercent", formatAmount(topBurnerPercent, 0, "percent"));
 setText("treasuryBonusBP", formatAmount(treasuryBonusBP, 0, "bps"));
+	  setText("stakedAll", formatAmount(totalStakedAll, 0));
+setText("stakedTerm", formatAmount(totalStakedTerm, 0));
+setText("stakedPerm", formatAmount(totalStakedPerm, 0));
 setText("estimatedDailyReward", formatAmount(dailyReward, 18, "reward"));
 setText("quickStatusUpdated", `Updated: ${new Date().toLocaleTimeString()}`);
 
