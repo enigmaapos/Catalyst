@@ -1544,60 +1544,61 @@ const $ = id => document.getElementById(id);
   }
   
 
-  // Attach contract instances (requires signer)
-  async function attachContractsIfSet(){
+// Attach contract instances (requires signer)
+async function attachContractsIfSet() {
+  try {
+    if (!provider || !signer) return;
+
+    // ensure ABIs present (attempt load if missing)
+    if (Object.keys(abis).length === 0 || Object.values(abis).every(v => v == null)) {
+      await loadABIs();
+    }
+
+    const cataA = $('addrCata').value.trim();
+    const stakingA = $('addrStaking').value.trim();
+    const govA = $('addrGovernance').value.trim();
+    const councilA = $('addrCouncil').value.trim();
+
+    // attach contracts if addresses + ABIs exist
+    contracts.cata = cataA && abis.cata ? new ethers.Contract(cataA, abis.cata, signer) : null;
+    contracts.staking = stakingA && abis.staking ? new ethers.Contract(stakingA, abis.staking, signer) : null;
+    contracts.governance = govA && abis.governance ? new ethers.Contract(govA, abis.governance, signer) : null;
+    contracts.council = councilA && abis.council ? new ethers.Contract(councilA, abis.council, signer) : null;
+
+    log("Contracts attached", {
+      cata: !!contracts.cata,
+      staking: !!contracts.staking,
+      governance: !!contracts.governance,
+      council: !!contracts.council,
+    });
+
+    // ✅ Fetch balances and refresh dashboard in parallel
     try {
-      if(!provider || !signer) return;
-      // ensure ABIs present (attempt load if missing)
-      if(Object.keys(abis).length === 0 || Object.values(abis).every(v => v == null)) {
-        await loadABIs();
-      }
-      const cataA = $('addrCata').value.trim();
-      const stakingA = $('addrStaking').value.trim();
-      const govA = $('addrGovernance').value.trim();
-      const councilA = $('addrCouncil').value.trim();
+      if (contracts.cata) await fetchCataBalance();
 
-      if(cataA && abis.cata) contracts.cata = new ethers.Contract(cataA, abis.cata, signer);
-      else contracts.cata = null;
+      await Promise.all([
+        fetchTransparency(),
+        refreshRecovery(),
+        refreshVetoWarning(),
+        refreshDao(),
+        refreshGuardians(),
+        refreshLock(),
+        refreshStakingStats(),
+        refreshBluechip(),
+        fetchStakingTransparency(),
+        fetchGovernanceTransparency(),
+        fetchProposalsExplorer(),
+        refreshQuickStatus(),
+      ]);
 
-      if(stakingA && abis.staking) contracts.staking = new ethers.Contract(stakingA, abis.staking, signer);
-      else contracts.staking = null;
+      log("✅ All dashboard sections refreshed successfully");
+    } catch (innerErr) {
+      log("⚠️ Dashboard refresh error:", innerErr.message || innerErr);
+    }
 
-      if(govA && abis.governance) contracts.governance = new ethers.Contract(govA, abis.governance, signer);
-      else contracts.governance = null;
-
-      if(councilA && abis.council) contracts.council = new ethers.Contract(councilA, abis.council, signer);
-      else contracts.council = null;
-
-      log('Contracts attached', {
-        cata: !!contracts.cata,
-        staking: !!contracts.staking,
-        governance: !!contracts.governance,
-        council: !!contracts.council
-      });
-
-      // Fetch balances and refresh data safely in sequence
-try {
-  if (contracts.cata) await fetchCataBalance();
-
-  await Promise.all([
-    fetchTransparency(),
-    refreshRecovery(),
-    refreshVetoWarning(),
-    refreshDao(),
-    refreshGuardians(),
-    refreshLock(),
-    refreshStakingStats(),
-    refreshBluechip(),
-    fetchStakingTransparency(),
-    fetchGovernanceTransparency(),
-    fetchProposalsExplorer(),
-    refreshQuickStatus()
-  ]);
-
-  log("✅ All dashboard sections refreshed successfully");
-} catch (e) {
-  log("⚠️ Dashboard refresh error:", e.message || e);
+  } catch (e) {
+    log("attachContractsIfSet error:", e.message || e);
+  }
 }
 
 // Fetch CATA Balance (formatted with commas and up to 6 decimals)
