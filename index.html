@@ -664,8 +664,6 @@ Catalyst Whitepaper
     <!-- ======== Portfolio ======== -->
     <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
       <div class="flex gap-2 items-center mb-2">
-        <input id="portfolioCollection" placeholder="Collection address (for portfolio)"
-               class="flex-1 p-2 rounded bg-slate-700 text-xs text-slate-100 placeholder-slate-400 outline-none">
       </div>
       <button id="viewPortfolioBtn"
               class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition">
@@ -2711,7 +2709,7 @@ async function checkPendingRewards() {
 
     const baseRewardRate = await contracts.staking.baseRewardRate();
     const blocksPerUnit = await contracts.staking.numberOfBlocksPerRewardUnit();
-    const currentBlock = await ethers.provider.getBlockNumber();
+    const currentBlock = await provider.getBlockNumber();
 
     const blocksElapsed = currentBlock - lastHarvestBlock.toNumber();
     const reward = (blocksElapsed * baseRewardRate.toNumber()) / blocksPerUnit.toNumber();
