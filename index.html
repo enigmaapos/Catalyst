@@ -642,36 +642,41 @@ Catalyst Whitepaper
     <div id="stakingStatsUpdated" class="mt-1 text-xs text-slate-500 text-right">—</div>
   </div>
 
-  <!-- Section: Other Actions -->
-  <div>
-    <h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
-      ⚡ Other Actions
-    </h3>
+  <!-- ======== Section: Other Actions ======== -->
+<div>
+  <h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
+    ⚡ Other Actions
+  </h3>
 
-    <div class="grid gap-3 sm:grid-cols-2">
-      <!-- Pending Rewards -->
-      <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
-        <div class="flex gap-2 items-center mb-2">
-                 class="flex-1 p-2 rounded bg-slate-700 text-xs text-slate-100 placeholder-slate-400 outline-none">
-          <input id="nftTokenId" placeholder="Token ID"
-                 class="w-24 p-2 rounded bg-slate-700 text-xs text-slate-100 placeholder-slate-400 outline-none">
-        </div>
-        <button id="pendingRewardsBtn"
-                class="w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
-          🎁 Check Pending Rewards
-        </button>
-        <div id="pendingRewardsResult" class="mt-2 text-xs text-slate-300 font-mono">—</div>
+  <div class="grid gap-3 sm:grid-cols-2">
+    <!-- ======== Pending Rewards ======== -->
+    <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
+      <div class="flex gap-2 items-center mb-2">
+        <input id="nftCollection" placeholder="Collection address"
+               class="flex-1 p-2 rounded bg-slate-700 text-xs text-slate-100 placeholder-slate-400 outline-none">
+        <input id="nftTokenId" placeholder="Token ID"
+               class="w-24 p-2 rounded bg-slate-700 text-xs text-slate-100 placeholder-slate-400 outline-none">
       </div>
+      <button id="pendingRewardsBtn"
+              class="w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+        🎁 Check Pending Rewards
+      </button>
+      <div id="pendingRewardsResult"
+           class="mt-2 text-xs text-slate-300 font-mono">—</div>
+    </div>
 
-      <!-- Portfolio -->
-      <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
-        <button id="viewPortfolioBtn"
-                class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition">
-          📂 View My Staked NFTs
-        </button>
-        <div id="portfolioResult"
-             class="mt-2 text-xs text-slate-300 font-mono break-all">—</div>
+    <!-- ======== Portfolio ======== -->
+    <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
+      <div class="flex gap-2 items-center mb-2">
+        <input id="portfolioCollection" placeholder="Collection address (for portfolio)"
+               class="flex-1 p-2 rounded bg-slate-700 text-xs text-slate-100 placeholder-slate-400 outline-none">
       </div>
+      <button id="viewPortfolioBtn"
+              class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition">
+        📂 View My Staked NFTs
+      </button>
+      <div id="portfolioResult"
+           class="mt-2 text-xs text-slate-300 font-mono break-all">—</div>
     </div>
   </div>
 </div>
@@ -2639,85 +2644,98 @@ async function refreshStakingStats() {
   }
 }
 
-// ======== View Portfolio ========
-async function viewPortfolio() {
-  try {
-    showLoading();
 
-    const collection = $('nftCollection').value.trim();
-    if (!collection) return alert('Enter a collection address.');
+	    // ======== View Portfolio (no contract edit required) ========
+  async function viewPortfolio() {
+    try {
+      showLoading();
+      const collection = $('portfolioCollection').value.trim() || $('nftCollection')?.value.trim();
+      if (!collection) return alert('Enter a collection address.');
 
-    if (!contracts.staking) {
-      await attachContractsIfSet();
-      if (!contracts.staking) return alert('Set staking contract.');
-    }
+      if (!contracts.staking) {
+        await attachContractsIfSet();
+        if (!contracts.staking) return alert('Set staking contract.');
+      }
 
-    if (typeof contracts.staking.stakePortfolioByUser === 'function') {
       const account = await getAccount();
-      const portfolio = await contracts.staking.stakePortfolioByUser(collection, account);
+      const tokenIds = [];
 
-      if (Array.isArray(portfolio) && portfolio.length > 0) {
-        $('portfolioResult').innerText = portfolio.join(', ');
-      } else {
+      // Read sequentially until it fails
+      for (let i = 0; i < 1000; i++) {
+        try {
+          const tokenId = await contracts.staking.stakePortfolioByUser(collection, account, i);
+          tokenIds.push(tokenId.toString());
+        } catch {
+          break;
+        }
+      }
+
+      if (tokenIds.length === 0) {
         $('portfolioResult').innerText = 'No NFTs staked.';
+      } else {
+        $('portfolioResult').innerText = tokenIds.join(', ');
       }
 
       $('portfolioResult').innerHTML +=
         `<br><span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
-
-      log('✅ Portfolio loaded');
-    } else {
-      alert('stakePortfolioByUser() not found in ABI.');
+      log('✅ Portfolio loaded', tokenIds);
+    } catch (e) {
+      log('viewPortfolio error', e);
+      alert(e.message || e);
+    } finally {
+      hideLoading();
     }
-
-  } catch (e) {
-    log('viewPortfolio error', e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
   }
-}
 
-	  
-// ======== Check Pending Rewards ========
-async function checkPendingRewards() {
-  try {
-    showLoading();
+  // ======== Check Pending Rewards (client-side estimate) ========
+  async function checkPendingRewards() {
+    try {
+      showLoading();
 
-    const collection = $('nftCollection').value.trim();
-    const tokenId = parseInt($('nftTokenId').value.trim(), 10);
-    if (!collection) return alert('Enter a collection address.');
-    if (isNaN(tokenId)) return alert('Enter a valid token ID.');
+      const collection = $('nftCollection').value.trim();
+      const tokenId = parseInt($('nftTokenId').value.trim(), 10);
+      if (!collection) return alert('Enter a collection address.');
+      if (isNaN(tokenId)) return alert('Enter a valid token ID.');
 
-    if (!contracts.staking) {
-      await attachContractsIfSet();
-      if (!contracts.staking) return alert('Set staking contract.');
-    }
+      if (!contracts.staking) {
+        await attachContractsIfSet();
+        if (!contracts.staking) return alert('Set staking contract.');
+      }
 
-    if (typeof contracts.staking.pendingRewards === 'function') {
       const account = await getAccount();
-      const rewards = await contracts.staking.pendingRewards(collection, account, tokenId);
 
-      const formatted = ethers.BigNumber.isBigNumber(rewards)
-        ? formatAmount(rewards)
-        : rewards.toString();
+      // Fetch staking data for the NFT
+      const [currentlyStaked, isPermanent, stakeBlock, unstakeDeadlineBlock, lastHarvestBlock] =
+        await contracts.staking.stakeLog(collection, account, tokenId);
 
-      $('pendingRewardsResult').innerText = formatted === '0.0'
-        ? 'No pending rewards.'
-        : `${formatted} CATA`;
+      if (!currentlyStaked) {
+        $('pendingRewardsResult').innerText = 'NFT not currently staked.';
+        return;
+      }
 
-      log('✅ Pending rewards checked');
-    } else {
-      alert('pendingRewards() not found in ABI.');
+      // Get rate parameters
+      const baseRewardRate = await contracts.staking.baseRewardRate();
+      const numberOfBlocksPerRewardUnit = await contracts.staking.numberOfBlocksPerRewardUnit();
+
+      // Compute block difference
+      const currentBlock = await ethers.provider.getBlockNumber();
+      const blocksElapsed = currentBlock - lastHarvestBlock.toNumber();
+
+      // Estimate rewards
+      const reward = (blocksElapsed * baseRewardRate.toNumber()) / numberOfBlocksPerRewardUnit.toNumber();
+
+      $('pendingRewardsResult').innerHTML =
+        `${reward.toFixed(4)} <span class="text-slate-500">CATA (estimated)</span><br>
+         <span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
+
+      log('✅ Estimated pending rewards:', reward);
+    } catch (e) {
+      log('checkPendingRewards error', e);
+      alert(e.message || e);
+    } finally {
+      hideLoading();
     }
-
-  } catch (e) {
-    log('checkPendingRewards error', e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
   }
-}
 
 
     // ======== Fetch Staking Transparency ========
