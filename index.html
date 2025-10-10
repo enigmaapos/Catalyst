@@ -2590,19 +2590,7 @@ function parseBatchHarvestPairs() {
 }
 
 	  // format big numbers to readable decimals (18 by default)
-function formatAmount(amount, decimals = 18) {
-  try {
-    const num = Number(ethers.utils.formatUnits(amount, decimals));
-    // show up to 6 decimals, no scientific notation
-    return num.toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 6,
-      useGrouping: false
-    });
-  } catch {
-    return amount?.toString?.() ?? String(amount);
-  }
-}
+
 	  
 // ======== Refresh Global Stats ========
 async function refreshStakingStats() {
