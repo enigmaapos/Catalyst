@@ -248,46 +248,44 @@ Catalyst Whitepaper
   <h2 class="font-semibold mb-3 text-lg text-slate-100">⚡ Quick Status</h2>
 
   <div class="grid grid-cols-2 gap-3 text-sm">
-    <!-- CATA Balance -->
-    <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
-      <div class="text-slate-400 text-xs">CATA Balance</div>
-      <div id="cataBal" class="font-semibold text-green-400">—</div>
-    </div>
-
-    <!-- Total Staked NFTs -->
-    <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
-      <div class="text-slate-400 text-xs">Staked NFTs</div>
-      <div id="globalStaked" class="font-semibold text-indigo-400">—</div>
-    </div>
-
-    <!-- Base Reward Rate -->
-    <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Base Reward Rate</div>
       <div id="baseRewardRate" class="font-semibold text-yellow-400">—</div>
     </div>
 
-    <!-- Blocks per Reward Unit -->
-    <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Blocks per Reward Unit</div>
       <div id="blocksPerUnit" class="font-semibold text-blue-400">—</div>
     </div>
 
-    <!-- Claim Fee (bps) -->
-    <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Claim Fee (bps)</div>
       <div id="claimFeeBps" class="font-semibold text-red-400">—</div>
     </div>
 
-    <!-- Total Rewards Distributed -->
-    <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
-      <div class="text-slate-400 text-xs">Total Rewards Distributed</div>
-      <div id="rewardsDistributed" class="font-semibold text-green-400">—</div>
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Bonus Rate</div>
+      <div id="bonusRate" class="font-semibold text-green-400">—</div>
     </div>
 
-    <!-- Roles -->
-    <div class="col-span-2 p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
-      <div class="text-slate-400 text-xs">Roles (CATA / Staking)</div>
-      <div id="roles" class="font-semibold text-slate-200">—</div>
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Harvest Cooldown (blocks)</div>
+      <div id="harvestCooldownBlocks" class="font-semibold text-purple-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Total Rewards Distributed</div>
+      <div id="rewardsDistributed" class="font-semibold text-orange-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Total Staked NFTs</div>
+      <div id="globalStaked" class="font-semibold text-indigo-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Est. Daily Reward / NFT</div>
+      <div id="estimatedDailyReward" class="font-semibold text-emerald-400">—</div>
     </div>
   </div>
 
@@ -1581,37 +1579,59 @@ if (window.ethereum) {
   });
 }
 
-	  // ======== Refresh Extended Staking Stats ========
+	  // ======== Refresh Extended Quick Status ========
 async function refreshQuickStatus() {
   try {
     showLoading("Loading quick status...");
 
     if (!contracts.staking) {
       await attachContractsIfSet();
-      if (!contracts.staking) return alert('Set staking contract first.');
+      if (!contracts.staking) return alert("Set staking contract first.");
     }
 
+    // Fetch top-level public vars
     const [
       baseRewardRate,
       blocksPerUnit,
-      claimFeeBps,
       totalRewardsDistributed,
-      totalStakedAll
+      totalStakedAll,
+      harvestCooldownBlocks
     ] = await Promise.all([
       contracts.staking.baseRewardRate(),
       contracts.staking.numberOfBlocksPerRewardUnit(),
-      contracts.staking.claimFeeBps(),
       contracts.staking.totalRewardsDistributed(),
-      contracts.staking.totalStakedAll()
+      contracts.staking.totalStakedAll(),
+      contracts.staking.harvestCooldownBlocks()
     ]);
 
-    $('baseRewardRate').innerText = baseRewardRate.toString();
-    $('blocksPerUnit').innerText = blocksPerUnit.toString();
-    $('claimFeeBps').innerText = claimFeeBps.toString() + " bps";
-    $('rewardsDistributed').innerText = totalRewardsDistributed.toString();
-    $('globalStaked').innerText = totalStakedAll.toString();
+    // Get s_config struct (for bonusRate, claimFeeBps)
+    let claimFeeBps = "—";
+    let bonusRate = "—";
+    try {
+      const cfg = await contracts.staking.s_config();
+      claimFeeBps = cfg.claimFeeBps?.toString() + " bps";
+      bonusRate = cfg.bonusRate?.toString() + " %";
+    } catch (err) {
+      log("⚠️ s_config() not found or inaccessible:", err.message);
+    }
 
-    $('quickStatusUpdated').innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+    // Compute estimated daily reward per NFT
+    // (Assumes ~12 sec/block on EVM — adjust if your chain differs)
+    const blocksPerDay = 7200;
+    const dailyReward =
+      (Number(baseRewardRate) * (blocksPerDay / Number(blocksPerUnit))).toFixed(2);
+
+    // ✅ Update UI
+    $("baseRewardRate").innerText = baseRewardRate.toString();
+    $("blocksPerUnit").innerText = blocksPerUnit.toString();
+    $("claimFeeBps").innerText = claimFeeBps;
+    $("bonusRate").innerText = bonusRate;
+    $("harvestCooldownBlocks").innerText = harvestCooldownBlocks.toString();
+    $("rewardsDistributed").innerText = totalRewardsDistributed.toString();
+    $("globalStaked").innerText = totalStakedAll.toString();
+    $("estimatedDailyReward").innerText = `${dailyReward} CATA (est.)`;
+
+    $("quickStatusUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
     log("✅ Quick status updated");
 
@@ -1622,7 +1642,6 @@ async function refreshQuickStatus() {
     hideLoading();
   }
 }
-
 
 // ---------- CATA functions ----------
 // Burn (any holder)
