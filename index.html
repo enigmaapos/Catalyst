@@ -612,6 +612,16 @@ Catalyst Whitepaper
     * These actions require <span class="font-semibold text-amber-300">admin privileges</span>. 
     Make sure your connected wallet has the proper role.
   </p>
+
+			  <div class="mt-6 bg-slate-800/50 rounded-2xl shadow-lg p-4 border border-white/10">
+  <h4 class="text-lg font-semibold text-white mb-3">🏆 Top 10 Verified Collections</h4>
+  <ul id="topVerifiedList" class="text-sm text-slate-300 space-y-1">Loading...</ul>
+</div>
+
+<div class="mt-6 bg-slate-800/50 rounded-2xl shadow-lg p-4 border border-white/10">
+  <h4 class="text-lg font-semibold text-white mb-3">📋 Top 10 Unverified Collections</h4>
+  <ul id="topUnverifiedList" class="text-sm text-slate-300 space-y-1">Loading...</ul>
+</div>
 </div>
       </div>
     </section>
@@ -1589,6 +1599,7 @@ async function attachContractsIfSet() {
         fetchGovernanceTransparency(),
         fetchProposalsExplorer(),
         refreshQuickStatus(),
+		  fetchTopCollectionsUI()
       ]);
 
       log("✅ All dashboard sections refreshed successfully");
@@ -2487,6 +2498,62 @@ attachStatusChecker("manageCollAddr", "manageStatusInfo");
 // Attach status checkers to new fields
 attachStatusChecker("bluechipCollectionInput", "bluechipStatusInfo");
 attachStatusChecker("nftCollection", "nftStatusInfo");	  
+
+	  async function fetchTopCollectionsUI() {
+  if (!contracts.staking) {
+    await attachContractsIfSet();
+    if (!contracts.staking) return alert("Staking contract not set");
+  }
+
+  showLoading("Loading top collections...");
+
+  try {
+    const total = Number(await contracts.staking.registeredCollections.length());
+    const max = Math.min(total, 200); // fetch first 200 safely
+    const verified = [];
+    const unverified = [];
+
+    for (let i = 0; i < max; i++) {
+      const addr = await contracts.staking.registeredCollections(i);
+      const meta = await contracts.staking.collectionMeta(addr);
+      const burned = await contracts.staking.burnedCatalystByCollection(addr);
+
+      const data = {
+        addr,
+        burned: Number(ethers.utils.formatUnits(burned, 18))
+      };
+
+      if (meta.tier === 1) verified.push(data);
+      else if (meta.tier === 0) unverified.push(data);
+    }
+
+    // Sort descending by burned value
+    verified.sort((a, b) => b.burned - a.burned);
+    unverified.sort((a, b) => b.burned - a.burned);
+
+    renderTopCollections(verified.slice(0, 10), "topVerifiedList");
+    renderTopCollections(unverified.slice(0, 10), "topUnverifiedList");
+
+    log("✅ Top collections loaded");
+  } catch (e) {
+    log("⚠️ fetchTopCollectionsUI error:", e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderTopCollections(data, listId) {
+  const el = $(listId);
+  if (!data.length) {
+    el.innerHTML = "<li>No collections found.</li>";
+    return;
+  }
+  el.innerHTML = data
+    .map((d, i) => 
+      `<li>#${i + 1}: <span class="text-sky-400">${d.addr}</span> — 🔥 ${d.burned.toLocaleString()} CATA burned</li>`
+    )
+    .join("");
+}
 	  
 
 // ---------- Bluechip Actions ----------
