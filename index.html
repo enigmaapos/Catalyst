@@ -243,59 +243,70 @@ Catalyst Whitepaper
   </div>
 </section>
 	  
-    <!-- Quick Status -->
+<!-- Quick Status -->
 <section id="quickstatus" class="tab-content hidden">
   <h2 class="font-semibold mb-3 text-lg text-slate-100">⚡ Quick Status</h2>
-	<div class="grid grid-cols-2 gap-3 text-sm">
+
+  <!-- Responsive 2-column layout (1 on small screens) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
 
     <!-- CATA Balance -->
     <div class="p-3 rounded-xl bg-slate-800/50 shadow-sm border border-slate-700">
-    <div class="text-slate-400 text-xs">CATA Balance</div>
-    <div id="cataBal" class="font-semibold text-green-400">—</div>
-	</div>
+      <div class="text-slate-400 text-xs">CATA Balance</div>
+      <div id="cataBal" class="font-semibold text-green-400">—</div>
+    </div>
 
-  <div class="grid grid-cols-2 gap-3 text-sm">
+    <!-- Base Reward Rate -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Base Reward Rate</div>
       <div id="baseRewardRate" class="font-semibold text-yellow-400">—</div>
     </div>
 
+    <!-- Blocks per Reward Unit -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Blocks per Reward Unit</div>
       <div id="blocksPerUnit" class="font-semibold text-blue-400">—</div>
     </div>
 
+    <!-- Claim Fee (bps) -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Claim Fee (bps)</div>
       <div id="claimFeeBps" class="font-semibold text-red-400">—</div>
     </div>
 
+    <!-- Bonus Rate -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Bonus Rate</div>
       <div id="bonusRate" class="font-semibold text-green-400">—</div>
     </div>
 
+    <!-- Harvest Cooldown -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Harvest Cooldown (blocks)</div>
       <div id="harvestCooldownBlocks" class="font-semibold text-purple-400">—</div>
     </div>
 
+    <!-- Total Rewards Distributed -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Total Rewards Distributed</div>
       <div id="rewardsDistributed" class="font-semibold text-orange-400">—</div>
     </div>
 
+    <!-- Total Staked NFTs -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Total Staked NFTs</div>
       <div id="globalStaked" class="font-semibold text-indigo-400">—</div>
     </div>
 
+    <!-- Est. Daily Reward -->
     <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
       <div class="text-slate-400 text-xs">Est. Daily Reward / NFT</div>
       <div id="estimatedDailyReward" class="font-semibold text-emerald-400">—</div>
     </div>
+
   </div>
 
+  <!-- Last updated timestamp -->
   <div id="quickStatusUpdated" class="text-xs text-slate-500 mt-2">—</div>
 
   <hr class="my-3 border-slate-700" />
