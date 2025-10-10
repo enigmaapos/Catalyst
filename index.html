@@ -612,6 +612,12 @@ Catalyst Whitepaper
     * These actions require <span class="font-semibold text-amber-300">admin privileges</span>. 
     Make sure your connected wallet has the proper role.
   </p>
+			  </div>
+	  </div>
+
+			  <div id="topCollectionsList" class="mt-4 p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+  <p class="text-xs text-slate-400">Loading top collections...</p>
+			  </div>
 
 			  <div class="mt-6 bg-slate-800/50 rounded-2xl shadow-lg p-4 border border-white/10">
   <h4 class="text-lg font-semibold text-white mb-3">🏆 Top 10 Verified Collections</h4>
@@ -622,8 +628,6 @@ Catalyst Whitepaper
   <h4 class="text-lg font-semibold text-white mb-3">📋 Top 10 Unverified Collections</h4>
   <ul id="topUnverifiedList" class="text-sm text-slate-300 space-y-1">Loading...</ul>
 </div>
-</div>
-      </div>
     </section>
 
     <!-- Bluechip -->
@@ -2499,48 +2503,70 @@ attachStatusChecker("manageCollAddr", "manageStatusInfo");
 attachStatusChecker("bluechipCollectionInput", "bluechipStatusInfo");
 attachStatusChecker("nftCollection", "nftStatusInfo");	  
 
-	  async function fetchTopCollectionsUI() {
-  if (!contracts.staking) {
-    await attachContractsIfSet();
-    if (!contracts.staking) return alert("Staking contract not set");
-  }
-
-  showLoading("Loading top collections...");
-
+	  // ======== Fetch and Display Top Collections (UI only, no Solidity change) ========
+async function fetchTopCollectionsUI() {
   try {
-    const total = Number(await contracts.staking.registeredCollections.length());
-    const max = Math.min(total, 200); // fetch first 200 safely
-    const verified = [];
-    const unverified = [];
+    showLoading("Loading top collections...");
 
-    for (let i = 0; i < max; i++) {
-      const addr = await contracts.staking.registeredCollections(i);
-      const meta = await contracts.staking.collectionMeta(addr);
-      const burned = await contracts.staking.burnedCatalystByCollection(addr);
-
-      const data = {
-        addr,
-        burned: Number(ethers.utils.formatUnits(burned, 18))
-      };
-
-      if (meta.tier === 1) verified.push(data);
-      else if (meta.tier === 0) unverified.push(data);
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return log("⚠️ Staking contract not set.");
     }
 
-    // Sort descending by burned value
-    verified.sort((a, b) => b.burned - a.burned);
-    unverified.sort((a, b) => b.burned - a.burned);
+    // Try to read number of registered collections
+    const total = await contracts.staking.registeredCollectionsLength?.() 
+      || (await contracts.staking.registeredCollections()).length;
 
-    renderTopCollections(verified.slice(0, 10), "topVerifiedList");
-    renderTopCollections(unverified.slice(0, 10), "topUnverifiedList");
+    if (!total || total === 0) {
+      $("topCollectionsList").innerHTML = "<p class='text-slate-400 text-xs'>No collections registered yet.</p>";
+      hideLoading();
+      return;
+    }
 
+    const limit = Math.min(Number(total), 50); // limit fetch for safety
+    const collections = [];
+
+    for (let i = 0; i < limit; i++) {
+      try {
+        const addr = await contracts.staking.registeredCollections(i);
+        const statusEnum = await contracts.staking.getCollectionStatus(addr);
+        const meta = await contracts.staking.collectionMeta(addr);
+        collections.push({
+          address: addr,
+          tier: Number(meta.tier),
+          status: Number(statusEnum),
+          registeredAt: Number(meta.registeredAtBlock)
+        });
+      } catch (err) {
+        break;
+      }
+    }
+
+    // Split by tier
+    const verified = collections.filter(c => c.tier === 1).slice(0, 10);
+    const unverified = collections.filter(c => c.tier === 0).slice(0, 10);
+
+    // Build UI list
+    const html = `
+      <div class="mt-3">
+        <h4 class="text-sm font-semibold text-green-400 mb-1">✅ Top 10 VERIFIED</h4>
+        ${verified.length ? verified.map(c => `<div class="text-xs text-slate-300 break-all">${c.address}</div>`).join('') : '<p class="text-xs text-slate-500">None yet.</p>'}
+      </div>
+      <div class="mt-3">
+        <h4 class="text-sm font-semibold text-amber-400 mb-1">🕵️ Top 10 UNVERIFIED</h4>
+        ${unverified.length ? unverified.map(c => `<div class="text-xs text-slate-300 break-all">${c.address}</div>`).join('') : '<p class="text-xs text-slate-500">None yet.</p>'}
+      </div>
+    `;
+
+    $("topCollectionsList").innerHTML = html;
     log("✅ Top collections loaded");
+
   } catch (e) {
     log("⚠️ fetchTopCollectionsUI error:", e.message || e);
   } finally {
     hideLoading();
   }
-}
+		  }
 
 function renderTopCollections(data, listId) {
   const el = $(listId);
