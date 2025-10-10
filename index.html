@@ -1600,7 +1600,7 @@ async function attachContractsIfSet() {
         fetchGovernanceTransparency(),
         fetchProposalsExplorer(),
         refreshQuickStatus(),
-		  fetchTopCollectionsUI()
+		  fetchTopCollectionsUI(),
       ]);
 
       log("✅ All dashboard sections refreshed successfully");
@@ -1616,7 +1616,12 @@ async function attachContractsIfSet() {
 // Fetch CATA Balance (formatted with commas and up to 6 decimals)
 async function fetchCataBalance() {
   try {
-    if (!contracts.cata) return;
+    showLoading("Fetching CATA balance..."); // ✅ show loading message
+
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert("CATA contract not set");
+    }
 
     const bal = await contracts.cata.balanceOf(userAddr);
     const formatted = Number(ethers.utils.formatEther(bal)).toLocaleString(undefined, {
@@ -1625,8 +1630,12 @@ async function fetchCataBalance() {
     });
 
     $('cataBal').innerText = `${formatted} CATA`;
+    log("✅ CATA balance updated:", formatted);
   } catch (e) {
-    log('fetchCataBalance err', e?.message || e);
+    log("⚠️ fetchCataBalance error:", e?.message || e);
+    alert(`Failed to fetch CATA balance: ${e.message || e}`);
+  } finally {
+    hideLoading(); // ✅ always hide loading, even on error
   }
 }
 
