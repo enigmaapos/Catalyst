@@ -2085,15 +2085,20 @@ async function fetchTransparency() {
     const minterList = Array.from(activeMinters);
 
 
-    // 5. --- UI Update ---
-    $('cataAdminAddress').innerText = adminAddress;
-    $('cataCouncilAddress').innerText = councilAddress;
-    $('cataTotalSupply').innerText = ethers.utils.formatUnits(totalSupply, 18) + " CATA";
-    $('cataMaxSupply').innerText = ethers.utils.formatUnits(maxSupply, 18) + " CATA";
-    $('cataRemainingMintable').innerText = ethers.utils.formatUnits(remainingMintable, 18) + " CATA";
-    $('cataMinters').innerText = minterList.length > 0 
-      ? minterList.join("\n")
-      : "None";
+    // --- UI Update (CATA Token Info) ---
+setText("cataAdminAddress", adminAddress);
+setText("cataCouncilAddress", councilAddress);
+
+setText("cataTotalSupply", formatAmount(totalSupply, 18) + " CATA");
+setText("cataMaxSupply", formatAmount(maxSupply, 18) + " CATA");
+setText("cataRemainingMintable", formatAmount(remainingMintable, 18) + " CATA");
+
+setText(
+  "cataMinters",
+  minterList.length > 0
+    ? minterList.join("\n")
+    : "None"
+);
 
 	   log('fetchTransparency done');
 	  
