@@ -1576,10 +1576,29 @@ const $ = id => document.getElementById(id);
         council: !!contracts.council
       });
 
-      // fetch balances if available
-      if(contracts.cata) await fetchCataBalance();
-    } catch(e){ log('attachContractsIfSet err', e && e.message ? e.message : e); }
-  }
+      // Fetch balances and refresh data safely in sequence
+try {
+  if (contracts.cata) await fetchCataBalance();
+
+  await Promise.all([
+    fetchTransparency(),
+    refreshRecovery(),
+    refreshVetoWarning(),
+    refreshDao(),
+    refreshGuardians(),
+    refreshLock(),
+    refreshStakingStats(),
+    refreshBluechip(),
+    fetchStakingTransparency(),
+    fetchGovernanceTransparency(),
+    fetchProposalsExplorer(),
+    refreshQuickStatus()
+  ]);
+
+  log("✅ All dashboard sections refreshed successfully");
+} catch (e) {
+  log("⚠️ Dashboard refresh error:", e.message || e);
+}
 
 // Fetch CATA Balance (formatted with commas and up to 6 decimals)
 async function fetchCataBalance() {
