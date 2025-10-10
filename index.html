@@ -1602,59 +1602,91 @@ async function refreshQuickStatus() {
   try {
     showLoading("Loading quick status...");
 
+    // ✅ Make sure staking contract is attached
     if (!contracts.staking) {
       await attachContractsIfSet();
       if (!contracts.staking) return alert("Set staking contract first.");
     }
 
-    // Fetch top-level public vars
-    const [
-      baseRewardRate,
-      blocksPerUnit,
-      totalRewardsDistributed,
-      totalStakedAll,
-      harvestCooldownBlocks
-    ] = await Promise.all([
-      contracts.staking.baseRewardRate(),
-      contracts.staking.numberOfBlocksPerRewardUnit(),
-      contracts.staking.totalRewardsDistributed(),
-      contracts.staking.totalStakedAll(),
-      contracts.staking.harvestCooldownBlocks()
-    ]);
-
-    // Get s_config struct (for bonusRate, claimFeeBps)
+    // 🧩 Safe data placeholders
+    let baseRewardRate = "—";
+    let blocksPerUnit = "—";
+    let totalStakedAll = "—";
+    let harvestCooldownBlocks = "—";
+    let totalRewardsDistributed = "—";
     let claimFeeBps = "—";
     let bonusRate = "—";
+
+    // ✅ Try public variables safely
     try {
-      const cfg = await contracts.staking.s_config();
-      claimFeeBps = cfg.claimFeeBps?.toString() + " bps";
-      bonusRate = cfg.bonusRate?.toString() + " %";
+      if (typeof contracts.staking.baseRewardRate === "function")
+        baseRewardRate = (await contracts.staking.baseRewardRate()).toString();
+
+      if (typeof contracts.staking.numberOfBlocksPerRewardUnit === "function")
+        blocksPerUnit = (await contracts.staking.numberOfBlocksPerRewardUnit()).toString();
+
+      if (typeof contracts.staking.totalStakedAll === "function")
+        totalStakedAll = (await contracts.staking.totalStakedAll()).toString();
+
+      if (typeof contracts.staking.harvestCooldownBlocks === "function")
+        harvestCooldownBlocks = (await contracts.staking.harvestCooldownBlocks()).toString();
+
+      if (typeof contracts.staking.totalRewardsDistributed === "function")
+        totalRewardsDistributed = (await contracts.staking.totalRewardsDistributed()).toString();
     } catch (err) {
-      log("⚠️ s_config() not found or inaccessible:", err.message);
+      log("⚠️ Some public variable fetch failed:", err.message);
     }
 
-    // Compute estimated daily reward per NFT
-    // (Assumes ~12 sec/block on EVM — adjust if your chain differs)
-    const blocksPerDay = 7200;
-    const dailyReward =
-      (Number(baseRewardRate) * (blocksPerDay / Number(blocksPerUnit))).toFixed(2);
+    // ✅ Try config struct (s_config) if available
+    try {
+      if (typeof contracts.staking.s_config === "function") {
+        const cfg = await contracts.staking.s_config();
+        if (cfg.claimFeeBps) claimFeeBps = cfg.claimFeeBps.toString() + " bps";
+        if (cfg.bonusRate) bonusRate = cfg.bonusRate.toString() + " %";
+      }
+    } catch (err) {
+      log("⚠️ s_config() fetch failed:", err.message);
+    }
 
-    // ✅ Update UI
-    $("baseRewardRate").innerText = baseRewardRate.toString();
-    $("blocksPerUnit").innerText = blocksPerUnit.toString();
+    // ✅ Try stats struct (s_stats) if totalRewardsDistributed wasn't found
+    if (totalRewardsDistributed === "—") {
+      try {
+        if (typeof contracts.staking.s_stats === "function") {
+          const stats = await contracts.staking.s_stats();
+          if (stats.totalRewardsDistributed)
+            totalRewardsDistributed = stats.totalRewardsDistributed.toString();
+        }
+      } catch (err) {
+        log("⚠️ s_stats() fetch failed:", err.message);
+      }
+    }
+
+    // ✅ Compute estimated daily reward per NFT (approx)
+    const blocksPerDay = 7200; // ~12s/block assumption
+    let dailyReward = "—";
+    if (!isNaN(Number(baseRewardRate)) && !isNaN(Number(blocksPerUnit)) && Number(blocksPerUnit) > 0) {
+      dailyReward = (
+        Number(baseRewardRate) *
+        (blocksPerDay / Number(blocksPerUnit))
+      ).toFixed(2);
+    }
+
+    // ✅ Update UI safely
+    $("baseRewardRate").innerText = baseRewardRate;
+    $("blocksPerUnit").innerText = blocksPerUnit;
     $("claimFeeBps").innerText = claimFeeBps;
     $("bonusRate").innerText = bonusRate;
-    $("harvestCooldownBlocks").innerText = harvestCooldownBlocks.toString();
-    $("rewardsDistributed").innerText = totalRewardsDistributed.toString();
-    $("globalStaked").innerText = totalStakedAll.toString();
-    $("estimatedDailyReward").innerText = `${dailyReward} CATA (est.)`;
+    $("harvestCooldownBlocks").innerText = harvestCooldownBlocks;
+    $("rewardsDistributed").innerText = totalRewardsDistributed;
+    $("globalStaked").innerText = totalStakedAll;
+    $("estimatedDailyReward").innerText =
+      dailyReward === "—" ? "—" : `${dailyReward} CATA (est.)`;
 
     $("quickStatusUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
-    log("✅ Quick status updated");
-
+    log("✅ Quick status updated successfully");
   } catch (e) {
-    log("refreshQuickStatus error", e);
+    log("❌ refreshQuickStatus error:", e);
     alert(e.message || e);
   } finally {
     hideLoading();
