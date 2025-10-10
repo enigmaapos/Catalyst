@@ -1655,7 +1655,20 @@ if (window.ethereum) {
   });
 }
 
-// ======== Refresh Full Quick Status ========
+		  function formatAmount(amount, decimals = 18) {
+  try {
+    const formatted = parseFloat(ethers.utils.formatUnits(amount, decimals));
+    if (formatted >= 1) return formatted.toFixed(2);
+    if (formatted >= 0.001) return formatted.toFixed(4);
+    if (formatted > 0) return formatted.toExponential(2);
+    return "0";
+  } catch {
+    return amount?.toString() || "0";
+  }
+		  }
+
+
+	  // ======== Refresh Full Quick Status (Safe version) ========
 async function refreshQuickStatus() {
   try {
     showLoading("Loading full quick status...");
@@ -1665,7 +1678,6 @@ async function refreshQuickStatus() {
       if (!contracts.staking) return alert("Set staking contract first.");
     }
 
-    // --- Reward Config ---
     const [
       baseRewardRate,
       blocksPerUnit,
@@ -1696,9 +1708,6 @@ async function refreshQuickStatus() {
       contracts.staking.termDurationBlocks(),
       contracts.staking.unstakeBurnFee(),
       contracts.staking.permanentStakeFeeBase(),
-      contracts.staking.GLOBAL_NFT_CAP(),
-      contracts.staking.TERM_NFT_CAP(),
-      contracts.staking.PERM_NFT_CAP(),
       contracts.staking.BP_DENOM(),
       contracts.staking.BURN_BP(),
       contracts.staking.TREASURY_BP(),
@@ -1710,41 +1719,40 @@ async function refreshQuickStatus() {
       contracts.staking.TREASURY_BONUS_BP()
     ]);
 
-    // --- Estimated Daily Reward ---
+    // Compute daily reward (approx.)
     const blocksPerDay = 7200;
     const dailyReward = (
-      Number(baseRewardRate) *
-      (blocksPerDay / Number(blocksPerUnit))
+      Number(baseRewardRate) * (blocksPerDay / Number(blocksPerUnit))
     ).toFixed(2);
 
-    // --- Update UI ---
-    $("baseRewardRate").innerText = baseRewardRate.toString();
-    $("blocksPerUnit").innerText = blocksPerUnit.toString();
-    $("rewardIncrement").innerText = rewardRateIncrementPerNFT.toString();
-    $("welcomeBonusBase").innerText = welcomeBonusBaseRate.toString();
-    $("welcomeBonusInc").innerText = welcomeBonusIncrementPerNFT.toString();
-    $("termDuration").innerText = termDurationBlocks.toString();
-    $("unstakeBurnFee").innerText = formatAmount(unstakeBurnFee, 18) + " CATA";
-    $("permStakeFee").innerText = formatAmount(permanentStakeFeeBase, 18) + " CATA";
+    // ✅ Safe setter function
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = value;
+    };
 
-    $("globalCap").innerText = globalCap.toString();
-    $("termCap").innerText = termCap.toString();
-    $("permCap").innerText = permCap.toString();
-
-    $("bpDenom").innerText = bpDenom.toString();
-    $("burnBP").innerText = burnBP.toString();
-    $("treasuryBP").innerText = treasuryBP.toString();
-    $("deployerBP").innerText = deployerBP.toString();
-
-    $("topPercent").innerText = topPercent.toString();
-    $("treasuryBalance").innerText = formatAmount(treasuryBalance, 18) + " CATA";
-
-    $("maxParticipants").innerText = maxParticipantsLimit.toString();
-    $("topBurnerPercent").innerText = topBurnerPercent.toString() + " %";
-    $("treasuryBonusBP").innerText = treasuryBonusBP.toString() + " bps";
-
-    $("estimatedDailyReward").innerText = `${dailyReward} CATA (est.)`;
-    $("quickStatusUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+    // --- Update UI safely ---
+    setText("baseRewardRate", baseRewardRate.toString());
+    setText("blocksPerUnit", blocksPerUnit.toString());
+    setText("rewardIncrement", rewardRateIncrementPerNFT.toString());
+    setText("welcomeBonusBase", welcomeBonusBaseRate.toString());
+    setText("welcomeBonusInc", welcomeBonusIncrementPerNFT.toString());
+    setText("termDuration", termDurationBlocks.toString());
+    setText("unstakeBurnFee", formatAmount(unstakeBurnFee, 18) + " CATA");
+    setText("permStakeFee", formatAmount(permanentStakeFeeBase, 18) + " CATA");
+    setText("globalCap", globalCap.toString());
+    setText("termCap", termCap.toString());
+    setText("permCap", permCap.toString());
+    setText("burnBP", burnBP.toString());
+    setText("treasuryBP", treasuryBP.toString());
+    setText("deployerBP", deployerBP.toString());
+    setText("treasuryBalance", formatAmount(treasuryBalance, 18) + " CATA");
+    setText("topPercent", topPercent.toString());
+    setText("maxParticipants", maxParticipantsLimit.toString());
+    setText("topBurnerPercent", topBurnerPercent.toString() + " %");
+    setText("treasuryBonusBP", treasuryBonusBP.toString() + " bps");
+    setText("estimatedDailyReward", `${dailyReward} CATA (est.)`);
+    setText("quickStatusUpdated", `Updated: ${new Date().toLocaleTimeString()}`);
 
     log("✅ Full Quick Status updated");
 
@@ -1754,7 +1762,8 @@ async function refreshQuickStatus() {
   } finally {
     hideLoading();
   }
-		}
+}
+    
 
 // ---------- CATA functions ----------
 // Burn (any holder)
@@ -2790,18 +2799,6 @@ function parseBatchHarvestPairs() {
   }
 }
 
-	  // format big numbers to readable decimals (18 by default)
-function formatAmount(amount) {
-  try {
-    // ERC721 values are integers (BigNumber)
-    if (ethers.BigNumber.isBigNumber(amount)) {
-      return amount.toString(); // just show as plain number
-    }
-    return String(amount);
-  } catch {
-    return amount?.toString?.() ?? String(amount);
-  }
-	  }
 	  
 	  
 // ======== Refresh Global Stats ========
