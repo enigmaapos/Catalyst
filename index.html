@@ -4129,24 +4129,6 @@ async function refreshLock() {
   const locked = await contracts.council.locked();
   $("lockStatus").innerText = locked ? "🔒 Locked" : "✅ Unlocked";
 }
-
-// ---------- Aggregator ----------
-async function autoRefreshAll() {
-  await Promise.all([
-    fetchTransparency(),
-	  refreshRecovery(),
-    refreshVetoWarning(),
-    refreshDao(),
-    refreshGuardians(),
-    refreshLock(),
-	  refreshStakingStats(),
-	  refreshBluechip(),
-	  fetchStakingTransparency(),
-	  fetchGovernanceTransparency(),
-	  fetchProposalsExplorer(),
-	  refreshQuickStatus()
-  ]);
-}
 	  
 
   // ---------- Bind UI on load ----------
