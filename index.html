@@ -1662,10 +1662,6 @@ async function connect() {
 
     log("✅ Connected:", userAddr);
 
-    // 🧠 Optional auto-refresh (only if defined)
-    if (typeof autoRefreshAll === "function") {
-      await autoRefreshAll();
-    }
 
   } catch (e) {
     log("❌ connect() error:", e?.message || e);
