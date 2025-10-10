@@ -1614,13 +1614,19 @@ async function attachContractsIfSet() {
 }
 
 // Fetch CATA Balance (formatted with commas and up to 6 decimals)
+let cataBalanceInterval = null; // global variable to manage refresh timer
+
+// Fetch CATA Balance (formatted with commas and up to 6 decimals)
 async function fetchCataBalance() {
   try {
-    showLoading("Fetching CATA balance..."); // ✅ show loading message
+    showLoading("Fetching CATA balance..."); // show loading spinner
 
     if (!contracts.cata) {
       await attachContractsIfSet();
-      if (!contracts.cata) return alert("CATA contract not set");
+      if (!contracts.cata) {
+        alert("CATA contract not set");
+        return;
+      }
     }
 
     const bal = await contracts.cata.balanceOf(userAddr);
@@ -1629,13 +1635,34 @@ async function fetchCataBalance() {
       maximumFractionDigits: 6,
     });
 
-    $('cataBal').innerText = `${formatted} CATA`;
+    $("cataBal").innerText = `${formatted} CATA`;
     log("✅ CATA balance updated:", formatted);
   } catch (e) {
     log("⚠️ fetchCataBalance error:", e?.message || e);
     alert(`Failed to fetch CATA balance: ${e.message || e}`);
   } finally {
-    hideLoading(); // ✅ always hide loading, even on error
+    hideLoading();
+  }
+}
+
+// Start auto-refresh (every 30 seconds)
+function startCataBalanceAutoRefresh() {
+  if (cataBalanceInterval) clearInterval(cataBalanceInterval); // avoid duplicates
+
+  // Immediately fetch first
+  fetchCataBalance();
+
+  // Then repeat every 30 seconds
+  cataBalanceInterval = setInterval(fetchCataBalance, 30000);
+  log("🔁 Auto-refresh for CATA balance started (every 30s)");
+}
+
+// Stop auto-refresh (optional, e.g., on disconnect)
+function stopCataBalanceAutoRefresh() {
+  if (cataBalanceInterval) {
+    clearInterval(cataBalanceInterval);
+    cataBalanceInterval = null;
+    log("🛑 Auto-refresh for CATA balance stopped");
   }
 }
 
