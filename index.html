@@ -3126,7 +3126,6 @@ function parseBatchHarvestPairs() {
     hideLoading();
   }
 }
-
 	  
 	  
 // ======== Refresh User-Only Staking Stats ========
@@ -3142,62 +3141,43 @@ async function refreshStakingStats() {
       }
     }
 
-    // 🔍 Fetch user-level staking info (safe)
     const safeCall = async (fn) => {
-      try {
-        return await fn();
-      } catch {
-        return undefined;
-      }
+      try { return await fn(); } catch { return 0; }
     };
 
+    // Try user-level (if exists), otherwise fallback to 0
     const [userTotal, userTerm, userPerm, globalCap] = await Promise.all([
-      safeCall(() => contracts.staking.userTotalStaked?.(userAddr)),
-      safeCall(() => contracts.staking.userTermStaked?.(userAddr)),
-      safeCall(() => contracts.staking.userPermStaked?.(userAddr)),
+      safeCall(() => contracts.staking.userTotalStaked?.(userAddr) ?? 0),
+      safeCall(() => contracts.staking.userTermStaked?.(userAddr) ?? 0),
+      safeCall(() => contracts.staking.userPermStaked?.(userAddr) ?? 0),
       safeCall(() => contracts.staking.GLOBAL_NFT_CAP?.())
     ]);
 
-    // Display values
-    $("userStakedTotal").innerText = formatAmount(userTotal, 0);
-    $("userStakedTerm").innerText = formatAmount(userTerm, 0);
-    $("userStakedPerm").innerText = formatAmount(userPerm, 0);
+    const total = Number(userTotal) || 0;
+    const term = Number(userTerm) || 0;
+    const perm = Number(userPerm) || 0;
 
-    // ⚡ Compute and animate user utilization
+    $("userStakedTotal").innerText = formatAmount(total, 0);
+    $("userStakedTerm").innerText = formatAmount(term, 0);
+    $("userStakedPerm").innerText = formatAmount(perm, 0);
+
+    // Compute utilization safely
     let percent = 0;
-    if (userTotal && globalCap && Number(globalCap) > 0) {
-      percent = ((Number(userTotal) / Number(globalCap)) * 100).toFixed(2);
+    if (total > 0 && globalCap && Number(globalCap) > 0) {
+      percent = ((total / Number(globalCap)) * 100).toFixed(2);
     }
 
-    const bar = $("userStakingUsageBar");
-    const text = $("userStakingUsageText");
-
-    if (bar) {
-      // Color gradient depending on usage %
-      if (percent < 50)
-        bar.style.background = "linear-gradient(to right, #10B981, #34D399)";
-      else if (percent < 80)
-        bar.style.background = "linear-gradient(to right, #FBBF24, #FACC15)";
-      else
-        bar.style.background = "linear-gradient(to right, #EF4444, #F87171)";
-
-      requestAnimationFrame(() => {
-        bar.style.width = `${percent}%`;
-      });
-    }
-
-    if (text) text.innerText = `${percent}% of Global Cap`;
+    $("userStakingUsageText").innerText = `${percent}% of Global Cap`;
+    $("userStakingUsageBar").style.width = `${percent}%`;
 
     $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
     log("✅ User staking stats refreshed");
   } catch (e) {
     log("❌ refreshStakingStats error:", e);
-    alert(e.message || e);
   } finally {
     hideLoading();
   }
 }
-
 
 	  // ======== View Portfolio (using existing wallet logic) ========
 async function viewPortfolio() {
