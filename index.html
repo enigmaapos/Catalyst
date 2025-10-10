@@ -1581,13 +1581,21 @@ const $ = id => document.getElementById(id);
     } catch(e){ log('attachContractsIfSet err', e && e.message ? e.message : e); }
   }
 
-  // Fetch CATA Balance (shows in readable numbers, e.g. "1.25 CATA")
-async function fetchCataBalance(){
-try {
-if(!contracts.cata) return;
-const bal = await contracts.cata.balanceOf(userAddr);
-$('cataBal').innerText = ethers.utils.formatEther(bal) + ' CATA';
-} catch(e){ log('fetchCataBalance err', e && e.message ? e.message : e); }
+// Fetch CATA Balance (formatted with commas and up to 6 decimals)
+async function fetchCataBalance() {
+  try {
+    if (!contracts.cata) return;
+
+    const bal = await contracts.cata.balanceOf(userAddr);
+    const formatted = Number(ethers.utils.formatEther(bal)).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 6,
+    });
+
+    $('cataBal').innerText = `${formatted} CATA`;
+  } catch (e) {
+    log('fetchCataBalance err', e?.message || e);
+  }
 }
 
 
