@@ -1655,14 +1655,47 @@ if (window.ethereum) {
   });
 }
 
-		  function formatAmount(amount, decimals = 18) {
+		  function formatAmount(amount, decimals = 18, type = "") {
   try {
-    const formatted = Number(ethers.utils.formatUnits(amount, decimals));
-    return formatted.toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 6,
-    });
-  } catch {
+    if (!amount) return "0";
+
+    const raw = typeof amount === "object" && amount._isBigNumber
+      ? amount
+      : ethers.BigNumber.from(amount.toString());
+
+    let formatted;
+
+    // Detect if value needs 18-decimal formatting
+    if (decimals === 18 && raw.gt(ethers.BigNumber.from("1000000000"))) {
+      formatted = Number(ethers.utils.formatUnits(raw, 18));
+    } else {
+      formatted = Number(raw.toString());
+    }
+
+    if (formatted === 0) return "0";
+
+    // Human-readable formatting
+    let output;
+    if (formatted < 0.000001 && formatted > 0) {
+      output = formatted.toExponential(2);
+    } else {
+      output = formatted.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 6,
+      });
+    }
+
+    // Auto-append units based on field type
+    if (/cata|balance|fee|reward/i.test(type)) output += " CATA";
+    else if (/block/i.test(type)) output += " blocks";
+    else if (/nft/i.test(type)) output += " NFTs";
+    else if (/percent|bps/i.test(type)) output += "";
+    else if (/treasury/i.test(type)) output += " CATA";
+
+    return output;
+
+  } catch (err) {
+    console.error("formatAmount error:", err);
     return amount?.toString() || "0";
   }
 		  }
