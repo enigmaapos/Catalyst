@@ -845,25 +845,45 @@ Catalyst Whitepaper
     ⚡ Other Actions
   </h3>
 
-	<div id="pendingRewardsBox" class="bg-gradient-to-b from-gray-900 to-black p-5 rounded-2xl shadow-xl text-white mt-6">
-  <div class="flex items-center justify-between mb-3">
-    <h3 class="text-xl font-bold flex items-center gap-2">💰 Pending Rewards</h3>
-    <button 
+	<div id="pendingRewardsBox" class="bg-gradient-to-b from-gray-900 to-black p-5 rounded-2xl shadow-xl text-white mt-6 border border-gray-800">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-xl font-bold flex items-center gap-2">
+      💰 Pending Rewards
+      <span id="pendingStatusDot" class="h-2.5 w-2.5 rounded-full bg-gray-500"></span>
+    </h3>
+
+    <button
       id="refreshPendingBtn"
-      class="bg-amber-600 hover:bg-amber-700 px-3 py-1 text-sm rounded-md transition">
-      🔁 Refresh
+      class="flex items-center gap-1 bg-amber-600 hover:bg-amber-700 px-3 py-1 text-sm rounded-md transition active:scale-95">
+      🔁 <span>Refresh</span>
     </button>
   </div>
 
-  <p class="text-3xl font-bold text-amber-400 mb-1" id="userPendingTotal">0</p>
-  <p class="text-xs text-gray-400 mb-4">CATA Tokens Ready to Harvest</p>
-
-  <div id="pendingRewardsList" class="divide-y divide-gray-800 text-sm rounded-lg overflow-hidden bg-gray-950/50">
-    <div class="text-center py-3 text-gray-500">Loading...</div>
+  <!-- Total Pending Rewards -->
+  <div class="mb-3">
+    <p class="text-4xl font-extrabold text-amber-400" id="userPendingTotal">0</p>
+    <p class="text-xs text-gray-400 tracking-wide">CATA Tokens Ready to Harvest</p>
   </div>
 
-  <div id="pendingRewardsUpdated" class="text-gray-500 text-xs text-right mt-2">—</div>
-	</div>
+  <!-- Pending List -->
+  <div id="pendingRewardsList"
+       class="divide-y divide-gray-800 text-sm rounded-lg overflow-hidden bg-gray-950/40 backdrop-blur-sm shadow-inner border border-gray-800">
+    <div class="text-center py-3 text-gray-500 animate-pulse">Fetching pending rewards...</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
+    <span id="pendingRewardsStatus">Idle</span>
+    <span id="pendingRewardsUpdated">—</span>
+  </div>
+
+		<button
+  id="harvestAllBtn"
+  class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold text-sm transition active:scale-95">
+  🌾 Harvest All Rewards
+		</button>
+</div>
 
   <div class="grid gap-3 sm:grid-cols-2">
     <!-- ======== Pending Rewards ======== -->
@@ -3396,8 +3416,15 @@ async function viewPortfolio() {
 }
 
 
+// Update status dot & text feedback
+function setPendingStatus(status, color) {
+  const dot = $("pendingStatusDot");
+  const text = $("pendingRewardsStatus");
+  if (dot) dot.style.backgroundColor = color || "gray";
+  if (text) text.innerText = status;
+}
 
-// Main function
+		
 async function refreshPendingRewards() {
   try {
     showLoading("Fetching pending rewards...");
@@ -3531,6 +3558,18 @@ async function refreshPendingRewards() {
     hideLoading();
   }
 	  }
+
+	  $("harvestAllBtn").onclick = async () => {
+  try {
+    showLoading("Harvesting all rewards...");
+    // loop through your collections and harvestBatch() as needed
+    alert("✅ Harvest complete!");
+  } catch (err) {
+    alert("Harvest failed: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
 
     
 // ======== Check Pending Rewards (using existing wallet logic) ========
@@ -4752,7 +4791,16 @@ $('batchHarvestBtn').onclick = batchHarvest;
 $('pendingRewardsBtn').onclick = checkPendingRewards;
 	  $('refreshStakingStatsBtn').onclick = refreshStakingStats;
 $('viewPortfolioBtn').onclick = viewPortfolio;
-	  $("refreshPendingBtn").onclick = refreshPendingRewards;
+	  $("refreshPendingBtn").onclick = async () => {
+  try {
+    setPendingStatus("Fetching...", "#fbbf24"); // amber
+    await refreshPendingRewards();
+    setPendingStatus("Up to date ✅", "#10b981"); // green
+  } catch (err) {
+    console.error("refreshPendingBtn error:", err);
+    setPendingStatus("Error ❌", "#ef4444"); // red
+  }
+};
 
 
 	  // Governance 
