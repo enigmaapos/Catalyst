@@ -3415,16 +3415,6 @@ async function viewPortfolio() {
   }
 }
 
-
-// Update status dot & text feedback
-function setPendingStatus(status, color) {
-  const dot = $("pendingStatusDot");
-  const text = $("pendingRewardsStatus");
-  if (dot) dot.style.backgroundColor = color || "gray";
-  if (text) text.innerText = status;
-}
-
-
 // ======== 🔹 Helper: Aggregate All Pending Rewards ========
 async function getAllPendingRewards() {
   if (!contracts.staking || !userAddr) {
@@ -3437,14 +3427,19 @@ async function getAllPendingRewards() {
   let totalRewards = ethers.BigNumber.from(0);
   const pendingDetails = [];
 
-  const MAX_INDEX_SCAN = 200; // limit per collection to avoid RPC overload
+  const baseRewardRate = await contracts.staking.baseRewardRate();
+  const currentBlock = await provider.getBlockNumber();
+  console.log("📊 Base Reward Rate:", baseRewardRate.toString());
+  console.log("⛓️ Current Block:", currentBlock);
+
+  const MAX_INDEX_SCAN = 200;
 
   for (let i = 0; i < count; i++) {
     const collectionAddr = await contracts.staking.registeredCollections(i);
     let collectionRewards = ethers.BigNumber.from(0);
     const tokenIds = [];
 
-    // ---- Collect all NFTs user staked in this collection ----
+    // ---- Collect all staked NFTs for this collection ----
     for (let j = 0; j < MAX_INDEX_SCAN; j++) {
       try {
         const tokenIdBN = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr, j);
@@ -3452,24 +3447,42 @@ async function getAllPendingRewards() {
         if (!tokenId || tokenId === "0") break;
         tokenIds.push(tokenId);
       } catch {
-        break; // stop when out of range
+        break;
       }
     }
 
     if (tokenIds.length === 0) continue;
 
-    // ---- Fetch pending rewards in parallel ----
-    const pendingPromises = tokenIds.map((id) =>
-      contracts.staking.pendingRewards(collectionAddr, userAddr, id)
-    );
+    // ---- Compute pending rewards for each NFT ----
+    for (let tokenId of tokenIds) {
+      try {
+        const info = await contracts.staking.stakeLog(collectionAddr, userAddr, tokenId);
+        const currentlyStaked = info[0];
+        const isPermanent = info[2];
+        const unstakeDeadlineBlock = info[3].toNumber();
+        const lastHarvestBlock = info[4].toNumber();
 
-    const settled = await Promise.allSettled(pendingPromises);
-    settled.forEach((r) => {
-      if (r.status === "fulfilled" && r.value)
-        collectionRewards = collectionRewards.add(r.value);
-    });
+        // Skip invalid or expired term stakes
+        if (!currentlyStaked) {
+          console.log(`🚫 Skipping #${tokenId}: not currently staked`);
+          continue;
+        }
+        if (!isPermanent && currentBlock >= unstakeDeadlineBlock) {
+          console.log(`⏰ Skipping #${tokenId}: term expired`);
+          continue;
+        }
 
-    // Skip collections that return zero rewards
+        // Call contract to fetch actual pending rewards
+        const pending = await contracts.staking.pendingRewards(collectionAddr, userAddr, tokenId);
+        if (pending.gt(0)) {
+          console.log(`💰 ${collectionAddr} #${tokenId} pending:`, pending.toString());
+          collectionRewards = collectionRewards.add(pending);
+        }
+      } catch (err) {
+        console.warn(`⚠️ Failed fetching pending for ${collectionAddr} #${tokenId}`, err.message);
+      }
+    }
+
     if (collectionRewards.eq(0)) continue;
 
     totalRewards = totalRewards.add(collectionRewards);
@@ -3481,6 +3494,7 @@ async function getAllPendingRewards() {
     });
   }
 
+  console.log("✅ Total pending (raw):", totalRewards.toString());
   return { totalRewards, pendingDetails };
 }
 
@@ -3488,7 +3502,7 @@ async function getAllPendingRewards() {
 async function refreshPendingRewards() {
   try {
     showLoading("Fetching pending rewards...");
-    setPendingStatus?.("Fetching...", "#fbbf24"); // optional status dot
+    setPendingStatus?.("Fetching...", "#fbbf24");
 
     const list = $("pendingRewardsList");
     list.innerHTML = `<div class="text-center py-3 text-gray-500 animate-pulse">
@@ -3498,7 +3512,7 @@ async function refreshPendingRewards() {
     const { totalRewards, pendingDetails } = await getAllPendingRewards();
     list.innerHTML = "";
 
-    // ---- Display each collection ----
+    // ---- Render UI ----
     let totalReadable = 0;
     for (const item of pendingDetails) {
       const readable = Number(ethers.utils.formatUnits(item.rewards, 18));
@@ -3522,7 +3536,7 @@ async function refreshPendingRewards() {
       list.appendChild(div);
     }
 
-    // ---- Update total rewards ----
+    // ---- Update total ----
     animateNumber("userPendingTotal", totalReadable);
 
     if (pendingDetails.length === 0) {
@@ -3584,6 +3598,13 @@ $("harvestAllBtn").onclick = async () => {
   }
 };
 
+// ======== 🟢 Optional: Status Helper ========
+function setPendingStatus(status, color) {
+  const dot = $("pendingStatusDot");
+  const text = $("pendingRewardsStatus");
+  if (dot) dot.style.backgroundColor = color || "gray";
+  if (text) text.innerText = status;
+		}
     
 // ======== Check Pending Rewards (using existing wallet logic) ========
 async function checkPendingRewards() {
