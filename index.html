@@ -3416,14 +3416,21 @@ async function refreshPendingRewards() {
     const list = $("pendingRewardsList");
     list.innerHTML = "";
 
+    // 🔹 FIXED LOOP STARTS HERE
     for (let i = 0; i < count; i++) {
       const collectionAddr = await contracts.staking.registeredCollections(i);
       const portfolio = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr);
-      if (!portfolio || portfolio.length === 0) continue;
+
+      // handle possible non-array return
+      const tokenIds = Array.isArray(portfolio)
+        ? portfolio.map((id) => id.toString())
+        : [];
+
+      if (!tokenIds || tokenIds.length === 0) continue;
 
       let collectionRewards = ethers.BigNumber.from(0);
 
-      for (let tokenId of portfolio) {
+      for (let tokenId of tokenIds) {
         const pending = await contracts.staking.pendingRewards(collectionAddr, userAddr, tokenId);
         collectionRewards = collectionRewards.add(pending);
       }
@@ -3441,6 +3448,7 @@ async function refreshPendingRewards() {
         list.appendChild(div);
       }
     }
+    // 🔹 FIXED LOOP ENDS HERE
 
     const totalReadable = Number(ethers.utils.formatUnits(totalRewards, 18));
     animateNumber("userPendingTotal", totalReadable);
@@ -3451,14 +3459,14 @@ async function refreshPendingRewards() {
 
     $("pendingRewardsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
   } catch (e) {
-  console.error("❌ refreshPendingRewards error:", e);
-  const msg = e && e.message ? e.message : JSON.stringify(e);
-  $("pendingRewardsList").innerHTML = `
-    <div class="text-center py-3 text-red-400">
-      Error loading rewards:<br>
-      <span class="text-xs text-gray-500">${msg}</span>
-    </div>`;
-	} finally {
+    console.error("❌ refreshPendingRewards error:", e);
+    const msg = e && e.message ? e.message : JSON.stringify(e);
+    $("pendingRewardsList").innerHTML = `
+      <div class="text-center py-3 text-red-400">
+        Error loading rewards:<br>
+        <span class="text-xs text-gray-500">${msg}</span>
+      </div>`;
+  } finally {
     hideLoading();
   }
 }
