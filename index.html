@@ -3418,22 +3418,34 @@ async function refreshPendingRewards() {
 
     // 🔹 FIXED LOOP STARTS HERE
     for (let i = 0; i < count; i++) {
-      const collectionAddr = await contracts.staking.registeredCollections(i);
-      const portfolio = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr);
+  const collectionAddr = await contracts.staking.registeredCollections(i);
+  const portfolio = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr);
 
-      // handle possible non-array return
-      const tokenIds = Array.isArray(portfolio)
-        ? portfolio.map((id) => id.toString())
-        : [];
+  console.log("Portfolio for", collectionAddr, "=>", portfolio);
 
-      if (!tokenIds || tokenIds.length === 0) continue;
+  // ✅ Extract token IDs safely
+  let tokenIds = [];
+  if (Array.isArray(portfolio)) {
+    tokenIds = portfolio.map((id) => id.toString());
+  } else if (portfolio && typeof portfolio === "object") {
+    if (Array.isArray(portfolio.tokenIds)) {
+      tokenIds = portfolio.tokenIds.map((id) => id.toString());
+    } else {
+      tokenIds = Object.values(portfolio)
+        .filter((v) => v && v._isBigNumber)
+        .map((v) => v.toString());
+    }
+  }
 
-      let collectionRewards = ethers.BigNumber.from(0);
+  if (!tokenIds.length) continue;
 
-      for (let tokenId of tokenIds) {
-        const pending = await contracts.staking.pendingRewards(collectionAddr, userAddr, tokenId);
-        collectionRewards = collectionRewards.add(pending);
-      }
+  let collectionRewards = ethers.BigNumber.from(0);
+
+  for (let tokenId of tokenIds) {
+    const pending = await contracts.staking.pendingRewards(collectionAddr, userAddr, tokenId);
+    collectionRewards = collectionRewards.add(pending);
+  }
+
 
       if (collectionRewards.gt(0)) {
         const readable = Number(ethers.utils.formatUnits(collectionRewards, 18));
