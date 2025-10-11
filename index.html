@@ -3424,7 +3424,7 @@ function setPendingStatus(status, color) {
   if (text) text.innerText = status;
 }
 
-		
+
 // ======== 🔹 Helper: Aggregate All Pending Rewards ========
 async function getAllPendingRewards() {
   if (!contracts.staking || !userAddr) {
@@ -3437,14 +3437,14 @@ async function getAllPendingRewards() {
   let totalRewards = ethers.BigNumber.from(0);
   const pendingDetails = [];
 
-  const MAX_INDEX_SCAN = 200;
+  const MAX_INDEX_SCAN = 200; // limit per collection to avoid RPC overload
 
   for (let i = 0; i < count; i++) {
     const collectionAddr = await contracts.staking.registeredCollections(i);
     let collectionRewards = ethers.BigNumber.from(0);
     const tokenIds = [];
 
-    // Collect user’s staked NFTs per collection
+    // ---- Collect all NFTs user staked in this collection ----
     for (let j = 0; j < MAX_INDEX_SCAN; j++) {
       try {
         const tokenIdBN = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr, j);
@@ -3452,23 +3452,26 @@ async function getAllPendingRewards() {
         if (!tokenId || tokenId === "0") break;
         tokenIds.push(tokenId);
       } catch {
-        break;
+        break; // stop when out of range
       }
     }
 
     if (tokenIds.length === 0) continue;
 
-    // Fetch pending rewards for all NFTs in this collection
+    // ---- Fetch pending rewards in parallel ----
     const pendingPromises = tokenIds.map((id) =>
       contracts.staking.pendingRewards(collectionAddr, userAddr, id)
     );
 
     const settled = await Promise.allSettled(pendingPromises);
     settled.forEach((r) => {
-      if (r.status === "fulfilled") collectionRewards = collectionRewards.add(r.value);
+      if (r.status === "fulfilled" && r.value)
+        collectionRewards = collectionRewards.add(r.value);
     });
 
-    // Add to global total
+    // Skip collections that return zero rewards
+    if (collectionRewards.eq(0)) continue;
+
     totalRewards = totalRewards.add(collectionRewards);
 
     pendingDetails.push({
@@ -3485,15 +3488,18 @@ async function getAllPendingRewards() {
 async function refreshPendingRewards() {
   try {
     showLoading("Fetching pending rewards...");
+    setPendingStatus?.("Fetching...", "#fbbf24"); // optional status dot
+
     const list = $("pendingRewardsList");
-    list.innerHTML = `<div class="text-center py-3 text-gray-500 animate-pulse">Fetching rewards...</div>`;
+    list.innerHTML = `<div class="text-center py-3 text-gray-500 animate-pulse">
+      Fetching rewards...
+    </div>`;
 
     const { totalRewards, pendingDetails } = await getAllPendingRewards();
     list.innerHTML = "";
 
+    // ---- Display each collection ----
     let totalReadable = 0;
-
-    // Populate UI
     for (const item of pendingDetails) {
       const readable = Number(ethers.utils.formatUnits(item.rewards, 18));
       totalReadable += readable;
@@ -3516,7 +3522,7 @@ async function refreshPendingRewards() {
       list.appendChild(div);
     }
 
-    // Update total
+    // ---- Update total rewards ----
     animateNumber("userPendingTotal", totalReadable);
 
     if (pendingDetails.length === 0) {
@@ -3524,16 +3530,16 @@ async function refreshPendingRewards() {
     }
 
     $("pendingRewardsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
-    setPendingStatus("Up to date ✅", "#10b981"); // optional if using status dot
+    setPendingStatus?.("Up to date ✅", "#10b981");
   } catch (e) {
     console.error("❌ refreshPendingRewards error:", e);
-    const msg = e && e.message ? e.message : JSON.stringify(e);
+    const msg = e?.message || JSON.stringify(e);
     $("pendingRewardsList").innerHTML = `
       <div class="text-center py-3 text-red-400">
         Error loading rewards:<br>
         <span class="text-xs text-gray-500">${msg}</span>
       </div>`;
-    setPendingStatus("Error ❌", "#ef4444");
+    setPendingStatus?.("Error ❌", "#ef4444");
   } finally {
     hideLoading();
   }
@@ -3543,33 +3549,37 @@ async function refreshPendingRewards() {
 $("harvestAllBtn").onclick = async () => {
   try {
     showLoading("Harvesting all rewards...");
+    setPendingStatus?.("Harvesting...", "#fbbf24");
 
     const { pendingDetails } = await getAllPendingRewards();
+    const harvestable = pendingDetails.filter((p) => p.rewards.gt(0));
 
-    // Only harvest if there are rewards
-    let harvestedCollections = 0;
-    for (const item of pendingDetails) {
-      if (item.rewards.gt(0)) {
-        try {
-          const tx = await contracts.staking.harvestBatch(item.collection, userAddr);
-          log("🌾 Harvest tx sent:", tx.hash);
-          await tx.wait();
-          harvestedCollections++;
-        } catch (err) {
-          console.warn("Failed to harvest:", item.collection, err.message);
-        }
+    if (harvestable.length === 0) {
+      hideLoading();
+      setPendingStatus?.("No rewards to harvest", "#9ca3af");
+      return alert("ℹ️ No pending rewards to harvest.");
+    }
+
+    let harvestedCount = 0;
+
+    for (const item of harvestable) {
+      try {
+        const tx = await contracts.staking.harvestBatch(item.collection, userAddr);
+        log("🌾 Harvest tx sent:", tx.hash);
+        await tx.wait();
+        harvestedCount++;
+      } catch (err) {
+        console.warn("Failed to harvest:", item.collection, err.message);
       }
     }
 
     hideLoading();
-    alert(
-      harvestedCollections > 0
-        ? `✅ Successfully harvested rewards from ${harvestedCollections} collection(s)!`
-        : "ℹ️ No rewards to harvest."
-    );
+    setPendingStatus?.("Up to date ✅", "#10b981");
+    alert(`✅ Harvested rewards from ${harvestedCount} collection${harvestedCount > 1 ? "s" : ""}.`);
     await refreshPendingRewards();
   } catch (err) {
     hideLoading();
+    setPendingStatus?.("Error ❌", "#ef4444");
     alert("Harvest failed: " + (err.message || err));
   }
 };
