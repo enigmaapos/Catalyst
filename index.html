@@ -2936,7 +2936,7 @@ async function approveNFT(){
   }
 }
 
-	  $('permApproveFeeBtn').onclick = async () => {
+	$('permApproveFeeBtn').onclick = async () => {
   try {
     showLoading("Approving CATA tokens for staking fees...");
 
@@ -2951,23 +2951,38 @@ async function approveNFT(){
     const stakingAddr = $('addrStaking').value.trim();
     if (!stakingAddr) {
       hideLoading();
-      return alert("❗ Staking contract address is required.");
+      return alert("❗ Staking contract address required.");
     }
 
     const amt = ethers.constants.MaxUint256;
-    const tx = await contracts.cata.approve(stakingAddr, amt);
-    log("🟡 Approve CATA tx sent:", tx.hash);
 
-    showLoading("Waiting for transaction confirmation...");
+    // 👇 Disable button + visual feedback
+    const btn = $('permApproveFeeBtn');
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Waiting for wallet...";
+
+    // 🔹 Send tx
+    const tx = await contracts.cata.approve(stakingAddr, amt);
+    log("approve CATA tx", tx.hash);
+
+    // 👇 Update message
+    showLoading("⏳ Transaction sent... waiting for confirmation...");
+    btn.innerHTML = "⏳ Confirming...";
+
     await tx.wait();
 
-    log("✅ CATA approval completed");
+    // ✅ Done
+    log("approve CATA done");
     alert("✅ Successfully approved CATA for staking fees!");
   } catch (e) {
-    const msg = e && e.message ? e.message : e;
-    log("❌ permApproveFee error:", msg);
-    alert("Approval failed: " + msg);
+    const msg = e?.message || e;
+    log("permApproveFee err", msg);
+    alert("❌ Approval failed: " + msg);
   } finally {
+    // Restore button + remove loader
+    const btn = $('permApproveFeeBtn');
+    btn.disabled = false;
+    btn.innerHTML = "Approve Fee (CATA)";
     hideLoading();
   }
 };
@@ -4565,25 +4580,6 @@ $('refreshBluechipBtn').onclick = refreshBluechip;
 	  $('refreshStakingTransparencyBtn').onclick = fetchStakingTransparency;
     $('approveNFTBtn').onclick = approveNFT;
     $('termStakeBtn').onclick = termStake;
-	     $('permApproveFeeBtn').onclick = async () => {
-      try {
-        if (!contracts.cata) {
-          await attachContractsIfSet();
-          if (!contracts.cata) return alert('Set CATA contract');
-        }
-
-        const stakingAddr = $('addrStaking').value.trim();
-        if (!stakingAddr) return alert('staking address required');
-
-        const amt = ethers.constants.MaxUint256;
-        const tx = await contracts.cata.approve(stakingAddr, amt);
-        log('approve CATA tx', tx.hash);
-        await tx.wait();
-        log('approve CATA done');
-      } catch (e) {
-        log('permApproveFee err', e && e.message ? e.message : e);
-      }
-    };
     $('permStakeBtn').onclick = permanentStake;
     $('unstakeBtn').onclick = unstake;
     $('harvestBtn').onclick = harvest;
