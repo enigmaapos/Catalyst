@@ -1717,27 +1717,7 @@ function stopCataBalanceAutoRefresh() {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
-	  // ======== Smooth Number Animation ========
-        function animateNumber(elementId, newValue, duration = 600) {
-            const el = $(elementId);
-            if (!el) return;
-
-            const oldValue = parseFloat(el.innerText.replace(/,/g, "")) || 0;
-            const diff = newValue - oldValue;
-            const steps = Math.max(10, Math.floor(duration / 16));
-            let currentStep = 0;
-
-            const timer = setInterval(() => {
-                currentStep++;
-                const progress = currentStep / steps;
-                const eased = progress * (2 - progress); // smooth ease-out
-                const value = oldValue + diff * eased;
-                // Use fixed 0 decimal places for NFT counts
-                el.innerText = Math.round(value).toLocaleString(); 
-                if (currentStep >= steps) clearInterval(timer);
-            }, 16);
-		}
-
+	
 // ---------- Connect / Disconnect ----------
 async function connect() {
   try {
@@ -3150,66 +3130,79 @@ function parseBatchHarvestPairs() {
   }
 }
 	  
-	
-	     // ======== Core Logic: Refresh User Staking Stats (Updated) ========
-        async function refreshStakingStats() {
-            try {
-                showLoading("Fetching your staking portfolio...");
+// ======== Smooth Number Animation ========
+function animateNumber(elementId, newValue, duration = 600) {
+  const el = $(elementId);
+  if (!el) return;
 
-                await attachContractsIfSet();
-                if (!contracts.staking || !userAddr) {
-                    log('Error: Staking contract or user address not found. Cannot proceed.');
-                    return;
-                }
+  const oldValue = parseFloat(el.innerText.replace(/,/g, "")) || 0;
+  const diff = newValue - oldValue;
+  const steps = Math.max(10, Math.floor(duration / 16));
+  let currentStep = 0;
 
-                // 1. Fetch Global Cap
-                const globalCap = await contracts.staking.GLOBAL_NFT_CAP();
-                
-                // 2. Fetch the full portfolio using the contract function
-                const portfolio = await contracts.staking.stakePortfolioByUser(userAddr);
-                
-                // 3. Calculate counts based on the 'isPermanent' property
-                let totalStaked = portfolio.length;
-                let termCount = 0;
-                let permCount = 0;
+  const timer = setInterval(() => {
+    currentStep++;
+    const progress = currentStep / steps;
+    const eased = progress * (2 - progress); // smooth ease-out
+    const value = oldValue + diff * eased;
+    el.innerText = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    if (currentStep >= steps) clearInterval(timer);
+  }, 16);
+	}
 
-                portfolio.forEach(token => {
-                    // Check the boolean flag to differentiate
-                    if (token.isPermanent) {
-                        permCount++;
-                    } else {
-                        termCount++;
-                    }
-                });
 
-                // 4. Update numbers with smooth animation
-                animateNumber("userStakedTotal", totalStaked);
-                animateNumber("userStakedTerm", termCount);
-                animateNumber("userStakedPerm", permCount);
 
-                // 5. Compute utilization
-                const capValue = Number(globalCap);
-                const percent = capValue > 0
-                    ? ((totalStaked / capValue) * 100).toFixed(2)
-                    : 0;
-                
-                const percentageDisplay = `${percent}% of Global Cap (Max ${capValue.toLocaleString()})`;
-                $("userStakingUsageText").innerText = percentageDisplay;
-                // Cap the bar at 100% just in case of over-staking
-                $("userStakingUsageBar").style.width = `${Math.min(100, parseFloat(percent))}%`; 
+    // ======== User-Based Staking Stats (from events) ========
+async function refreshStakingStats() {
+  try {
+    showLoading("Fetching your staking stats...");
 
-                $("stakingStatsUpdated").innerText = `Last Updated: ${new Date().toLocaleTimeString()}`;
+    if (!contracts.staking || !userAddr) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Staking contract not found.');
+    }
 
-                log(`✅ Stats refreshed. Total: ${totalStaked}, Term: ${termCount}, Perm: ${permCount}`);
+    // ✅ Fetch Global Cap
+    const globalCap = await contracts.staking.GLOBAL_NFT_CAP();
 
-            } catch (e) {
-                log("❌ refreshStakingStats error:", e);
-                alert(`Failed to fetch staking stats: ${e.message || e}`);
-            } finally {
-                hideLoading();
-            }
-	  }
+    // ✅ Query events (replace event names if your contract differs)
+    const stakedFilter = contracts.staking.filters.NFTStaked(userAddr, null, null);
+    const unstakedFilter = contracts.staking.filters.NFTUnstaked(userAddr, null, null);
 
+    const [stakedEvents, unstakedEvents] = await Promise.all([
+      contracts.staking.queryFilter(stakedFilter, 0, "latest"),
+      contracts.staking.queryFilter(unstakedFilter, 0, "latest"),
+    ]);
+
+    // ✅ Calculate active stakes
+    const stakedCount = stakedEvents.length - unstakedEvents.length;
+    const term = Math.max(0, stakedCount); // approximate term NFTs
+    const perm = 0; // unless permanent events exist separately
+
+    // ✅ Update numbers with smooth animation
+    animateNumber("userStakedTotal", stakedCount);
+    animateNumber("userStakedTerm", term);
+    animateNumber("userStakedPerm", perm);
+
+    // ✅ Compute utilization
+    const percent = globalCap.gt(0)
+      ? ((stakedCount / Number(globalCap)) * 100).toFixed(2)
+      : 0;
+
+    $("userStakingUsageText").innerText = `${percent}% of Global Cap`;
+    $("userStakingUsageBar").style.width = `${percent}%`;
+
+    $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+
+    log(`✅ User staking stats refreshed — ${stakedCount} NFTs active`);
+  } catch (e) {
+    log("❌ refreshStakingStats error:", e.message || e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+	  
 
 	  // ======== View Portfolio (using existing wallet logic) ========
 async function viewPortfolio() {
