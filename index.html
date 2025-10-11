@@ -3563,43 +3563,35 @@ $("harvestAllBtn").onclick = async () => {
     setPendingStatus?.("Harvesting...", "#fbbf24");
 
     const { pendingDetails } = await getAllPendingRewards();
+
     let harvestedCount = 0;
+    let txCount = 0;
 
     for (const item of pendingDetails) {
-      // ✅ Convert rewards to BigNumber safely
-      const rewardBN = ethers.BigNumber.isBigNumber(item.rewards)
-        ? item.rewards
-        : ethers.BigNumber.from(
-            Math.floor(Number(item.rewards) * 1e18).toString()
-          );
-
-      if (rewardBN.gt(0) && item.tokenIds && item.tokenIds.length > 0) {
-        try {
-          log(
-            `🌾 Harvesting ${item.tokenIds.length} NFTs from ${item.collection}...`
-          );
-          const tx = await contracts.staking.harvestBatch(
-            item.collection,
-            item.tokenIds
-          );
-          log("🌾 Harvest tx sent:", tx.hash);
-          await tx.wait();
-          harvestedCount++;
-        } catch (err) {
-          console.warn("Failed to harvest:", item.collection, err.message);
+      if (item.rewards.gt(0)) {
+        for (const tokenId of item.tokenIds || []) {
+          try {
+            const tx = await contracts.staking.harvest(item.collection, tokenId);
+            log("🌾 Harvest tx sent:", tx.hash);
+            await tx.wait();
+            txCount++;
+          } catch (err) {
+            console.warn("❌ Harvest failed:", item.collection, "token", tokenId, err.message);
+          }
         }
+        harvestedCount++;
       }
     }
 
     hideLoading();
     setPendingStatus?.("Up to date ✅", "#10b981");
+
     alert(
       harvestedCount > 0
-        ? `✅ Harvested rewards from ${harvestedCount} collection${
-            harvestedCount > 1 ? "s" : ""
-          }!`
+        ? `✅ Successfully harvested rewards from ${txCount} NFT${txCount > 1 ? "s" : ""}!`
         : "ℹ️ No rewards to harvest."
     );
+
     await refreshPendingRewards();
   } catch (err) {
     hideLoading();
