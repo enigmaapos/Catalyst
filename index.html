@@ -1688,7 +1688,7 @@ async function attachContractsIfSet() {
         refreshQuickStatus(),
 		  fetchTopCollectionsUI(),
 		  getTop10BluechipBurners(),
-		  refreshPendingRewards() 
+		  refreshPendingRewards()
       ]);
 
       log("✅ All dashboard sections refreshed successfully");
@@ -4695,8 +4695,6 @@ $('pendingRewardsBtn').onclick = checkPendingRewards;
 $('viewPortfolioBtn').onclick = viewPortfolio;
 	  $("refreshPendingBtn").onclick = refreshPendingRewards;
 
-// Auto-refresh every minute
-setInterval(refreshPendingRewards, 60000);
 
 	  // Governance 
 	  $('refreshProposalsBtn').onclick = fetchProposalsExplorer;
