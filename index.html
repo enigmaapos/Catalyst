@@ -3445,7 +3445,7 @@ async function refreshPendingRewards() {
         const div = document.createElement("div");
         div.className = "flex justify-between py-2 px-3 hover:bg-gray-800/50 transition";
         div.innerHTML = `
-          <span class="font-mono text-gray-300">${shortAddr(collectionAddr)}</span>
+          <span class="font-mono text-gray-300">${shortenAddr(collectionAddr)}</span>
           <span class="text-amber-400 font-semibold">${readable.toLocaleString(undefined, { maximumFractionDigits: 4 })} CATA</span>
         `;
         list.appendChild(div);
