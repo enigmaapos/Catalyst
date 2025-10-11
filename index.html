@@ -3556,41 +3556,43 @@ async function refreshPendingRewards() {
   }
 }
 
-// ======== 🌾 Harvest All Button ========
+// ======== 🌾 Harvest All Button (using per-NFT harvest) ========
 $("harvestAllBtn").onclick = async () => {
   try {
     showLoading("Harvesting all rewards...");
     setPendingStatus?.("Harvesting...", "#fbbf24");
 
     const { pendingDetails } = await getAllPendingRewards();
-
     let harvestedCount = 0;
     let txCount = 0;
 
     for (const item of pendingDetails) {
-      if (item.rewards.gt(0)) {
-        for (const tokenId of item.tokenIds || []) {
-          try {
-            const tx = await contracts.staking.harvest(item.collection, tokenId);
-            log("🌾 Harvest tx sent:", tx.hash);
-            await tx.wait();
-            txCount++;
-          } catch (err) {
-            console.warn("❌ Harvest failed:", item.collection, "token", tokenId, err.message);
-          }
+      if (!item.tokenIds || item.tokenIds.length === 0) continue;
+
+      for (const tokenId of item.tokenIds) {
+        try {
+          // 🔹 Skip zero-reward NFTs if available
+          if (Number(item.rewards) <= 0) continue;
+
+          const tx = await contracts.staking.harvest(item.collection, tokenId);
+          log(`🌾 Harvest tx sent for ${tokenId}:`, tx.hash);
+          await tx.wait();
+          harvestedCount++;
+          txCount++;
+        } catch (err) {
+          console.warn(`❌ Harvest failed for ${tokenId}`, err.message);
         }
-        harvestedCount++;
       }
     }
 
     hideLoading();
     setPendingStatus?.("Up to date ✅", "#10b981");
 
-    alert(
-      harvestedCount > 0
-        ? `✅ Successfully harvested rewards from ${txCount} NFT${txCount > 1 ? "s" : ""}!`
-        : "ℹ️ No rewards to harvest."
-    );
+    if (txCount > 0) {
+      alert(`✅ Successfully harvested ${harvestedCount} NFT${harvestedCount > 1 ? "s" : ""}!`);
+    } else {
+      alert("ℹ️ No rewards available to harvest.");
+    }
 
     await refreshPendingRewards();
   } catch (err) {
@@ -3599,6 +3601,7 @@ $("harvestAllBtn").onclick = async () => {
     alert("Harvest failed: " + (err.message || err));
   }
 };
+    
 
 // ======== 🟢 Optional: Status Helper ========
 function setPendingStatus(status, color) {
