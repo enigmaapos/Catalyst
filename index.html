@@ -3458,12 +3458,7 @@ async function refreshPendingRewards() {
   }
 }
 
-$("refreshPendingBtn").onclick = refreshPendingRewards;
-
-// Auto-refresh every minute
-setInterval(refreshPendingRewards, 60000);
     
-
 // ======== Check Pending Rewards (using existing wallet logic) ========
 async function checkPendingRewards() {
   try {
@@ -4683,6 +4678,10 @@ $('batchHarvestBtn').onclick = batchHarvest;
 $('pendingRewardsBtn').onclick = checkPendingRewards;
 	  $('refreshStakingStatsBtn').onclick = refreshStakingStats;
 $('viewPortfolioBtn').onclick = viewPortfolio;
+	  $("refreshPendingBtn").onclick = refreshPendingRewards;
+
+// Auto-refresh every minute
+setInterval(refreshPendingRewards, 60000);
 
 	  // Governance 
 	  $('refreshProposalsBtn').onclick = fetchProposalsExplorer;
