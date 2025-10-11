@@ -3416,8 +3416,7 @@ async function viewPortfolio() {
   }
 }
 	  
-
-// ======== 🔹 Helper: Aggregate All Pending Rewards (Wallet-Logic Version) ========
+// ======== 🔹 Helper: Aggregate All Pending Rewards (Off-chain math version) ========
 async function getAllPendingRewards() {
   if (!contracts.staking || !userAddr) {
     await attachContractsIfSet();
@@ -3426,66 +3425,44 @@ async function getAllPendingRewards() {
 
   const totalCollections = await contracts.staking.registeredCount();
   const count = Number(totalCollections.toString());
+  let totalRewards = 0;
   const pendingDetails = [];
-  let totalRewards = 0; // simple number math like your wallet version
-
-  // === Get constants once ===
+  const currentBlock = await provider.getBlockNumber();
   const baseRewardRate = (await contracts.staking.baseRewardRate()).toNumber();
   const blocksPerUnit = (await contracts.staking.numberOfBlocksPerRewardUnit()).toNumber();
-  const currentBlock = await provider.getBlockNumber();
-
-  if (!baseRewardRate || !blocksPerUnit) {
-    throw new Error("Reward parameters not initialized in contract.");
-  }
-
   const MAX_INDEX_SCAN = 200;
 
   for (let i = 0; i < count; i++) {
     const collectionAddr = await contracts.staking.registeredCollections(i);
-    let collectionRewards = 0;
     const tokenIds = [];
+    let collectionRewards = 0;
 
-    // --- Collect all NFTs the user has staked ---
     for (let j = 0; j < MAX_INDEX_SCAN; j++) {
       try {
         const tokenIdBN = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr, j);
         const tokenId = tokenIdBN.toString();
         if (!tokenId || tokenId === "0") break;
-        tokenIds.push(tokenId);
+
+        const log = await contracts.staking.stakeLog(collectionAddr, userAddr, tokenId);
+        const currentlyStaked = log[0];
+        const lastHarvestBlock = log[4];
+
+        if (currentlyStaked) {
+          const blocksElapsed = currentBlock - lastHarvestBlock.toNumber();
+          const reward = (blocksElapsed * baseRewardRate) / blocksPerUnit;
+          collectionRewards += reward;
+          tokenIds.push(tokenId);
+        }
       } catch {
         break;
       }
     }
 
-    if (tokenIds.length === 0) continue;
-
-    // --- Estimate rewards for each NFT (same logic as checkPendingRewards) ---
-    for (let tokenId of tokenIds) {
-      try {
-        const info = await contracts.staking.stakeLog(collectionAddr, userAddr, tokenId);
-        const currentlyStaked = info[0];
-        const isPermanent = info[2];
-        const unstakeDeadlineBlock = info[3].toNumber();
-        const lastHarvestBlock = info[4].toNumber();
-
-        if (!currentlyStaked) continue;
-        if (!isPermanent && currentBlock >= unstakeDeadlineBlock) continue; // term expired
-
-        const blocksElapsed = currentBlock - lastHarvestBlock;
-        if (blocksElapsed <= 0) continue;
-
-        // 🧮 Same formula as your wallet code
-        const reward = ((blocksElapsed * baseRewardRate) / blocksPerUnit) * 0.9; // 90% user share
-        collectionRewards += reward;
-      } catch (err) {
-        console.warn("Skipping token", tokenId, err.message);
-      }
-    }
-
-    if (collectionRewards > 0) {
+    if (tokenIds.length > 0 && collectionRewards > 0) {
       totalRewards += collectionRewards;
       pendingDetails.push({
         collection: collectionAddr,
+        tokenIds,
         tokenCount: tokenIds.length,
         rewards: collectionRewards,
       });
