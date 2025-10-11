@@ -1708,7 +1708,8 @@ async function attachContractsIfSet() {
         refreshQuickStatus(),
 		  fetchTopCollectionsUI(),
 		  getTop10BluechipBurners(),
-		  refreshPendingRewards()
+		  refreshPendingRewards(),
+		  getAllPendingRewards()
       ]);
 
       log("✅ All dashboard sections refreshed successfully");
@@ -3414,8 +3415,9 @@ async function viewPortfolio() {
     hideLoading();
   }
 }
+	  
 
-// ======== 🔹 Helper: Aggregate All Pending Rewards ========
+// ======== 🔹 Helper: Estimate All Pending Rewards (Off-Chain) ========
 async function getAllPendingRewards() {
   if (!contracts.staking || !userAddr) {
     await attachContractsIfSet();
@@ -3424,22 +3426,27 @@ async function getAllPendingRewards() {
 
   const totalCollections = await contracts.staking.registeredCount();
   const count = Number(totalCollections.toString());
-  let totalRewards = ethers.BigNumber.from(0);
+  let totalRewards = 0; // keep as number since we'll compute manually
   const pendingDetails = [];
 
-  const baseRewardRate = await contracts.staking.baseRewardRate();
+  // fetch constants once
+  const baseRewardRate = (await contracts.staking.baseRewardRate()).toNumber();
+  const blocksPerUnit = (await contracts.staking.numberOfBlocksPerRewardUnit()).toNumber();
   const currentBlock = await provider.getBlockNumber();
-  console.log("📊 Base Reward Rate:", baseRewardRate.toString());
-  console.log("⛓️ Current Block:", currentBlock);
+
+  if (!baseRewardRate || !blocksPerUnit)
+    throw new Error("Reward parameters not initialized.");
+
+  console.log("📊 baseRewardRate:", baseRewardRate, "blocksPerUnit:", blocksPerUnit);
 
   const MAX_INDEX_SCAN = 200;
 
   for (let i = 0; i < count; i++) {
     const collectionAddr = await contracts.staking.registeredCollections(i);
-    let collectionRewards = ethers.BigNumber.from(0);
+    let collectionRewards = 0;
     const tokenIds = [];
 
-    // ---- Collect all staked NFTs for this collection ----
+    // collect staked NFTs for this user
     for (let j = 0; j < MAX_INDEX_SCAN; j++) {
       try {
         const tokenIdBN = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr, j);
@@ -3453,7 +3460,6 @@ async function getAllPendingRewards() {
 
     if (tokenIds.length === 0) continue;
 
-    // ---- Compute pending rewards for each NFT ----
     for (let tokenId of tokenIds) {
       try {
         const info = await contracts.staking.stakeLog(collectionAddr, userAddr, tokenId);
@@ -3462,42 +3468,34 @@ async function getAllPendingRewards() {
         const unstakeDeadlineBlock = info[3].toNumber();
         const lastHarvestBlock = info[4].toNumber();
 
-        // Skip invalid or expired term stakes
-        if (!currentlyStaked) {
-          console.log(`🚫 Skipping #${tokenId}: not currently staked`);
-          continue;
-        }
-        if (!isPermanent && currentBlock >= unstakeDeadlineBlock) {
-          console.log(`⏰ Skipping #${tokenId}: term expired`);
-          continue;
-        }
+        if (!currentlyStaked) continue;
+        if (!isPermanent && currentBlock >= unstakeDeadlineBlock) continue; // expired term
 
-        // Call contract to fetch actual pending rewards
-        const pending = await contracts.staking.pendingRewards(collectionAddr, userAddr, tokenId);
-        if (pending.gt(0)) {
-          console.log(`💰 ${collectionAddr} #${tokenId} pending:`, pending.toString());
-          collectionRewards = collectionRewards.add(pending);
-        }
+        const blocksElapsed = currentBlock - lastHarvestBlock;
+        if (blocksElapsed <= 0) continue;
+
+        // same reward formula used on-chain
+        const reward =
+          ((blocksElapsed * baseRewardRate) / blocksPerUnit) * 0.9; // 90% user share
+        collectionRewards += reward;
       } catch (err) {
-        console.warn(`⚠️ Failed fetching pending for ${collectionAddr} #${tokenId}`, err.message);
+        console.warn("Skipping invalid token", tokenId, err.message);
       }
     }
 
-    if (collectionRewards.eq(0)) continue;
-
-    totalRewards = totalRewards.add(collectionRewards);
-
-    pendingDetails.push({
-      collection: collectionAddr,
-      tokenCount: tokenIds.length,
-      rewards: collectionRewards,
-    });
+    if (collectionRewards > 0) {
+      totalRewards += collectionRewards;
+      pendingDetails.push({
+        collection: collectionAddr,
+        tokenCount: tokenIds.length,
+        rewards: collectionRewards,
+      });
+    }
   }
 
-  console.log("✅ Total pending (raw):", totalRewards.toString());
   return { totalRewards, pendingDetails };
 }
-
+        
 // ======== 💰 Refresh Pending Rewards UI ========
 async function refreshPendingRewards() {
   try {
