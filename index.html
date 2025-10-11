@@ -3425,127 +3425,106 @@ function setPendingStatus(status, color) {
 }
 
 		
+// ======== 🔹 Helper: Aggregate All Pending Rewards ========
+async function getAllPendingRewards() {
+  if (!contracts.staking || !userAddr) {
+    await attachContractsIfSet();
+    if (!contracts.staking) throw new Error("Staking contract not found.");
+  }
+
+  const totalCollections = await contracts.staking.registeredCount();
+  const count = Number(totalCollections.toString());
+  let totalRewards = ethers.BigNumber.from(0);
+  const pendingDetails = [];
+
+  const MAX_INDEX_SCAN = 200;
+
+  for (let i = 0; i < count; i++) {
+    const collectionAddr = await contracts.staking.registeredCollections(i);
+    let collectionRewards = ethers.BigNumber.from(0);
+    const tokenIds = [];
+
+    // Collect user’s staked NFTs per collection
+    for (let j = 0; j < MAX_INDEX_SCAN; j++) {
+      try {
+        const tokenIdBN = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr, j);
+        const tokenId = tokenIdBN.toString();
+        if (!tokenId || tokenId === "0") break;
+        tokenIds.push(tokenId);
+      } catch {
+        break;
+      }
+    }
+
+    if (tokenIds.length === 0) continue;
+
+    // Fetch pending rewards for all NFTs in this collection
+    const pendingPromises = tokenIds.map((id) =>
+      contracts.staking.pendingRewards(collectionAddr, userAddr, id)
+    );
+
+    const settled = await Promise.allSettled(pendingPromises);
+    settled.forEach((r) => {
+      if (r.status === "fulfilled") collectionRewards = collectionRewards.add(r.value);
+    });
+
+    // Add to global total
+    totalRewards = totalRewards.add(collectionRewards);
+
+    pendingDetails.push({
+      collection: collectionAddr,
+      tokenCount: tokenIds.length,
+      rewards: collectionRewards,
+    });
+  }
+
+  return { totalRewards, pendingDetails };
+}
+
+// ======== 💰 Refresh Pending Rewards UI ========
 async function refreshPendingRewards() {
   try {
     showLoading("Fetching pending rewards...");
-
-    if (!contracts.staking || !userAddr) {
-      await attachContractsIfSet();
-      if (!contracts.staking) {
-        hideLoading();
-        return alert("Staking contract not found.");
-      }
-    }
-
-    const totalCollections = await contracts.staking.registeredCount();
-    const count = Number(totalCollections.toString());
-    let totalRewards = ethers.BigNumber.from(0);
     const list = $("pendingRewardsList");
+    list.innerHTML = `<div class="text-center py-3 text-gray-500 animate-pulse">Fetching rewards...</div>`;
+
+    const { totalRewards, pendingDetails } = await getAllPendingRewards();
     list.innerHTML = "";
 
-    // optional: reduce this if you know max per-user tokens is small
-    const MAX_INDEX_SCAN = 200;
+    let totalReadable = 0;
 
-    for (let i = 0; i < count; i++) {
-      const collectionAddr = await contracts.staking.registeredCollections(i);
+    // Populate UI
+    for (const item of pendingDetails) {
+      const readable = Number(ethers.utils.formatUnits(item.rewards, 18));
+      totalReadable += readable;
 
-      try {
-        // collect token IDs for this (collection, user)
-        const tokenIds = [];
-        for (let j = 0; j < MAX_INDEX_SCAN; j++) {
-          try {
-            const tokenIdBN = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr, j);
-            const tokenIdStr = tokenIdBN && tokenIdBN.toString ? tokenIdBN.toString() : String(tokenIdBN);
-
-            // stop early when empty / zero sentinel reached
-            if (!tokenIdStr || tokenIdStr === "0") break;
-
-            tokenIds.push(tokenIdStr);
-          } catch (err) {
-            // most contracts revert when out-of-range — stop on revert
-            break;
-          }
-        }
-
-        if (tokenIds.length === 0) {
-          // no tokens for this collection, skip
-          continue;
-        }
-
-        // debug: inspect collected tokenIds
-        console.log(`collection ${collectionAddr} tokenIds:`, tokenIds);
-
-        // fetch pending rewards in parallel for this collection
-        const pendingPromises = tokenIds.map((id) =>
-          contracts.staking.pendingRewards(collectionAddr, userAddr, id)
-        );
-
-        // use allSettled to avoid one failing call aborting the whole run
-        const settled = await Promise.allSettled(pendingPromises);
-
-        let collectionRewards = ethers.BigNumber.from(0);
-        settled.forEach((r, idx) => {
-          if (r.status === "fulfilled") {
-            collectionRewards = collectionRewards.add(r.value);
-          } else {
-            console.warn(
-              "pendingRewards failed for",
-              collectionAddr,
-              "tokenId",
-              tokenIds[idx],
-              "reason:",
-              r.reason
-            );
-          }
-        });
-
-        // debug: per-collection result
-        console.log(
-          `collection ${collectionAddr} rewards (raw):`,
-          collectionRewards.toString()
-        );
-
-        // append UI row even if 0 so counts are accurate, or only show >0 if preferred
-        const readable = Number(ethers.utils.formatUnits(collectionRewards, 18));
-        totalRewards = totalRewards.add(collectionRewards);
-
-        const div = document.createElement("div");
-        div.className = "flex justify-between py-2 px-3 hover:bg-gray-800/50 transition items-center";
-        div.innerHTML = `
-          <div class="flex flex-col">
-            <div class="text-sm text-gray-300 font-semibold">${shortenAddress(collectionAddr)}</div>
-            <div class="text-xs text-gray-500">${tokenIds.length} NFT${tokenIds.length>1?'s':''}</div>
+      const div = document.createElement("div");
+      div.className =
+        "flex justify-between py-2 px-3 hover:bg-gray-800/50 transition items-center";
+      div.innerHTML = `
+        <div class="flex flex-col">
+          <div class="text-sm text-gray-300 font-semibold">${shortenAddress(item.collection)}</div>
+          <div class="text-xs text-gray-500">${item.tokenCount} NFT${item.tokenCount > 1 ? "s" : ""}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-amber-400 font-semibold">
+            ${readable.toLocaleString(undefined, { maximumFractionDigits: 4 })} CATA
           </div>
-          <div class="text-right">
-            <div class="text-amber-400 font-semibold">
-              ${readable.toLocaleString(undefined, { maximumFractionDigits: 4 })} CATA
-            </div>
-            <div class="text-xs text-gray-500">Pending</div>
-          </div>
-        `;
-        list.appendChild(div);
-      } catch (colErr) {
-        console.warn("Skipping collection due to error:", collectionAddr, colErr);
-        // show a small error row optionally
-        const errDiv = document.createElement("div");
-        errDiv.className = "flex justify-between py-2 px-3 text-xs text-red-400";
-        errDiv.innerHTML = `
-          <span>${shortenAddress(collectionAddr)}</span>
-          <span>Failed to load</span>
-        `;
-        list.appendChild(errDiv);
-      }
+          <div class="text-xs text-gray-500">Pending</div>
+        </div>
+      `;
+      list.appendChild(div);
     }
 
-    // update total
-    const totalReadable = Number(ethers.utils.formatUnits(totalRewards, 18));
+    // Update total
     animateNumber("userPendingTotal", totalReadable);
 
-    if (list.innerHTML.trim() === "") {
+    if (pendingDetails.length === 0) {
       list.innerHTML = `<div class="text-center py-3 text-gray-500">No active rewards</div>`;
     }
 
     $("pendingRewardsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+    setPendingStatus("Up to date ✅", "#10b981"); // optional if using status dot
   } catch (e) {
     console.error("❌ refreshPendingRewards error:", e);
     const msg = e && e.message ? e.message : JSON.stringify(e);
@@ -3554,20 +3533,44 @@ async function refreshPendingRewards() {
         Error loading rewards:<br>
         <span class="text-xs text-gray-500">${msg}</span>
       </div>`;
+    setPendingStatus("Error ❌", "#ef4444");
   } finally {
     hideLoading();
   }
-	  }
+}
 
-	  $("harvestAllBtn").onclick = async () => {
+// ======== 🌾 Harvest All Button ========
+$("harvestAllBtn").onclick = async () => {
   try {
     showLoading("Harvesting all rewards...");
-    // loop through your collections and harvestBatch() as needed
-    alert("✅ Harvest complete!");
-  } catch (err) {
-    alert("Harvest failed: " + (err.message || err));
-  } finally {
+
+    const { pendingDetails } = await getAllPendingRewards();
+
+    // Only harvest if there are rewards
+    let harvestedCollections = 0;
+    for (const item of pendingDetails) {
+      if (item.rewards.gt(0)) {
+        try {
+          const tx = await contracts.staking.harvestBatch(item.collection, userAddr);
+          log("🌾 Harvest tx sent:", tx.hash);
+          await tx.wait();
+          harvestedCollections++;
+        } catch (err) {
+          console.warn("Failed to harvest:", item.collection, err.message);
+        }
+      }
+    }
+
     hideLoading();
+    alert(
+      harvestedCollections > 0
+        ? `✅ Successfully harvested rewards from ${harvestedCollections} collection(s)!`
+        : "ℹ️ No rewards to harvest."
+    );
+    await refreshPendingRewards();
+  } catch (err) {
+    hideLoading();
+    alert("Harvest failed: " + (err.message || err));
   }
 };
 
