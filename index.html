@@ -777,43 +777,46 @@ Catalyst Whitepaper
 <div id="stakingDashboard" class="space-y-6 text-slate-100">
 
 <!-- 🧍 My Staking Overview -->
-<div class="mt-6 bg-slate-800/50 p-4 rounded-2xl shadow-lg border border-white/10">
-  <div class="flex items-center justify-between mb-3">
-    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-      🧍 My Staking Overview
-    </h3>
-    <button id="refreshStakingStatsBtn"
-            class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs transition">
-      🔄 Refresh
-    </button>
-  </div>
+        <div class="mt-6 bg-slate-800/50 p-6 rounded-2xl shadow-2xl border border-white/10">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                    🧍 My Staking Overview
+                </h3>
+                <button id="refreshStakingStatsBtn"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    🔄 Refresh Stats
+                </button>
+            </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-    <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-700">
-      <div class="text-slate-400 text-xs">My Total NFTs Staked</div>
-      <div id="userStakedTotal" class="font-bold text-lg text-emerald-400">—</div>
-    </div>
-    <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-700">
-      <div class="text-slate-400 text-xs">My Term NFTs</div>
-      <div id="userStakedTerm" class="font-bold text-lg text-blue-400">—</div>
-    </div>
-    <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-700">
-      <div class="text-slate-400 text-xs">My Perm NFTs</div>
-      <div id="userStakedPerm" class="font-bold text-lg text-purple-400">—</div>
-    </div>
-  </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <!-- Total Staked -->
+                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-emerald-600/50">
+                    <div class="text-slate-300 text-sm uppercase tracking-wider">Total NFTs Staked</div>
+                    <div id="userStakedTotal" class="font-black text-3xl text-neon-emerald mt-1 transition-colors duration-500">0</div>
+                </div>
+                <!-- Term Staked -->
+                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-blue-600/50">
+                    <div class="text-slate-300 text-sm uppercase tracking-wider">Term NFTs</div>
+                    <div id="userStakedTerm" class="font-black text-3xl text-neon-blue mt-1 transition-colors duration-500">0</div>
+                </div>
+                <!-- Permanent Staked -->
+                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-purple-600/50">
+                    <div class="text-slate-300 text-sm uppercase tracking-wider">Perm NFTs</div>
+                    <div id="userStakedPerm" class="font-black text-3xl text-neon-purple mt-1 transition-colors duration-500">0</div>
+                </div>
+            </div>
 
-  <!-- Utilization Progress -->
-  <div class="mt-4">
-    <div class="text-xs text-slate-400 mb-1">Your Staking Utilization</div>
-    <div class="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-      <div id="userStakingUsageBar" class="h-2 bg-emerald-500 transition-all duration-700 ease-out" style="width: 0%;"></div>
-    </div>
-    <div id="userStakingUsageText" class="text-xs text-right text-slate-500 mt-1">0% of Global Cap</div>
-  </div>
+            <!-- Utilization Progress -->
+            <div class="mt-6">
+                <div class="text-sm text-slate-300 mb-2 font-semibold">Staking Utilization</div>
+                <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+                    <div id="userStakingUsageBar" class="h-3 bg-emerald-500 transition-all duration-700 ease-out" style="width: 0%;"></div>
+                </div>
+                <div id="userStakingUsageText" class="text-xs font-mono text-right text-slate-400 mt-2">0.00% of Global Cap (Max 100)</div>
+            </div>
 
-  <div id="stakingStatsUpdated" class="text-xs text-slate-500 mt-2 text-right">—</div>
-</div>
+            <div id="stakingStatsUpdated" class="text-xs text-slate-500 mt-4 text-right">Last Updated: —</div>
+        </div>
 
   <!-- ======== Section: Other Actions ======== -->
 <div>
@@ -3126,78 +3129,86 @@ function parseBatchHarvestPairs() {
   }
 }
 	  
-	  // ======== Smooth Number Animation ========
-function animateNumber(elementId, newValue, duration = 600) {
-  const el = $(elementId);
-  if (!el) return;
+	
+// ======== Smooth Number Animation ========
+        function animateNumber(elementId, newValue, duration = 600) {
+            const el = $(elementId);
+            if (!el) return;
 
-  const oldValue = parseFloat(el.innerText.replace(/,/g, "")) || 0;
-  const diff = newValue - oldValue;
-  const steps = Math.max(10, Math.floor(duration / 16));
-  let currentStep = 0;
+            const oldValue = parseFloat(el.innerText.replace(/,/g, "")) || 0;
+            const diff = newValue - oldValue;
+            const steps = Math.max(10, Math.floor(duration / 16));
+            let currentStep = 0;
 
-  const timer = setInterval(() => {
-    currentStep++;
-    const progress = currentStep / steps;
-    const eased = progress * (2 - progress); // smooth ease-out
-    const value = oldValue + diff * eased;
-    el.innerText = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    if (currentStep >= steps) clearInterval(timer);
-  }, 16);
-	}
+            const timer = setInterval(() => {
+                currentStep++;
+                const progress = currentStep / steps;
+                const eased = progress * (2 - progress); // smooth ease-out
+                const value = oldValue + diff * eased;
+                // Use fixed 0 decimal places for NFT counts
+                el.innerText = Math.round(value).toLocaleString(); 
+                if (currentStep >= steps) clearInterval(timer);
+            }, 16);
+        }
 
+        // ======== Core Logic: Refresh User Staking Stats ========
+        async function refreshStakingStats() {
+            try {
+                showLoading("Fetching your staking portfolio...");
 
+                // Ensure contracts are ready and user address is set
+                await attachContractsIfSet();
+                if (!contracts.staking || !userAddr) {
+                    log('Error: Staking contract or user address not found.');
+                    return;
+                }
 
-    // ======== User-Based Staking Stats (from events) ========
-async function refreshStakingStats() {
-  try {
-    showLoading("Fetching your staking stats...");
+                // 1. Fetch Global Cap
+                const globalCap = await contracts.staking.GLOBAL_NFT_CAP();
+                
+                // 2. Fetch the full portfolio (This replaces event filtering)
+                const portfolio = await contracts.staking.stakePortfolioByUser(userAddr);
+                
+                // 3. Calculate counts based on the portfolio data
+                let totalStaked = portfolio.length;
+                let termCount = 0;
+                let permCount = 0;
 
-    if (!contracts.staking || !userAddr) {
-      await attachContractsIfSet();
-      if (!contracts.staking) return alert('Staking contract not found.');
-    }
+                portfolio.forEach(token => {
+                    // We check the isPermanent property, which MUST exist on the returned structure
+                    if (token.isPermanent) {
+                        permCount++;
+                    } else {
+                        termCount++;
+                    }
+                });
 
-    // ✅ Fetch Global Cap
-    const globalCap = await contracts.staking.GLOBAL_NFT_CAP();
+                // 4. Update numbers with smooth animation
+                animateNumber("userStakedTotal", totalStaked);
+                animateNumber("userStakedTerm", termCount);
+                animateNumber("userStakedPerm", permCount);
 
-    // ✅ Query events (replace event names if your contract differs)
-    const stakedFilter = contracts.staking.filters.NFTStaked(userAddr, null, null);
-    const unstakedFilter = contracts.staking.filters.NFTUnstaked(userAddr, null, null);
+                // 5. Compute utilization
+                const capValue = Number(globalCap);
+                const percent = capValue > 0
+                    ? ((totalStaked / capValue) * 100).toFixed(2)
+                    : 0;
+                
+                const percentageDisplay = `${percent}% of Global Cap (Max ${capValue.toLocaleString()})`;
+                $("userStakingUsageText").innerText = percentageDisplay;
+                $("userStakingUsageBar").style.width = `${Math.min(100, parseFloat(percent))}%`; // Cap bar at 100%
 
-    const [stakedEvents, unstakedEvents] = await Promise.all([
-      contracts.staking.queryFilter(stakedFilter, 0, "latest"),
-      contracts.staking.queryFilter(unstakedFilter, 0, "latest"),
-    ]);
+                $("stakingStatsUpdated").innerText = `Last Updated: ${new Date().toLocaleTimeString()}`;
 
-    // ✅ Calculate active stakes
-    const stakedCount = stakedEvents.length - unstakedEvents.length;
-    const term = Math.max(0, stakedCount); // approximate term NFTs
-    const perm = 0; // unless permanent events exist separately
+                log(`✅ Stats refreshed. Total: ${totalStaked}, Term: ${termCount}, Perm: ${permCount}`);
 
-    // ✅ Update numbers with smooth animation
-    animateNumber("userStakedTotal", stakedCount);
-    animateNumber("userStakedTerm", term);
-    animateNumber("userStakedPerm", perm);
-
-    // ✅ Compute utilization
-    const percent = globalCap.gt(0)
-      ? ((stakedCount / Number(globalCap)) * 100).toFixed(2)
-      : 0;
-
-    $("userStakingUsageText").innerText = `${percent}% of Global Cap`;
-    $("userStakingUsageBar").style.width = `${percent}%`;
-
-    $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
-
-    log(`✅ User staking stats refreshed — ${stakedCount} NFTs active`);
-  } catch (e) {
-    log("❌ refreshStakingStats error:", e.message || e);
-    alert(e.message || e);
-  } finally {
-    hideLoading();
-  }
-}
+            } catch (e) {
+                log("❌ refreshStakingStats error:", e);
+                alert(`Failed to fetch staking stats: ${e.message || e}`);
+            } finally {
+                hideLoading();
+            }
+		}
 
 
 	  // ======== View Portfolio (using existing wallet logic) ========
