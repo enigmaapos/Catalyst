@@ -1717,6 +1717,27 @@ function stopCataBalanceAutoRefresh() {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
+	  // ======== Smooth Number Animation ========
+        function animateNumber(elementId, newValue, duration = 600) {
+            const el = $(elementId);
+            if (!el) return;
+
+            const oldValue = parseFloat(el.innerText.replace(/,/g, "")) || 0;
+            const diff = newValue - oldValue;
+            const steps = Math.max(10, Math.floor(duration / 16));
+            let currentStep = 0;
+
+            const timer = setInterval(() => {
+                currentStep++;
+                const progress = currentStep / steps;
+                const eased = progress * (2 - progress); // smooth ease-out
+                const value = oldValue + diff * eased;
+                // Use fixed 0 decimal places for NFT counts
+                el.innerText = Math.round(value).toLocaleString(); 
+                if (currentStep >= steps) clearInterval(timer);
+            }, 16);
+		}
+
 // ---------- Connect / Disconnect ----------
 async function connect() {
   try {
