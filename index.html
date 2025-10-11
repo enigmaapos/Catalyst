@@ -3151,7 +3151,64 @@ function parseBatchHarvestPairs() {
 }
 	  
 	
+	     // ======== Core Logic: Refresh User Staking Stats (Updated) ========
+        async function refreshStakingStats() {
+            try {
+                showLoading("Fetching your staking portfolio...");
 
+                await attachContractsIfSet();
+                if (!contracts.staking || !userAddr) {
+                    log('Error: Staking contract or user address not found. Cannot proceed.');
+                    return;
+                }
+
+                // 1. Fetch Global Cap
+                const globalCap = await contracts.staking.GLOBAL_NFT_CAP();
+                
+                // 2. Fetch the full portfolio using the contract function
+                const portfolio = await contracts.staking.stakePortfolioByUser(userAddr);
+                
+                // 3. Calculate counts based on the 'isPermanent' property
+                let totalStaked = portfolio.length;
+                let termCount = 0;
+                let permCount = 0;
+
+                portfolio.forEach(token => {
+                    // Check the boolean flag to differentiate
+                    if (token.isPermanent) {
+                        permCount++;
+                    } else {
+                        termCount++;
+                    }
+                });
+
+                // 4. Update numbers with smooth animation
+                animateNumber("userStakedTotal", totalStaked);
+                animateNumber("userStakedTerm", termCount);
+                animateNumber("userStakedPerm", permCount);
+
+                // 5. Compute utilization
+                const capValue = Number(globalCap);
+                const percent = capValue > 0
+                    ? ((totalStaked / capValue) * 100).toFixed(2)
+                    : 0;
+                
+                const percentageDisplay = `${percent}% of Global Cap (Max ${capValue.toLocaleString()})`;
+                $("userStakingUsageText").innerText = percentageDisplay;
+                // Cap the bar at 100% just in case of over-staking
+                $("userStakingUsageBar").style.width = `${Math.min(100, parseFloat(percent))}%`; 
+
+                $("stakingStatsUpdated").innerText = `Last Updated: ${new Date().toLocaleTimeString()}`;
+
+                log(`✅ Stats refreshed. Total: ${totalStaked}, Term: ${termCount}, Perm: ${permCount}`);
+
+            } catch (e) {
+                log("❌ refreshStakingStats error:", e);
+                alert(`Failed to fetch staking stats: ${e.message || e}`);
+            } finally {
+                hideLoading();
+            }
+	  }
 
 
 	  // ======== View Portfolio (using existing wallet logic) ========
