@@ -1690,16 +1690,16 @@ async function fetchCataBalance() {
   }
 }
 
-// Start auto-refresh (every 30 seconds)
+// Start auto-refresh (every 5 minutes)
 function startCataBalanceAutoRefresh() {
   if (cataBalanceInterval) clearInterval(cataBalanceInterval); // avoid duplicates
 
   // Immediately fetch first
   fetchCataBalance();
 
-  // Then repeat every 30 seconds
-  cataBalanceInterval = setInterval(fetchCataBalance, 30000);
-  log("🔁 Auto-refresh for CATA balance started (every 30s)");
+  // Then repeat every 5 minutes (300,000 ms)
+  cataBalanceInterval = setInterval(fetchCataBalance, 300000);
+  log("🔁 Auto-refresh for CATA balance started (every 5 minutes)");
 }
 
 // Stop auto-refresh (optional, e.g., on disconnect)
@@ -1709,7 +1709,7 @@ function stopCataBalanceAutoRefresh() {
     cataBalanceInterval = null;
     log("🛑 Auto-refresh for CATA balance stopped");
   }
-}
+	  }
 
 
 	  function shortenAddress(addr) {
