@@ -1665,8 +1665,8 @@ async function attachContractsIfSet() {
   try {
     if (!provider || !signer) return;
 
-    // ensure ABIs present
-    if (Object.keys(abis).length === 0 || Object.values(abis).every(v => v == null)) {
+    // Ensure ABIs are loaded
+    if (!abis || Object.values(abis).filter(Boolean).length === 0) {
       await loadABIs();
     }
 
@@ -1689,8 +1689,8 @@ async function attachContractsIfSet() {
 
     if (contracts.cata) await fetchCataBalance();
 
-    // Refresh everything else in parallel (except pending rewards)
-    await Promise.all([
+    // Refresh everything else in parallel (continue even if one fails)
+    await Promise.allSettled([
       fetchTransparency(),
       refreshRecovery(),
       refreshVetoWarning(),
@@ -1707,14 +1707,22 @@ async function attachContractsIfSet() {
       getTop10BluechipBurners()
     ]);
 
-    // ✅ Now load pending rewards *after* all contracts are ready
-    await refreshPendingRewards();
+    // ✅ Refresh pending rewards after all contracts are ready
+    try {
+      setPendingStatus?.("Fetching...", "#fbbf24");
+      await refreshPendingRewards();
+      setPendingStatus?.("Up to date ✅", "#10b981");
+    } catch (err) {
+      console.error("Auto-refresh pending rewards failed:", err);
+      setPendingStatus?.("Error ❌", "#ef4444");
+    }
 
     log("✅ All dashboard sections refreshed successfully");
   } catch (e) {
     log("attachContractsIfSet error:", e.message || e);
   }
 }
+    
 
 
 // Fetch CATA Balance (formatted with commas and up to 6 decimals)
@@ -3530,12 +3538,15 @@ async function refreshPendingRewards() {
 
 	$("refreshPendingBtn").onclick = async () => {
   try {
-    setPendingStatus("Fetching...", "#fbbf24"); // amber
+    if (!contracts.staking || !userAddr) {
+      await attachContractsIfSet();
+    }
+    setPendingStatus?.("Fetching...", "#fbbf24");
     await refreshPendingRewards();
-    setPendingStatus("Up to date ✅", "#10b981"); // green
+    setPendingStatus?.("Up to date ✅", "#10b981");
   } catch (err) {
     console.error("refreshPendingBtn error:", err);
-    setPendingStatus("Error ❌", "#ef4444"); // red
+    setPendingStatus?.("Error ❌", "#ef4444");
   }
 };
 
