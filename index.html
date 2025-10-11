@@ -3566,10 +3566,23 @@ $("harvestAllBtn").onclick = async () => {
     let harvestedCount = 0;
 
     for (const item of pendingDetails) {
-      if (item.rewards.gt(0) && item.tokenIds && item.tokenIds.length > 0) {
+      // ✅ Convert rewards to BigNumber safely
+      const rewardBN = ethers.BigNumber.isBigNumber(item.rewards)
+        ? item.rewards
+        : ethers.BigNumber.from(
+            Math.floor(Number(item.rewards) * 1e18).toString()
+          );
+
+      if (rewardBN.gt(0) && item.tokenIds && item.tokenIds.length > 0) {
         try {
-          const tx = await contracts.staking.harvestBatch(item.collection, item.tokenIds);
-          log("🌾 HarvestBatch tx sent:", tx.hash);
+          log(
+            `🌾 Harvesting ${item.tokenIds.length} NFTs from ${item.collection}...`
+          );
+          const tx = await contracts.staking.harvestBatch(
+            item.collection,
+            item.tokenIds
+          );
+          log("🌾 Harvest tx sent:", tx.hash);
           await tx.wait();
           harvestedCount++;
         } catch (err) {
@@ -3582,7 +3595,9 @@ $("harvestAllBtn").onclick = async () => {
     setPendingStatus?.("Up to date ✅", "#10b981");
     alert(
       harvestedCount > 0
-        ? `✅ Harvested rewards from ${harvestedCount} collection${harvestedCount > 1 ? "s" : ""}!`
+        ? `✅ Harvested rewards from ${harvestedCount} collection${
+            harvestedCount > 1 ? "s" : ""
+          }!`
         : "ℹ️ No rewards to harvest."
     );
     await refreshPendingRewards();
