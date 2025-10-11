@@ -3417,7 +3417,7 @@ async function viewPortfolio() {
 }
 	  
 
-// ======== 🔹 Helper: Estimate All Pending Rewards (Off-Chain) ========
+// ======== 🔹 Helper: Estimate All Pending Rewards (Off-Chain, Fixed BigNumber Handling) ========
 async function getAllPendingRewards() {
   if (!contracts.staking || !userAddr) {
     await attachContractsIfSet();
@@ -3426,27 +3426,25 @@ async function getAllPendingRewards() {
 
   const totalCollections = await contracts.staking.registeredCount();
   const count = Number(totalCollections.toString());
-  let totalRewards = 0; // keep as number since we'll compute manually
   const pendingDetails = [];
+  let totalRewards = ethers.BigNumber.from(0);
 
-  // fetch constants once
-  const baseRewardRate = (await contracts.staking.baseRewardRate()).toNumber();
-  const blocksPerUnit = (await contracts.staking.numberOfBlocksPerRewardUnit()).toNumber();
+  // ✅ fetch constants once
+  const baseRewardRate = await contracts.staking.baseRewardRate();
+  const blocksPerUnit = await contracts.staking.numberOfBlocksPerRewardUnit();
   const currentBlock = await provider.getBlockNumber();
 
-  if (!baseRewardRate || !blocksPerUnit)
+  if (baseRewardRate.isZero() || blocksPerUnit.isZero())
     throw new Error("Reward parameters not initialized.");
-
-  console.log("📊 baseRewardRate:", baseRewardRate, "blocksPerUnit:", blocksPerUnit);
 
   const MAX_INDEX_SCAN = 200;
 
   for (let i = 0; i < count; i++) {
     const collectionAddr = await contracts.staking.registeredCollections(i);
-    let collectionRewards = 0;
+    let collectionRewards = ethers.BigNumber.from(0);
     const tokenIds = [];
 
-    // collect staked NFTs for this user
+    // ---- collect user’s staked NFTs ----
     for (let j = 0; j < MAX_INDEX_SCAN; j++) {
       try {
         const tokenIdBN = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr, j);
@@ -3474,17 +3472,19 @@ async function getAllPendingRewards() {
         const blocksElapsed = currentBlock - lastHarvestBlock;
         if (blocksElapsed <= 0) continue;
 
-        // same reward formula used on-chain
-        const reward =
-          ((blocksElapsed * baseRewardRate) / blocksPerUnit) * 0.9; // 90% user share
-        collectionRewards += reward;
+        // ✅ do math safely with BigNumbers
+        const blocksBN = ethers.BigNumber.from(blocksElapsed);
+        const reward = blocksBN.mul(baseRewardRate).div(blocksPerUnit);
+        const userShare = reward.mul(90).div(100); // 90% share
+
+        collectionRewards = collectionRewards.add(userShare);
       } catch (err) {
-        console.warn("Skipping invalid token", tokenId, err.message);
+        console.warn("Skipping token", tokenId, err.message);
       }
     }
 
-    if (collectionRewards > 0) {
-      totalRewards += collectionRewards;
+    if (collectionRewards.gt(0)) {
+      totalRewards = totalRewards.add(collectionRewards);
       pendingDetails.push({
         collection: collectionAddr,
         tokenCount: tokenIds.length,
@@ -3495,6 +3495,7 @@ async function getAllPendingRewards() {
 
   return { totalRewards, pendingDetails };
 }
+   
         
 // ======== 💰 Refresh Pending Rewards UI ========
 async function refreshPendingRewards() {
