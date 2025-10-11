@@ -3130,69 +3130,67 @@ function parseBatchHarvestPairs() {
   }
 }
 	  
+
 // ======== Smooth Number Animation ========
 function animateNumber(elementId, newValue, duration = 600) {
   const el = $(elementId);
   if (!el) return;
-
   const oldValue = parseFloat(el.innerText.replace(/,/g, "")) || 0;
   const diff = newValue - oldValue;
   const steps = Math.max(10, Math.floor(duration / 16));
   let currentStep = 0;
-
   const timer = setInterval(() => {
     currentStep++;
     const progress = currentStep / steps;
-    const eased = progress * (2 - progress); // smooth ease-out
+    const eased = progress * (2 - progress);
     const value = oldValue + diff * eased;
     el.innerText = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
     if (currentStep >= steps) clearInterval(timer);
   }, 16);
-	}
+}
 
-
-
-    // ======== User-Based Staking Stats (from events) ========
+// ======== User-Based Staking Stats ========
 async function refreshStakingStats() {
   try {
     showLoading("Fetching your staking stats...");
 
     if (!contracts.staking || !userAddr) {
       await attachContractsIfSet();
-      if (!contracts.staking) return alert('Staking contract not found.');
+      if (!contracts.staking) return alert("Staking contract not found.");
     }
 
-    // ✅ Fetch Global Cap
     const globalCap = await contracts.staking.GLOBAL_NFT_CAP();
 
-    // ✅ Query events (replace event names if your contract differs)
+    // Events
     const stakedFilter = contracts.staking.filters.NFTStaked(userAddr, null, null);
     const unstakedFilter = contracts.staking.filters.NFTUnstaked(userAddr, null, null);
+    const permFilter = contracts.staking.filters.PermanentStakeFeePaid(userAddr, null);
 
-    const [stakedEvents, unstakedEvents] = await Promise.all([
+    const [stakedEvents, unstakedEvents, permEvents] = await Promise.all([
       contracts.staking.queryFilter(stakedFilter, 0, "latest"),
       contracts.staking.queryFilter(unstakedFilter, 0, "latest"),
+      contracts.staking.queryFilter(permFilter, 0, "latest"),
     ]);
 
-    // ✅ Calculate active stakes
-    const stakedCount = stakedEvents.length - unstakedEvents.length;
-    const term = Math.max(0, stakedCount); // approximate term NFTs
-    const perm = 0; // unless permanent events exist separately
+    const stakedCount = Math.max(0, stakedEvents.length - unstakedEvents.length);
+    const perm = permEvents.length;
+    const term = Math.max(0, stakedCount - perm);
 
-    // ✅ Update numbers with smooth animation
+    // Animate numbers
     animateNumber("userStakedTotal", stakedCount);
     animateNumber("userStakedTerm", term);
     animateNumber("userStakedPerm", perm);
 
-    // ✅ Compute utilization
-    const percent = globalCap.gt(0)
-      ? ((stakedCount / Number(globalCap)) * 100).toFixed(2)
-      : 0;
+    // Utilization
+    const cap = Number(globalCap.toString());
+    const percent = cap > 0 ? ((stakedCount / cap) * 100).toFixed(2) : 0;
 
-    $("userStakingUsageText").innerText = `${percent}% of Global Cap`;
-    $("userStakingUsageBar").style.width = `${percent}%`;
-
-    $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+    if ($("userStakingUsageText"))
+      $("userStakingUsageText").innerText = `${percent}% of Global Cap`;
+    if ($("userStakingUsageBar"))
+      $("userStakingUsageBar").style.width = `${percent}%`;
+    if ($("stakingStatsUpdated"))
+      $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
     log(`✅ User staking stats refreshed — ${stakedCount} NFTs active`);
   } catch (e) {
