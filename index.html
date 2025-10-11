@@ -1660,13 +1660,12 @@ const $ = id => document.getElementById(id);
   }
   }
   
-
 // Attach contract instances (requires signer)
 async function attachContractsIfSet() {
   try {
     if (!provider || !signer) return;
 
-    // ensure ABIs present (attempt load if missing)
+    // ensure ABIs present
     if (Object.keys(abis).length === 0 || Object.values(abis).every(v => v == null)) {
       await loadABIs();
     }
@@ -1676,7 +1675,6 @@ async function attachContractsIfSet() {
     const govA = $('addrGovernance').value.trim();
     const councilA = $('addrCouncil').value.trim();
 
-    // attach contracts if addresses + ABIs exist
     contracts.cata = cataA && abis.cata ? new ethers.Contract(cataA, abis.cata, signer) : null;
     contracts.staking = stakingA && abis.staking ? new ethers.Contract(stakingA, abis.staking, signer) : null;
     contracts.governance = govA && abis.governance ? new ethers.Contract(govA, abis.governance, signer) : null;
@@ -1689,38 +1687,35 @@ async function attachContractsIfSet() {
       council: !!contracts.council,
     });
 
-    // ✅ Fetch balances and refresh dashboard in parallel
-    try {
-      if (contracts.cata) await fetchCataBalance();
+    if (contracts.cata) await fetchCataBalance();
 
-      await Promise.all([
-        fetchTransparency(),
-        refreshRecovery(),
-        refreshVetoWarning(),
-        refreshDao(),
-        refreshGuardians(),
-        refreshLock(),
-        refreshStakingStats(),
-        refreshBluechip(),
-        fetchStakingTransparency(),
-        fetchGovernanceTransparency(),
-        fetchProposalsExplorer(),
-        refreshQuickStatus(),
-		  fetchTopCollectionsUI(),
-		  getTop10BluechipBurners(),
-		  refreshPendingRewards()
-		
-      ]);
+    // Refresh everything else in parallel (except pending rewards)
+    await Promise.all([
+      fetchTransparency(),
+      refreshRecovery(),
+      refreshVetoWarning(),
+      refreshDao(),
+      refreshGuardians(),
+      refreshLock(),
+      refreshStakingStats(),
+      refreshBluechip(),
+      fetchStakingTransparency(),
+      fetchGovernanceTransparency(),
+      fetchProposalsExplorer(),
+      refreshQuickStatus(),
+      fetchTopCollectionsUI(),
+      getTop10BluechipBurners()
+    ]);
 
-      log("✅ All dashboard sections refreshed successfully");
-    } catch (innerErr) {
-      log("⚠️ Dashboard refresh error:", innerErr.message || innerErr);
-    }
+    // ✅ Now load pending rewards *after* all contracts are ready
+    await refreshPendingRewards();
 
+    log("✅ All dashboard sections refreshed successfully");
   } catch (e) {
     log("attachContractsIfSet error:", e.message || e);
   }
 }
+
 
 // Fetch CATA Balance (formatted with commas and up to 6 decimals)
 let cataBalanceInterval = null; // global variable to manage refresh timer
@@ -3533,6 +3528,17 @@ async function refreshPendingRewards() {
   }
 }
 
+	$("refreshPendingBtn").onclick = async () => {
+  try {
+    setPendingStatus("Fetching...", "#fbbf24"); // amber
+    await refreshPendingRewards();
+    setPendingStatus("Up to date ✅", "#10b981"); // green
+  } catch (err) {
+    console.error("refreshPendingBtn error:", err);
+    setPendingStatus("Error ❌", "#ef4444"); // red
+  }
+};
+
 // ======== 🌾 Harvest All Button (Optimized batch version) ========
 $("harvestAllBtn").onclick = async () => {
   try {
@@ -4805,16 +4811,7 @@ $('batchHarvestBtn').onclick = batchHarvest;
 $('pendingRewardsBtn').onclick = checkPendingRewards;
 	  $('refreshStakingStatsBtn').onclick = refreshStakingStats;
 $('viewPortfolioBtn').onclick = viewPortfolio;
-	  $("refreshPendingBtn").onclick = async () => {
-  try {
-    setPendingStatus("Fetching...", "#fbbf24"); // amber
-    await refreshPendingRewards();
-    setPendingStatus("Up to date ✅", "#10b981"); // green
-  } catch (err) {
-    console.error("refreshPendingBtn error:", err);
-    setPendingStatus("Error ❌", "#ef4444"); // red
-  }
-};
+	  
 
 
 	  // Governance 
