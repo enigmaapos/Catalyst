@@ -719,6 +719,13 @@ Catalyst Whitepaper
   🔄 Refresh Bluechip Info
 </button>
   </div>
+
+	<div id="topBluechipBox" class="bg-gray-900 p-4 rounded-lg text-white">
+  <h3 class="text-lg font-bold mb-2">💎 Top 10 Bluechip Burners</h3>
+  <div id="topBluechipList" class="space-y-1 text-sm">
+    <p>Loading...</p>
+  </div>
+	</div>
 </section>
 
     <!-- Staking -->
@@ -1646,6 +1653,7 @@ async function attachContractsIfSet() {
         fetchProposalsExplorer(),
         refreshQuickStatus(),
 		  fetchTopCollectionsUI(),
+		  getTop10BluechipBurners()
       ]);
 
       log("✅ All dashboard sections refreshed successfully");
@@ -2809,6 +2817,57 @@ async function refreshBluechip(){
   } catch(e){ 
     log('refreshBluechip err', e?.message || e); 
     alert(`Refresh failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+	  async function getTop10BluechipBurners() {
+  try {
+    showLoading("Fetching Top 10 Bluechip Collections...");
+
+    // 1️⃣  Get total registered collections count
+    const total = await contracts.staking.registeredCount();
+    const count = Number(total.toString());
+
+    const bluechipData = [];
+
+    // 2️⃣  Loop through registered collections
+    for (let i = 0; i < count; i++) {
+      const addr = await contracts.staking.registeredCollections(i);
+      const isBluechip = await contracts.staking.isBluechipCollection(addr);
+      if (!isBluechip) continue; // skip non-bluechip
+
+      const burned = await contracts.staking.burnedCatalystByCollection(addr);
+      bluechipData.push({
+        address: addr,
+        burned: Number(burned.toString()) / 1e18, // convert from wei if CATA has 18 decimals
+      });
+    }
+
+    // 3️⃣  Sort descending by burn count
+    bluechipData.sort((a, b) => b.burned - a.burned);
+
+    // 4️⃣  Keep top 10
+    const top10 = bluechipData.slice(0, 10);
+
+    // 5️⃣  Display in UI
+    const container = $("topBluechipList");
+    container.innerHTML = "";
+    top10.forEach((item, i) => {
+      const row = document.createElement("div");
+      row.className = "p-2 border-b border-gray-700 flex justify-between";
+      row.innerHTML = `
+        <span>${i + 1}. ${item.address.slice(0, 8)}...</span>
+        <span>${item.burned.toLocaleString(undefined, { maximumFractionDigits: 2 })} 🔥</span>
+      `;
+      container.appendChild(row);
+    });
+
+    log("✅ Top 10 Bluechip collections updated.");
+  } catch (e) {
+    log("❌ getTop10BluechipBurners error:", e.message || e);
+    alert(e.message || e);
   } finally {
     hideLoading();
   }
