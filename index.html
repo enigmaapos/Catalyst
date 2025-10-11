@@ -3533,7 +3533,7 @@ async function refreshPendingRewards() {
   }
 }
 
-// ======== 🌾 Harvest All Button (using per-NFT harvest) ========
+// ======== 🌾 Harvest All Button (Optimized batch version) ========
 $("harvestAllBtn").onclick = async () => {
   try {
     showLoading("Harvesting all rewards...");
@@ -3541,32 +3541,27 @@ $("harvestAllBtn").onclick = async () => {
 
     const { pendingDetails } = await getAllPendingRewards();
     let harvestedCount = 0;
-    let txCount = 0;
 
+    // ✅ Loop once per collection instead of per NFT
     for (const item of pendingDetails) {
       if (!item.tokenIds || item.tokenIds.length === 0) continue;
 
-      for (const tokenId of item.tokenIds) {
-        try {
-          // 🔹 Skip zero-reward NFTs if available
-          if (Number(item.rewards) <= 0) continue;
-
-          const tx = await contracts.staking.harvest(item.collection, tokenId);
-          log(`🌾 Harvest tx sent for ${tokenId}:`, tx.hash);
-          await tx.wait();
-          harvestedCount++;
-          txCount++;
-        } catch (err) {
-          console.warn(`❌ Harvest failed for ${tokenId}`, err.message);
-        }
+      try {
+        log(`🌾 Harvesting ${item.tokenIds.length} NFTs from ${item.collection}...`);
+        const tx = await contracts.staking.harvestBatch(item.collection, item.tokenIds);
+        log("🌾 HarvestBatch tx sent:", tx.hash);
+        await tx.wait();
+        harvestedCount++;
+      } catch (err) {
+        console.warn(`❌ Harvest failed for ${item.collection}:`, err.message);
       }
     }
 
     hideLoading();
     setPendingStatus?.("Up to date ✅", "#10b981");
 
-    if (txCount > 0) {
-      alert(`✅ Successfully harvested ${harvestedCount} NFT${harvestedCount > 1 ? "s" : ""}!`);
+    if (harvestedCount > 0) {
+      alert(`✅ Successfully harvested from ${harvestedCount} collection${harvestedCount > 1 ? "s" : ""}!`);
     } else {
       alert("ℹ️ No rewards available to harvest.");
     }
