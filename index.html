@@ -3416,36 +3416,27 @@ async function refreshPendingRewards() {
     const list = $("pendingRewardsList");
     list.innerHTML = "";
 
-    // 🔹 FIXED LOOP STARTS HERE
     for (let i = 0; i < count; i++) {
-  const collectionAddr = await contracts.staking.registeredCollections(i);
-  const portfolio = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr);
+      const collectionAddr = await contracts.staking.registeredCollections(i);
+      let collectionRewards = ethers.BigNumber.from(0);
+      const tokenIds = [];
 
-  console.log("Portfolio for", collectionAddr, "=>", portfolio);
+      // ✅ Loop using index (since stakePortfolioByUser requires 3 args)
+      for (let j = 0; j < 1000; j++) {
+        try {
+          const tokenId = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr, j);
+          tokenIds.push(tokenId.toString());
+        } catch {
+          break; // stop when out of range
+        }
+      }
 
-  // ✅ Extract token IDs safely
-  let tokenIds = [];
-  if (Array.isArray(portfolio)) {
-    tokenIds = portfolio.map((id) => id.toString());
-  } else if (portfolio && typeof portfolio === "object") {
-    if (Array.isArray(portfolio.tokenIds)) {
-      tokenIds = portfolio.tokenIds.map((id) => id.toString());
-    } else {
-      tokenIds = Object.values(portfolio)
-        .filter((v) => v && v._isBigNumber)
-        .map((v) => v.toString());
-    }
-  }
+      if (tokenIds.length === 0) continue;
 
-  if (!tokenIds.length) continue;
-
-  let collectionRewards = ethers.BigNumber.from(0);
-
-  for (let tokenId of tokenIds) {
-    const pending = await contracts.staking.pendingRewards(collectionAddr, userAddr, tokenId);
-    collectionRewards = collectionRewards.add(pending);
-  }
-
+      for (let tokenId of tokenIds) {
+        const pending = await contracts.staking.pendingRewards(collectionAddr, userAddr, tokenId);
+        collectionRewards = collectionRewards.add(pending);
+      }
 
       if (collectionRewards.gt(0)) {
         const readable = Number(ethers.utils.formatUnits(collectionRewards, 18));
@@ -3460,7 +3451,6 @@ async function refreshPendingRewards() {
         list.appendChild(div);
       }
     }
-    // 🔹 FIXED LOOP ENDS HERE
 
     const totalReadable = Number(ethers.utils.formatUnits(totalRewards, 18));
     animateNumber("userPendingTotal", totalReadable);
