@@ -845,13 +845,24 @@ Catalyst Whitepaper
     ⚡ Other Actions
   </h3>
 
-	<div id="pendingRewardsBox" class="bg-gray-900 p-4 rounded-xl text-white mt-4 shadow-lg">
-  <h3 class="text-lg font-bold mb-3 flex items-center gap-2">💰 Pending Rewards</h3>
-  <p class="text-2xl font-semibold text-amber-400" id="userPendingTotal">0</p>
-  <div id="pendingRewardsList" class="text-sm mt-2 space-y-1">
-    <p class="text-gray-400">Loading...</p>
+	<div id="pendingRewardsBox" class="bg-gradient-to-b from-gray-900 to-black p-5 rounded-2xl shadow-xl text-white mt-6">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-xl font-bold flex items-center gap-2">💰 Pending Rewards</h3>
+    <button 
+      id="refreshPendingBtn"
+      class="bg-amber-600 hover:bg-amber-700 px-3 py-1 text-sm rounded-md transition">
+      🔁 Refresh
+    </button>
   </div>
-  <p id="pendingRewardsUpdated" class="text-gray-500 text-xs mt-3 text-right">—</p>
+
+  <p class="text-3xl font-bold text-amber-400 mb-1" id="userPendingTotal">0</p>
+  <p class="text-xs text-gray-400 mb-4">CATA Tokens Ready to Harvest</p>
+
+  <div id="pendingRewardsList" class="divide-y divide-gray-800 text-sm rounded-lg overflow-hidden bg-gray-950/50">
+    <div class="text-center py-3 text-gray-500">Loading...</div>
+  </div>
+
+  <div id="pendingRewardsUpdated" class="text-gray-500 text-xs text-right mt-2">—</div>
 	</div>
 
   <div class="grid gap-3 sm:grid-cols-2">
@@ -1677,7 +1688,7 @@ async function attachContractsIfSet() {
         refreshQuickStatus(),
 		  fetchTopCollectionsUI(),
 		  getTop10BluechipBurners(),
-		  fetchTotalPendingRewards()
+		  refreshPendingRewards() 
       ]);
 
       log("✅ All dashboard sections refreshed successfully");
@@ -2915,8 +2926,7 @@ async function refreshTopBluechipLeaderboard() {
   }
 }
 
-    
-	  
+    	  
 // ---------- NFT approval ----------	  
 async function approveNFT(){
   try {
@@ -3385,7 +3395,10 @@ async function viewPortfolio() {
   }
 }
 
-	  async function fetchTotalPendingRewards() {
+
+
+// Main function
+async function refreshPendingRewards() {
   try {
     showLoading("Fetching pending rewards...");
 
@@ -3393,63 +3406,63 @@ async function viewPortfolio() {
       await attachContractsIfSet();
       if (!contracts.staking) {
         hideLoading();
-        return alert("❗ Staking contract not found.");
+        return alert("Staking contract not found.");
       }
     }
 
     const totalCollections = await contracts.staking.registeredCount();
     const count = Number(totalCollections.toString());
-
     let totalRewards = ethers.BigNumber.from(0);
-    let rewardDetails = [];
+    const list = $("pendingRewardsList");
+    list.innerHTML = "";
 
     for (let i = 0; i < count; i++) {
       const collectionAddr = await contracts.staking.registeredCollections(i);
       const portfolio = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr);
-      if (portfolio.length === 0) continue;
+      if (!portfolio || portfolio.length === 0) continue;
 
       let collectionRewards = ethers.BigNumber.from(0);
 
       for (let tokenId of portfolio) {
         const pending = await contracts.staking.pendingRewards(collectionAddr, userAddr, tokenId);
-        if (pending.gt(0)) {
-          collectionRewards = collectionRewards.add(pending);
-        }
+        collectionRewards = collectionRewards.add(pending);
       }
 
       if (collectionRewards.gt(0)) {
-        rewardDetails.push({
-          collection: collectionAddr,
-          amount: Number(ethers.utils.formatUnits(collectionRewards, 18))
-        });
+        const readable = Number(ethers.utils.formatUnits(collectionRewards, 18));
         totalRewards = totalRewards.add(collectionRewards);
+
+        const div = document.createElement("div");
+        div.className = "flex justify-between py-2 px-3 hover:bg-gray-800/50 transition";
+        div.innerHTML = `
+          <span class="font-mono text-gray-300">${shortAddr(collectionAddr)}</span>
+          <span class="text-amber-400 font-semibold">${readable.toLocaleString(undefined, { maximumFractionDigits: 4 })} CATA</span>
+        `;
+        list.appendChild(div);
       }
     }
 
     const totalReadable = Number(ethers.utils.formatUnits(totalRewards, 18));
-
-    // ✅ Display results
     animateNumber("userPendingTotal", totalReadable);
-    const list = $("pendingRewardsList");
-    list.innerHTML = "";
-    rewardDetails.forEach((item) => {
-      const div = document.createElement("div");
-      div.className = "flex justify-between border-b border-gray-800 py-1 text-sm";
-      div.innerHTML = `
-        <span>${shortAddr(item.collection)}</span>
-        <span class="text-amber-400">${item.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} CATA</span>
-      `;
-      list.appendChild(div);
-    });
+
+    if (list.innerHTML.trim() === "") {
+      list.innerHTML = `<div class="text-center py-3 text-gray-500">No active rewards</div>`;
+    }
 
     $("pendingRewardsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
   } catch (e) {
-    console.error("fetchTotalPendingRewards error:", e);
-    alert("Failed to fetch pending rewards: " + (e.message || e));
+    console.error("refreshPendingRewards error:", e);
+    $("pendingRewardsList").innerHTML = `<div class="text-center py-3 text-red-400">Error loading rewards</div>`;
   } finally {
     hideLoading();
   }
-	  }
+}
+
+$("refreshPendingBtn").onclick = refreshPendingRewards;
+
+// Auto-refresh every minute
+setInterval(refreshPendingRewards, 60000);
+    
 
 // ======== Check Pending Rewards (using existing wallet logic) ========
 async function checkPendingRewards() {
