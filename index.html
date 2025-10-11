@@ -720,12 +720,26 @@ Catalyst Whitepaper
 </button>
   </div>
 
-	<div id="topBluechipBox" class="bg-gray-900 p-4 rounded-lg text-white">
-  <h3 class="text-lg font-bold mb-2">💎 Top 10 Bluechip Burners</h3>
-  <div id="topBluechipList" class="space-y-1 text-sm">
-    <p>Loading...</p>
+	<div id="topBluechipBox" class="bg-gradient-to-b from-gray-900 to-black p-5 rounded-2xl shadow-xl text-gray-100">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-2xl font-extrabold flex items-center gap-2">
+      💎 Top 10 Bluechip Burners
+    </h3>
+    <button 
+      id="refreshBluechipBtn2"
+      class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-md transition-all">
+      🔁 Refresh
+    </button>
   </div>
-	</div>
+
+  <div id="topBluechipList" class="divide-y divide-gray-800">
+    <div class="text-center py-3 text-gray-400">Loading leaderboard...</div>
+  </div>
+
+  <div class="text-right text-gray-500 text-xs mt-2" id="bluechipLastUpdated">
+    —
+  </div>
+</div>
 </section>
 
     <!-- Staking -->
@@ -2822,56 +2836,76 @@ async function refreshBluechip(){
   }
 }
 
-	  async function getTop10BluechipBurners() {
+async function refreshTopBluechipLeaderboard() {
   try {
-    showLoading("Fetching Top 10 Bluechip Collections...");
+    showLoading("Fetching Top Bluechip Burners...");
 
-    // 1️⃣  Get total registered collections count
     const total = await contracts.staking.registeredCount();
     const count = Number(total.toString());
+    const data = [];
 
-    const bluechipData = [];
-
-    // 2️⃣  Loop through registered collections
     for (let i = 0; i < count; i++) {
       const addr = await contracts.staking.registeredCollections(i);
       const isBluechip = await contracts.staking.isBluechipCollection(addr);
-      if (!isBluechip) continue; // skip non-bluechip
+      if (!isBluechip) continue;
 
       const burned = await contracts.staking.burnedCatalystByCollection(addr);
-      bluechipData.push({
+      data.push({
         address: addr,
-        burned: Number(burned.toString()) / 1e18, // convert from wei if CATA has 18 decimals
+        burned: Number(burned.toString()) / 1e18,
       });
     }
 
-    // 3️⃣  Sort descending by burn count
-    bluechipData.sort((a, b) => b.burned - a.burned);
+    data.sort((a, b) => b.burned - a.burned);
+    const top10 = data.slice(0, 10);
+    const maxBurn = top10[0]?.burned || 1;
 
-    // 4️⃣  Keep top 10
-    const top10 = bluechipData.slice(0, 10);
-
-    // 5️⃣  Display in UI
     const container = $("topBluechipList");
     container.innerHTML = "";
+
     top10.forEach((item, i) => {
+      const percent = Math.min(100, (item.burned / maxBurn) * 100);
+      const rankColor =
+        i === 0
+          ? "text-yellow-400"
+          : i === 1
+          ? "text-gray-300"
+          : i === 2
+          ? "text-amber-600"
+          : "text-gray-400";
+
       const row = document.createElement("div");
-      row.className = "p-2 border-b border-gray-700 flex justify-between";
+      row.className = "flex items-center justify-between py-3 px-2 hover:bg-gray-800/50 rounded-lg transition-all";
+
       row.innerHTML = `
-        <span>${i + 1}. ${item.address.slice(0, 8)}...</span>
-        <span>${item.burned.toLocaleString(undefined, { maximumFractionDigits: 2 })} 🔥</span>
+        <div class="flex items-center gap-3">
+          <span class="font-bold ${rankColor} text-lg w-5 text-center">#${i + 1}</span>
+          <div>
+            <p class="font-semibold text-sm">${shortAddr(item.address)}</p>
+            <div class="w-36 bg-gray-800 rounded-full h-2 mt-1 overflow-hidden">
+              <div class="bg-gradient-to-r from-orange-400 to-yellow-500 h-2 rounded-full" style="width:${percent}%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="font-mono text-orange-400">${item.burned.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+          <p class="text-xs text-gray-500">CATA Burned</p>
+        </div>
       `;
+
       container.appendChild(row);
     });
 
-    log("✅ Top 10 Bluechip collections updated.");
+    $("bluechipLastUpdated").innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
   } catch (e) {
-    log("❌ getTop10BluechipBurners error:", e.message || e);
-    alert(e.message || e);
+    log("❌ refreshTopBluechipLeaderboard error:", e.message || e);
+    $("topBluechipList").innerHTML = `<div class='text-center py-3 text-red-400'>Failed to load leaderboard</div>`;
   } finally {
     hideLoading();
   }
 }
+
+    
 	  
 // ---------- NFT approval ----------	  
 async function approveNFT(){
@@ -4502,6 +4536,7 @@ wireRegistrationUIs();
 $('enrollBluechipBtn').onclick = enrollBluechip;
 $('harvestBluechipBtn').onclick = harvestBluechip;
 $('refreshBluechipBtn').onclick = refreshBluechip;
+	  $("refreshBluechipBtn2").onclick = refreshTopBluechipLeaderboard;
 	  
     // Staking single
 	  $('refreshStakingTransparencyBtn').onclick = fetchStakingTransparency;
