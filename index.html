@@ -3116,19 +3116,28 @@ async function harvest(){
   }
 }
 
-	  // ---------- Batch helpers ----------
+
+
+// -----------------------------
+// ✅ Parse "collection,tokenId" textarea into objects
+// -----------------------------
 function parseBatchPairs() {
   const raw = $('batchNFTs').value.trim();
   if (!raw) return [];
-  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const pairs = [];
+
   for (const ln of lines) {
-    const parts = ln.split(',').map(p => p.trim()).filter(p => p.length > 0);
-    if (parts.length >= 2) pairs.push({ collection: parts[0], tokenId: parts[1] });
+    const [addr, tokenId] = ln.split(',').map(s => s.trim());
+    if (addr && tokenId) pairs.push({ collection: addr, tokenId });
   }
+
   return pairs;
 }
 
+// -----------------------------
+// ✅ Batch Term Stake
+// -----------------------------
 async function batchTermStake() {
   try {
     showLoading();
@@ -3137,16 +3146,24 @@ async function batchTermStake() {
     if (pairs.length === 0) return alert('No pairs to stake');
     if (!contracts.staking) { 
       await attachContractsIfSet(); 
-      if (!contracts.staking) return alert('Set staking contract'); 
+      if (!contracts.staking) return alert('Set staking contract first'); 
+    }
+
+    const cols = pairs.map(p => p.collection.trim());
+    const ids = pairs.map(p => p.tokenId.trim());
+
+    // ✅ Address validation
+    for (const c of cols) {
+      if (!ethers.utils.isAddress(c)) {
+        throw new Error(`Invalid address: ${c}`);
+      }
     }
 
     if (typeof contracts.staking.batchTermStake === 'function') {
-      const cols = pairs.map(p => p.collection);
-      const ids = pairs.map(p => p.tokenId);
       const tx = await contracts.staking.batchTermStake(cols, ids);
       log('batchTermStake tx', tx.hash);
       await tx.wait();
-      log('batchTermStake done');
+      log('✅ batchTermStake complete');
     } else {
       // fallback sequential
       for (const p of pairs) {
@@ -3154,15 +3171,20 @@ async function batchTermStake() {
         log('termStake seq tx', tx.hash);
         await tx.wait();
       }
-      log('batchTermStake sequential done');
+      log('✅ batchTermStake sequential complete');
     }
-  } catch (e) { 
-    log('batchTermStake err', e && e.message ? e.message : e); 
+
+  } catch (e) {
+    log('batchTermStake err', e?.message || e);
+    alert(e?.message || e);
   } finally {
     hideLoading();
   }
 }
 
+// -----------------------------
+// ✅ Batch Permanent Stake
+// -----------------------------
 async function batchPermStake() {
   try {
     showLoading();
@@ -3171,31 +3193,43 @@ async function batchPermStake() {
     if (pairs.length === 0) return alert('No pairs to stake');
     if (!contracts.staking) { 
       await attachContractsIfSet(); 
-      if (!contracts.staking) return alert('Set staking contract'); 
+      if (!contracts.staking) return alert('Set staking contract first'); 
+    }
+
+    const cols = pairs.map(p => p.collection.trim());
+    const ids = pairs.map(p => p.tokenId.trim());
+
+    for (const c of cols) {
+      if (!ethers.utils.isAddress(c)) {
+        throw new Error(`Invalid address: ${c}`);
+      }
     }
 
     if (typeof contracts.staking.batchPermanentStake === 'function') {
-      const cols = pairs.map(p => p.collection);
-      const ids = pairs.map(p => p.tokenId);
       const tx = await contracts.staking.batchPermanentStake(cols, ids);
       log('batchPermanentStake tx', tx.hash);
       await tx.wait();
-      log('batchPermanentStake done');
+      log('✅ batchPermanentStake complete');
     } else {
       for (const p of pairs) {
         const tx = await contracts.staking.permanentStake(p.collection, p.tokenId);
         log('permanentStake seq tx', tx.hash);
         await tx.wait();
       }
-      log('batchPermStake sequential done');
+      log('✅ batchPermStake sequential complete');
     }
-  } catch (e) { 
-    log('batchPermStake err', e && e.message ? e.message : e); 
+
+  } catch (e) {
+    log('batchPermStake err', e?.message || e);
+    alert(e?.message || e);
   } finally {
     hideLoading();
   }
 }
 
+// -----------------------------
+// ✅ Batch Unstake
+// -----------------------------
 async function batchUnstake() {
   try {
     showLoading();
@@ -3204,106 +3238,117 @@ async function batchUnstake() {
     if (pairs.length === 0) return alert('No pairs to unstake');
     if (!contracts.staking) { 
       await attachContractsIfSet(); 
-      if (!contracts.staking) return alert('Set staking contract'); 
+      if (!contracts.staking) return alert('Set staking contract first'); 
+    }
+
+    const cols = pairs.map(p => p.collection.trim());
+    const ids = pairs.map(p => p.tokenId.trim());
+
+    for (const c of cols) {
+      if (!ethers.utils.isAddress(c)) {
+        throw new Error(`Invalid address: ${c}`);
+      }
     }
 
     if (typeof contracts.staking.batchUnstake === 'function') {
-      const cols = pairs.map(p => p.collection);
-      const ids = pairs.map(p => p.tokenId);
       const tx = await contracts.staking.batchUnstake(cols, ids);
       log('batchUnstake tx', tx.hash);
       await tx.wait();
-      log('batchUnstake done');
+      log('✅ batchUnstake complete');
     } else {
       for (const p of pairs) {
         const tx = await contracts.staking.unstake(p.collection, p.tokenId);
         log('unstake seq tx', tx.hash);
         await tx.wait();
       }
-      log('batchUnstake sequential done');
+      log('✅ batchUnstake sequential complete');
     }
-  } catch (e) { 
-    log('batchUnstake err', e && e.message ? e.message : e); 
+
+  } catch (e) {
+    log('batchUnstake err', e?.message || e);
+    alert(e?.message || e);
   } finally {
     hideLoading();
   }
 }
- 
+
+// -----------------------------
+// ✅ Batch Harvest
+// -----------------------------
 async function batchHarvest() {
   try {
     const pairs = parseBatchHarvestPairs();
     if (pairs.length === 0) return alert('No pairs to harvest');
 
-    if (!contracts || !contracts.staking) {
+    if (!contracts?.staking) {
       if (typeof attachContractsIfSet === 'function') {
         await attachContractsIfSet();
       }
-      if (!contracts || !contracts.staking) {
+      if (!contracts?.staking) {
         return alert('Staking contract not set.');
       }
     }
 
     showLoading("Batch harvesting...");
     const byCollection = groupByCollection(pairs);
-    const hasHarvestBatch = typeof contracts.staking.harvestBatch === 'function';
-    const hasHarvestSingle = typeof contracts.staking.harvest === 'function';
+    const hasBatch = typeof contracts.staking.harvestBatch === 'function';
+    const hasSingle = typeof contracts.staking.harvest === 'function';
 
-    if (!hasHarvestBatch && !hasHarvestSingle) {
+    if (!hasBatch && !hasSingle) {
       return alert('Contract ABI lacks harvestBatch and harvest functions.');
     }
 
-    for (const colLower of Object.keys(byCollection)) {
-      const collection = colLower;
-      const ids = byCollection[colLower];
+    for (const collection of Object.keys(byCollection)) {
+      const ids = byCollection[collection];
+      if (!ethers.utils.isAddress(collection)) {
+        throw new Error(`Invalid address: ${collection}`);
+      }
 
-      if (hasHarvestBatch) {
+      if (hasBatch) {
         log('calling harvestBatch for', collection, 'ids:', ids);
         const tx = await contracts.staking.harvestBatch(collection, ids);
         log('harvestBatch tx', tx.hash);
         await tx.wait();
-        log('harvestBatch confirmed for', collection);
+        log('✅ harvestBatch complete for', collection);
       } else {
         for (const id of ids) {
           log('calling harvest for', collection, id);
           const tx = await contracts.staking.harvest(collection, id);
           log('harvest tx', tx.hash);
           await tx.wait();
-          log('harvest confirmed', id);
         }
       }
     }
-    log('batchHarvest: done for all collections');
+
+    log('✅ batchHarvest complete for all collections');
   } catch (err) {
     log('batchHarvest err', err?.message || err);
+    alert(err?.message || err);
   } finally {
     hideLoading();
   }
 }
 
-	  // Helper: parse textarea "collection,tokenId" lines into objects
+// -----------------------------
+// ✅ Parse Harvest Pairs
+// -----------------------------
 function parseBatchHarvestPairs() {
-  try {
-    showLoading();
+  const txt = $('batchHarvestNFTs').value.trim();
+  if (!txt) return [];
 
-    const txt = $('batchHarvestNFTs').value.trim();
-    if (!txt) return [];
-
-    return txt
-      .split(/\r?\n/)
-      .map(line => {
-        const parts = line.split(',').map(s => s.trim()).filter(Boolean);
-        if (parts.length < 2) return null;
-        const collection = parts[0];
-        const tokenId = parts[1];
-        if (!collection || !tokenId) return null;
-        return { collection, tokenId };
-      })
-      .filter(Boolean);
-
-  } finally {
-    hideLoading();
-  }
+  return txt
+    .split(/\r?\n/)
+    .map(line => {
+      const parts = line.split(',').map(s => s.trim()).filter(Boolean);
+      if (parts.length < 2) return null;
+      const [collection, tokenId] = parts;
+      return { collection, tokenId };
+    })
+    .filter(Boolean);
 }
+
+
+
 	  
 
 // ======== Smooth Number Animation ========
