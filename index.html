@@ -797,48 +797,50 @@ Catalyst Whitepaper
 <!-- ======================== -->
 <div id="stakingDashboard" class="space-y-6 text-slate-100">
 
-<!-- 🧍 My Staking Overview -->
-        <div class="mt-6 bg-slate-800/50 p-6 rounded-2xl shadow-2xl border border-white/10">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-2xl font-extrabold text-white flex items-center gap-2">
-                    🧍 My Staking Overview
-                </h3>
-                <button id="refreshStakingStatsBtn"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    🔄 Refresh Stats
-                </button>
-            </div>
+	<!-- 🧍 My Staking Overview -->
+<div class="mt-6 bg-slate-800/50 p-6 rounded-2xl shadow-2xl border border-white/10">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-2xl font-extrabold text-white flex items-center gap-2">
+      🧍 My Staking Overview
+    </h3>
+    <button id="refreshStakingStatsBtn"
+      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      🔄 Refresh Stats
+    </button>
+  </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <!-- Total Staked -->
-                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-emerald-600/50">
-                    <div class="text-slate-300 text-sm uppercase tracking-wider">Total NFTs Staked</div>
-                    <div id="userStakedTotal" class="font-black text-3xl text-neon-emerald mt-1 transition-colors duration-500">0</div>
-                </div>
-                <!-- Term Staked -->
-                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-blue-600/50">
-                    <div class="text-slate-300 text-sm uppercase tracking-wider">Term NFTs</div>
-                    <div id="userStakedTerm" class="font-black text-3xl text-neon-blue mt-1 transition-colors duration-500">0</div>
-                </div>
-                <!-- Permanent Staked -->
-                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-purple-600/50">
-                    <div class="text-slate-300 text-sm uppercase tracking-wider">Perm NFTs</div>
-                    <div id="userStakedPerm" class="font-black text-3xl text-neon-purple mt-1 transition-colors duration-500">0</div>
-                </div>
-            </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+    <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-emerald-600/50">
+      <div class="text-slate-300 text-sm uppercase tracking-wider">Total NFTs Staked</div>
+      <div id="userStakedTotal"
+        class="font-black text-3xl text-neon-emerald mt-1 transition-colors duration-500">0</div>
+    </div>
+    <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-blue-600/50">
+      <div class="text-slate-300 text-sm uppercase tracking-wider">Term NFTs</div>
+      <div id="userStakedTerm"
+        class="font-black text-3xl text-neon-blue mt-1 transition-colors duration-500">0</div>
+    </div>
+    <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-purple-600/50">
+      <div class="text-slate-300 text-sm uppercase tracking-wider">Perm NFTs</div>
+      <div id="userStakedPerm"
+        class="font-black text-3xl text-neon-purple mt-1 transition-colors duration-500">0</div>
+    </div>
+  </div>
 
-            <!-- Utilization Progress -->
-            <div class="mt-6">
-                <div class="text-sm text-slate-300 mb-2 font-semibold">Staking Utilization</div>
-                <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
-                    <div id="userStakingUsageBar" class="h-3 bg-emerald-500 transition-all duration-700 ease-out" style="width: 0%;"></div>
-                </div>
-                <div id="userStakingUsageText" class="text-xs font-mono text-right text-slate-400 mt-2">0.00% of Global Cap (Max 100)</div>
-            </div>
+  <div class="mt-6">
+    <div class="text-sm text-slate-300 mb-2 font-semibold">Staking Utilization</div>
+    <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+      <div id="userStakingUsageBar" class="h-3 bg-emerald-500 transition-all duration-700 ease-out"
+        style="width: 0%;"></div>
+    </div>
+    <div id="userStakingUsageText" class="text-xs font-mono text-right text-slate-400 mt-2">
+      0.00% of Global Cap (Max 100)
+    </div>
+  </div>
 
-            <div id="stakingStatsUpdated" class="text-xs text-slate-500 mt-4 text-right">Last Updated: —</div>
-        </div>
-
+  <div id="stakingStatsUpdated" class="text-xs text-slate-500 mt-4 text-right">Last Updated: —</div>
+</div>
+	
   <!-- ======== Section: Other Actions ======== -->
 <div>
   <h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
@@ -1697,7 +1699,7 @@ async function attachContractsIfSet() {
       refreshDao(),
       refreshGuardians(),
       refreshLock(),
-      refreshStakingStats(),
+      refreshStakingStatsAccurate(),
       refreshBluechip(),
       fetchStakingTransparency(),
       fetchGovernanceTransparency(),
@@ -3310,92 +3312,91 @@ function animateNumber(elementId, newValue, duration = 600) {
 }
 
 // ======== User-Based Staking Stats ========
-async function fetchAccurateUserStakingStats() {
-    if (!contracts?.staking) throw new Error("Staking contract not attached");
-    if (!userAddr) throw new Error("No user address");
+// ======== Accurate User Staking Portfolio ========
+async function fetchUserPortfolioStats() {
+  if (!contracts?.staking) throw new Error("Staking contract not attached");
+  if (!userAddr) throw new Error("No user address");
 
-    const result = { total: 0, term: 0, perm: 0 };
-    // Call registeredCount once and ensure it's a number
-    const regCount = Number(await contracts.staking.registeredCount());
+  const result = { total: 0, term: 0, perm: 0 };
+  const regCount = Number(await contracts.staking.registeredCount());
 
-    for (let i = 0; i < regCount; i++) {
-        const collection = await contracts.staking.registeredCollections(i);
+  for (let i = 0; i < regCount; i++) {
+    const collection = await contracts.staking.registeredCollections(i);
 
-        // ✅ Check if collection is a valid address (stricter check)
-        if (!collection || collection === ethers.constants.AddressZero || !ethers.utils.isAddress(collection)) {
-            console.warn(`⚠️ Skipping invalid collection index ${i}:`, collection);
-            continue;
+    // ✅ Skip invalid or zero collections
+    if (
+      !collection ||
+      collection === ethers.constants.AddressZero ||
+      !ethers.utils.isAddress(collection)
+    ) continue;
+
+    // ✅ Get staked NFTs for this user
+    const portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
+    if (!portfolio || portfolio.length === 0) continue;
+
+    for (const tokenIdBN of portfolio) {
+      const tokenId = Number(tokenIdBN.toString());
+      if (isNaN(tokenId)) continue;
+
+      try {
+        // Read full stake info for that NFT
+        const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
+
+        // Handle tuple or named struct
+        const currentlyStaked = info.currentlyStaked ?? info[0];
+        const isPermanent = info.isPermanent ?? info[1];
+
+        if (currentlyStaked) {
+          result.total++;
+          if (isPermanent) result.perm++;
+          else result.term++;
         }
-
-        // Fetch the portfolio (array of tokenIds)
-        const portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
-        if (!portfolio || portfolio.length === 0) continue;
-
-        for (const tokenIdBN of portfolio) {
-            // Ensure tokenId is a safe integer/number
-            const tokenId = Number(tokenIdBN.toString());
-            if (isNaN(tokenId) || tokenId < 0) continue;
-
-            try {
-                // 🛑 POTENTIAL FIX: Add explicit validation before the contract call
-                if (!ethers.utils.isAddress(userAddr)) {
-                    console.error("userAddr is not a valid address:", userAddr);
-                    continue;
-                }
-                
-                // The function expects: collection (address), userAddr (address), tokenId (uint256)
-                // The provided arguments (3) perfectly match the getter for public mapping `stakeLog[address][address][uint256]`
-                const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
-                
-                // Handle different ways ethers.js returns structs (array vs object)
-                const currentlyStaked = info.currentlyStaked ?? info[0];
-                const isPermanent = info.isPermanent ?? info[1];
-
-                if (currentlyStaked) {
-                    result.total++;
-                    if (isPermanent) result.perm++;
-                    else result.term++;
-                }
-            } catch (err) {
-                // If the error is the missing argument, log the inputs to debug
-                if (err.code === 'MISSING_ARGUMENT') {
-                    console.error(`❌ MISSING_ARGUMENT failure on inputs: 
-                        Collection: ${collection}, 
-                        User: ${userAddr}, 
-                        TokenId: ${tokenId}`
-                    );
-                }
-                console.warn(`❌ stakeLog failed for collection ${collection}, tokenId ${tokenId}:`, err.message);
-                continue; // skip broken ones
-            }
-        }
+      } catch (err) {
+        console.warn(`⚠️ stakeLog failed for ${collection}, token ${tokenId}:`, err.message);
+      }
     }
+  }
 
-    return result;
+  return result;
 }
 
-
-	  async function refreshStakingStats() {
+// ======== Update My Staking Overview ========
+async function refreshStakingStatsAccurate() {
   try {
-    showLoading("Fetching accurate staking stats...");
-    const stats = await fetchAccurateUserStakingStats();
+    showLoading("Fetching your staking stats...");
 
+    const stats = await fetchUserPortfolioStats();
+    const globalCap = Number(await contracts.staking.GLOBAL_NFT_CAP());
+    const percent = globalCap > 0 ? ((stats.total / globalCap) * 100).toFixed(2) : 0;
+
+    // ✅ Animate live numbers
     animateNumber("userStakedTotal", stats.total);
     animateNumber("userStakedTerm", stats.term);
     animateNumber("userStakedPerm", stats.perm);
 
-    if ($("stakingStatsUpdated"))
-      $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+    // ✅ Update utilization bar
+    const bar = $("userStakingUsageBar");
+    if (bar) bar.style.width = `${percent}%`;
 
-    log(`✅ Accurate stats: total=${stats.total}, term=${stats.term}, perm=${stats.perm}`);
+    const usageText = $("userStakingUsageText");
+    if (usageText)
+      usageText.innerText = `${percent}% of Global Cap (Max ${globalCap})`;
+
+    const updated = $("stakingStatsUpdated");
+    if (updated)
+      updated.innerText = `Last Updated: ${new Date().toLocaleTimeString()}`;
+
+    log(
+      `✅ Portfolio updated — Total=${stats.total}, Term=${stats.term}, Perm=${stats.perm}, Usage=${percent}%`
+    );
   } catch (err) {
-    log("refreshStakingStatsAccurate err", err?.message || err);
+    log("❌ refreshStakingStatsAccurate err:", err?.message || err);
     alert(err?.message || err);
   } finally {
     hideLoading();
   }
 }
-	  
+  
 
 	  // ======== View Portfolio (using existing wallet logic) ========
 async function viewPortfolio() {
