@@ -3320,26 +3320,18 @@ async function fetchAccurateUserStakingStats() {
   for (let i = 0; i < regCount; i++) {
     const collection = await contracts.staking.registeredCollections(i);
 
-    // ✅ Skip if not a valid address
-    if (!collection || !ethers.utils.isAddress(collection)) {
+    // ✅ Skip if empty or invalid
+    if (!collection || collection === ethers.constants.AddressZero || !ethers.utils.isAddress(collection)) {
       console.warn(`⚠️ Skipping invalid collection index ${i}:`, collection);
       continue;
     }
 
     const portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
-    const tokenIds = portfolio.map(x => Number(x.toString()));
+    if (!portfolio || portfolio.length === 0) continue;
 
-    for (const tokenId of tokenIds) {
-      if (
-        !collection ||
-        !ethers.utils.isAddress(collection) ||
-        !userAddr ||
-        tokenId === undefined ||
-        tokenId === null
-      ) {
-        console.warn(`⚠️ Skipping invalid params`, { collection, userAddr, tokenId });
-        continue;
-      }
+    for (const tokenIdBN of portfolio) {
+      const tokenId = Number(tokenIdBN.toString());
+      if (isNaN(tokenId)) continue;
 
       try {
         const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
@@ -3352,9 +3344,8 @@ async function fetchAccurateUserStakingStats() {
           else result.term++;
         }
       } catch (err) {
-        console.warn(`❌ stakeLog failed for ${collection} token ${tokenId}:`, err);
-        // continue instead of breaking
-        continue;
+        console.warn(`❌ stakeLog failed for collection ${collection}, tokenId ${tokenId}:`, err.message);
+        continue; // skip broken ones
       }
     }
   }
