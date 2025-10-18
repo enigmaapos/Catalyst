@@ -3311,38 +3311,62 @@ function animateNumber(elementId, newValue, duration = 600) {
   }, 16);
 }
 
-// ======== User-Based Staking Stats ========
-// ======== Accurate User Staking Portfolio ========
+	  
+// ======== Accurate User Portfolio Fetcher (Stable) ========
 async function fetchUserPortfolioStats() {
   if (!contracts?.staking) throw new Error("Staking contract not attached");
   if (!userAddr) throw new Error("No user address");
 
   const result = { total: 0, term: 0, perm: 0 };
   const regCount = Number(await contracts.staking.registeredCount());
+  log(`📦 Fetching user portfolio across ${regCount} collections...`);
 
   for (let i = 0; i < regCount; i++) {
-    const collection = await contracts.staking.registeredCollections(i);
+    let collection;
+    try {
+      collection = await contracts.staking.registeredCollections(i);
+    } catch (err) {
+      console.warn(`⚠️ Failed to fetch collection at index ${i}:`, err.message);
+      continue;
+    }
 
-    // ✅ Skip invalid or zero collections
+    // ✅ Skip invalid collections
     if (
       !collection ||
       collection === ethers.constants.AddressZero ||
       !ethers.utils.isAddress(collection)
-    ) continue;
+    ) {
+      console.warn(`⚠️ Skipping invalid collection address at index ${i}:`, collection);
+      continue;
+    }
 
-    // ✅ Get staked NFTs for this user
-    const portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
+    // ✅ Get all tokens staked by the user in this collection
+    let portfolio;
+    try {
+      portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
+    } catch (err) {
+      console.warn(`⚠️ Failed to fetch portfolio for collection ${collection}:`, err.message);
+      continue;
+    }
+
     if (!portfolio || portfolio.length === 0) continue;
 
+    // ✅ Iterate through each token the user staked
     for (const tokenIdBN of portfolio) {
       const tokenId = Number(tokenIdBN.toString());
       if (isNaN(tokenId)) continue;
 
+      // Sanity check for missing arguments
+      if (!collection || !userAddr || tokenId === undefined) {
+        console.warn("⚠️ Skipping invalid stakeLog params:", { collection, userAddr, tokenId });
+        continue;
+      }
+
       try {
-        // Read full stake info for that NFT
+        // ✅ Always pass exactly 3 arguments (collection, user, tokenId)
         const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
 
-        // Handle tuple or named struct
+        // Handle named or tuple struct form
         const currentlyStaked = info.currentlyStaked ?? info[0];
         const isPermanent = info.isPermanent ?? info[1];
 
@@ -3352,11 +3376,17 @@ async function fetchUserPortfolioStats() {
           else result.term++;
         }
       } catch (err) {
-        console.warn(`⚠️ stakeLog failed for ${collection}, token ${tokenId}:`, err.message);
+        console.warn(
+          `⚠️ stakeLog failed for ${collection}, token ${tokenId}:`,
+          err.message
+        );
       }
     }
   }
 
+  log(
+    `✅ Portfolio complete — total=${result.total}, term=${result.term}, perm=${result.perm}`
+  );
   return result;
 }
 
