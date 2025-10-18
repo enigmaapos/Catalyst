@@ -3144,34 +3144,28 @@ async function batchTermStake() {
 
     const pairs = parseBatchPairs();
     if (pairs.length === 0) return alert('No pairs to stake');
-    if (!contracts.staking) { 
-      await attachContractsIfSet(); 
-      if (!contracts.staking) return alert('Set staking contract first'); 
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Set staking contract first');
     }
 
-    const cols = pairs.map(p => p.collection.trim());
-    const ids = pairs.map(p => p.tokenId.trim());
-
-    // ✅ Address validation
-    for (const c of cols) {
-      if (!ethers.utils.isAddress(c)) {
-        throw new Error(`Invalid address: ${c}`);
+    // ✅ Group by collection
+    const grouped = {};
+    for (const { collection, tokenId } of pairs) {
+      if (!ethers.utils.isAddress(collection)) {
+        throw new Error(`Invalid address: ${collection}`);
       }
+      if (!grouped[collection]) grouped[collection] = [];
+      grouped[collection].push(Number(tokenId));
     }
 
-    if (typeof contracts.staking.batchTermStake === 'function') {
-      const tx = await contracts.staking.batchTermStake(cols, ids);
+    // ✅ One transaction per collection
+    for (const [collection, tokenIds] of Object.entries(grouped)) {
+      console.log(`batchTermStake:`, collection, tokenIds);
+      const tx = await contracts.staking.batchTermStake(collection, tokenIds);
       log('batchTermStake tx', tx.hash);
       await tx.wait();
-      log('✅ batchTermStake complete');
-    } else {
-      // fallback sequential
-      for (const p of pairs) {
-        const tx = await contracts.staking.termStake(p.collection, p.tokenId);
-        log('termStake seq tx', tx.hash);
-        await tx.wait();
-      }
-      log('✅ batchTermStake sequential complete');
+      log(`✅ batchTermStake complete for ${collection}`);
     }
 
   } catch (e) {
