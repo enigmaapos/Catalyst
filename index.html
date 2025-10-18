@@ -3315,34 +3315,35 @@ async function fetchAccurateUserStakingStats() {
   if (!userAddr) throw new Error("No user address");
 
   const result = { total: 0, term: 0, perm: 0 };
-
-  const regCountBN = await contracts.staking.registeredCount();
-  const regCount = Number(regCountBN.toString());
-
-  log(`Registered collections: ${regCount}`);
+  const regCount = Number(await contracts.staking.registeredCount());
 
   for (let i = 0; i < regCount; i++) {
     const collection = await contracts.staking.registeredCollections(i);
 
+    // ✅ Skip if not a valid address
     if (!collection || !ethers.utils.isAddress(collection)) {
-      log(`⚠️ Invalid collection at index ${i}:`, collection);
+      console.warn(`⚠️ Skipping invalid collection index ${i}:`, collection);
       continue;
     }
 
     const portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
     const tokenIds = portfolio.map(x => Number(x.toString()));
 
-    if (tokenIds.length === 0) continue;
-
-    log(`Collection ${collection} — ${tokenIds.length} tokens`);
-
     for (const tokenId of tokenIds) {
-      try {
-        // ✅ Debug before calling
-        log(`🔍 Calling stakeLog(${collection}, ${userAddr}, ${tokenId})`);
-        const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
+      if (
+        !collection ||
+        !ethers.utils.isAddress(collection) ||
+        !userAddr ||
+        tokenId === undefined ||
+        tokenId === null
+      ) {
+        console.warn(`⚠️ Skipping invalid params`, { collection, userAddr, tokenId });
+        continue;
+      }
 
-        const currentlyStaked = info.currentlyStaked ?? info[2];
+      try {
+        const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
+        const currentlyStaked = info.currentlyStaked ?? info[0];
         const isPermanent = info.isPermanent ?? info[1];
 
         if (currentlyStaked) {
@@ -3351,20 +3352,20 @@ async function fetchAccurateUserStakingStats() {
           else result.term++;
         }
       } catch (err) {
-        log(`❌ stakeLog failed for token ${tokenId} on ${collection}:`, err);
-        throw err;
+        console.warn(`❌ stakeLog failed for ${collection} token ${tokenId}:`, err);
+        // continue instead of breaking
+        continue;
       }
     }
   }
 
   return result;
-	}
+}
 
 
-	  async function refreshStakingStats() {
+	  async function refreshStakingStatsAccurate() {
   try {
     showLoading("Fetching accurate staking stats...");
-
     const stats = await fetchAccurateUserStakingStats();
 
     animateNumber("userStakedTotal", stats.total);
@@ -3381,7 +3382,7 @@ async function fetchAccurateUserStakingStats() {
   } finally {
     hideLoading();
   }
-	  }
+}
 	  
 
 	  // ======== View Portfolio (using existing wallet logic) ========
