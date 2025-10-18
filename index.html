@@ -3311,46 +3311,67 @@ function animateNumber(elementId, newValue, duration = 600) {
 
 // ======== User-Based Staking Stats ========
 async function fetchAccurateUserStakingStats() {
-  if (!contracts?.staking) throw new Error("Staking contract not attached");
-  if (!userAddr) throw new Error("No user address");
+    if (!contracts?.staking) throw new Error("Staking contract not attached");
+    if (!userAddr) throw new Error("No user address");
 
-  const result = { total: 0, term: 0, perm: 0 };
-  const regCount = Number(await contracts.staking.registeredCount());
+    const result = { total: 0, term: 0, perm: 0 };
+    // Call registeredCount once and ensure it's a number
+    const regCount = Number(await contracts.staking.registeredCount());
 
-  for (let i = 0; i < regCount; i++) {
-    const collection = await contracts.staking.registeredCollections(i);
+    for (let i = 0; i < regCount; i++) {
+        const collection = await contracts.staking.registeredCollections(i);
 
-    // ✅ Skip if empty or invalid
-    if (!collection || collection === ethers.constants.AddressZero || !ethers.utils.isAddress(collection)) {
-      console.warn(`⚠️ Skipping invalid collection index ${i}:`, collection);
-      continue;
-    }
-
-    const portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
-    if (!portfolio || portfolio.length === 0) continue;
-
-    for (const tokenIdBN of portfolio) {
-      const tokenId = Number(tokenIdBN.toString());
-      if (isNaN(tokenId)) continue;
-
-      try {
-        const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
-        const currentlyStaked = info.currentlyStaked ?? info[0];
-        const isPermanent = info.isPermanent ?? info[1];
-
-        if (currentlyStaked) {
-          result.total++;
-          if (isPermanent) result.perm++;
-          else result.term++;
+        // ✅ Check if collection is a valid address (stricter check)
+        if (!collection || collection === ethers.constants.AddressZero || !ethers.utils.isAddress(collection)) {
+            console.warn(`⚠️ Skipping invalid collection index ${i}:`, collection);
+            continue;
         }
-      } catch (err) {
-        console.warn(`❌ stakeLog failed for collection ${collection}, tokenId ${tokenId}:`, err.message);
-        continue; // skip broken ones
-      }
-    }
-  }
 
-  return result;
+        // Fetch the portfolio (array of tokenIds)
+        const portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
+        if (!portfolio || portfolio.length === 0) continue;
+
+        for (const tokenIdBN of portfolio) {
+            // Ensure tokenId is a safe integer/number
+            const tokenId = Number(tokenIdBN.toString());
+            if (isNaN(tokenId) || tokenId < 0) continue;
+
+            try {
+                // 🛑 POTENTIAL FIX: Add explicit validation before the contract call
+                if (!ethers.utils.isAddress(userAddr)) {
+                    console.error("userAddr is not a valid address:", userAddr);
+                    continue;
+                }
+                
+                // The function expects: collection (address), userAddr (address), tokenId (uint256)
+                // The provided arguments (3) perfectly match the getter for public mapping `stakeLog[address][address][uint256]`
+                const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
+                
+                // Handle different ways ethers.js returns structs (array vs object)
+                const currentlyStaked = info.currentlyStaked ?? info[0];
+                const isPermanent = info.isPermanent ?? info[1];
+
+                if (currentlyStaked) {
+                    result.total++;
+                    if (isPermanent) result.perm++;
+                    else result.term++;
+                }
+            } catch (err) {
+                // If the error is the missing argument, log the inputs to debug
+                if (err.code === 'MISSING_ARGUMENT') {
+                    console.error(`❌ MISSING_ARGUMENT failure on inputs: 
+                        Collection: ${collection}, 
+                        User: ${userAddr}, 
+                        TokenId: ${tokenId}`
+                    );
+                }
+                console.warn(`❌ stakeLog failed for collection ${collection}, tokenId ${tokenId}:`, err.message);
+                continue; // skip broken ones
+            }
+        }
+    }
+
+    return result;
 }
 
 
