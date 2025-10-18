@@ -3316,35 +3316,49 @@ async function fetchAccurateUserStakingStats() {
 
   const result = { total: 0, term: 0, perm: 0 };
 
-  // Get number of registered collections
-  const regCount = Number((await contracts.staking.registeredCount()).toString());
+  const regCountBN = await contracts.staking.registeredCount();
+  const regCount = Number(regCountBN.toString());
+
+  log(`Registered collections: ${regCount}`);
 
   for (let i = 0; i < regCount; i++) {
     const collection = await contracts.staking.registeredCollections(i);
 
-    // ✅ skip invalid address
-    if (!ethers.utils.isAddress(collection)) continue;
+    if (!collection || !ethers.utils.isAddress(collection)) {
+      log(`⚠️ Invalid collection at index ${i}:`, collection);
+      continue;
+    }
 
-    // Get all currently staked token IDs for this user
     const portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
     const tokenIds = portfolio.map(x => Number(x.toString()));
 
-    for (const tokenId of tokenIds) {
-      // ✅ Correct 3-argument call
-      const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
-      const currentlyStaked = info.currentlyStaked || info[2]; // handle tuple/struct versions
-      const isPermanent = info.isPermanent || info[1];
+    if (tokenIds.length === 0) continue;
 
-      if (currentlyStaked) {
-        result.total += 1;
-        if (isPermanent) result.perm += 1;
-        else result.term += 1;
+    log(`Collection ${collection} — ${tokenIds.length} tokens`);
+
+    for (const tokenId of tokenIds) {
+      try {
+        // ✅ Debug before calling
+        log(`🔍 Calling stakeLog(${collection}, ${userAddr}, ${tokenId})`);
+        const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
+
+        const currentlyStaked = info.currentlyStaked ?? info[2];
+        const isPermanent = info.isPermanent ?? info[1];
+
+        if (currentlyStaked) {
+          result.total++;
+          if (isPermanent) result.perm++;
+          else result.term++;
+        }
+      } catch (err) {
+        log(`❌ stakeLog failed for token ${tokenId} on ${collection}:`, err);
+        throw err;
       }
     }
   }
 
   return result;
-}
+	}
 
 
 	  async function refreshStakingStats() {
