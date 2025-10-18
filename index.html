@@ -3310,62 +3310,46 @@ function animateNumber(elementId, newValue, duration = 600) {
 }
 
 // ======== User-Based Staking Stats ========
-// returns { total, term, perm, details: { collection: { tokenIds: [], permCount, termCount } } }
 async function fetchAccurateUserStakingStats() {
   if (!contracts?.staking) throw new Error("Staking contract not attached");
   if (!userAddr) throw new Error("No user address");
 
-  const result = {
-    total: 0,
-    term: 0,
-    perm: 0,
-    details: {} // per-collection breakdown
-  };
+  const result = { total: 0, term: 0, perm: 0 };
 
-  // 1) get registered count, then iterate collections
-  const regCountBN = await contracts.staking.registeredCount();
-  const regCount = Number(regCountBN.toString());
+  // Get number of registered collections
+  const regCount = Number((await contracts.staking.registeredCount()).toString());
 
   for (let i = 0; i < regCount; i++) {
-    // registeredCollections is a public array; ethers provides a getter
     const collection = await contracts.staking.registeredCollections(i);
-    // stakePortfolioByUser(collection, user) returns uint256[] of tokenIds currently staked
+
+    // ✅ skip invalid address
+    if (!ethers.utils.isAddress(collection)) continue;
+
+    // Get all currently staked token IDs for this user
     const portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
-    // portfolio is an array of BigNumbers (or empty)
     const tokenIds = portfolio.map(x => Number(x.toString()));
 
-    if (tokenIds.length === 0) continue;
+    for (const tokenId of tokenIds) {
+      // ✅ Correct 3-argument call
+      const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
+      const currentlyStaked = info.currentlyStaked || info[2]; // handle tuple/struct versions
+      const isPermanent = info.isPermanent || info[1];
 
-    // track per-collection counts
-    let permCount = 0;
-    let termCount = 0;
-
-    for (const id of tokenIds) {
-      // stakeLog(collection, user, tokenId) returns the StakeInfo struct fields
-      // The auto-generated getter returns a tuple matching StakeInfo: (currentlyStaked, isPermanent, stakeBlock, unstakeDeadlineBlock, lastHarvestBlock)
-      const info = await contracts.staking.stakeLog(collection, userAddr, id);
-      const isPermanent = info[1]; // either boolean or BigNumber depending on ABI; often boolean
-      if (isPermanent) permCount++;
-      else termCount++;
+      if (currentlyStaked) {
+        result.total += 1;
+        if (isPermanent) result.perm += 1;
+        else result.term += 1;
+      }
     }
-
-    result.details[collection] = {
-      tokenIds,
-      permCount,
-      termCount
-    };
-
-    result.total += tokenIds.length;
-    result.perm += permCount;
-    result.term += termCount;
   }
 
   return result;
 }
 
-	  async function refreshStakingStats() {
+
+	  async function refreshStakingStatsAccurate() {
   try {
-    showLoading("Refreshing accurate staking stats...");
+    showLoading("Fetching accurate staking stats...");
 
     const stats = await fetchAccurateUserStakingStats();
 
@@ -3376,14 +3360,14 @@ async function fetchAccurateUserStakingStats() {
     if ($("stakingStatsUpdated"))
       $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
-    log(`Accurate stats: total=${stats.total}, term=${stats.term}, perm=${stats.perm}`);
+    log(`✅ Accurate stats: total=${stats.total}, term=${stats.term}, perm=${stats.perm}`);
   } catch (err) {
     log("refreshStakingStatsAccurate err", err?.message || err);
     alert(err?.message || err);
   } finally {
     hideLoading();
   }
-}
+	  }
 	  
 
 	  // ======== View Portfolio (using existing wallet logic) ========
