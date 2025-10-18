@@ -3319,38 +3319,38 @@ async function refreshStakingStats() {
       if (!contracts.staking) return alert("Staking contract not found.");
     }
 
-    const globalCap = await contracts.staking.GLOBAL_NFT_CAP();
+    // Fetch all NFTStaked + NFTUnstaked events
+    const stakedEvents = await contracts.staking.queryFilter(
+      contracts.staking.filters.NFTStaked(userAddr, null, null),
+      0, "latest"
+    );
+    const unstakedEvents = await contracts.staking.queryFilter(
+      contracts.staking.filters.NFTUnstaked(userAddr, null, null),
+      0, "latest"
+    );
 
-    // Events
-    const stakedFilter = contracts.staking.filters.NFTStaked(userAddr, null, null);
-    const unstakedFilter = contracts.staking.filters.NFTUnstaked(userAddr, null, null);
-    const permFilter = contracts.staking.filters.PermanentStakeFeePaid(userAddr, null);
+    // Track currently staked tokens
+    const activeTokens = new Set();
+    for (const e of stakedEvents) {
+      activeTokens.add(e.args[2].toString());
+    }
+    for (const e of unstakedEvents) {
+      activeTokens.delete(e.args[2].toString());
+    }
 
-    const [stakedEvents, unstakedEvents, permEvents] = await Promise.all([
-      contracts.staking.queryFilter(stakedFilter, 0, "latest"),
-      contracts.staking.queryFilter(unstakedFilter, 0, "latest"),
-      contracts.staking.queryFilter(permFilter, 0, "latest"),
-    ]);
+    const stakedCount = activeTokens.size;
 
-    const stakedCount = Math.max(0, stakedEvents.length - unstakedEvents.length);
+    // Count how many of those are permanent (optional)
+    const permEvents = await contracts.staking.queryFilter(
+      contracts.staking.filters.PermanentStakeFeePaid(userAddr, null),
+      0, "latest"
+    );
     const perm = permEvents.length;
     const term = Math.max(0, stakedCount - perm);
 
-    // Animate numbers
     animateNumber("userStakedTotal", stakedCount);
     animateNumber("userStakedTerm", term);
     animateNumber("userStakedPerm", perm);
-
-    // Utilization
-    const cap = Number(globalCap.toString());
-    const percent = cap > 0 ? ((stakedCount / cap) * 100).toFixed(2) : 0;
-
-    if ($("userStakingUsageText"))
-      $("userStakingUsageText").innerText = `${percent}% of Global Cap`;
-    if ($("userStakingUsageBar"))
-      $("userStakingUsageBar").style.width = `${percent}%`;
-    if ($("stakingStatsUpdated"))
-      $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
     log(`✅ User staking stats refreshed — ${stakedCount} NFTs active`);
   } catch (e) {
