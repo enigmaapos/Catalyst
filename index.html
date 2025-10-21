@@ -3309,7 +3309,9 @@ function animateNumber(elementId, newValue, duration = 600) {
   }, 16);
 }
 
-	  // ======== Accurate User-Based Staking Stats ========
+
+
+    // ======== Accurate User-Based Staking Stats (per-user) ========
 async function refreshStakingStats() {
   try {
     showLoading("Fetching your staking stats...");
@@ -3320,53 +3322,40 @@ async function refreshStakingStats() {
     }
 
     if (!userAddr) userAddr = await signer.getAddress();
-    const globalCap = Number(await contracts.staking.GLOBAL_NFT_CAP());
 
-    // 🔍 Step 1: detect registered collections
+    const globalCap = Number(await contracts.staking.GLOBAL_NFT_CAP());
+    let total = 0, term = 0, perm = 0;
+
+    // 🔍 Step 1: find all registered collections
     let collections = [];
     try {
       if (typeof contracts.staking.registeredCollectionsLength === "function") {
-        const total = Number(await contracts.staking.registeredCollectionsLength());
-        for (let i = 0; i < total; i++) {
+        const totalCols = Number(await contracts.staking.registeredCollectionsLength());
+        for (let i = 0; i < totalCols; i++) {
           const addr = await contracts.staking.registeredCollections(i);
-          if (ethers.utils.isAddress(addr) && addr !== ethers.constants.AddressZero)
+          if (ethers.utils.isAddress(addr) && addr !== ethers.constants.AddressZero) {
             collections.push(addr);
-        }
-      } else {
-        // fallback
-        for (let i = 0; i < 1000; i++) {
-          try {
-            const addr = await contracts.staking.registeredCollections(i);
-            if (!addr || addr === ethers.constants.AddressZero) break;
-            collections.push(addr);
-          } catch {
-            break;
           }
         }
       }
     } catch (err) {
-      console.warn("⚠️ Could not auto-detect collections:", err.message);
+      console.warn("⚠️ Could not detect collections automatically:", err.message);
     }
 
-    // 🔍 Step 2: loop through user's portfolio
-    let total = 0, term = 0, perm = 0;
+    if (collections.length === 0) {
+      console.warn("⚠️ No registered collections found.");
+      hideLoading();
+      return;
+    }
 
+    // 🔍 Step 2: loop through each collection and get user's portfolio
     for (const collection of collections) {
-      let portfolio;
-      try {
-        portfolio = await contracts.staking.stakePortfolioByUser(collection, userAddr);
-      } catch {
-        continue;
-      }
-
-      if (!portfolio || portfolio.length === 0) continue;
-
-      for (const tokenIdBN of portfolio) {
-        const tokenId = Number(tokenIdBN.toString());
-        if (isNaN(tokenId)) continue;
-
+      for (let i = 0; i < 1000; i++) {
         try {
-          // ✅ Always pass all 3 arguments
+          const tokenIdBN = await contracts.staking.stakePortfolioByUser(collection, userAddr, i);
+          const tokenId = Number(tokenIdBN.toString());
+          if (isNaN(tokenId)) break;
+
           const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
           const currentlyStaked = info.currentlyStaked ?? info[0];
           const isPermanent = info.isPermanent ?? info[1];
@@ -3376,11 +3365,15 @@ async function refreshStakingStats() {
             if (isPermanent) perm++;
             else term++;
           }
-        } catch (err) {
-          console.warn(`⚠️ stakeLog failed for ${collection}, token ${tokenId}:`, err.message);
+        } catch {
+          // when revert: no more tokens for that collection
+          break;
         }
       }
     }
+
+    // 🔹 derive missing values just in case
+    if (perm === 0 && total > term) perm = total - term;
 
     // 🧮 Step 3: update UI
     animateNumber("userStakedTotal", total);
@@ -3392,7 +3385,7 @@ async function refreshStakingStats() {
     $("userStakingUsageBar").style.width = `${percent}%`;
     $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
-    log(`✅ Portfolio accurate — Total=${total}, Term=${term}, Perm=${perm}, Usage=${percent}%`);
+    log(`✅ User portfolio updated — Total=${total}, Term=${term}, Perm=${perm}, Usage=${percent}%`);
   } catch (e) {
     log("❌ refreshStakingStats error:", e.message || e);
     alert(e.message || e);
