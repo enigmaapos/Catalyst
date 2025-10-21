@@ -3310,7 +3310,58 @@ function animateNumber(elementId, newValue, duration = 600) {
 }
 
 
-	  // ======== Auto User-Based Staking Stats (no address input needed) ========
+	  // ======== Get user's active collections (no Solidity change) ========
+async function getUserCollectionsFromEvents() {
+  try {
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) throw new Error("Staking contract not attached");
+    }
+
+    if (!userAddr) userAddr = await signer.getAddress();
+
+    showLoading("Scanning events for your collections...");
+
+    // 1️⃣ Fetch stake and unstake events for this user
+    const [stakeEvents, unstakeEvents] = await Promise.all([
+      contracts.staking.queryFilter(
+        contracts.staking.filters.NFTStaked(userAddr, null, null),
+        0, "latest"
+      ),
+      contracts.staking.queryFilter(
+        contracts.staking.filters.NFTUnstaked(userAddr, null, null),
+        0, "latest"
+      )
+    ]);
+
+    // 2️⃣ Build an active-collections set
+    const active = new Set();
+
+    for (const e of stakeEvents) {
+      const collection = e.args.collection;
+      if (ethers.utils.isAddress(collection))
+        active.add(collection.toLowerCase());
+    }
+
+    for (const e of unstakeEvents) {
+      const collection = e.args.collection;
+      active.delete(collection.toLowerCase());
+    }
+
+    const collections = Array.from(active);
+    log(`✅ Found ${collections.length} active collections for ${userAddr}`);
+    return collections;
+
+  } catch (err) {
+    console.error("getUserCollectionsFromEvents error:", err);
+    return [];
+  } finally {
+    hideLoading();
+  }
+}
+
+
+// ======== Auto User-Based Staking Stats (Event-based, no address input, no size increase) ========
 async function refreshStakingStats() {
   try {
     showLoading("Fetching your staking stats...");
@@ -3321,47 +3372,38 @@ async function refreshStakingStats() {
     }
 
     if (!userAddr) userAddr = await signer.getAddress();
-
     const globalCap = Number(await contracts.staking.GLOBAL_NFT_CAP());
+
+    // 🔍 Step 1: Detect user’s active collections from events (efficient)
+    const [stakeEvents, unstakeEvents] = await Promise.all([
+      contracts.staking.queryFilter(
+        contracts.staking.filters.NFTStaked(userAddr, null, null),
+        0, "latest"
+      ),
+      contracts.staking.queryFilter(
+        contracts.staking.filters.NFTUnstaked(userAddr, null, null),
+        0, "latest"
+      )
+    ]);
+
+    const activeCollections = new Set();
+
+    for (const e of stakeEvents) {
+      const c = e.args.collection;
+      if (ethers.utils.isAddress(c)) activeCollections.add(c.toLowerCase());
+    }
+
+    for (const e of unstakeEvents) {
+      const c = e.args.collection;
+      activeCollections.delete(c.toLowerCase());
+    }
+
+    const collections = Array.from(activeCollections);
+    log(`📦 Active collections detected for user: ${collections.length}`);
+
+    // 🔍 Step 2: Count total, term, and permanent NFTs
     let total = 0, term = 0, perm = 0;
 
-    // 🔍 Step 1: Detect all registered collections
-    let collections = [];
-    try {
-      if (typeof contracts.staking.registeredCollectionsLength === "function") {
-        const totalCollections = Number(await contracts.staking.registeredCollectionsLength());
-        for (let i = 0; i < totalCollections; i++) {
-          try {
-            const addr = await contracts.staking.registeredCollections(i);
-            if (ethers.utils.isAddress(addr) && addr !== ethers.constants.AddressZero)
-              collections.push(addr);
-          } catch {
-            break;
-          }
-        }
-      } else {
-        // fallback (if no registeredCollectionsLength)
-        for (let i = 0; i < 1000; i++) {
-          try {
-            const addr = await contracts.staking.registeredCollections(i);
-            if (!addr || addr === ethers.constants.AddressZero) break;
-            collections.push(addr);
-          } catch {
-            break;
-          }
-        }
-      }
-    } catch (err) {
-      console.warn("⚠️ Could not auto-detect collections:", err.message);
-    }
-
-    if (collections.length === 0) {
-      log("⚠️ No registered collections found — user stats skipped");
-      hideLoading();
-      return;
-    }
-
-    // 🔍 Step 2: Scan each collection for user’s staked NFTs
     for (const collection of collections) {
       for (let i = 0; i < 1000; i++) {
         try {
@@ -3379,7 +3421,7 @@ async function refreshStakingStats() {
             else term++;
           }
         } catch {
-          break; // stop when revert: no more tokens for that collection
+          break; // no more tokens in this collection
         }
       }
     }
@@ -3394,9 +3436,9 @@ async function refreshStakingStats() {
     $("userStakingUsageBar").style.width = `${percent}%`;
     $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
-    log(`✅ Portfolio updated (auto) — Total=${total}, Term=${term}, Perm=${perm}, Usage=${percent}%`);
+    log(`✅ Portfolio updated — Total=${total}, Term=${term}, Perm=${perm}, Usage=${percent}%`);
   } catch (e) {
-    log("❌ refreshStakingStats error:", e.message || e);
+    console.error("❌ refreshStakingStats error:", e);
     alert(e.message || e);
   } finally {
     hideLoading();
