@@ -3310,54 +3310,8 @@ function animateNumber(elementId, newValue, duration = 600) {
 }
 
 
-	// ======== Auto User-Based Staking Stats (Event-based, No Address Input Needed) ========
 
-// 🔍 Helper: Get user's active collections from events
-async function getUserCollectionsFromEvents() {
-  try {
-    if (!contracts.staking) {
-      await attachContractsIfSet();
-      if (!contracts.staking) throw new Error("Staking contract not attached");
-    }
-
-    if (!userAddr) userAddr = await signer.getAddress();
-
-    // Fetch stake and unstake events for this user
-    const [stakeEvents, unstakeEvents] = await Promise.all([
-      contracts.staking.queryFilter(
-        contracts.staking.filters.NFTStaked(userAddr, null, null),
-        0, "latest"
-      ),
-      contracts.staking.queryFilter(
-        contracts.staking.filters.NFTUnstaked(userAddr, null, null),
-        0, "latest"
-      )
-    ]);
-
-    // Build active collection list
-    const active = new Set();
-    for (const e of stakeEvents) {
-      const collection = e.args.collection;
-      if (ethers.utils.isAddress(collection))
-        active.add(collection.toLowerCase());
-    }
-    for (const e of unstakeEvents) {
-      const collection = e.args.collection;
-      active.delete(collection.toLowerCase());
-    }
-
-    const collections = Array.from(active);
-    log(`✅ Found ${collections.length} active collections for ${userAddr}`);
-    return collections;
-
-  } catch (err) {
-    console.error("getUserCollectionsFromEvents error:", err);
-    return [];
-  }
-}
-
-
-// ======== Main: Refresh User's Staking Stats ========
+// ======== Simplified Accurate User Staking Stats ========
 async function refreshStakingStats() {
   try {
     showLoading("Fetching your staking stats...");
@@ -3366,59 +3320,42 @@ async function refreshStakingStats() {
       await attachContractsIfSet();
       if (!contracts.staking) return alert("Staking contract not found.");
     }
-
     if (!userAddr) userAddr = await signer.getAddress();
 
     const globalCap = Number(await contracts.staking.GLOBAL_NFT_CAP());
-    let total = 0, term = 0, perm = 0;
 
-    // 🔍 Step 1: Get user's active collections (from events)
-    const collections = await getUserCollectionsFromEvents();
-    if (collections.length === 0) {
-      log("⚠️ No active collections found for this user.");
-      animateNumber("userStakedTotal", 0);
-      animateNumber("userStakedTerm", 0);
-      animateNumber("userStakedPerm", 0);
-      $("userStakingUsageText").innerText = `0.00% of Global Cap (Max ${globalCap})`;
-      $("userStakingUsageBar").style.width = "0%";
-      $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
-      return;
-    }
+    // ✅ Get all events (no indexed fields — manual filter)
+    const [stakedEvents, unstakedEvents, permEvents] = await Promise.all([
+      contracts.staking.queryFilter("NFTStaked", 0, "latest"),
+      contracts.staking.queryFilter("NFTUnstaked", 0, "latest"),
+      contracts.staking.queryFilter("PermanentStakeFeePaid", 0, "latest"),
+    ]);
 
-    // 🔍 Step 2: Scan user's stake portfolios for each collection
-    for (const collection of collections) {
-      for (let i = 0; i < 1000; i++) {
-        try {
-          const tokenIdBN = await contracts.staking.stakePortfolioByUser(collection, userAddr, i);
-          const tokenId = Number(tokenIdBN.toString());
-          if (isNaN(tokenId)) break;
+    // ✅ Filter by user
+    const stakedByUser = stakedEvents.filter(e => e.args.who.toLowerCase() === userAddr.toLowerCase());
+    const unstakedByUser = unstakedEvents.filter(e => e.args.who.toLowerCase() === userAddr.toLowerCase());
+    const permByUser = permEvents.filter(e => e.args.who.toLowerCase() === userAddr.toLowerCase());
 
-          const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
-          const currentlyStaked = info.currentlyStaked ?? info[0];
-          const isPermanent = info.isPermanent ?? info[1];
+    // ✅ Active total (staked - unstaked)
+    const totalActive = Math.max(0, stakedByUser.length - unstakedByUser.length);
 
-          if (currentlyStaked) {
-            total++;
-            if (isPermanent) perm++;
-            else term++;
-          }
-        } catch {
-          break; // stop when out of range
-        }
-      }
-    }
+    // ✅ Permanent (only from PermanentStakeFeePaid)
+    const permanentStaked = permByUser.length;
 
-    // 🧮 Step 3: Update dashboard
-    animateNumber("userStakedTotal", total);
-    animateNumber("userStakedTerm", term);
-    animateNumber("userStakedPerm", perm);
+    // ✅ Term = totalActive - permanent
+    const termStaked = Math.max(0, totalActive - permanentStaked);
 
-    const percent = globalCap > 0 ? ((total / globalCap) * 100).toFixed(2) : 0;
+    // ✅ Update UI
+    animateNumber("userStakedTotal", totalActive);
+    animateNumber("userStakedTerm", termStaked);
+    animateNumber("userStakedPerm", permanentStaked);
+
+    const percent = globalCap > 0 ? ((totalActive / globalCap) * 100).toFixed(2) : 0;
     $("userStakingUsageText").innerText = `${percent}% of Global Cap (Max ${globalCap})`;
     $("userStakingUsageBar").style.width = `${percent}%`;
     $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
-    log(`✅ Portfolio updated (auto) — Total=${total}, Term=${term}, Perm=${perm}, Usage=${percent}%`);
+    log(`✅ User stats: Total=${totalActive}, Term=${termStaked}, Perm=${permanentStaked}`);
   } catch (e) {
     console.error("❌ refreshStakingStats error:", e);
     alert(e.message || e);
@@ -3429,7 +3366,7 @@ async function refreshStakingStats() {
 
 
 
-
+    
 	  // ======== View Portfolio (using existing wallet logic) ========
 async function viewPortfolio() {
   try {
