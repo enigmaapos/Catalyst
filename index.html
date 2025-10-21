@@ -1664,17 +1664,10 @@ const $ = id => document.getElementById(id);
     log('loadSavedAddrs err', e);
   }
   }
-
 	  
-    // Attach contract instances (requires signer)
-async function attachContractsIfSet() {
-  // ✅ Prevent double-loading
-  if (window._attachContractsRunning) {
-    console.warn("⏳ attachContractsIfSet already running — skipping duplicate call");
-    return;
-  }
-  window._attachContractsRunning = true;
 
+	  // Attach contract instances (requires signer)
+async function attachContractsIfSet() {
   try {
     if (!provider || !signer) return;
 
@@ -1702,7 +1695,15 @@ async function attachContractsIfSet() {
 
     if (contracts.cata) await fetchCataBalance();
 
-    // Refresh everything else in parallel
+    // ✅ Ensure user address is available
+    if (!userAddr && typeof signer !== "undefined") {
+      userAddr = await signer.getAddress();
+    }
+
+    // ✅ Show loading indicator for pending rewards early
+    setPendingStatus?.("Fetching...", "#fbbf24");
+
+    // ✅ Refresh all dashboard data in parallel (including pending rewards)
     await Promise.allSettled([
       fetchTransparency(),
       refreshRecovery(),
@@ -1717,27 +1718,23 @@ async function attachContractsIfSet() {
       fetchProposalsExplorer(),
       refreshQuickStatus(),
       fetchTopCollectionsUI(),
-      refreshTopBluechipLeaderboard()
+      refreshTopBluechipLeaderboard(),
+      refreshPendingRewards() // 👈 now runs in the same batch!
     ]);
 
-    // ✅ Refresh pending rewards after all contracts are ready
-    try {
-      setPendingStatus?.("Fetching...", "#fbbf24");
-      await refreshPendingRewards();
-      setPendingStatus?.("Up to date ✅", "#10b981");
-    } catch (err) {
-      console.error("Auto-refresh pending rewards failed:", err);
-      setPendingStatus?.("Error ❌", "#ef4444");
-    }
+    // ✅ Update pending rewards status once complete
+    setPendingStatus?.("Up to date ✅", "#10b981");
+    log("✅ All dashboard sections (including pending rewards) refreshed successfully");
 
-    log("✅ All dashboard sections refreshed successfully");
   } catch (e) {
+    console.error("❌ attachContractsIfSet error:", e);
+    setPendingStatus?.("Error ❌", "#ef4444");
     log("attachContractsIfSet error:", e.message || e);
   } finally {
-    // 🔁 Always release the lock
-    window._attachContractsRunning = false;
+    hideLoading();
   }
 }
+
 
 
 // Fetch CATA Balance (formatted with commas and up to 6 decimals)
