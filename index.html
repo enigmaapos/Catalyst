@@ -4233,7 +4233,8 @@ async function checkVotingEligibility() {
   try {
     showLoading("Checking governance eligibility...");
 
-    if (!contracts?.governance || !contracts?.staking) {
+    // 🧩 Ensure contracts are ready
+    if (!contracts?.governance) {
       await attachContractsIfSet();
     }
 
@@ -4241,33 +4242,61 @@ async function checkVotingEligibility() {
       userAddr = await signer.getAddress();
     }
 
-    if (!contracts.staking || !userAddr) {
+    if (!contracts.governance || !userAddr) {
       $("votingEligibilityStatus").innerText = "⚠️ Connect wallet first.";
       $("votingEligibilityStatus").style.color = "#f87171";
       hideLoading();
       return false;
     }
 
-    // 🔍 Get user's voting weight directly from staking contract
-    const [weightBN] = await contracts.staking.votingWeight(userAddr);
-    const weight = Number(weightBN.toString());
-    const eligible = weight > 0;
+    // 🔍 1️⃣ Get user's voting weight from governance contract
+    let weight = 0;
+    try {
+      const weightBN = await contracts.governance.getVotingWeight(userAddr);
+      weight = Number(weightBN.toString());
+    } catch (err) {
+      console.warn("⚠️ getVotingWeight not found, using fallback to staking...");
+      // Optional fallback if staking provides it
+      try {
+        const weightBN = await contracts.staking.votingWeight(userAddr);
+        weight = Number(weightBN.toString());
+      } catch {
+        weight = 0;
+      }
+    }
 
+    // 🔍 2️⃣ Get eligibility thresholds (if exist)
+    let minProposal = 0, minVoting = 0;
+    try {
+      minProposal = Number((await contracts.governance.minProposalWeight?.() || 0).toString());
+      minVoting = Number((await contracts.governance.minVotingWeight?.() || 0).toString());
+    } catch {
+      console.warn("⚠️ Governance thresholds not available, using default = 0");
+    }
+
+    const canVote = weight >= minVoting;
+    const canPropose = weight >= minProposal;
+
+    // 🧮 3️⃣ Update UI
     const statusEl = $("votingEligibilityStatus");
     const infoEl = $("votingWeightInfo");
 
-    if (eligible) {
-      statusEl.innerText = "✅ You are eligible to propose and vote";
+    if (weight === 0) {
+      statusEl.innerText = "🚫 Not eligible — stake NFTs to gain voting power";
+      statusEl.style.color = "#f87171"; // red
+      infoEl.innerText = "Voting weight: 0";
+    } else {
+      const roles = [
+        canVote ? "🗳️ Can Vote" : "❌ Cannot Vote",
+        canPropose ? "📜 Can Propose" : "❌ Cannot Propose",
+      ];
+      statusEl.innerText = `✅ Eligible (${roles.join(", ")})`;
       statusEl.style.color = "#10b981"; // green
       infoEl.innerText = `Your current voting weight: ${weight.toLocaleString()} points`;
-    } else {
-      statusEl.innerText = "🚫 Not eligible — you must stake NFTs to gain voting power";
-      statusEl.style.color = "#f87171"; // red
-      infoEl.innerText = `Voting weight: 0`;
     }
 
-    log(`🗳️ Eligibility check — weight=${weight}, eligible=${eligible}`);
-    return eligible;
+    log(`🗳️ Eligibility check — weight=${weight}, canVote=${canVote}, canPropose=${canPropose}`);
+    return { weight, canVote, canPropose };
   } catch (err) {
     console.error("❌ checkVotingEligibility error:", err);
     $("votingEligibilityStatus").innerText = "Error checking eligibility";
