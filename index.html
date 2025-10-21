@@ -1665,6 +1665,7 @@ const $ = id => document.getElementById(id);
   }
   }
   
+
 // Attach contract instances (requires signer)
 async function attachContractsIfSet() {
   try {
@@ -1694,56 +1695,44 @@ async function attachContractsIfSet() {
 
     if (contracts.cata) await fetchCataBalance();
 
-    // Refresh everything else in parallel (continue even if one fails)
-await Promise.allSettled([
-  fetchTransparency(),
-  refreshRecovery(),
-  refreshVetoWarning(),
-  refreshDao(),
-  refreshGuardians(),
-  refreshLock(),
-  refreshStakingStats(),
-  refreshBluechip(),
-  fetchStakingTransparency(),
-  fetchGovernanceTransparency(),
-  fetchProposalsExplorer(),
-  refreshQuickStatus(),
-  fetchTopCollectionsUI(),
-  getTop10BluechipBurners()
-]);
+    // ✅ Ensure user address is available
+    if (!userAddr && typeof signer !== "undefined") {
+      userAddr = await signer.getAddress();
+    }
 
-// ✅ Refresh pending rewards AFTER user and contracts are ready
-try {
-  if (!contracts?.staking) {
-    await attachContractsIfSet();
-  }
-
-  if (!userAddr && typeof signer !== "undefined") {
-    userAddr = await signer.getAddress();
-  }
-
-  if (contracts?.staking && userAddr) {
+    // ✅ Show loading indicator for pending rewards early
     setPendingStatus?.("Fetching...", "#fbbf24");
 
-    // 🧠 Run reward refresh separately to not block UI updates
-    await refreshPendingRewards();
+    // ✅ Refresh all dashboard data in parallel (including pending rewards)
+    await Promise.allSettled([
+      fetchTransparency(),
+      refreshRecovery(),
+      refreshVetoWarning(),
+      refreshDao(),
+      refreshGuardians(),
+      refreshLock(),
+      refreshStakingStats(),
+      refreshBluechip(),
+      fetchStakingTransparency(),
+      fetchGovernanceTransparency(),
+      fetchProposalsExplorer(),
+      refreshQuickStatus(),
+      fetchTopCollectionsUI(),
+      getTop10BluechipBurners(),
+      refreshPendingRewards() // 👈 now runs in the same batch!
+    ]);
 
+    // ✅ Update pending rewards status once complete
     setPendingStatus?.("Up to date ✅", "#10b981");
-    log("✅ Pending rewards refreshed successfully");
-  } else {
-    console.warn("⚠️ Skipped pending rewards — userAddr or contract missing");
-    setPendingStatus?.("Wallet not connected", "#9ca3af"); // gray indicator
+    log("✅ All dashboard sections (including pending rewards) refreshed successfully");
+
+  } catch (e) {
+    console.error("❌ attachContractsIfSet error:", e);
+    setPendingStatus?.("Error ❌", "#ef4444");
+    log("attachContractsIfSet error:", e.message || e);
+  } finally {
+    hideLoading();
   }
-} catch (err) {
-  console.error("❌ Auto-refresh pending rewards failed:", err);
-  setPendingStatus?.("Error ❌", "#ef4444");
-}
-
-log("✅ All dashboard sections refreshed successfully");
-
-	  } catch (e) {
-log("attachContractsIfSet error:", e.message || e);
-}
 }
     
     
