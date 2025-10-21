@@ -3310,8 +3310,7 @@ function animateNumber(elementId, newValue, duration = 600) {
 }
 
 
-
-    // ======== Accurate User-Based Staking Stats (using same logic as viewPortfolio) ========
+	  // ======== Auto User-Based Staking Stats (no address input needed) ========
 async function refreshStakingStats() {
   try {
     showLoading("Fetching your staking stats...");
@@ -3323,44 +3322,69 @@ async function refreshStakingStats() {
 
     if (!userAddr) userAddr = await signer.getAddress();
 
-    const collection = $('nftCollection').value.trim();
-    if (!collection) return alert("Enter your NFT collection address first.");
-
     const globalCap = Number(await contracts.staking.GLOBAL_NFT_CAP());
+    let total = 0, term = 0, perm = 0;
 
-    let total = 0;
-    let term = 0;
-    let perm = 0;
-
-    // 🧩 Load all staked token IDs (same as viewPortfolio)
-    const tokenIds = [];
-    for (let i = 0; i < 1000; i++) {
-      try {
-        const tokenId = await contracts.staking.stakePortfolioByUser(collection, userAddr, i);
-        tokenIds.push(Number(tokenId.toString()));
-      } catch {
-        break;
-      }
-    }
-
-    // 🧩 For each token, check stake type
-    for (const tokenId of tokenIds) {
-      try {
-        const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
-        const currentlyStaked = info.currentlyStaked ?? info[0];
-        const isPermanent = info.isPermanent ?? info[1];
-
-        if (currentlyStaked) {
-          total++;
-          if (isPermanent) perm++;
-          else term++;
+    // 🔍 Step 1: Detect all registered collections
+    let collections = [];
+    try {
+      if (typeof contracts.staking.registeredCollectionsLength === "function") {
+        const totalCollections = Number(await contracts.staking.registeredCollectionsLength());
+        for (let i = 0; i < totalCollections; i++) {
+          try {
+            const addr = await contracts.staking.registeredCollections(i);
+            if (ethers.utils.isAddress(addr) && addr !== ethers.constants.AddressZero)
+              collections.push(addr);
+          } catch {
+            break;
+          }
         }
-      } catch (err) {
-        console.warn(`⚠️ stakeLog check failed for token ${tokenId}:`, err.message);
+      } else {
+        // fallback (if no registeredCollectionsLength)
+        for (let i = 0; i < 1000; i++) {
+          try {
+            const addr = await contracts.staking.registeredCollections(i);
+            if (!addr || addr === ethers.constants.AddressZero) break;
+            collections.push(addr);
+          } catch {
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("⚠️ Could not auto-detect collections:", err.message);
+    }
+
+    if (collections.length === 0) {
+      log("⚠️ No registered collections found — user stats skipped");
+      hideLoading();
+      return;
+    }
+
+    // 🔍 Step 2: Scan each collection for user’s staked NFTs
+    for (const collection of collections) {
+      for (let i = 0; i < 1000; i++) {
+        try {
+          const tokenIdBN = await contracts.staking.stakePortfolioByUser(collection, userAddr, i);
+          const tokenId = Number(tokenIdBN.toString());
+          if (isNaN(tokenId)) break;
+
+          const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
+          const currentlyStaked = info.currentlyStaked ?? info[0];
+          const isPermanent = info.isPermanent ?? info[1];
+
+          if (currentlyStaked) {
+            total++;
+            if (isPermanent) perm++;
+            else term++;
+          }
+        } catch {
+          break; // stop when revert: no more tokens for that collection
+        }
       }
     }
 
-    // 🧮 Update UI
+    // 🧮 Step 3: Update dashboard UI
     animateNumber("userStakedTotal", total);
     animateNumber("userStakedTerm", term);
     animateNumber("userStakedPerm", perm);
@@ -3370,14 +3394,14 @@ async function refreshStakingStats() {
     $("userStakingUsageBar").style.width = `${percent}%`;
     $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
-    log(`✅ User staking overview — Total=${total}, Term=${term}, Perm=${perm}, Usage=${percent}%`);
+    log(`✅ Portfolio updated (auto) — Total=${total}, Term=${term}, Perm=${perm}, Usage=${percent}%`);
   } catch (e) {
     log("❌ refreshStakingStats error:", e.message || e);
     alert(e.message || e);
   } finally {
     hideLoading();
   }
-}
+	  }
 
 
 
