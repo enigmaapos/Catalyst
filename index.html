@@ -3404,6 +3404,7 @@ async function refreshStakingStats() {
     $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
     log(`✅ Portfolio updated — Total=${total}, Term=${term}, Perm=${perm}, Collections=${userCollections.length}`);
+	  animateNumber("userCollectionCount", userCollections.length);
   } catch (e) {
     console.error("❌ refreshStakingStats error:", e);
     alert(e.message || e);
