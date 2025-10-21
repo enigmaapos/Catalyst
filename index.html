@@ -3311,7 +3311,7 @@ function animateNumber(elementId, newValue, duration = 600) {
 
 
 
-// ======== Simplified Accurate User Staking Stats ========
+// ======== Accurate event-driven rebuild of active tokens + term/perm classification ========
 async function refreshStakingStats() {
   try {
     showLoading("Fetching your staking stats...");
@@ -3324,40 +3324,95 @@ async function refreshStakingStats() {
 
     const globalCap = Number(await contracts.staking.GLOBAL_NFT_CAP());
 
-    // ✅ Get all events (no indexed fields — manual filter)
-    const [stakedEvents, unstakedEvents, permEvents] = await Promise.all([
+    // 1) fetch all stake/unstake events (no indexed fields assumed)
+    // For very large chains use paginated queries (see note below)
+    const [allStaked, allUnstaked] = await Promise.all([
       contracts.staking.queryFilter("NFTStaked", 0, "latest"),
-      contracts.staking.queryFilter("NFTUnstaked", 0, "latest"),
-      contracts.staking.queryFilter("PermanentStakeFeePaid", 0, "latest"),
+      contracts.staking.queryFilter("NFTUnstaked", 0, "latest")
     ]);
 
-    // ✅ Filter by user
-    const stakedByUser = stakedEvents.filter(e => e.args.who.toLowerCase() === userAddr.toLowerCase());
-    const unstakedByUser = unstakedEvents.filter(e => e.args.who.toLowerCase() === userAddr.toLowerCase());
-    const permByUser = permEvents.filter(e => e.args.who.toLowerCase() === userAddr.toLowerCase());
+    // 2) filter to this user (who field), build active token set
+    const userLower = userAddr.toLowerCase();
+    const activeSet = new Set(); // keys: `${collection.toLowerCase()}:${tokenId}`
 
-    // ✅ Active total (staked - unstaked)
-    const totalActive = Math.max(0, stakedByUser.length - unstakedByUser.length);
+    for (const e of allStaked) {
+      try {
+        if (!e.args) continue;
+        if (e.args.who && e.args.who.toLowerCase() === userLower) {
+          const coll = e.args.collection.toLowerCase();
+          const tid = e.args.tokenId.toString();
+          activeSet.add(`${coll}:${tid}`);
+        }
+      } catch (err) { /* ignore malformed event */ }
+    }
 
-    // ✅ Permanent (only from PermanentStakeFeePaid)
-    const permanentStaked = permByUser.length;
+    for (const e of allUnstaked) {
+      try {
+        if (!e.args) continue;
+        if (e.args.who && e.args.who.toLowerCase() === userLower) {
+          const coll = e.args.collection.toLowerCase();
+          const tid = e.args.tokenId.toString();
+          activeSet.delete(`${coll}:${tid}`);
+        }
+      } catch (err) { /* ignore malformed event */ }
+    }
 
-    // ✅ Term = totalActive - permanent
-    const termStaked = Math.max(0, totalActive - permanentStaked);
+    // 3) total active tokens
+    const totalActive = activeSet.size;
 
-    // ✅ Update UI
+    // 4) classify by reading stakeLog for each active token
+    let term = 0, perm = 0;
+    // Iterate and call stakeLog per token — we could parallelize in batches
+    const keys = Array.from(activeSet);
+    const batchSize = 8; // tune to avoid rate limits
+    for (let i = 0; i < keys.length; i += batchSize) {
+      const slice = keys.slice(i, i + batchSize);
+      // parallelize a small batch
+      const promises = slice.map(async (key) => {
+        const [coll, tidStr] = key.split(":");
+        const tokenId = Number(tidStr);
+        try {
+          const info = await contracts.staking.stakeLog(coll, userAddr, tokenId);
+          const currentlyStaked = info.currentlyStaked ?? info[0];
+          const isPermanent = info.isPermanent ?? info[1];
+          if (currentlyStaked) {
+            if (isPermanent) return { perm: 1, term: 0 };
+            else return { perm: 0, term: 1 };
+          }
+        } catch (err) {
+          // fallback: skip token if stakeLog fails
+          console.warn("stakeLog error for", key, err.message || err);
+        }
+        return { perm: 0, term: 0 };
+      });
+      const results = await Promise.all(promises);
+      for (const r of results) {
+        perm += r.perm;
+        term += r.term;
+      }
+    }
+
+    // Sanity: if stakeLog calls missed some tokens, we can fall back
+    const counted = perm + term;
+    const missing = Math.max(0, totalActive - counted);
+    if (missing > 0) {
+      // assume missing are term (safer) or use other fallback
+      term += missing;
+    }
+
+    // 5) update UI
     animateNumber("userStakedTotal", totalActive);
-    animateNumber("userStakedTerm", termStaked);
-    animateNumber("userStakedPerm", permanentStaked);
+    animateNumber("userStakedTerm", term);
+    animateNumber("userStakedPerm", perm);
 
     const percent = globalCap > 0 ? ((totalActive / globalCap) * 100).toFixed(2) : 0;
     $("userStakingUsageText").innerText = `${percent}% of Global Cap (Max ${globalCap})`;
     $("userStakingUsageBar").style.width = `${percent}%`;
     $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
 
-    log(`✅ User stats: Total=${totalActive}, Term=${termStaked}, Perm=${permanentStaked}`);
+    log(`✅ accurate stats — Total=${totalActive}, Term=${term}, Perm=${perm}`);
   } catch (e) {
-    console.error("❌ refreshStakingStats error:", e);
+    console.error("refreshStakingStats error:", e);
     alert(e.message || e);
   } finally {
     hideLoading();
