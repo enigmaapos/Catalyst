@@ -1664,9 +1664,9 @@ const $ = id => document.getElementById(id);
     log('loadSavedAddrs err', e);
   }
   }
-  
 
-// Attach contract instances (requires signer)
+	  
+    // Attach contract instances (requires signer)
 async function attachContractsIfSet() {
   try {
     if (!provider || !signer) return;
@@ -1695,15 +1695,7 @@ async function attachContractsIfSet() {
 
     if (contracts.cata) await fetchCataBalance();
 
-    // ✅ Ensure user address is available
-    if (!userAddr && typeof signer !== "undefined") {
-      userAddr = await signer.getAddress();
-    }
-
-    // ✅ Show loading indicator for pending rewards early
-    setPendingStatus?.("Fetching...", "#fbbf24");
-
-    // ✅ Refresh all dashboard data in parallel (including pending rewards)
+    // Refresh everything else in parallel (continue even if one fails)
     await Promise.allSettled([
       fetchTransparency(),
       refreshRecovery(),
@@ -1718,24 +1710,24 @@ async function attachContractsIfSet() {
       fetchProposalsExplorer(),
       refreshQuickStatus(),
       fetchTopCollectionsUI(),
-      getTop10BluechipBurners(),
-      refreshPendingRewards() // 👈 now runs in the same batch!
+      getTop10BluechipBurners()
     ]);
 
-    // ✅ Update pending rewards status once complete
-    setPendingStatus?.("Up to date ✅", "#10b981");
-    log("✅ All dashboard sections (including pending rewards) refreshed successfully");
+    // ✅ Refresh pending rewards after all contracts are ready
+    try {
+      setPendingStatus?.("Fetching...", "#fbbf24");
+      await refreshPendingRewards();
+      setPendingStatus?.("Up to date ✅", "#10b981");
+    } catch (err) {
+      console.error("Auto-refresh pending rewards failed:", err);
+      setPendingStatus?.("Error ❌", "#ef4444");
+    }
 
+    log("✅ All dashboard sections refreshed successfully");
   } catch (e) {
-    console.error("❌ attachContractsIfSet error:", e);
-    setPendingStatus?.("Error ❌", "#ef4444");
     log("attachContractsIfSet error:", e.message || e);
-  } finally {
-    hideLoading();
   }
 }
-    
-    
 
 
 // Fetch CATA Balance (formatted with commas and up to 6 decimals)
