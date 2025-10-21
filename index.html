@@ -1136,6 +1136,29 @@ Catalyst Whitepaper
     </div>
   </div>
 
+	<!-- 🗳️ Proposal & Voting Eligibility -->
+<div class="mt-6 bg-slate-800/50 p-6 rounded-2xl shadow-2xl border border-white/10">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-2xl font-extrabold text-white flex items-center gap-2">
+      🗳️ Proposal & Voting Eligibility
+    </h3>
+    <button id="checkEligibilityBtn"
+      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      🔄 Check Now
+    </button>
+  </div>
+
+  <div id="eligibilityStatusBox"
+    class="p-4 rounded-xl bg-slate-900/70 border border-slate-700 flex flex-col items-center justify-center">
+    <div id="votingEligibilityStatus" class="text-xl font-bold text-gray-300">
+      Checking eligibility...
+    </div>
+    <div id="votingWeightInfo" class="text-sm text-slate-400 mt-1">
+      Your voting weight will appear here.
+    </div>
+  </div>
+</div>
+
 <!-- 🔹 Proposals Explorer -->
 <div class="glass p-4 rounded-lg mt-4">
   <h3 class="font-semibold mb-2">Proposals Explorer</h3>
@@ -1719,7 +1742,8 @@ async function attachContractsIfSet() {
       refreshQuickStatus(),
       fetchTopCollectionsUI(),
       refreshTopBluechipLeaderboard(),
-      refreshPendingRewards() // 👈 now runs in the same batch!
+      refreshPendingRewards(), // 👈 now runs in the same batch!
+		checkVotingEligibility()
     ]);
 
     // ✅ Update pending rewards status once complete
@@ -4202,6 +4226,60 @@ document.addEventListener("click", async e => {
     }
   }
 });
+
+
+	  // ======== 🗳️ Check Governance Voting Eligibility ========
+async function checkVotingEligibility() {
+  try {
+    showLoading("Checking governance eligibility...");
+
+    if (!contracts?.governance || !contracts?.staking) {
+      await attachContractsIfSet();
+    }
+
+    if (!userAddr && typeof signer !== "undefined") {
+      userAddr = await signer.getAddress();
+    }
+
+    if (!contracts.staking || !userAddr) {
+      $("votingEligibilityStatus").innerText = "⚠️ Connect wallet first.";
+      $("votingEligibilityStatus").style.color = "#f87171";
+      hideLoading();
+      return false;
+    }
+
+    // 🔍 Get user's voting weight directly from staking contract
+    const [weightBN] = await contracts.staking.votingWeight(userAddr);
+    const weight = Number(weightBN.toString());
+    const eligible = weight > 0;
+
+    const statusEl = $("votingEligibilityStatus");
+    const infoEl = $("votingWeightInfo");
+
+    if (eligible) {
+      statusEl.innerText = "✅ You are eligible to propose and vote";
+      statusEl.style.color = "#10b981"; // green
+      infoEl.innerText = `Your current voting weight: ${weight.toLocaleString()} points`;
+    } else {
+      statusEl.innerText = "🚫 Not eligible — you must stake NFTs to gain voting power";
+      statusEl.style.color = "#f87171"; // red
+      infoEl.innerText = `Voting weight: 0`;
+    }
+
+    log(`🗳️ Eligibility check — weight=${weight}, eligible=${eligible}`);
+    return eligible;
+  } catch (err) {
+    console.error("❌ checkVotingEligibility error:", err);
+    $("votingEligibilityStatus").innerText = "Error checking eligibility";
+    $("votingEligibilityStatus").style.color = "#f87171";
+    return false;
+  } finally {
+    hideLoading();
+  }
+}
+
+// 🔘 Button handler
+$("checkEligibilityBtn").onclick = checkVotingEligibility;
 	  
 
 // ===============================
