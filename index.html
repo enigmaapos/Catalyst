@@ -1668,6 +1668,13 @@ const $ = id => document.getElementById(id);
 	  
     // Attach contract instances (requires signer)
 async function attachContractsIfSet() {
+  // ✅ Prevent double-loading
+  if (window._attachContractsRunning) {
+    console.warn("⏳ attachContractsIfSet already running — skipping duplicate call");
+    return;
+  }
+  window._attachContractsRunning = true;
+
   try {
     if (!provider || !signer) return;
 
@@ -1695,7 +1702,7 @@ async function attachContractsIfSet() {
 
     if (contracts.cata) await fetchCataBalance();
 
-    // Refresh everything else in parallel (continue even if one fails)
+    // Refresh everything else in parallel
     await Promise.allSettled([
       fetchTransparency(),
       refreshRecovery(),
@@ -1726,6 +1733,9 @@ async function attachContractsIfSet() {
     log("✅ All dashboard sections refreshed successfully");
   } catch (e) {
     log("attachContractsIfSet error:", e.message || e);
+  } finally {
+    // 🔁 Always release the lock
+    window._attachContractsRunning = false;
   }
 }
 
