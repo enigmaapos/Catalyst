@@ -1530,35 +1530,34 @@ Catalyst Whitepaper
    * Put e.g. /abi/CataERC20Upgradeable.json, /abi/CatalystStakingUpgradeable.json, etc.
    ************************************************************************/
 
-  // ---------- ABI URLs (external ABI JSONs) ----------
-  const ABI_URLS = {
-    cata: "../abi/CataERC20Upgradeable.json",
-    staking: "../abi/CatalystStakingUpgradeable.json",
-    governance: "../abi/CatalystGovernanceUpgradeable.json",
-    council: "../abi/BatchGuardianCouncilUpgradeable.json"
-	recovery: "../abi/DeployerRecoveryCouncil.json" 
-  };
+// ---------- ABI URLs (external ABI JSONs) ----------
+const ABI_URLS = {
+  cata: "../abi/CataERC20Upgradeable.json",
+  staking: "../abi/CatalystStakingUpgradeable.json",
+  governance: "../abi/CatalystGovernanceUpgradeable.json",
+  council: "../abi/BatchGuardianCouncilUpgradeable.json",
+  recovery: "../abi/DeployerRecoveryCouncil.json"
+};
 
-  // Minimal ERC-721 ABI kept inline (approval helpers)
-  const ERC721_ABI = [
-    'function approve(address to, uint256 tokenId)',
-    'function setApprovalForAll(address operator, bool approved)',
-    'function isApprovedForAll(address owner, address operator) view returns (bool)'
-  ];
+// Minimal ERC-721 ABI kept inline (approval helpers)
+const ERC721_ABI = [
+  'function approve(address to, uint256 tokenId)',
+  'function setApprovalForAll(address operator, bool approved)',
+  'function isApprovedForAll(address owner, address operator) view returns (bool)'
+];
 
-  // Default addresses (replace with your deployed addresses)
-  const DEFAULT_ADDRS = {
-    cata: "0x9C3c5B8aF0CcA433725419CBB21665880c53ca09",
-    staking: "0x00Dd46EE2FDaCDD5F0d5C8375272880A9d667663",
-    governance: "0x7b87ED33bEEFCF03b89Ba38BE7e77527611BCDF4",
-    council: "0x493E4ba582300890ce0F36De5629D22A1E6276d7"
-	recovery: "0xYOUR_DEPLOYER_RECOVERY_ADDRESS" 
-  };
+// Default addresses (replace with your deployed addresses)
+const DEFAULT_ADDRS = {
+  cata: "0x9C3c5B8aF0CcA433725419CBB21665880c53ca09",
+  staking: "0x00Dd46EE2FDaCDD5F0d5C8375272880A9d667663",
+  governance: "0x7b87ED33bEEFCF03b89Ba38BE7e77527611BCDF4",
+  council: "0x493E4ba582300890ce0F36De5629D22A1E6276d7",
+  recovery: "0xYOUR_DEPLOYER_RECOVERY_ADDRESS"
+};
 
-	  
-	  // App state
-	  let provider = null, signer = null, userAddr = null;
-  let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null };
+// App state
+let provider = null, signer = null, userAddr = null;
+let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null, recovery:null };
 	  
 const $ = id => document.getElementById(id);
   function log(...args){
