@@ -742,330 +742,211 @@ Catalyst Whitepaper
 </div>
 </section>
 
-    <!-- Staking -->
+
+	  <!-- ====================================== -->
+<!-- 🔷 STAKING SECTION -->
+<!-- ====================================== -->
 <section id="staking" class="tab-content hidden">
   <h2 class="font-semibold mb-2">Staking</h2>
-	
-	<hr class="border-slate-700 my-2" />
-  <p class="text-sm text-slate-300 mb-3">Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake</p>
-  
+  <hr class="border-slate-700 my-2" />
+  <p class="text-sm text-slate-300 mb-3">
+    Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake
+  </p>
+
+  <!-- ====================== -->
+  <!-- 🎴 Single NFT Staking -->
+  <!-- ====================== -->
   <div class="space-y-2 text-sm">
-    <!-- Single NFT Stake -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
       <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
-		<div id="nftStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
+      <div id="nftStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
       <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
     </div>
+
     <div class="flex gap-2">
-      <button id="approveNFTBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve Staking Contract</button>
+      <button id="approveNFTBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded">
+        Approve Staking Contract
+      </button>
       <button id="termStakeBtn" class="flex-1 p-2 bg-indigo-600 rounded">Term Stake</button>
     </div>
+
     <div class="flex gap-2">
       <button id="permApproveFeeBtn" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee (CATA)</button>
-      <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">Permanent Stake</button>
+      <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">
+        Permanent Stake
+      </button>
     </div>
+
     <div class="flex gap-2">
       <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest</button>
       <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
     </div>
-
-    <hr class="border-slate-700 my-2" />
-
-    <!-- Batch Staking -->
-    <h3 class="text-sm font-semibold mb-1">Batch Operations</h3>
-    <textarea id="batchNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
-    <div class="flex gap-2 mt-2">
-      <button id="batchTermStakeBtn" class="flex-1 p-2 bg-indigo-500 rounded text-sm">Batch Term Stake</button>
-      <button id="batchPermStakeBtn" class="flex-1 p-2 bg-emerald-500 rounded text-sm">Batch Permanent Stake</button>
-      <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-500 rounded text-sm">Batch Unstake</button>
-    </div>
-
-    <hr class="border-slate-700 my-2" />
-
-    <!-- Batch Harvest -->
-    <h3 class="text-sm font-semibold mb-1">Batch Harvest</h3>
-    <textarea id="batchHarvestNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
-    <div class="flex gap-2 mt-2">
-      <button id="batchHarvestBtn" class="flex-1 p-2 bg-sky-600 rounded text-sm">Batch Harvest</button>
-    </div>
-
-    <hr class="border-slate-700 my-2" />
-
-    <!-- Extra Features -->
-<!-- ======================== -->
-<!-- 📊 Catalyst Staking Dashboard -->
-<!-- ======================== -->
-<div id="stakingDashboard" class="space-y-6 text-slate-100">
-
-	<!-- 🧍 My Staking Overview -->
-        <div class="mt-6 bg-slate-800/50 p-6 rounded-2xl shadow-2xl border border-white/10">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-2xl font-extrabold text-white flex items-center gap-2">
-                    🧍 My Staking Overview
-                </h3>
-                <button id="refreshStakingStatsBtn"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    🔄 Refresh Stats
-                </button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <!-- Total Staked -->
-                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-emerald-600/50">
-                    <div class="text-slate-300 text-sm uppercase tracking-wider">Total NFTs Staked</div>
-                    <div id="userStakedTotal" class="font-black text-3xl text-neon-emerald mt-1 transition-colors duration-500">0</div>
-                </div>
-                <!-- Term Staked -->
-                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-blue-600/50">
-                    <div class="text-slate-300 text-sm uppercase tracking-wider">Term NFTs</div>
-                    <div id="userStakedTerm" class="font-black text-3xl text-neon-blue mt-1 transition-colors duration-500">0</div>
-                </div>
-                <!-- Permanent Staked -->
-                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-purple-600/50">
-                    <div class="text-slate-300 text-sm uppercase tracking-wider">Perm NFTs</div>
-                    <div id="userStakedPerm" class="font-black text-3xl text-neon-purple mt-1 transition-colors duration-500">0</div>
-                </div>
-				<!-- Active Collections -->
-<div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-amber-600/50">
-  <div class="text-slate-300 text-sm uppercase tracking-wider">Collections</div>
-  <div id="userCollectionCount" class="font-black text-3xl text-amber-400 mt-1 transition-colors duration-500">0</div>
-</div>
-            </div>
-
-            <!-- Utilization Progress -->
-            <div class="mt-6">
-                <div class="text-sm text-slate-300 mb-2 font-semibold">Staking Utilization</div>
-                <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
-                    <div id="userStakingUsageBar" class="h-3 bg-emerald-500 transition-all duration-700 ease-out" style="width: 0%;"></div>
-                </div>
-                <div id="userStakingUsageText" class="text-xs font-mono text-right text-slate-400 mt-2">0.00% of Global Cap (Max 100)</div>
-            </div>
-
-            <div id="stakingStatsUpdated" class="text-xs text-slate-500 mt-4 text-right">Last Updated: —</div>
-		</div>
-	
-  <!-- ======== Section: Other Actions ======== -->
-<div>
-  <h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
-    ⚡ Other Actions
-  </h3>
-
-	<div id="pendingRewardsBox" class="bg-gradient-to-b from-gray-900 to-black p-5 rounded-2xl shadow-xl text-white mt-6 border border-gray-800">
-  <!-- Header -->
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="text-xl font-bold flex items-center gap-2">
-      💰 Pending Rewards
-      <span id="pendingStatusDot" class="h-2.5 w-2.5 rounded-full bg-gray-500"></span>
-    </h3>
-
-    <button
-      id="refreshPendingBtn"
-      class="flex items-center gap-1 bg-amber-600 hover:bg-amber-700 px-3 py-1 text-sm rounded-md transition active:scale-95">
-      🔁 <span>Refresh</span>
-    </button>
   </div>
 
-  <!-- Total Pending Rewards -->
-  <div class="mb-3">
-    <p class="text-4xl font-extrabold text-amber-400" id="userPendingTotal">0</p>
-    <p class="text-xs text-gray-400 tracking-wide">CATA Tokens Ready to Harvest</p>
+  <hr class="border-slate-700 my-4" />
+
+  <!-- ====================== -->
+  <!-- 🧺 Batch Staking Tools -->
+  <!-- ====================== -->
+  <h3 class="text-sm font-semibold mb-1">Batch Operations</h3>
+  <textarea id="batchNFTs" placeholder="collection,tokenId per line"
+    class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
+  <div class="flex gap-2 mt-2">
+    <button id="batchTermStakeBtn" class="flex-1 p-2 bg-indigo-500 rounded text-sm">Batch Term Stake</button>
+    <button id="batchPermStakeBtn" class="flex-1 p-2 bg-emerald-500 rounded text-sm">Batch Permanent Stake</button>
+    <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-500 rounded text-sm">Batch Unstake</button>
   </div>
 
-  <!-- Pending List -->
-  <div id="pendingRewardsList"
-       class="divide-y divide-gray-800 text-sm rounded-lg overflow-hidden bg-gray-950/40 backdrop-blur-sm shadow-inner border border-gray-800">
-    <div class="text-center py-3 text-gray-500 animate-pulse">Fetching pending rewards...</div>
+  <hr class="border-slate-700 my-4" />
+
+  <!-- ====================== -->
+  <!-- 🌾 Batch Harvest -->
+  <!-- ====================== -->
+  <h3 class="text-sm font-semibold mb-1">Batch Harvest</h3>
+  <textarea id="batchHarvestNFTs" placeholder="collection,tokenId per line"
+    class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
+  <div class="flex gap-2 mt-2">
+    <button id="batchHarvestBtn" class="flex-1 p-2 bg-sky-600 rounded text-sm">Batch Harvest</button>
   </div>
 
-  <!-- Footer -->
-  <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
-    <span id="pendingRewardsStatus">Idle</span>
-    <span id="pendingRewardsUpdated">—</span>
-  </div>
+  <hr class="border-slate-700 my-4" />
 
-		<button
-  id="harvestAllBtn"
-  class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold text-sm transition active:scale-95">
-  🌾 Harvest All Rewards
-		</button>
-</div>
-
-  <div class="grid gap-3 sm:grid-cols-2">
-    <!-- ======== Pending Rewards ======== -->
-    <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
-      <div class="flex gap-2 items-center mb-2">
+  <!-- ====================== -->
+  <!-- 📊 Dashboard -->
+  <!-- ====================== -->
+  <div id="stakingDashboard" class="space-y-6 text-slate-100">
+    <div class="mt-6 bg-slate-800/50 p-6 rounded-2xl shadow-2xl border border-white/10">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-2xl font-extrabold text-white flex items-center gap-2">🧍 My Staking Overview</h3>
+        <button id="refreshStakingStatsBtn"
+          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold shadow-md hover:shadow-lg">
+          🔄 Refresh Stats
+        </button>
       </div>
-      <button id="pendingRewardsBtn"
-              class="w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
-        🎁 Check Pending Rewards
-      </button>
-      <div id="pendingRewardsResult"
-           class="mt-2 text-xs text-slate-300 font-mono">—</div>
-    </div>
 
-    <!-- ======== Portfolio ======== -->
-    <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
-      <div class="flex gap-2 items-center mb-2">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+        <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-emerald-600/50">
+          <div class="text-slate-300 text-sm uppercase tracking-wider">Total NFTs Staked</div>
+          <div id="userStakedTotal" class="font-black text-3xl text-emerald-400 mt-1">0</div>
+        </div>
+        <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-blue-600/50">
+          <div class="text-slate-300 text-sm uppercase tracking-wider">Term NFTs</div>
+          <div id="userStakedTerm" class="font-black text-3xl text-blue-400 mt-1">0</div>
+        </div>
+        <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-purple-600/50">
+          <div class="text-slate-300 text-sm uppercase tracking-wider">Perm NFTs</div>
+          <div id="userStakedPerm" class="font-black text-3xl text-purple-400 mt-1">0</div>
+        </div>
+        <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-amber-600/50">
+          <div class="text-slate-300 text-sm uppercase tracking-wider">Collections</div>
+          <div id="userCollectionCount" class="font-black text-3xl text-amber-400 mt-1">0</div>
+        </div>
       </div>
-      <button id="viewPortfolioBtn"
-              class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition">
-        📂 View My Staked NFTs
+
+      <div class="mt-6">
+        <div class="text-sm text-slate-300 mb-2 font-semibold">Staking Utilization</div>
+        <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div id="userStakingUsageBar" class="h-3 bg-emerald-500 transition-all duration-700 ease-out" style="width: 0%;"></div>
+        </div>
+        <div id="userStakingUsageText" class="text-xs text-right text-slate-400 mt-2">
+          0.00% of Global Cap (Max 100)
+        </div>
+      </div>
+
+      <div id="stakingStatsUpdated" class="text-xs text-slate-500 mt-4 text-right">Last Updated: —</div>
+    </div>
+  </div> <!-- ✅ properly closed stakingDashboard -->
+
+  <hr class="border-slate-700 my-4" />
+
+  <!-- ============================== -->
+  <!-- 🛡️ Staking Admin Panel -->
+  <!-- ============================== -->
+  <div id="stakingAdminPanel" class="glass p-6 rounded-2xl shadow-lg space-y-5 border border-slate-700">
+    <div>
+      <h3 class="font-semibold text-xl mb-1">🛡️ Staking Admin Panel</h3>
+      <p class="text-sm text-slate-400">Restricted functions — only Governance or Guardian Council wallets can execute transactions.</p>
+      <p class="text-sm text-yellow-400 mt-1">
+        ⚠️ Visible to all users for transparency. Unauthorized wallets will revert on execution.
+      </p>
+    </div>
+
+    <div class="bg-black/20 rounded-xl p-4 space-y-2">
+      <h4 class="font-medium text-base">💰 Withdraw Treasury</h4>
+      <input id="withdrawTo" placeholder="Recipient address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
+      <input id="withdrawAmount" type="number" placeholder="Amount (CATA)" class="w-full p-2 rounded bg-black/30 text-sm" />
+      <button id="withdrawTreasuryBtn" class="w-full p-2 bg-red-600 hover:bg-red-500 rounded font-semibold">
+        Withdraw
       </button>
-      <div id="portfolioResult"
-           class="mt-2 text-xs text-slate-300 font-mono break-all">—</div>
-    </div>
-  </div>
-</div>
-
-	<!-- 🔹 Staking Contract Transparency -->
-<div class="pt-4 border-t border-slate-700">
-  <div class="text-xs text-slate-400 mb-1">Staking Contract Transparency</div>
-
-  <div class="flex flex-col gap-1">
-
-    <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">Guardian Council:</span><br />
-      <span id="stakingCouncilAddress" class="font-mono text-cyan-400 break-all">—</span>
     </div>
 
-    <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">Deployer Council:</span><br />
-      <span id="stakingDeployerCouncil" class="font-mono text-purple-400 break-all">—</span>
+    <div class="bg-black/20 rounded-xl p-4 space-y-2">
+      <h4 class="font-medium text-base">⚙️ Set Bonus Module</h4>
+      <input id="bonusModuleAddr" placeholder="Bonus module address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
+      <button id="setBonusModuleBtn" class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded font-semibold">
+        Update Module
+      </button>
     </div>
 
-    <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">Deployer Address:</span><br />
-      <span id="stakingDeployerAddress" class="font-mono text-yellow-400 break-all">—</span>
+    <div class="bg-black/20 rounded-xl p-4 space-y-2">
+      <h4 class="font-medium text-base">🔥 Trigger Top Burner Bonus</h4>
+      <button id="triggerTopBurnerBtn" class="w-full p-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold">
+        Trigger Bonus
+      </button>
+    </div>
+  </div>
+
+  <p class="text-sm text-yellow-400 mt-2">
+    ⚠️ Note: Only admin wallets can execute these actions. Others will get a failed transaction.
+  </p>
+
+  <hr class="border-slate-700 my-4" />
+
+  <!-- ========================================= -->
+  <!-- 🧩 DEPLOYER RECOVERY COUNCIL PANEL -->
+  <!-- ========================================= -->
+  <div id="deployerRecoveryCouncilPanel" class="glass p-6 rounded-2xl shadow-lg space-y-5 border border-slate-700">
+    <div>
+      <h3 class="font-semibold text-xl mb-1">🧩 Deployer Recovery Council</h3>
+      <p class="text-sm text-slate-400">Guardian-based recovery system for replacing deployer/admin roles.</p>
+      <p class="text-sm text-yellow-400 mt-1">
+        ⚠️ Visible to all users for transparency. Only guardians can execute actions.
+      </p>
     </div>
 
-    <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">Bonus Module:</span><br />
-      <span id="stakingBonusModule" class="font-mono text-rose-400 break-all">—</span>
+    <div class="bg-black/20 rounded-xl p-4 space-y-2">
+      <h4 class="font-medium text-base">🕒 View Active Recovery</h4>
+      <button id="deployerViewRecoveryBtn" class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded font-semibold">
+        View Status
+      </button>
+      <div id="deployerRecoveryStatus" class="text-sm text-slate-300 mt-2"></div>
     </div>
 
-    <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">CATA Token:</span><br />
-      <span id="stakingCataToken" class="font-mono text-emerald-400 break-all">—</span>
+    <div class="bg-black/20 rounded-xl p-4 space-y-2">
+      <h4 class="font-medium text-base">📝 Propose New Deployer</h4>
+      <input id="deployerNewDeployerAddr" placeholder="New deployer address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
+      <button id="deployerProposeRecoveryBtn" class="w-full p-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold">
+        Propose Recovery
+      </button>
     </div>
 
-    <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">DEFAULT_ADMIN_ROLE Holder:</span><br />
-      <span id="stakingDefaultAdmin" class="font-mono text-blue-400 break-all">—</span>
+    <div class="bg-black/20 rounded-xl p-4 space-y-2">
+      <h4 class="font-medium text-base">✅ Approve Active Recovery</h4>
+      <button id="deployerApproveRecoveryBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-500 rounded font-semibold">
+        Approve Recovery
+      </button>
     </div>
 
-    <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">CONTRACT_ADMIN_ROLE Holder:</span><br />
-      <span id="stakingContractAdmin" class="font-mono text-indigo-400 break-all">—</span>
+    <div class="bg-black/20 rounded-xl p-4 space-y-2">
+      <h4 class="font-medium text-base">🚀 Execute Recovery</h4>
+      <button id="deployerExecuteRecoveryBtn" class="w-full p-2 bg-red-600 hover:bg-red-500 rounded font-semibold">
+        Execute Recovery
+      </button>
     </div>
-
-    <div class="p-2 rounded bg-black/20 text-sm">
-      <span class="font-semibold text-slate-300">Current Admin / Governance DAO:</span><br />
-      <span id="stakingAdminAddress" class="font-mono text-green-400 break-all">—</span>
-    </div>
-
   </div>
-
-  <button id="refreshStakingTransparencyBtn"
-    class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 active:bg-slate-800 rounded-lg font-medium text-sm transition">
-    🔍 Refresh Staking Transparency
-  </button>
-</div>
-
-	<!-- ============================== -->
-<!-- 🛡️ Staking Admin Panel (Always Visible, Polished) -->
-<!-- ============================== -->
-<div id="stakingAdminPanel" class="glass p-6 rounded-2xl shadow-lg space-y-5 mt-8 border border-slate-700">
-  <div>
-    <h3 class="font-semibold text-xl mb-1">🛡️ Staking Admin Panel</h3>
-    <p class="text-sm text-slate-400">
-      Restricted functions — only Governance or Guardian Council wallets can execute transactions.
-    </p>
-    <p class="text-sm text-yellow-400 mt-1">
-      ⚠️ Visible to all users for transparency. Non-admin wallets will see transaction reverts if unauthorized.
-    </p>
-  </div>
-
-  <!-- 💰 Treasury Withdraw -->
-  <div class="bg-black/20 rounded-xl p-4 space-y-2">
-    <h4 class="font-medium text-base">💰 Withdraw Treasury</h4>
-    <input id="withdrawTo" placeholder="Recipient address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
-    <input id="withdrawAmount" type="number" placeholder="Amount (CATA)" class="w-full p-2 rounded bg-black/30 text-sm" />
-    <button id="withdrawTreasuryBtn" class="w-full p-2 bg-red-600 hover:bg-red-500 rounded font-semibold">
-      Withdraw
-    </button>
-  </div>
-
-  <!-- ⚙️ Bonus Module -->
-  <div class="bg-black/20 rounded-xl p-4 space-y-2">
-    <h4 class="font-medium text-base">⚙️ Set Bonus Module</h4>
-    <input id="bonusModuleAddr" placeholder="Bonus module address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
-    <button id="setBonusModuleBtn" class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded font-semibold">
-      Update Module
-    </button>
-  </div>
-
-  <!-- 🔥 Top Burner Bonus -->
-  <div class="bg-black/20 rounded-xl p-4 space-y-2">
-    <h4 class="font-medium text-base">🔥 Trigger Top Burner Bonus</h4>
-    <button id="triggerTopBurnerBtn" class="w-full p-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold">
-      Trigger Bonus
-    </button>
-  </div>
-</div>
-
-
-<p class="text-sm text-yellow-400 mt-2">
-⚠️ Note: Only admin wallets can execute these actions. Others will get a failed transaction.
-</p>
-
-	<!-- ========================================= -->
-<!-- 🧩 Deployer Recovery Council Panel -->
-<!-- ========================================= -->
-<div id="deployerRecoveryCouncilPanel" class="glass p-6 rounded-2xl shadow-lg space-y-5 mt-8 border border-slate-700">
-  <div>
-    <h3 class="font-semibold text-xl mb-1">🧩 Deployer Recovery Council</h3>
-    <p class="text-sm text-slate-400">Guardian-based recovery system for replacing deployer/admin roles.</p>
-    <p class="text-sm text-yellow-400 mt-1">
-      ⚠️ Visible to all users for transparency. Only guardians can execute actions.
-    </p>
-  </div>
-
-  <!-- 🕒 View Recovery -->
-  <div class="bg-black/20 rounded-xl p-4 space-y-2">
-    <h4 class="font-medium text-base">🕒 View Active Recovery</h4>
-    <button id="deployerViewRecoveryBtn" class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded font-semibold">
-      View Status
-    </button>
-    <div id="deployerRecoveryStatus" class="text-sm text-slate-300 mt-2"></div>
-  </div>
-
-  <!-- 📝 Propose Recovery -->
-  <div class="bg-black/20 rounded-xl p-4 space-y-2">
-    <h4 class="font-medium text-base">📝 Propose New Deployer</h4>
-    <input id="deployerNewDeployerAddr" placeholder="New deployer address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
-    <button id="deployerProposeRecoveryBtn" class="w-full p-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold">
-      Propose Recovery
-    </button>
-  </div>
-
-  <!-- ✅ Approve Recovery -->
-  <div class="bg-black/20 rounded-xl p-4 space-y-2">
-    <h4 class="font-medium text-base">✅ Approve Active Recovery</h4>
-    <button id="deployerApproveRecoveryBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-500 rounded font-semibold">
-      Approve Recovery
-    </button>
-  </div>
-
-  <!-- 🚀 Execute Recovery -->
-  <div class="bg-black/20 rounded-xl p-4 space-y-2">
-    <h4 class="font-medium text-base">🚀 Execute Recovery</h4>
-    <button id="deployerExecuteRecoveryBtn" class="w-full p-2 bg-red-600 hover:bg-red-500 rounded font-semibold">
-      Execute Recovery
-    </button>
-  </div>
-</div>
 </section>
 
+    
 <!-- 🏛 GOVERNANCE DAO SECTION -->
 <section id="governance" class="tab-content hidden">
   <h2 class="font-semibold mb-2">Governance DAO</h2>
