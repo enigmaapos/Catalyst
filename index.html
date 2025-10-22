@@ -1013,9 +1013,57 @@ Catalyst Whitepaper
   </div>
 </div>
 
+
 <p class="text-sm text-yellow-400 mt-2">
 ⚠️ Note: Only admin wallets can execute these actions. Others will get a failed transaction.
 </p>
+
+	<!-- ========================================= -->
+<!-- 🧩 Deployer Recovery Council Panel -->
+<!-- ========================================= -->
+<div id="deployerRecoveryCouncilPanel" class="glass p-6 rounded-2xl shadow-lg space-y-5 mt-8 border border-slate-700">
+  <div>
+    <h3 class="font-semibold text-xl mb-1">🧩 Deployer Recovery Council</h3>
+    <p class="text-sm text-slate-400">Guardian-based recovery system for replacing deployer/admin roles.</p>
+    <p class="text-sm text-yellow-400 mt-1">
+      ⚠️ Visible to all users for transparency. Only guardians can execute actions.
+    </p>
+  </div>
+
+  <!-- 🕒 View Recovery -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">🕒 View Active Recovery</h4>
+    <button id="deployerViewRecoveryBtn" class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded font-semibold">
+      View Status
+    </button>
+    <div id="deployerRecoveryStatus" class="text-sm text-slate-300 mt-2"></div>
+  </div>
+
+  <!-- 📝 Propose Recovery -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">📝 Propose New Deployer</h4>
+    <input id="deployerNewDeployerAddr" placeholder="New deployer address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
+    <button id="deployerProposeRecoveryBtn" class="w-full p-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold">
+      Propose Recovery
+    </button>
+  </div>
+
+  <!-- ✅ Approve Recovery -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">✅ Approve Active Recovery</h4>
+    <button id="deployerApproveRecoveryBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-500 rounded font-semibold">
+      Approve Recovery
+    </button>
+  </div>
+
+  <!-- 🚀 Execute Recovery -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">🚀 Execute Recovery</h4>
+    <button id="deployerExecuteRecoveryBtn" class="w-full p-2 bg-red-600 hover:bg-red-500 rounded font-semibold">
+      Execute Recovery
+    </button>
+  </div>
+</div>
 </section>
 
 <!-- 🏛 GOVERNANCE DAO SECTION -->
@@ -1607,6 +1655,7 @@ Catalyst Whitepaper
     staking: "../abi/CatalystStakingUpgradeable.json",
     governance: "../abi/CatalystGovernanceUpgradeable.json",
     council: "../abi/BatchGuardianCouncilUpgradeable.json"
+	recovery: "../abi/DeployerRecoveryCouncil.json" 
   };
 
   // Minimal ERC-721 ABI kept inline (approval helpers)
@@ -1622,6 +1671,7 @@ Catalyst Whitepaper
     staking: "0x00Dd46EE2FDaCDD5F0d5C8375272880A9d667663",
     governance: "0x7b87ED33bEEFCF03b89Ba38BE7e77527611BCDF4",
     council: "0x493E4ba582300890ce0F36De5629D22A1E6276d7"
+	recovery: "0xYOUR_DEPLOYER_RECOVERY_ADDRESS" 
   };
 
 	  
@@ -1727,17 +1777,20 @@ async function attachContractsIfSet() {
     const stakingA = $('addrStaking').value.trim();
     const govA = $('addrGovernance').value.trim();
     const councilA = $('addrCouncil').value.trim();
+	const recoveryA = $('addrRecovery')?.value?.trim();
 
     contracts.cata = cataA && abis.cata ? new ethers.Contract(cataA, abis.cata, signer) : null;
     contracts.staking = stakingA && abis.staking ? new ethers.Contract(stakingA, abis.staking, signer) : null;
     contracts.governance = govA && abis.governance ? new ethers.Contract(govA, abis.governance, signer) : null;
     contracts.council = councilA && abis.council ? new ethers.Contract(councilA, abis.council, signer) : null;
+	contracts.recovery = recoveryA && abis.recovery ? new ethers.Contract(recoveryA, abis.recovery, signer) : null;
 
     log("Contracts attached", {
       cata: !!contracts.cata,
       staking: !!contracts.staking,
       governance: !!contracts.governance,
       council: !!contracts.council,
+		recovery: !!contracts.recovery,
     });
 
     if (contracts.cata) await fetchCataBalance();
@@ -3921,6 +3974,66 @@ $('triggerTopBurnerBtn').onclick = async () => {
   }
 };
 
+// -------------------------------
+// 🧩 Deployer Recovery Council UI Actions
+// -------------------------------
+
+$('deployerViewRecoveryBtn').onclick = async () => {
+  try {
+    const r = await contracts.recovery.activeRecovery();
+    const statusDiv = $('deployerRecoveryStatus');
+    statusDiv.innerHTML = `
+      <p>Proposed: ${r.proposed}</p>
+      <p>Approvals: ${r.approvals}</p>
+      <p>Deadline: ${new Date(r.deadline * 1000).toLocaleString()}</p>
+      <p>Ready Time: ${new Date(r.readyTime * 1000).toLocaleString()}</p>
+      <p>Executed: ${r.executed}</p>
+    `;
+  } catch (err) {
+    alert("❌ Failed to load recovery info: " + (err.message || err));
+  }
+};
+
+$('deployerProposeRecoveryBtn').onclick = async () => {
+  try {
+    const addr = $('deployerNewDeployerAddr').value.trim();
+    if (!ethers.utils.isAddress(addr)) return alert("⚠️ Invalid address");
+    showLoading("Proposing recovery...");
+    const tx = await contracts.recovery.propose(addr);
+    await tx.wait();
+    alert("✅ Recovery proposed successfully!");
+  } catch (err) {
+    alert("❌ Failed to propose: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
+$('deployerApproveRecoveryBtn').onclick = async () => {
+  try {
+    showLoading("Approving recovery...");
+    const tx = await contracts.recovery.approve();
+    await tx.wait();
+    alert("✅ Approved successfully!");
+  } catch (err) {
+    alert("❌ Approval failed: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
+$('deployerExecuteRecoveryBtn').onclick = async () => {
+  try {
+    showLoading("Executing recovery...");
+    const tx = await contracts.recovery.execute();
+    await tx.wait();
+    alert("🚀 Recovery executed successfully!");
+  } catch (err) {
+    alert("❌ Execution failed: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
 
   // ---------- Governance Section ----------
 const PROPOSAL_MAPPING = {
