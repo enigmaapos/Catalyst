@@ -3832,7 +3832,7 @@ async function fetchStakingTransparency() {
 
 
 
-	  // ================================
+	// ================================
 // 🛡️ CHECK STAKING ADMIN ROLE
 // ================================
 async function checkStakingAdmin() {
@@ -3849,10 +3849,12 @@ async function checkStakingAdmin() {
     const panel = document.querySelector('#stakingAdminPanel');
     if (!panel) return;
 
+    // ✅ Always visible for transparency
+    panel.classList.remove('hidden');
+
+    // (Optional) Show admin-only note if not admin
     if (!isAdmin) {
-      panel.classList.add('hidden');
-    } else {
-      panel.classList.remove('hidden');
+      console.log("⚠️ Connected wallet is not admin — actions will revert.");
     }
   } catch (err) {
     console.warn("⚠️ Admin check failed:", err.message || err);
