@@ -1,0 +1,5121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catalyst Protocol — DApp</title>
+	  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
+	<link rel="icon" type="image/png" href="assets/logo.png">	
+  <style>
+    body { background: linear-gradient(180deg,#041024 0%, #061426 100%); }
+    .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
+	  .tabbtn {transition: all 0.2s ease-in-out;}
+.tabbtn:hover {opacity: 0.85; transform: translateY(-1px);}
+.tab-active {outline: 2px solid white; outline-offset: 2px;}
+
+/* Center it on the screen (FIXED FOR SCROLLING) */
+#loadingIndicator {
+    /* 1. Anchors the element to the browser window, not the document */
+    position: fixed; 
+    
+    /* 2. Forces the element to stretch across the entire viewport */
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    
+    /* 3. Puts it above everything else */
+    z-index: 9999; 
+    
+    /* 4. Centers the content (spinner/text) inside the full-screen container */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centers content vertically */
+    align-items: center;    /* Centers content horizontally */
+    
+    /* Recommended: Add a dim background to block interaction */
+    background: rgba(0, 0, 0, 0.7); 
+}
+
+  /* Spinner circle */
+  .spinner {
+    border: 6px solid rgba(255, 255, 255, 0.2);
+    border-top: 6px solid yellow;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+  }
+
+  /* Spinning animation */
+  @keyframes spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    margin-top: 10px;
+    color: yellow;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  </style>
+</head>
+
+<!-- Loading Indicator -->
+<div id="loadingIndicator" style="display:none;">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading...</div>
+</div> 
+
+<body class="min-h-screen text-white font-sans">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Catalyst Protocol</h1>
+        <p class="text-sm text-slate-300">Staking · Governance · Guardian Council</p>
+      </div>
+      <div class="flex items-center gap-2 text-sm">
+  <!-- Connected Card -->
+  <div class="px-2 py-1 rounded-lg bg-slate-800/70 shadow border border-slate-700">
+    <div class="text-slate-400 text-[10px]">Connected</div>
+    <div class="flex items-center gap-1">
+      <!-- Shortened address -->
+      <span id="addr" 
+            class="font-medium text-slate-100 cursor-pointer text-xs"
+            title="Not connected">
+        Not connected
+      </span>
+      <!-- Copy button -->
+      <button id="copyAddrBtn" 
+              class="px-1 py-0.5 text-[10px] bg-slate-700 hover:bg-slate-600 rounded">
+        📋
+      </button>
+    </div>
+  </div>
+  <!-- Network Card -->
+  <div class="px-2 py-1 rounded-lg bg-slate-800/70 shadow border border-slate-700">
+    <div class="text-slate-400 text-[10px]">Network</div>
+    <div id="networkText" class="font-medium text-slate-100 text-xs">—</div>
+  </div>
+</div>  
+          <!-- Action Buttons -->
+  <div class="flex gap-2 mb-4">
+    <button id="connectBtn" class="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-cyan-400 font-semibold text-black">
+      🔌 Connect Wallet
+    </button>
+    <button id="disconnectBtn" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 font-semibold text-black hidden">
+      ❌ Disconnect
+    </button>
+  </div>
+      </div>
+    </header>
+	
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+		
+
+<!-- Tab Buttons -->
+<div class="glass ring-1 rounded-2xl p-4 flex flex-wrap gap-3 justify-center">
+  <button data-tab="overview" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-sky-700 text-white hover:bg-sky-600 transition tab-active">
+    📖 Overview
+  </button>
+
+  <button data-tab="quickstatus" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-slate-700 text-white hover:bg-slate-600 transition">
+    🧭 Quick Status
+  </button>
+
+  <button data-tab="registration" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-indigo-700 text-white hover:bg-indigo-600 transition">
+    📝 Collection Registration
+  </button>
+
+  <button data-tab="bluechip" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-amber-600 text-black hover:bg-amber-500 transition">
+    💎 Bluechip
+  </button>
+
+  <button data-tab="staking" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 transition">
+    📦 Staking
+  </button>
+
+  <button data-tab="governance" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-violet-700 text-white hover:bg-violet-600 transition">
+    🏛️ Governance DAO
+  </button>
+
+  <button data-tab="council" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-rose-700 text-white hover:bg-rose-600 transition">
+    🛡️ DRS Guardian Council
+  </button>
+
+  <button data-tab="whitepaper" 
+    class="tabbtn px-5 py-2.5 rounded-lg bg-teal-700 text-white hover:bg-teal-600 transition">
+    📜 Whitepaper
+  </button>
+</div>
+
+  <!-- Tab Contents -->
+  <div id="tabContents" class="glass rounded-2xl p-4">
+
+<section>
+  <div id="overview" class="tab-content">
+    <div class="glass ring-1 rounded-2xl p-5 space-y-6">
+      <!-- Header -->
+      <div class="flex items-start gap-4">
+        <div class="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 grid place-items-center text-2xl">
+          🧭
+        </div>
+        <div class="space-y-2">
+          <h2 class="text-xl font-semibold">Catalyst at a Glance</h2>
+          <p class="text-slate-300 leading-relaxed">
+            Catalyst is a modular NFT staking &amp; governance protocol. Stake ERC-721s for CATA rewards, 
+            participate in burn-weighted governance, and rely on the Batch Guardian Council recovery system. 
+            The design enforces 
+            <span class="chip">security</span>, <span class="chip">scalability</span>, and 
+            <span class="chip">sustainability</span> through immutable economics and DAO-managed upgrades.
+          </p>
+        </div>
+      </div>
+
+      <!-- Info Cards -->
+      <div class="grid md:grid-cols-3 gap-4">
+        <!-- Mission -->
+<div class="glass ring-1 rounded-xl p-4">
+  <div class="text-sm text-slate-400 mb-1">Mission</div>
+  <div class="font-semibold">Non-Profit R&amp;D Utility</div>
+  <p class="text-slate-300 text-sm mt-2">
+    Immutable fee split 
+    <span class="mono">90% Burn / 9% Treasury / 1% Deployer</span>. 
+    Catalyst itself is not profit-seeking — fees are burned or directed to a 
+    community-governed treasury that funds audits, grants, and continued research &amp; development.
+  </p>
+  <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+    This does not prevent participants from creating value: token holders benefit from deflationary supply, 
+    builders can launch services on top of Catalyst, and communities gain legitimacy and rewards. 
+    In short, Catalyst is a public-good protocol while its ecosystem can still generate profit and long-term value.
+  </p>
+</div>
+
+        <!-- Usage -->
+        <div class="card rounded-xl p-4 ring-1 glass">
+          <div class="text-sm muted mb-2 flex items-center gap-2">
+            <span class="badge">Usage</span>
+            <span>How to use Catalyst</span>
+          </div>
+          <ol class="text-sm list-decimal ml-5 space-y-2 text-slate-300 leading-relaxed">
+            <li>Locate and save your <span class="font-mono">proxy contract</span> address.</li>
+            <li>Connect your wallet to enable <span class="chip">staking</span> and <span class="chip">governance</span> actions.</li>
+            <li>Use the tabs to stake NFTs, submit votes, claim rewards, and interact with the Batch Guardian Council.</li>
+          </ol>
+        </div>
+
+        <!-- Docs -->
+        <div class="glass ring-1 rounded-xl p-4">
+          <div class="text-sm text-slate-400 mb-1">Docs</div>
+          <div class="space-y-1 text-sm text-slate-300">
+            <div>
+              <span class="badge">See the</span> 
+              Whitepaper
+              <a href="javascript:void(0)" 
+                 class="text-sky-400 hover:text-sky-300 underline cursor-pointer"
+                 onclick="selectTab('whitepaper')">
+                 summary
+              </a>
+            </div>
+            <div>
+              <span class="badge">Review the</span>
+Catalyst Whitepaper  
+<a href="https://catalyst-presentation.vercel.app/" 
+   target="_blank"
+   rel="noopener noreferrer"
+   class="text-sky-400 hover:text-sky-300 underline cursor-pointer">
+   details
+</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+	  
+<!-- ⚡ Full Quick Status -->
+<section id="quickstatus" class="tab-content hidden">
+  <h2 class="font-semibold mb-3 text-lg text-slate-100">⚡ Full Quick Status</h2>
+
+  <!-- Single unified responsive grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+
+    <!-- CATA Balance -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700 shadow-sm">
+      <div class="text-slate-400 text-xs">CATA Balance</div>
+      <div id="cataBal" class="font-semibold text-green-400">—</div>
+    </div>
+
+    <!-- Base Reward Rate -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Base Reward Rate</div>
+      <div id="baseRewardRate" class="font-semibold text-yellow-400">—</div>
+    </div>
+
+    <!-- Blocks per Reward Unit -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Blocks per Reward Unit</div>
+      <div id="blocksPerUnit" class="font-semibold text-blue-400">—</div>
+    </div>
+
+    <!-- Reward Increment / NFT -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Reward Increment / NFT</div>
+      <div id="rewardIncrement" class="font-semibold text-emerald-400">—</div>
+    </div>
+
+    <!-- Welcome Bonus Base -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Welcome Bonus Base</div>
+      <div id="welcomeBonusBase" class="font-semibold text-green-400">—</div>
+    </div>
+
+    <!-- Welcome Bonus Increment -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Welcome Bonus Increment</div>
+      <div id="welcomeBonusInc" class="font-semibold text-green-400">—</div>
+    </div>
+
+    <!-- Term Duration -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Term Duration (blocks)</div>
+      <div id="termDuration" class="font-semibold text-sky-400">—</div>
+    </div>
+
+    <!-- Unstake Burn Fee -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Unstake Burn Fee</div>
+      <div id="unstakeBurnFee" class="font-semibold text-red-400">—</div>
+    </div>
+
+    <!-- Permanent Stake Fee -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Permanent Stake Fee</div>
+      <div id="permStakeFee" class="font-semibold text-red-400">—</div>
+    </div>
+
+    <!-- NFT Caps -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Global NFT Cap</div>
+      <div id="globalCap" class="font-semibold text-indigo-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Term NFT Cap</div>
+      <div id="termCap" class="font-semibold text-indigo-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Perm NFT Cap</div>
+      <div id="permCap" class="font-semibold text-indigo-400">—</div>
+    </div>
+
+    <!-- Fee Split -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Burn / Treasury / Deployer Split (bps)</div>
+      <div id="burnBP" class="font-semibold text-orange-400">—</div>
+      <div id="treasuryBP" class="font-semibold text-orange-400">—</div>
+      <div id="deployerBP" class="font-semibold text-orange-400">—</div>
+    </div>
+
+    <!-- Treasury -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Treasury Balance</div>
+      <div id="treasuryBalance" class="font-semibold text-green-400">—</div>
+    </div>
+
+    <!-- Staking Stats -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Total NFTs Staked (All)</div>
+      <div id="stakedAll" class="font-semibold text-emerald-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Term Staked NFTs</div>
+      <div id="stakedTerm" class="font-semibold text-blue-400">—</div>
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Permanent Staked NFTs</div>
+      <div id="stakedPerm" class="font-semibold text-purple-400">—</div>
+    </div>
+
+    <!-- 🔋 Staking Utilization -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">Staking Utilization</div>
+      <div class="w-full bg-slate-700/60 rounded-full h-2 overflow-hidden">
+        <div
+          id="stakingUsageBar"
+          class="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-[1200ms] ease-in-out"
+          style="width: 0%"
+        ></div>
+      </div>
+      <div id="stakingUsage" class="text-xs text-slate-300 mt-1">—</div>
+    </div>
+
+    <!-- Top Percent -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Top Percent (Leaderboard)</div>
+      <div id="topPercent" class="font-semibold text-cyan-400">—</div>
+    </div>
+
+    <!-- Max Participants -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Max Participants</div>
+      <div id="maxParticipants" class="font-semibold text-amber-400">—</div>
+    </div>
+
+    <!-- Top Burner Percent -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Top Burner Percent</div>
+      <div id="topBurnerPercent" class="font-semibold text-amber-400">—</div>
+    </div>
+
+    <!-- Treasury Bonus BP -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Treasury Bonus BP</div>
+      <div id="treasuryBonusBP" class="font-semibold text-amber-400">—</div>
+    </div>
+
+    <!-- Estimated Daily Reward -->
+    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs">Est. Daily Reward / NFT</div>
+      <div id="estimatedDailyReward" class="font-semibold text-emerald-400">—</div>
+    </div>
+  </div>
+
+  <div id="quickStatusUpdated" class="text-xs text-slate-500 mt-2">—</div>
+
+	<!-- 🌐 Transparency & Key Roles -->
+<div class="pt-4 border-t border-slate-700">
+  <div class="text-xs text-slate-400 mb-2 uppercase tracking-wide">Transparency & Key Roles</div>
+
+  <div class="flex flex-col gap-2 text-sm">
+
+    <!-- Admin / DAO -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">CATA Admin / Governance DAO</div>
+      <div id="cataAdminAddress" class="font-mono text-purple-400 break-all">—</div>
+    </div>
+
+    <!-- Council -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">CATA Council</div>
+      <div id="cataCouncilAddress" class="font-mono text-cyan-400 break-all">—</div>
+    </div>
+
+    <!-- Minters -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">CATA Minters</div>
+      <div id="cataMinters" class="font-mono text-pink-400 break-all whitespace-pre-wrap">—</div>
+    </div>
+
+    <!-- Remaining Mintable -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">Remaining Mintable</div>
+      <div id="cataRemainingMintable" class="font-mono text-green-400">—</div>
+    </div>
+
+    <!-- Total Supply -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">Total Supply</div>
+      <div id="cataTotalSupply" class="font-mono text-blue-400">—</div>
+    </div>
+
+    <!-- Max Supply -->
+    <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div class="text-slate-400 text-xs mb-1">Max Supply</div>
+      <div id="cataMaxSupply" class="font-mono text-yellow-400">—</div>
+    </div>
+
+  </div>
+
+  <!-- Refresh Button -->
+  <button
+    id="refreshTransparencyBtn"
+    class="mt-3 w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition">
+    🔍 Refresh Transparency
+  </button>
+</div>
+
+  <hr class="my-3 border-slate-700" />
+<div class="glass rounded-xl border border-slate-700 shadow-lg p-4 space-y-4">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-slate-200">Contract Addresses</h2>
+    <span class="text-[11px] text-slate-400">Defaults & LocalStorage</span>
+  </div>
+
+  <!-- Address Fields -->
+  <div class="space-y-3">
+    <div>
+      <label class="block text-xs text-slate-400 mb-1">CATA Token</label>
+      <input id="addrCata" readonly 
+             class="w-full px-3 py-2 rounded-lg bg-black/30 border border-slate-700/50 
+                    text-sm text-slate-200 focus:outline-none cursor-default" />
+    </div>
+
+    <div>
+      <label class="block text-xs text-slate-400 mb-1">Staking Contract</label>
+      <input id="addrStaking" readonly 
+             class="w-full px-3 py-2 rounded-lg bg-black/30 border border-slate-700/50 
+                    text-sm text-slate-200 focus:outline-none cursor-default" />
+    </div>
+
+    <div>
+      <label class="block text-xs text-slate-400 mb-1">Governance Contract</label>
+      <input id="addrGovernance" readonly 
+             class="w-full px-3 py-2 rounded-lg bg-black/30 border border-slate-700/50 
+                    text-sm text-slate-200 focus:outline-none cursor-default" />
+    </div>
+
+    <div>
+      <label class="block text-xs text-slate-400 mb-1">Guardian Council</label>
+      <input id="addrCouncil" readonly 
+             class="w-full px-3 py-2 rounded-lg bg-black/30 border border-slate-700/50 
+                    text-sm text-slate-200 focus:outline-none cursor-default" />
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex gap-3 pt-2">
+    <button id="saveAddrs" 
+            class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 
+                   text-white font-medium rounded-lg shadow transition-all text-sm flex items-center gap-1">
+      💾 Save
+    </button>
+
+    <button id="loadAddrs" 
+            class="flex-1 px-4 py-2 bg-slate-700/70 hover:bg-slate-600 active:bg-slate-800 
+                   text-slate-100 font-medium rounded-lg shadow transition-all text-sm flex items-center gap-1">
+      📂 Load
+    </button>
+  </div>
+</div>
+
+
+  <hr class="my-3 border-slate-700" />
+
+	<div class="p-4 rounded-xl bg-slate-800 text-slate-200 space-y-4">
+  <div class="text-lg font-bold text-slate-100">⚡ CATA Actions</div>
+
+  <div>
+    <input id="cataBurnAmt" placeholder="Amount to burn" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="cataBurnBtn" class="mt-2 w-full p-2 bg-red-600 hover:bg-red-500 rounded">
+      🔥 Burn My CATA
+    </button>
+  </div>
+
+  <div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Admin Controls (Requires DEFAULT_ADMIN_ROLE)</div>
+    <div class="flex gap-2">
+      <button id="pauseBtn" class="flex-1 p-2 bg-yellow-600 hover:bg-yellow-500 rounded">
+        ⏸ Pause
+      </button>
+      <button id="unpauseBtn" class="flex-1 p-2 bg-green-600 hover:bg-green-500 rounded">
+        ▶️ Unpause
+      </button>
+    </div>
+  </div>
+
+  <div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Change Council (Requires DEFAULT_ADMIN_ROLE)</div>
+    <input id="newCouncilAddress" placeholder="New Council contract address" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="grantCouncilRoleBtn" class="mt-2 w-full p-2 bg-purple-600 hover:bg-purple-500 rounded">
+      🔄 Grant COUNCIL_ROLE
+    </button>
+  </div>
+
+  <div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Manage Minter Role (Requires DEFAULT_ADMIN_ROLE)</div>
+    <input id="newMinterAddress" placeholder="Address to grant MINTER_ROLE" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="grantMinterRoleBtn" class="mt-2 w-full p-2 bg-pink-600 hover:bg-pink-500 rounded">
+      ➕ Grant MINTER_ROLE
+    </button>
+  </div>
+
+		<div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Revoke Minter Role (Requires DEFAULT_ADMIN_ROLE)</div>
+    <input id="revokeMinterAddress" placeholder="Minter address to revoke" class="w-full p-2 rounded bg-black/20 text-sm" />
+    <button id="revokeMinterRoleBtn" class="mt-2 w-full p-2 bg-red-600 hover:bg-red-500 rounded">
+      ➖ Revoke MINTER_ROLE
+    </button>
+		</div>
+  
+  <div class="pt-4 border-t border-slate-700">
+    <div class="text-xs text-slate-400 mb-1">Council Actions (Requires onlyCouncil)</div>
+    <div class="flex gap-2">
+      <input id="swapNewAdmin" placeholder="New admin address" class="flex-1 p-2 rounded bg-black/20 text-sm" />
+      <input id="swapOldAdmin" placeholder="Old admin address (optional)" class="flex-1 p-2 rounded bg-black/20 text-sm" />
+    </div>
+    <button id="swapAdminBtn" class="mt-2 w-full p-2 bg-yellow-500 text-black rounded">
+      🔑 Swap Admin
+    </button>
+  </div>
+	</div>
+</section>
+
+    <!-- Collection Registration -->
+    <section id="registration" class="tab-content hidden">
+      <h3 class="font-semibold mb-2">Collection Registration</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+        <input id="regCollectionAddr" placeholder="Collection address (ERC721)" class="p-2 rounded bg-black/20 text-sm" />
+		  <div id="regStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
+        <input id="regDeclaredSupply" placeholder="Declared max supply (integer >=1)" class="p-2 rounded bg-black/20 text-sm" />
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <select id="regTier" class="p-2 rounded bg-black/20 text-sm">
+          <option value="0">UNVERIFIED (0)</option>
+          <option value="1">VERIFIED (1)</option>
+          <option value="2">BLUECHIP (2)</option>
+        </select>
+        <button id="calcRegFeeBtn" class="p-2 bg-slate-600 rounded text-sm">Calculate Fee</button>
+        <div id="regFeeInfo" class="p-2 text-xs text-slate-300">Fee: —</div>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button id="approveRegCataBtn" class="flex-1 p-2 bg-amber-600 rounded text-sm">Approve CATA for registration</button>
+        <button id="registerCollectionBtn" class="flex-1 p-2 bg-indigo-600 rounded text-sm">Register (permissionless)</button>
+      </div>
+      <div class="mt-3">
+        <h4 class="font-semibold">Admin: Set / Upgrade Collection Tier</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+          <input id="adminCollAddr" placeholder="Collection address (admin action)" class="p-2 rounded bg-black/20 text-sm" />
+			<div id="adminStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
+          <input id="adminDeclaredSupply" placeholder="Declared supply (uint32)" class="p-2 rounded bg-black/20 text-sm" />
+        </div>
+        <div class="flex gap-2 mt-2">
+          <select id="adminTier" class="p-2 rounded bg-black/20 text-sm">
+            <option value="0">UNVERIFIED (0)</option>
+            <option value="1">VERIFIED (1)</option>
+            <option value="2">BLUECHIP (2)</option>
+          </select>
+          <button id="adminSetConfigBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded text-sm">Set Collection Config (admin)</button>
+        </div>
+
+		  <div class="mt-6 bg-slate-800/50 rounded-2xl shadow-lg p-4 border border-white/10">
+  <h4 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+    ⚙️ Admin: Manage Registered Collections
+  </h4>
+
+  <!-- Input -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <input 
+      id="manageCollAddr" 
+      placeholder="Enter collection address" 
+      class="p-3 rounded-lg bg-slate-900/60 border border-slate-700/40 text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
+    />
+  </div>
+			  <div id="manageStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
+
+  <!-- Action Buttons -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+    <button 
+      id="removeCollectionBtn" 
+      class="p-3 rounded-lg bg-red-600 hover:bg-red-700 transition text-sm font-medium shadow-md">
+      🗑 Remove Collection
+    </button>
+    <button 
+      id="forfeitEscrowBtn" 
+      class="p-3 rounded-lg bg-amber-500 hover:bg-amber-600 transition text-sm font-medium text-black shadow-md">
+      ⏳ Forfeit Escrow
+    </button>
+    <button 
+      id="setBluechipBtn" 
+      class="p-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition text-sm font-medium shadow-md">
+      💎 Toggle Bluechip
+    </button>
+  </div>
+
+  <!-- Hint -->
+  <p class="mt-3 text-xs text-slate-400">
+    * These actions require <span class="font-semibold text-amber-300">admin privileges</span>. 
+    Make sure your connected wallet has the proper role.
+  </p>
+			  </div>
+	  </div>
+
+		<!-- Combined Top Collections Section -->
+<div id="topCollectionsList" class="mt-6 bg-slate-800/50 rounded-2xl shadow-lg p-4 border border-white/10">
+  <h3 class="text-lg font-semibold text-white mb-3">🏆 Top Collections Transparency</h3>
+  <p class="text-xs text-slate-400 mb-3">Showing top 10 verified and unverified collections by total CATA burned.</p>
+
+  <!-- Dynamic content loaded via JS -->
+  <div id="topCollectionsContent" class="text-sm text-slate-300 space-y-3">
+    Loading top collections...
+  </div>
+</div>
+    </section>
+
+    <!-- Bluechip -->
+<section id="bluechip" class="tab-content hidden">
+  <h2 class="font-semibold mb-2">Bluechip</h2>
+  <p class="text-sm text-slate-300 mb-3">
+    Enroll as a Bluechip wallet and harvest rewards from Bluechip collections.
+  </p>
+
+  <div class="space-y-3 text-sm">
+    <!-- Enroll -->
+    <div class="flex gap-2">
+      <button id="enrollBluechipBtn" class="flex-1 p-2 bg-amber-500 text-black rounded">
+        🌟 Enroll Bluechip Wallet
+      </button>
+    </div>
+
+    <!-- Harvest -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+      <input
+        id="bluechipCollectionInput"
+        placeholder="Bluechip Collection Address"
+        class="p-2 rounded bg-black/20"
+      />
+		<div id="bluechipStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
+      <button id="harvestBluechipBtn" class="p-2 bg-sky-600 hover:bg-sky-500 rounded">
+        🎁 Harvest Bluechip
+      </button>
+    </div>
+
+    <hr class="border-slate-700 my-3" />
+
+    <!-- Wallet Info -->
+<h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
+  🌟 My Bluechip Status
+</h3>
+
+<div class="grid grid-cols-2 gap-3 text-center">
+  <!-- Enrollment Status -->
+  <div class="p-3 rounded-xl bg-slate-800/60 shadow-md">
+    <div class="text-slate-400 text-xs">Status</div>
+    <div id="bluechipStatus" class="font-bold text-sm text-slate-100">—</div>
+  </div>
+
+
+  <!-- Last Harvest Block -->
+  <div class="p-3 rounded-xl bg-slate-800/60 shadow-md">
+    <div class="text-slate-400 text-xs">Last Harvest</div>
+    <div id="bluechipLastBlock" class="font-mono text-xs text-indigo-400">—</div>
+  </div>
+
+  <!-- Enrollment Fee -->
+  <div class="p-3 rounded-xl bg-slate-800/60 shadow-md">
+    <div class="text-slate-400 text-xs">Enrollment Fee</div>
+    <div id="bluechipFee" class="font-bold text-sm text-amber-400">—</div>
+  </div>
+</div>
+
+<button
+  id="refreshBluechipBtn"
+  class="mt-3 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium text-sm transition"
+>
+  🔄 Refresh Bluechip Info
+</button>
+  </div>
+
+	<div id="topBluechipBox" class="bg-gradient-to-b from-gray-900 to-black p-5 rounded-2xl shadow-xl text-gray-100">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-2xl font-extrabold flex items-center gap-2">
+      💎 Top 10 Bluechip Burners
+    </h3>
+    <button 
+      id="refreshBluechipBtn2"
+      class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-md transition-all">
+      🔁 Refresh
+    </button>
+  </div>
+
+  <div id="topBluechipList" class="divide-y divide-gray-800">
+    <div class="text-center py-3 text-gray-400">Loading leaderboard...</div>
+  </div>
+
+  <div class="text-right text-gray-500 text-xs mt-2" id="bluechipLastUpdated">
+    —
+  </div>
+</div>
+</section>
+      
+
+          <!-- Staking -->
+<section id="staking" class="tab-content hidden">
+  <h2 class="font-semibold mb-2">Staking</h2>
+	
+	<hr class="border-slate-700 my-2" />
+  <p class="text-sm text-slate-300 mb-3">Approve NFT → Term Stake or Permanent Stake → Harvest / Unstake</p>
+  
+  <div class="space-y-2 text-sm">
+    <!-- Single NFT Stake -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+      <input id="nftCollection" placeholder="NFT Collection Address" class="p-2 rounded bg-black/20" />
+		<div id="nftStatusInfo" class="text-xs text-slate-400 mt-1">Status: —</div>
+      <input id="nftTokenId" placeholder="Token ID" class="p-2 rounded bg-black/20" />
+    </div>
+    <div class="flex gap-2">
+      <button id="approveNFTBtn" class="flex-1 p-2 bg-yellow-500 text-black rounded">Approve Staking Contract</button>
+      <button id="termStakeBtn" class="flex-1 p-2 bg-indigo-600 rounded">Term Stake</button>
+    </div>
+    <div class="flex gap-2">
+      <button id="permApproveFeeBtn" class="flex-1 p-2 bg-amber-600 rounded">Approve Fee (CATA)</button>
+      <button id="permStakeBtn" class="flex-1 p-2 bg-emerald-600 text-black rounded">Permanent Stake</button>
+    </div>
+    <div class="flex gap-2">
+      <button id="harvestBtn" class="flex-1 p-2 bg-sky-600 rounded">Harvest</button>
+      <button id="unstakeBtn" class="flex-1 p-2 bg-red-600 rounded">Unstake</button>
+    </div>
+
+    <hr class="border-slate-700 my-2" />
+
+    <!-- Batch Staking -->
+    <h3 class="text-sm font-semibold mb-1">Batch Operations</h3>
+    <textarea id="batchNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
+    <div class="flex gap-2 mt-2">
+      <button id="batchTermStakeBtn" class="flex-1 p-2 bg-indigo-500 rounded text-sm">Batch Term Stake</button>
+      <button id="batchPermStakeBtn" class="flex-1 p-2 bg-emerald-500 rounded text-sm">Batch Permanent Stake</button>
+      <button id="batchUnstakeBtn" class="flex-1 p-2 bg-red-500 rounded text-sm">Batch Unstake</button>
+    </div>
+
+    <hr class="border-slate-700 my-2" />
+
+    <!-- Batch Harvest -->
+    <h3 class="text-sm font-semibold mb-1">Batch Harvest</h3>
+    <textarea id="batchHarvestNFTs" placeholder="collection,tokenId per line" class="w-full p-2 rounded bg-black/20 text-sm h-28 font-mono"></textarea>
+    <div class="flex gap-2 mt-2">
+      <button id="batchHarvestBtn" class="flex-1 p-2 bg-sky-600 rounded text-sm">Batch Harvest</button>
+    </div>
+
+    <hr class="border-slate-700 my-2" />
+
+    <!-- Extra Features -->
+<!-- ======================== -->
+<!-- 📊 Catalyst Staking Dashboard -->
+<!-- ======================== -->
+<div id="stakingDashboard" class="space-y-6 text-slate-100">
+
+	<!-- 🧍 My Staking Overview -->
+        <div class="mt-6 bg-slate-800/50 p-6 rounded-2xl shadow-2xl border border-white/10">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                    🧍 My Staking Overview
+                </h3>
+                <button id="refreshStakingStatsBtn"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    🔄 Refresh Stats
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <!-- Total Staked -->
+                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-emerald-600/50">
+                    <div class="text-slate-300 text-sm uppercase tracking-wider">Total NFTs Staked</div>
+                    <div id="userStakedTotal" class="font-black text-3xl text-neon-emerald mt-1 transition-colors duration-500">0</div>
+                </div>
+                <!-- Term Staked -->
+                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-blue-600/50">
+                    <div class="text-slate-300 text-sm uppercase tracking-wider">Term NFTs</div>
+                    <div id="userStakedTerm" class="font-black text-3xl text-neon-blue mt-1 transition-colors duration-500">0</div>
+                </div>
+                <!-- Permanent Staked -->
+                <div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-purple-600/50">
+                    <div class="text-slate-300 text-sm uppercase tracking-wider">Perm NFTs</div>
+                    <div id="userStakedPerm" class="font-black text-3xl text-neon-purple mt-1 transition-colors duration-500">0</div>
+                </div>
+				<!-- Active Collections -->
+<div class="stat-card p-4 rounded-xl bg-slate-900/70 border border-amber-600/50">
+  <div class="text-slate-300 text-sm uppercase tracking-wider">Collections</div>
+  <div id="userCollectionCount" class="font-black text-3xl text-amber-400 mt-1 transition-colors duration-500">0</div>
+</div>
+            </div>
+
+            <!-- Utilization Progress -->
+            <div class="mt-6">
+                <div class="text-sm text-slate-300 mb-2 font-semibold">Staking Utilization</div>
+                <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+                    <div id="userStakingUsageBar" class="h-3 bg-emerald-500 transition-all duration-700 ease-out" style="width: 0%;"></div>
+                </div>
+                <div id="userStakingUsageText" class="text-xs font-mono text-right text-slate-400 mt-2">0.00% of Global Cap (Max 100)</div>
+            </div>
+
+            <div id="stakingStatsUpdated" class="text-xs text-slate-500 mt-4 text-right">Last Updated: —</div>
+		</div>
+	
+  <!-- ======== Section: Other Actions ======== -->
+<div>
+  <h3 class="text-base font-semibold mb-2 text-slate-200 flex items-center gap-2">
+    ⚡ Other Actions
+  </h3>
+
+	<div id="pendingRewardsBox" class="bg-gradient-to-b from-gray-900 to-black p-5 rounded-2xl shadow-xl text-white mt-6 border border-gray-800">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-xl font-bold flex items-center gap-2">
+      💰 Pending Rewards
+      <span id="pendingStatusDot" class="h-2.5 w-2.5 rounded-full bg-gray-500"></span>
+    </h3>
+
+    <button
+      id="refreshPendingBtn"
+      class="flex items-center gap-1 bg-amber-600 hover:bg-amber-700 px-3 py-1 text-sm rounded-md transition active:scale-95">
+      🔁 <span>Refresh</span>
+    </button>
+  </div>
+
+  <!-- Total Pending Rewards -->
+  <div class="mb-3">
+    <p class="text-4xl font-extrabold text-amber-400" id="userPendingTotal">0</p>
+    <p class="text-xs text-gray-400 tracking-wide">CATA Tokens Ready to Harvest</p>
+  </div>
+
+  <!-- Pending List -->
+  <div id="pendingRewardsList"
+       class="divide-y divide-gray-800 text-sm rounded-lg overflow-hidden bg-gray-950/40 backdrop-blur-sm shadow-inner border border-gray-800">
+    <div class="text-center py-3 text-gray-500 animate-pulse">Fetching pending rewards...</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
+    <span id="pendingRewardsStatus">Idle</span>
+    <span id="pendingRewardsUpdated">—</span>
+  </div>
+
+		<button
+  id="harvestAllBtn"
+  class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold text-sm transition active:scale-95">
+  🌾 Harvest All Rewards
+		</button>
+</div>
+
+  <div class="grid gap-3 sm:grid-cols-2">
+    <!-- ======== Pending Rewards ======== -->
+    <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
+      <div class="flex gap-2 items-center mb-2">
+      </div>
+      <button id="pendingRewardsBtn"
+              class="w-full p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+        🎁 Check Pending Rewards
+      </button>
+      <div id="pendingRewardsResult"
+           class="mt-2 text-xs text-slate-300 font-mono">—</div>
+    </div>
+
+    <!-- ======== Portfolio ======== -->
+    <div class="p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 shadow-md">
+      <div class="flex gap-2 items-center mb-2">
+      </div>
+      <button id="viewPortfolioBtn"
+              class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition">
+        📂 View My Staked NFTs
+      </button>
+      <div id="portfolioResult"
+           class="mt-2 text-xs text-slate-300 font-mono break-all">—</div>
+    </div>
+  </div>
+</div>
+
+	<!-- 🔹 Staking Contract Transparency -->
+<div class="pt-4 border-t border-slate-700">
+  <div class="text-xs text-slate-400 mb-1">Staking Contract Transparency</div>
+
+  <div class="flex flex-col gap-1">
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Guardian Council:</span><br />
+      <span id="stakingCouncilAddress" class="font-mono text-cyan-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Deployer Council:</span><br />
+      <span id="stakingDeployerCouncil" class="font-mono text-purple-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Deployer Address:</span><br />
+      <span id="stakingDeployerAddress" class="font-mono text-yellow-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Bonus Module:</span><br />
+      <span id="stakingBonusModule" class="font-mono text-rose-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">CATA Token:</span><br />
+      <span id="stakingCataToken" class="font-mono text-emerald-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">DEFAULT_ADMIN_ROLE Holder:</span><br />
+      <span id="stakingDefaultAdmin" class="font-mono text-blue-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">CONTRACT_ADMIN_ROLE Holder:</span><br />
+      <span id="stakingContractAdmin" class="font-mono text-indigo-400 break-all">—</span>
+    </div>
+
+    <div class="p-2 rounded bg-black/20 text-sm">
+      <span class="font-semibold text-slate-300">Current Admin / Governance DAO:</span><br />
+      <span id="stakingAdminAddress" class="font-mono text-green-400 break-all">—</span>
+    </div>
+
+  </div>
+
+  <button id="refreshStakingTransparencyBtn"
+    class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 active:bg-slate-800 rounded-lg font-medium text-sm transition">
+    🔍 Refresh Staking Transparency
+  </button>
+</div>
+
+	<!-- ============================== -->
+<!-- 🛡️ Staking Admin Panel (Always Visible, Polished) -->
+<!-- ============================== -->
+<div id="stakingAdminPanel" class="glass p-6 rounded-2xl shadow-lg space-y-5 mt-8 border border-slate-700">
+  <div>
+    <h3 class="font-semibold text-xl mb-1">🛡️ Staking Admin Panel</h3>
+    <p class="text-sm text-slate-400">
+      Restricted functions — only Governance or Guardian Council wallets can execute transactions.
+    </p>
+    <p class="text-sm text-yellow-400 mt-1">
+      ⚠️ Visible to all users for transparency. Non-admin wallets will see transaction reverts if unauthorized.
+    </p>
+  </div>
+
+  <!-- 💰 Treasury Withdraw -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">💰 Withdraw Treasury</h4>
+    <input id="withdrawTo" placeholder="Recipient address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
+    <input id="withdrawAmount" type="number" placeholder="Amount (CATA)" class="w-full p-2 rounded bg-black/30 text-sm" />
+    <button id="withdrawTreasuryBtn" class="w-full p-2 bg-red-600 hover:bg-red-500 rounded font-semibold">
+      Withdraw
+    </button>
+  </div>
+
+  <!-- ⚙️ Bonus Module -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">⚙️ Set Bonus Module</h4>
+    <input id="bonusModuleAddr" placeholder="Bonus module address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
+    <button id="setBonusModuleBtn" class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded font-semibold">
+      Update Module
+    </button>
+  </div>
+
+  <!-- 🔥 Top Burner Bonus -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">🔥 Trigger Top Burner Bonus</h4>
+    <button id="triggerTopBurnerBtn" class="w-full p-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold">
+      Trigger Bonus
+    </button>
+  </div>
+</div>
+
+
+<p class="text-sm text-yellow-400 mt-2">
+⚠️ Note: Only admin wallets can execute these actions. Others will get a failed transaction.
+</p>
+
+	<!-- ========================================= -->
+<!-- 🧩 Deployer Recovery Council Panel -->
+<!-- ========================================= -->
+<div id="deployerRecoveryCouncilPanel" class="glass p-6 rounded-2xl shadow-lg space-y-5 mt-8 border border-slate-700">
+  <div>
+    <h3 class="font-semibold text-xl mb-1">🧩 Deployer Recovery Council</h3>
+    <p class="text-sm text-slate-400">Guardian-based recovery system for replacing deployer/admin roles.</p>
+    <p class="text-sm text-yellow-400 mt-1">
+      ⚠️ Visible to all users for transparency. Only guardians can execute actions.
+    </p>
+  </div>
+
+  <!-- 🕒 View Recovery -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">🕒 View Active Recovery</h4>
+    <button id="deployerViewRecoveryBtn" class="w-full p-2 bg-indigo-600 hover:bg-indigo-500 rounded font-semibold">
+      View Status
+    </button>
+    <div id="deployerRecoveryStatus" class="text-sm text-slate-300 mt-2"></div>
+  </div>
+
+  <!-- 📝 Propose Recovery -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">📝 Propose New Deployer</h4>
+    <input id="deployerNewDeployerAddr" placeholder="New deployer address (0x...)" class="w-full p-2 rounded bg-black/30 text-sm" />
+    <button id="deployerProposeRecoveryBtn" class="w-full p-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold">
+      Propose Recovery
+    </button>
+  </div>
+
+  <!-- ✅ Approve Recovery -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">✅ Approve Active Recovery</h4>
+    <button id="deployerApproveRecoveryBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-500 rounded font-semibold">
+      Approve Recovery
+    </button>
+  </div>
+
+  <!-- 🚀 Execute Recovery -->
+  <div class="bg-black/20 rounded-xl p-4 space-y-2">
+    <h4 class="font-medium text-base">🚀 Execute Recovery</h4>
+    <button id="deployerExecuteRecoveryBtn" class="w-full p-2 bg-red-600 hover:bg-red-500 rounded font-semibold">
+      Execute Recovery
+    </button>
+  </div>
+</div>
+</section>
+      
+    
+<!-- 🏛 GOVERNANCE DAO SECTION -->
+<section id="governance" class="tab-content hidden">
+  <h2 class="font-semibold mb-2">Governance DAO</h2>
+  <p class="text-sm text-slate-300 mb-3">
+    Create proposals, vote, execute them, and monitor governance activity.
+  </p>
+
+  <!-- Proposal Creator -->
+  <div class="glass p-4 rounded-lg space-y-4">
+    <h3 class="font-semibold text-lg">🗳 Create New Governance Proposal</h3>
+
+    <!-- 1. Proposal type -->
+    <label class="text-sm font-medium">Proposal Type</label>
+    <select id="proposalType" class="w-full p-2 rounded bg-black/20 text-sm">
+      <optgroup label="📊 Protocol Parameters">
+        <option value="">-- Select a proposal type --</option>
+        <option value="BASE_REWARD">Change Base Reward</option>
+        <option value="HARVEST_FEE">Adjust Harvest Fee</option>
+        <option value="UNSTAKE_FEE">Adjust Unstake Fee</option>
+        <option value="REGISTRATION_FEE_FALLBACK">Registration Fee (Fallback)</option>
+        <option value="VOTING_PARAM">Update Voting Parameter</option>
+        <option value="TIER_UPGRADE">Tier Upgrade</option>
+      </optgroup>
+
+      <optgroup label="🛡 Guardian Council Operations">
+        <option value="COUNCIL_RESEED_ACTIVE">Reseed Guardians (Active Set)</option>
+        <option value="COUNCIL_PROPOSE_STANDBY">Propose Guardians (Standby Set)</option>
+        <option value="COUNCIL_COMMIT_STANDBY">Commit Guardians (Standby)</option>
+        <option value="COUNCIL_ACTIVATE_STANDBY">Activate Standby Guardians</option>
+        <option value="COUNCIL_PROPOSE_NEW_DAO">Propose New DAO Contract</option>
+        <option value="COUNCIL_COMMIT_NEW_DAO">Commit New DAO</option>
+        <option value="COUNCIL_CLEAR_LOCK">Clear Council Lock/Warning</option>
+        <option value="UPGRADE_COUNCIL">Upgrade Council Implementation</option>
+      </optgroup>
+
+      <optgroup label="🏛 Governance DAO Operations">
+        <option value="UPGRADE_GOVERNANCE">Upgrade Governance DAO</option>
+        <option value="SET_NEW_COUNCIL">Set / Replace Guardian Council</option>
+        <option value="DAO_PAUSE">Pause Governance DAO</option>
+        <option value="DAO_UNPAUSE">Unpause Governance DAO</option>
+      </optgroup>
+    </select>
+
+    <!-- 2. Generic fields -->
+    <div class="space-y-2">
+      <label class="text-sm font-medium">Proposed New Value</label>
+      <input id="proposalValue" type="number" placeholder="Example: 500 or 0.05" class="w-full p-2 rounded bg-black/20 text-sm" />
+      <small class="text-xs text-slate-400 block">Numeric value for base reward, fees, or thresholds.</small>
+
+      <label class="text-sm font-medium">Target Contract / Collection (optional)</label>
+      <input id="proposalCollectionCtx" placeholder="0x123... (leave blank if not needed)" class="w-full p-2 rounded bg-black/20 text-sm" />
+      <small class="text-xs text-slate-400 block">If proposal affects a specific collection, enter its address.</small>
+
+      <label class="text-sm font-medium">Parameter Index</label>
+      <input id="paramTarget" type="number" placeholder="Usually 0 unless specified" class="w-full p-2 rounded bg-black/20 text-sm" />
+      <small class="text-xs text-slate-400 block">For voting/tier parameters — leave as 0 if unsure.</small>
+    </div>
+
+    <!-- 3. Tier Upgrade -->
+    <div id="tierUpgradeRow" class="hidden mt-2 space-y-2">
+      <h4 class="font-semibold text-sm">Tier Upgrade Settings</h4>
+      <select id="tierTo" class="p-2 rounded bg-black/20 text-sm w-full">
+        <option value="0">Unverified Tier (0)</option>
+        <option value="1">Verified Tier (1)</option>
+        <option value="2">Blue Chip Tier (2)</option>
+      </select>
+      <input id="tierCollection" placeholder="Collection address" class="p-2 rounded bg-black/20 text-sm w-full" />
+      <input id="tierDeclaredSupply" type="number" placeholder="Declared Supply" class="p-2 rounded bg-black/20 text-sm w-full" />
+    </div>
+
+    <!-- 4. Council Batch -->
+    <div id="councilBatchRow" class="hidden space-y-2">
+      <h4 class="font-semibold text-sm">Guardian Council Batch</h4>
+      <p class="text-xs text-slate-400">Provide 7 guardian wallet addresses for reseeding or standby.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 1 (0x...)" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 2 (0x...)" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 3 (0x...)" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 4 (0x...)" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 5 (0x...)" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 6 (0x...)" />
+        <input class="councilAddr p-2 rounded bg-black/20 text-sm" placeholder="Guardian 7 (0x...)" />
+      </div>
+    </div>
+
+    <!-- 5. New DAO -->
+    <div id="newDaoRow" class="hidden space-y-1">
+      <label class="text-sm font-medium">New DAO Contract Address</label>
+      <input id="govNewDaoAddr" placeholder="0x..." class="w-full p-2 rounded bg-black/20 text-sm" />
+      <small class="text-xs text-slate-400">Must be a valid deployed DAO contract address.</small>
+    </div>
+
+    <!-- 6. Upgrade Council -->
+    <div id="upgradeCouncilRow" class="hidden space-y-1">
+      <label class="text-sm font-medium">New Council Implementation Address</label>
+      <input id="newCouncilImpl" placeholder="0x..." class="w-full p-2 rounded bg-black/20 text-sm" />
+      <small class="text-xs text-slate-400">Address of the upgraded Guardian Council contract implementation.</small>
+    </div>
+
+    <!-- 7. Upgrade Governance -->
+    <div id="upgradeGovernanceRow" class="hidden space-y-1">
+      <label class="text-sm font-medium">New Governance Implementation Address</label>
+      <input id="newGovernanceImpl" placeholder="0x..." class="w-full p-2 rounded bg-black/20 text-sm" />
+      <small class="text-xs text-slate-400">Address of the upgraded Governance DAO implementation.</small>
+    </div>
+
+    <!-- 8. Set / Replace Guardian Council -->
+    <div id="setCouncilRow" class="hidden space-y-1">
+      <label class="text-sm font-medium">New Guardian Council Address</label>
+      <input id="newCouncilAddr" placeholder="0x..." class="w-full p-2 rounded bg-black/20 text-sm" />
+      <small class="text-xs text-slate-400">Must be a deployed Guardian Council contract address.</small>
+    </div>
+
+    <!-- 9. Create Button -->
+    <button id="createProposalBtn" class="w-full p-2 bg-violet-600 hover:bg-violet-500 rounded font-semibold">
+      ➕ Create Proposal
+    </button>
+  </div>
+
+  <!-- Voting & Execution -->
+  <div class="glass p-4 rounded-lg space-y-3 mt-6">
+    <h3 class="font-semibold text-lg">🗳 Vote & Execute</h3>
+    <label class="text-sm font-medium">Proposal ID (bytes32)</label>
+    <input id="proposalId" placeholder="0x..." class="w-full p-2 rounded bg-black/20 text-sm" />
+    <small class="text-xs text-slate-400 block mb-2">Copy the proposal ID from the Explorer list.</small>
+
+    <div class="flex gap-2">
+      <button id="voteProposalBtn" class="flex-1 p-2 bg-blue-600 hover:bg-blue-500 rounded">Vote</button>
+      <button id="execProposalBtn" class="flex-1 p-2 bg-green-700 hover:bg-green-600 rounded">Execute</button>
+    </div>
+  </div>
+
+	<!-- 🗳️ Proposal & Voting Eligibility -->
+<div class="mt-6 bg-slate-800/50 p-6 rounded-2xl shadow-2xl border border-white/10">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-2xl font-extrabold text-white flex items-center gap-2">
+      🗳️ Proposal & Voting Eligibility
+    </h3>
+    <button
+      id="checkEligibilityBtn"
+      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    >
+      🔄 Check Now
+    </button>
+  </div>
+
+  <!-- Eligibility Display Box -->
+  <div
+    id="eligibilityStatusBox"
+    class="p-5 rounded-2xl bg-slate-900/80 border border-slate-700 flex flex-col gap-2 items-center justify-center text-center transition"
+  >
+    <div id="votingEligibilityStatus" class="text-xl font-bold text-gray-300">
+      ⚙️ Not checked yet.
+    </div>
+    <div id="votingWeightInfo" class="text-sm text-slate-400">
+      Your voting weight will appear here.
+    </div>
+
+    <!-- Optional: Show last check time -->
+    <div id="lastCheckedInfo" class="text-xs text-slate-500 mt-2 hidden">
+      Last checked: <span id="lastCheckedTime"></span>
+    </div>
+  </div>
+</div>
+
+<!-- 🔹 Proposals Explorer -->
+<div class="glass p-4 rounded-lg mt-4">
+  <h3 class="font-semibold mb-2">Proposals Explorer</h3>
+
+  <div class="flex justify-between items-center mb-2">
+    <button id="refreshProposalsBtn"
+      class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">
+      🔄 Refresh
+    </button>
+    <div id="proposalCount" class="text-xs text-slate-400"></div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-xs text-slate-400 border-b border-slate-700">
+        <tr>
+          <th class="p-2">ID</th>
+          <th class="p-2">Title</th>
+          <th class="p-2">Description</th>
+          <th class="p-2">Proposer</th>
+          <th class="p-2">Votes (For / Against)</th>
+          <th class="p-2">Status</th>
+          <th class="p-2">Action</th>
+        </tr>
+      </thead>
+      <tbody id="proposalsTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+    
+  <!-- ⚖️ READY TO EXECUTE -->
+<div class="glass p-4 rounded-lg mt-6">
+  <h3 class="font-semibold text-lg">⚖️ Ready-to-Execute Proposals</h3>
+  <p class="text-xs text-slate-400 mb-2">
+    Passed proposals waiting for timelock to expire before anyone can execute.
+  </p>
+
+  <button id="loadReadyProposalsBtn"
+    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm mb-2">
+    🔄 Refresh
+  </button>
+
+  <div id="readyProposalCount" class="text-xs text-slate-400"></div>
+
+  <div class="overflow-x-auto mt-2">
+    <table class="w-full text-sm">
+      <thead class="text-xs text-slate-400 border-b border-slate-700">
+        <tr>
+          <th class="p-2">ID</th>
+          <th class="p-2">Type</th>
+          <th class="p-2">Proposer</th>
+          <th class="p-2">Votes</th>
+          <th class="p-2">Timelock Status</th>
+          <th class="p-2 text-center">Action</th>
+        </tr>
+      </thead>
+      <tbody id="readyProposalsTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+  <!-- 🧾 TRANSPARENCY PANEL -->
+	<div class="pt-4 border-t border-slate-700">
+  <div class="text-xs text-slate-400 mb-1">Governance Contract Transparency</div>
+
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Guardian Council: <br />
+    <span id="govCouncil" class="font-mono text-cyan-400 break-all">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Linked Staking Contract: <br />
+    <span id="govStaking" class="font-mono text-purple-400 break-all">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Voting Duration: <br />
+    <span id="govVotingDuration" class="font-mono text-yellow-400">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Min Votes Required: <br />
+    <span id="govMinVotes" class="font-mono text-green-400">—</span>
+  </div>
+  <div class="p-2 rounded bg-black/20 text-sm">
+    Cap Percent: <br />
+    <span id="govCapPercent" class="font-mono text-indigo-400">—</span>
+  </div>
+
+  <button id="refreshGovernanceTransparencyBtn"
+    class="mt-2 w-full p-2 bg-slate-700 hover:bg-slate-600 rounded">
+    🔍 Refresh Governance Transparency
+  </button>
+	</div>
+</section>
+
+  
+<section id="council" class="tab-content hidden">
+  <h2 class="font-semibold mb-2">Governance DAO Console</h2>
+  <p class="text-sm text-slate-300 mb-3">
+    Manage guardian batches, DAO rotation, and emergency recovery.
+  </p>
+
+  <!-- DAO Rotation -->
+  <div class="space-y-2 text-sm">
+    <div class="grid grid-cols-2 gap-2">
+      <input id="councilNewDaoAddr" placeholder="New DAO address" class="p-2 rounded bg-black/20" />
+      <button id="proposeDaoBtn" class="p-2 bg-indigo-600 rounded">Propose DAO</button>
+    </div>
+    <button id="commitDaoBtn" class="w-full p-2 bg-indigo-400 rounded">Commit DAO</button>
+  </div>
+
+  <hr class="border-slate-700 my-2" />
+
+  <!-- Guardian Batches -->
+  <div class="space-y-2 text-sm">
+    <textarea id="activeBatchInput" placeholder="7 addresses, one per line"
+      class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
+    <div class="flex gap-2">
+      <button id="proposeActiveBatchBtn" class="flex-1 p-2 bg-amber-600 rounded">Propose Active Batch</button>
+      <button id="commitActiveBatchBtn" class="flex-1 p-2 bg-amber-400 rounded">Commit Active Batch</button>
+    </div>
+  </div>
+
+  <div class="space-y-2 text-sm mt-3">
+    <textarea id="standbyBatchInput" placeholder="7 addresses, one per line"
+      class="w-full p-2 rounded bg-black/20 h-28 font-mono"></textarea>
+    <div class="flex gap-2">
+      <button id="proposeStandbyBatchBtn" class="flex-1 p-2 bg-emerald-600 rounded">Propose Standby Batch</button>
+      <button id="commitStandbyBatchBtn" class="flex-1 p-2 bg-emerald-400 rounded">Commit Standby Batch</button>
+    </div>
+    <button id="activateStandbyBtn" class="w-full p-2 bg-green-600 rounded mt-2">Activate Standby</button>
+  </div>
+	
+  <hr class="border-slate-700 my-2" />
+
+  <!-- Recovery -->
+<div class="max-w-xl mx-auto p-4 space-y-4">
+    <h1 class="text-2xl font-bold mb-4">DRS BatchGuardianCouncil Console</h1>
+
+<h2 class="text-xl font-semibold mb-2">1. New Recovery Request (Admin Only)</h2>
+
+<h3 class="text-sm font-semibold mb-1">Recovery Request Parameters</h3>
+<div class="space-y-3">
+    
+    <select id="recoveryFunctionSelect" class="w-full p-2 rounded bg-black/20">
+  <option value="" disabled selected>-- Select Admin Function --</option>
+  <option value="setCouncil(address)">setCouncil(address)</option>
+  <option value="setMinter(address)">setMinter(address)</option>
+  <option value="swapAdmin(address,address)">swapAdmin(address,address)</option>
+  <option value="pause()">pause()</option>
+  <option value="unpause()">unpause()</option>
+  <option value="upgradeTo(address)">upgradeTo(address) - UUPS</option>
+
+  <!-- 🔹 NEW OPTIONS -->
+  <option value="setBonusModule(address)">setBonusModule(address)</option>
+  <option value="setCata(address)">setCata(address)</option>
+	</select>
+    
+    <input id="inputRecoveryProposed" placeholder="Proposed address (e.g., new Admin or set address)" class="w-full p-2 rounded bg-black/20" />
+    
+    <input id="inputRecoveryCallTarget" placeholder="Target contract address (e.g., CataERC20 Proxy)" class="w-full p-2 rounded bg-black/20" />
+
+    <div id="recoveryArgInputs">
+        <input id="recoveryFunction" placeholder="Function Signature (e.g., swapAdmin(address,address))" class="w-full p-2 rounded bg-black/20" />
+        <input id="recoveryArgs" placeholder="Arguments (comma-separated, e.g., 0xNewAdmin, 0xOldAdmin)" class="w-full p-2 rounded bg-black/20" />
+    </div>
+
+    <textarea id="inputRecoveryCallData" placeholder="Calldata (auto-generated 0x...)" class="w-full p-2 rounded bg-black/20 font-mono h-20" readonly></textarea>
+    
+    <button id="encodeCallDataBtn" class="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded-lg">1. Encode CallData</button>
+    <button id="proposeRecoveryBtn" class="w-full p-2 bg-red-700 hover:bg-red-600 rounded-lg">2. Propose Recovery</button>
+</div>
+	
+            <div class="flex gap-2 mt-2">
+                <button id="approveRecoveryBtn" class="flex-1 p-2 bg-orange-600 hover:bg-orange-700 rounded-lg">Approve</button>
+                <button id="executeRecoveryBtn" class="flex-1 p-2 bg-green-600 hover:bg-green-700 rounded-lg">Execute</button>
+                <button id="vetoRecoveryBtn" class="flex-1 p-2 bg-slate-600 hover:bg-slate-700 rounded-lg">Veto (Last Honest)</button>
+            </div>
+        </div>
+		
+		  <hr class="border-slate-700 my-2" />
+
+  <!-- Lock -->
+  <div class="space-y-2 text-sm">
+    <button id="clearLockBtn" class="w-full p-2 bg-slate-600 rounded">Clear Lock/Warning</button>
+  </div>
+	
+	<hr class="border-slate-700 my-2" />
+	
+	<div class="space-y-6">
+
+  <!-- Recovery State Card -->
+<div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-semibold text-white">Recovery State</h2>
+    <button id="refreshRecoveryBtn"
+      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+      🔄 Refresh
+    </button>
+  </div>
+  
+  <div id="recoveryStatusBanner"
+       class="hidden mb-4 p-2 rounded-lg text-sm font-medium"></div>
+       
+  <div class="grid grid-cols-2 gap-y-3 text-sm text-gray-300">
+    <div class="text-gray-400">Proposed:</div>
+    <div id="recoveryProposed" class="font-mono text-slate-100 break-all">—</div>
+    
+    <div class="text-gray-400">Approvals:</div>
+    <div id="recoveryApprovals" class="text-slate-100">—</div>
+    
+    <div class="text-gray-400">Deadline:</div>
+    <div id="recoveryDeadline" class="text-slate-100">—</div>
+    
+    <div class="text-gray-400">Executed:</div>
+    <div id="recoveryExecuted" class="text-slate-100">—</div>
+
+    <div class="text-gray-400">Ready Time:</div>
+    <div id="recoveryReadyTime" class="text-slate-100">—</div>
+
+    <div class="text-gray-400">Call Target:</div>
+    <div id="recoveryCallTarget"
+         class="font-mono text-slate-100 truncate max-w-[260px]" title="—">—</div>
+    
+    <div class="text-gray-400">Call Data:</div>
+    <div id="recoveryCallData"
+         class="font-mono text-slate-100 break-all" title="—">—</div>
+         
+    <div class="col-span-2">
+      <div class="text-gray-400">Approved By:</div>
+      <pre id="recoveryApprovedBy"
+           class="font-mono text-slate-100 whitespace-pre-wrap bg-gray-900/50 p-2 rounded-lg h-24 overflow-y-auto">—</pre>
+    </div>
+  </div>
+</div>
+
+  <!-- Veto & Warning Card -->
+  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Last Honest Guardian & Warning</h2>
+      <button id="refreshVetoWarningBtn"
+        class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+        🔄 Refresh
+      </button>
+    </div>
+    <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-300">
+      <div class="text-gray-400">Guardian:</div>
+      <div id="lastHonestGuardian"
+           class="font-mono text-slate-100 truncate max-w-[220px]" title="—">—</div>
+      <div class="text-gray-400">Veto Expiry:</div>
+      <div id="lastHonestExpiry">—</div>
+      <div class="text-gray-400">Warning:</div>
+      <div id="warningFlag">—</div>
+    </div>
+  </div>
+
+  <!-- DAO State Card -->
+  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">DAO State</h2>
+      <button id="refreshDaoBtn"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+        🔄 Refresh
+      </button>
+    </div>
+    <div class="space-y-3 text-sm text-gray-300">
+      <div>
+        <div class="text-gray-400 text-xs">Current DAO/Admin</div>
+        <div id="daoAddr" class="font-mono text-slate-100 break-all">—</div>
+      </div>
+      <div>
+        <div class="text-gray-400 text-xs">Pending DAO/Admin</div>
+        <div id="pendingDaoAddr" class="font-mono text-slate-100 break-all">—</div>
+      </div>
+      <div>
+        <div class="text-gray-400 text-xs">Commit Window</div>
+        <div id="pendingDaoWindow" class="font-mono text-slate-100">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guardians Card -->
+  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Guardians</h2>
+      <button id="refreshGuardiansBtn"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+        🔄 Refresh
+      </button>
+    </div>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div class="bg-gray-900/60 p-3 rounded-lg shadow-inner">
+        <div class="text-gray-400 text-xs">Active</div>
+        <pre id="activeGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+      </div>
+      <div class="bg-gray-900/60 p-3 rounded-lg shadow-inner">
+        <div class="text-gray-400 text-xs">Standby</div>
+        <pre id="standbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+      </div>
+      <div class="col-span-2 bg-gray-900/60 p-3 rounded-lg shadow-inner">
+        <div class="text-gray-400 text-xs">Pending Active Batch</div>
+        <pre id="pendingActiveGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+        <div class="text-gray-400 text-xs mt-2">Commitment Window</div>
+        <div id="pendingActiveWindow" class="font-mono text-slate-100">—</div>
+      </div>
+      <div class="col-span-2 bg-gray-900/60 p-3 rounded-lg shadow-inner">
+        <div class="text-gray-400 text-xs">Pending Standby Batch</div>
+        <pre id="pendingStandbyGuardians" class="font-mono text-slate-100 whitespace-pre-wrap h-24 overflow-y-auto">—</pre>
+        <div class="text-gray-400 text-xs mt-2">Commitment Window</div>
+        <div id="pendingStandbyWindow" class="font-mono text-slate-100">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock Status Card -->
+  <div class="bg-gray-800 shadow-lg rounded-2xl p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Lock Status</h2>
+      <button id="refreshLockBtn"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-md transition">
+        🔄 Refresh
+      </button>
+    </div>
+    <div class="text-sm text-gray-300">
+      <div class="text-gray-400 text-xs">Status</div>
+      <div id="lockStatus" class="font-mono text-slate-100">—</div>
+    </div>
+  </div>
+
+</div>
+</section>
+         
+
+	  <div id="whitepaper" class="tab-content hidden">
+		  <div class="glass ring-1 rounded-2xl p-5 space-y-6">
+    <h2 class="text-xl font-semibold">Whitepaper Summary</h2>
+
+    <!-- Vision & Mission -->
+    <details class="glass ring-1 rounded-lg p-4" open>
+      <summary class="cursor-pointer font-medium text-slate-200">
+        Vision &amp; Mission
+      </summary>
+      <p class="text-slate-300 text-sm mt-2 leading-relaxed">
+        Catalyst aims to be the universal utility layer for NFTs: every ERC-721 can stake, burn, 
+        and participate in governance. The protocol balances incentives between blue-chip collections, 
+        verified custodial projects, and unverified projects — using proof-of-burn and escrow 
+        forfeits for legitimacy.
+      </p>
+    </details>
+
+    <!-- Tokenomics -->
+    <details class="glass ring-1 rounded-lg p-4">
+      <summary class="cursor-pointer font-medium text-slate-200">
+        Tokenomics (CATA)
+      </summary>
+      <ul class="mt-2 text-sm text-slate-300 list-disc ml-5 space-y-1">
+        <li>Immutable fee split: <span class="mono">90% Burn / 9% Treasury / 1% Deployer</span></li>
+        <li>Global stake cap: <span class="mono">500M NFTs</span> (375M term, 125M permanent)</li>
+        <li>Per-collection cap: <span class="mono">20k NFTs</span></li>
+        <li>Token max supply: <span class="mono">1B CATA</span> (100M premint to initial admin)</li>
+        <li>Minting restricted to <span class="mono">CatalystStaking</span></li>
+      </ul>
+    </details>
+
+    <!-- Governance -->
+    <details class="glass ring-1 rounded-lg p-4">
+      <summary class="cursor-pointer font-medium text-slate-200">
+        Governance
+      </summary>
+      <p class="text-slate-300 text-sm mt-2 leading-relaxed">
+        Burn-weighted voting with per-collection caps and stake-based weighting. 
+        Proposals may adjust reward rates, fees, tiers, and reseed Guardian Council batches. 
+        The <span class="mono">90 / 9 / 1</span> split is immutable by governance.
+      </p>
+    </details>
+
+    <!-- Guardian Recovery -->
+    <details class="glass ring-1 rounded-lg p-4">
+      <summary class="cursor-pointer font-medium text-slate-200">
+        Guardian Recovery (Batch Guardian Council)
+      </summary>
+      <p class="text-slate-300 text-sm mt-2 leading-relaxed">
+        The Batch Guardian Council secures upgrades and recovery. Two rotating batches of 7 guardians 
+        ensure failover. Recovery requires 5-of-7 approvals, 6-of-7 triggers a warning with a 
+        48h Last Honest veto, and 7-of-7 forces auto-lock with standby activation.
+      </p>
+    </details>
+
+    <div class="text-xs text-slate-400">
+      Read the full paper for detailed math, proofs, and edge cases.
+    </div>
+  </div>
+</div>
+	</div>
+</main>
+
+    <section class="glass p-4 rounded-lg mt-6">
+      <h3 class="font-semibold mb-2">Advanced / Logs</h3>
+      <div id="logs" class="h-48 overflow-auto text-xs font-mono bg-black/20 p-3 rounded"></div>
+    </section>
+
+    <footer class="mt-6 text-xs text-slate-500 text-center">
+  © Catalyst Protocol — Decentralized &amp; Community-Governed.<br />
+  <span class="block mt-1">All contracts are upgradeable via DAO &amp; Batch Guardian Council. Use at your own risk.</span>
+</footer>
+  </div>
+
+  <!-- load ethers first -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+	
+  <script>
+  /************************************************************************
+   * DApp main - dynamic ABI loading + wiring for CATA / Staking /
+   * Governance / GuardianCouncil. Uses your uploaded contracts as spec.
+   *
+   * Note: ABIs must be provided at the ABI_URLS paths (json ABI files).
+   * Put e.g. /abi/CataERC20Upgradeable.json, /abi/CatalystStakingUpgradeable.json, etc.
+   ************************************************************************/
+
+// ---------- ABI URLs (external ABI JSONs) ----------
+const ABI_URLS = {
+  cata: "../abi/CataERC20Upgradeable.json",
+  staking: "../abi/CatalystStakingUpgradeable.json",
+  governance: "../abi/CatalystGovernanceUpgradeable.json",
+  council: "../abi/BatchGuardianCouncilUpgradeable.json",
+  recovery: "../abi/DeployerRecoveryCouncil.json"
+};
+
+// Minimal ERC-721 ABI kept inline (approval helpers)
+const ERC721_ABI = [
+  'function approve(address to, uint256 tokenId)',
+  'function setApprovalForAll(address operator, bool approved)',
+  'function isApprovedForAll(address owner, address operator) view returns (bool)'
+];
+
+// Default addresses (replace with your deployed addresses)
+const DEFAULT_ADDRS = {
+  cata: "0x9C3c5B8aF0CcA433725419CBB21665880c53ca09",
+  staking: "0x00Dd46EE2FDaCDD5F0d5C8375272880A9d667663",
+  governance: "0x7b87ED33bEEFCF03b89Ba38BE7e77527611BCDF4",
+  council: "0x493E4ba582300890ce0F36De5629D22A1E6276d7",
+  recovery: "0xYOUR_DEPLOYER_RECOVERY_ADDRESS"
+};
+
+// App state
+let provider = null, signer = null, userAddr = null;
+let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null, recovery:null };
+	  
+const $ = id => document.getElementById(id);
+  function log(...args){
+    const el = $('logs');
+    try {
+      el.innerText = new Date().toISOString() + ' • ' + args.map(a=>typeof a==='object'?JSON.stringify(a):a).join(' ') + '\n' + el.innerText;
+    } catch(e) { console.log(...args); }
+    console.log(...args);
+  }
+
+  // Fetch JSON with error handling
+  async function fetchJSON(path){
+    try {
+      const res = await fetch(path);
+      if(!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      return await res.json();
+    } catch (e) {
+      log('fetchJSON err', path, e.message || e);
+      return null;
+    }
+  }
+
+  // Load ABIs from ABI_URLS
+  async function loadABIs(){
+    for(const k of Object.keys(ABI_URLS)){
+      const j = await fetchJSON(ABI_URLS[k]);
+      abis[k] = j; // null if failed
+    }
+    log('ABIs loaded', Object.keys(abis).map(k => `${k}:${abis[k]? 'ok':'missing'}`).join(' '));
+  }
+
+  // Save/load addresses to localStorage
+  function saveAddrsToLocal(payload){
+    try {
+      localStorage.setItem('catalyst_addrs', JSON.stringify(payload));
+      log('Saved addresses');
+    } catch(e){ log('saveAddrs err', e); }
+  }
+
+  function loadSavedAddrs(){
+  try {
+    const raw = localStorage.getItem('catalyst_addrs');
+    if(!raw){
+      // Prefill defaults
+      $('addrCata').value = DEFAULT_ADDRS.cata;
+      $('addrStaking').value = DEFAULT_ADDRS.staking;
+      $('addrGovernance').value = DEFAULT_ADDRS.governance;
+      $('addrCouncil').value = DEFAULT_ADDRS.council;
+      log('Prefilled default addresses');
+      return;
+    }
+    const obj = JSON.parse(raw);
+
+    // Only apply saved values if they are DIFFERENT from defaults
+    if(obj.addrCata && obj.addrCata !== DEFAULT_ADDRS.cata) {
+      $('addrCata').value = obj.addrCata;
+    } else {
+      $('addrCata').value = DEFAULT_ADDRS.cata;
+    }
+
+    if(obj.addrStaking && obj.addrStaking !== DEFAULT_ADDRS.staking) {
+      $('addrStaking').value = obj.addrStaking;
+    } else {
+      $('addrStaking').value = DEFAULT_ADDRS.staking;
+    }
+
+    if(obj.addrGovernance && obj.addrGovernance !== DEFAULT_ADDRS.governance) {
+      $('addrGovernance').value = obj.addrGovernance;
+    } else {
+      $('addrGovernance').value = DEFAULT_ADDRS.governance;
+    }
+
+    if(obj.addrCouncil && obj.addrCouncil !== DEFAULT_ADDRS.council) {
+      $('addrCouncil').value = obj.addrCouncil;
+    } else {
+      $('addrCouncil').value = DEFAULT_ADDRS.council;
+    }
+
+    log('Loaded saved addresses (with defaults fallback)');
+  } catch(e){
+    log('loadSavedAddrs err', e);
+  }
+  }
+	  
+
+	  // Attach contract instances (requires signer)
+async function attachContractsIfSet() {
+  try {
+    if (!provider || !signer) return;
+
+    // Ensure ABIs are loaded
+    if (!abis || Object.values(abis).filter(Boolean).length === 0) {
+      await loadABIs();
+    }
+
+    const cataA = $('addrCata').value.trim();
+    const stakingA = $('addrStaking').value.trim();
+    const govA = $('addrGovernance').value.trim();
+    const councilA = $('addrCouncil').value.trim();
+	const recoveryA = $('addrRecovery')?.value?.trim();
+
+    contracts.cata = cataA && abis.cata ? new ethers.Contract(cataA, abis.cata, signer) : null;
+    contracts.staking = stakingA && abis.staking ? new ethers.Contract(stakingA, abis.staking, signer) : null;
+    contracts.governance = govA && abis.governance ? new ethers.Contract(govA, abis.governance, signer) : null;
+    contracts.council = councilA && abis.council ? new ethers.Contract(councilA, abis.council, signer) : null;
+	contracts.recovery = recoveryA && abis.recovery ? new ethers.Contract(recoveryA, abis.recovery, signer) : null;
+
+    log("Contracts attached", {
+      cata: !!contracts.cata,
+      staking: !!contracts.staking,
+      governance: !!contracts.governance,
+      council: !!contracts.council,
+		recovery: !!contracts.recovery,
+    });
+
+    if (contracts.cata) await fetchCataBalance();
+
+    // ✅ Ensure user address is available
+    if (!userAddr && typeof signer !== "undefined") {
+      userAddr = await signer.getAddress();
+    }
+
+    // ✅ Show loading indicator for pending rewards early
+    setPendingStatus?.("Fetching...", "#fbbf24");
+
+    // ✅ Refresh all dashboard data in parallel (including pending rewards)
+    await Promise.allSettled([
+      fetchTransparency(),
+      refreshRecovery(),
+      refreshVetoWarning(),
+      refreshDao(),
+      refreshGuardians(),
+      refreshLock(),
+      refreshStakingStats(),
+      refreshBluechip(),
+      fetchStakingTransparency(),
+      fetchGovernanceTransparency(),
+      fetchProposalsExplorer(),
+      refreshQuickStatus(),
+      fetchTopCollectionsUI(),
+      refreshTopBluechipLeaderboard(),
+      refreshPendingRewards(), // 👈 now runs in the same batch!
+		checkVotingEligibility()
+    ]);
+
+    // ✅ Update pending rewards status once complete
+    setPendingStatus?.("Up to date ✅", "#10b981");
+    log("✅ All dashboard sections (including pending rewards) refreshed successfully");
+
+  } catch (e) {
+    console.error("❌ attachContractsIfSet error:", e);
+    setPendingStatus?.("Error ❌", "#ef4444");
+    log("attachContractsIfSet error:", e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+
+
+// Fetch CATA Balance (formatted with commas and up to 6 decimals)
+let cataBalanceInterval = null; // global variable to manage refresh timer
+
+// Fetch CATA Balance (formatted with commas and up to 6 decimals)
+async function fetchCataBalance() {
+  try {
+    showLoading("Fetching CATA balance..."); // show loading spinner
+
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) {
+        alert("CATA contract not set");
+        return;
+      }
+    }
+
+    const bal = await contracts.cata.balanceOf(userAddr);
+    const formatted = Number(ethers.utils.formatEther(bal)).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 6,
+    });
+
+    $("cataBal").innerText = `${formatted} CATA`;
+    log("✅ CATA balance updated:", formatted);
+  } catch (e) {
+    log("⚠️ fetchCataBalance error:", e?.message || e);
+    alert(`Failed to fetch CATA balance: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Start auto-refresh (every 5 minutes)
+function startCataBalanceAutoRefresh() {
+  if (cataBalanceInterval) clearInterval(cataBalanceInterval); // avoid duplicates
+
+  // Immediately fetch first
+  fetchCataBalance();
+
+  // Then repeat every 5 minutes (300,000 ms)
+  cataBalanceInterval = setInterval(fetchCataBalance, 300000);
+  log("🔁 Auto-refresh for CATA balance started (every 5 minutes)");
+}
+
+// Stop auto-refresh (optional, e.g., on disconnect)
+function stopCataBalanceAutoRefresh() {
+  if (cataBalanceInterval) {
+    clearInterval(cataBalanceInterval);
+    cataBalanceInterval = null;
+    log("🛑 Auto-refresh for CATA balance stopped");
+  }
+	  }
+
+
+	  function shortenAddress(addr) {
+  if (!addr) return "Not connected";
+  return addr.slice(0, 6) + "..." + addr.slice(-4);
+}
+
+	
+// ---------- Connect / Disconnect ----------
+async function connect() {
+  try {
+    if (!window.ethereum) return alert('❌ No Web3 wallet detected. Please install MetaMask.');
+
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send('eth_requestAccounts', []);
+    signer = provider.getSigner();
+    userAddr = await signer.getAddress();
+
+    // 🪪 Display wallet info
+    const addrEl = $('addr');
+    addrEl.innerText = shortenAddress(userAddr);
+    addrEl.title = userAddr;
+
+    // 📋 Copy address
+    $('copyAddrBtn').onclick = () => {
+      navigator.clipboard.writeText(userAddr);
+      alert("✅ Address copied to clipboard!");
+    };
+
+    // 🌐 Show network
+    const net = await provider.getNetwork();
+    $('networkText').innerText = `${net.name} (${net.chainId})`;
+
+    // 🔄 Toggle UI buttons
+    $('connectBtn').classList.add('hidden');
+    $('disconnectBtn').classList.remove('hidden');
+
+    // ⚙️ Load contract ABIs and attach
+    await loadABIs();
+    await attachContractsIfSet();
+
+    // 🧩 Check if user is staking admin
+    if (contracts?.staking) await checkStakingAdmin();
+
+    log("✅ Connected:", userAddr);
+
+
+  } catch (e) {
+    log("❌ connect() error:", e?.message || e);
+    alert("Connection failed. Check console for details.");
+  }
+}
+
+function disconnect() {
+  provider = signer = userAddr = null;
+  contracts = { cata: null, staking: null, governance: null, council: null };
+
+  // 🔄 Reset UI
+  const addrEl = $('addr');
+  addrEl.innerText = "Not connected";
+  addrEl.title = "";
+  $('networkText').innerText = "—";
+  $('cataBal').innerText = "—";
+
+  $('connectBtn').classList.remove('hidden');
+  $('disconnectBtn').classList.add('hidden');
+
+  log("🔌 Disconnected");
+}
+
+// ✅ React to account changes safely
+if (window.ethereum) {
+  ethereum.on('accountsChanged', async (accounts) => {
+    if (accounts.length === 0) {
+      disconnect();
+      return;
+    }
+    await attachContractsIfSet();
+    if (contracts?.staking) await checkStakingAdmin();
+  });
+}
+
+		  function formatAmount(amount, decimals = 18, type = "") {
+  try {
+    if (!amount) return "0";
+
+    const raw = typeof amount === "object" && amount._isBigNumber
+      ? amount
+      : ethers.BigNumber.from(amount.toString());
+
+    let formatted;
+
+    // Detect if value needs 18-decimal formatting
+    if (decimals === 18 && raw.gt(ethers.BigNumber.from("1000000000"))) {
+      formatted = Number(ethers.utils.formatUnits(raw, 18));
+    } else {
+      formatted = Number(raw.toString());
+    }
+
+    if (formatted === 0) return "0";
+
+    // Human-readable formatting
+    let output;
+    if (formatted < 0.000001 && formatted > 0) {
+      output = formatted.toExponential(2);
+    } else {
+      output = formatted.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 6,
+      });
+    }
+
+    // Auto-append units based on field type
+    if (/cata|balance|fee|reward/i.test(type)) output += " CATA";
+    else if (/block/i.test(type)) output += " blocks";
+    else if (/nft/i.test(type)) output += " NFTs";
+    else if (/percent|bps/i.test(type)) output += "";
+    else if (/treasury/i.test(type)) output += " CATA";
+
+    return output;
+
+  } catch (err) {
+    console.error("formatAmount error:", err);
+    return amount?.toString() || "0";
+  }
+		  }
+
+async function refreshQuickStatus() {
+  try {
+    showLoading("Loading full quick status...");
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert("Set staking contract first.");
+    }
+
+    const safeCall = async (fn) => {
+      try {
+        return await fn();
+      } catch {
+        return undefined;
+      }
+    };
+
+    const [
+      baseRewardRate,
+      blocksPerUnit,
+      rewardRateIncrementPerNFT,
+      welcomeBonusBaseRate,
+      welcomeBonusIncrementPerNFT,
+      termDurationBlocks,
+      unstakeBurnFee,
+      permanentStakeFeeBase,
+      globalCap,
+      termCap,
+      permCap,
+      burnBP,
+      treasuryBP,
+      deployerBP,
+      topPercent,
+      treasuryBalance,
+      totalStakedAll,
+      totalStakedTerm,
+      totalStakedPerm,
+      maxParticipantsLimit,
+      topBurnerPercent,
+      treasuryBonusBP
+    ] = await Promise.all([
+      safeCall(() => contracts.staking.baseRewardRate()),
+      safeCall(() => contracts.staking.numberOfBlocksPerRewardUnit()),
+      safeCall(() => contracts.staking.rewardRateIncrementPerNFT()),
+      safeCall(() => contracts.staking.welcomeBonusBaseRate()),
+      safeCall(() => contracts.staking.welcomeBonusIncrementPerNFT()),
+      safeCall(() => contracts.staking.termDurationBlocks()),
+      safeCall(() => contracts.staking.unstakeBurnFee()),
+      safeCall(() => contracts.staking.permanentStakeFeeBase()),
+      safeCall(() => contracts.staking.GLOBAL_NFT_CAP()),
+      safeCall(() => contracts.staking.TERM_NFT_CAP()),
+      safeCall(() => contracts.staking.PERM_NFT_CAP()),
+      safeCall(() => contracts.staking.BURN_BP()),
+      safeCall(() => contracts.staking.TREASURY_BP()),
+      safeCall(() => contracts.staking.DEPLOYER_BP()),
+      safeCall(() => contracts.staking.topPercent()),
+      safeCall(() => contracts.staking.treasuryBalance()),
+      safeCall(() => contracts.staking.totalStakedAll?.()),
+      safeCall(() => contracts.staking.totalStakedTerm?.()),
+      safeCall(() => contracts.staking.totalStakedPerm?.()),
+      safeCall(() => contracts.staking.MAX_PARTICIPANTS_LIMIT?.()),
+      safeCall(() => contracts.staking.TOP_BURNER_PERCENT?.()),
+      safeCall(() => contracts.staking.TREASURY_BONUS_BP?.())
+    ]);
+
+    const blocksPerDay = 7200;
+    const dailyReward = (
+      Number(baseRewardRate) * (blocksPerDay / Number(blocksPerUnit))
+    ).toFixed(2);
+
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = value;
+    };
+
+    setText("baseRewardRate", formatAmount(baseRewardRate, 0));
+    setText("blocksPerUnit", formatAmount(blocksPerUnit, 0));
+    setText("rewardIncrement", formatAmount(rewardRateIncrementPerNFT, 0));
+    setText("welcomeBonusBase", formatAmount(welcomeBonusBaseRate, 0));
+    setText("welcomeBonusInc", formatAmount(welcomeBonusIncrementPerNFT, 0));
+    setText("termDuration", formatAmount(termDurationBlocks, 0, "block"));
+    setText("unstakeBurnFee", formatAmount(unstakeBurnFee, 18, "fee"));
+    setText("permStakeFee", formatAmount(permanentStakeFeeBase, 18, "fee"));
+    setText("globalCap", formatAmount(globalCap, 0, "nft"));
+    setText("termCap", formatAmount(termCap, 0, "nft"));
+    setText("permCap", formatAmount(permCap, 0, "nft"));
+    setText("burnBP", formatAmount(burnBP, 0, "bps"));
+    setText("treasuryBP", formatAmount(treasuryBP, 0, "bps"));
+    setText("deployerBP", formatAmount(deployerBP, 0, "bps"));
+    setText("treasuryBalance", formatAmount(treasuryBalance, 18, "treasury"));
+    setText("topPercent", formatAmount(topPercent, 0, "percent"));
+    setText("maxParticipants", formatAmount(maxParticipantsLimit, 0));
+    setText("topBurnerPercent", formatAmount(topBurnerPercent, 0, "percent"));
+    setText("treasuryBonusBP", formatAmount(treasuryBonusBP, 0, "bps"));
+    setText("stakedAll", formatAmount(totalStakedAll, 0));
+    setText("stakedTerm", formatAmount(totalStakedTerm, 0));
+    setText("stakedPerm", formatAmount(totalStakedPerm, 0));
+    setText("estimatedDailyReward", formatAmount(dailyReward, 18, "reward"));
+
+    // 🔋 Compute staking utilization
+    let stakingUsagePercent = 0;
+    if (globalCap && totalStakedAll) {
+      const staked = Number(totalStakedAll);
+      const cap = Number(globalCap);
+      stakingUsagePercent = cap > 0 ? ((staked / cap) * 100).toFixed(2) : 0;
+    }
+
+    // 🎨 Animate bar
+    const usageBar = document.getElementById("stakingUsageBar");
+    const usageText = document.getElementById("stakingUsage");
+
+    if (usageBar) {
+      if (stakingUsagePercent < 50)
+        usageBar.style.background =
+          "linear-gradient(to right, #10B981, #34D399)";
+      else if (stakingUsagePercent < 80)
+        usageBar.style.background =
+          "linear-gradient(to right, #FBBF24, #FACC15)";
+      else
+        usageBar.style.background =
+          "linear-gradient(to right, #EF4444, #F87171)";
+
+      requestAnimationFrame(() => {
+        usageBar.style.width = `${stakingUsagePercent}%`;
+      });
+    }
+
+    if (usageText)
+      usageText.innerText = `${stakingUsagePercent}% of Global Cap`;
+
+    setText("quickStatusUpdated", `Updated: ${new Date().toLocaleTimeString()}`);
+    log("✅ Full Quick Status updated");
+  } catch (e) {
+    log("❌ refreshQuickStatus error:", e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+	  }
+
+
+// ---------- CATA functions ----------
+// Burn (any holder)
+async function cataBurn() {
+  try {
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert('Set CATA contract address first');
+    }
+
+    const amtRaw = $('cataBurnAmt').value.trim();
+    if (!amtRaw) return alert('Burn amount required');
+
+    const amtWei = ethers.utils.parseEther(amtRaw);
+
+    showLoading("Burning tokens...");
+    const tx = await contracts.cata.burn(amtWei);
+    log('cata.burn tx', tx.hash);
+    await tx.wait();
+    log('cata.burn completed');
+
+    await fetchCataBalance();
+    await fetchTransparency();
+  } catch (e) {
+    log('cataBurn err', e?.message || e);
+    alert(`Burn failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Function for Admin to directly set a new Council address
+async function cataSetCouncil() {
+    try {
+        if (!contracts.cata) {
+            await attachContractsIfSet();
+            if (!contracts.cata) return alert('Set CATA contract address first');
+        }
+
+        const newCouncil = $('newCouncilAddress').value.trim();
+        if (!ethers.utils.isAddress(newCouncil)) {
+            return alert("❌ Invalid new Council address.");
+        }
+        
+        showLoading("Setting new Council...");
+        
+        // Direct call to the token contract's setCouncil function
+        const tx = await contracts.cata.setCouncil(newCouncil);
+        
+        log('cata.setCouncil tx', tx.hash);
+        await tx.wait();
+        log('cata.setCouncil completed');
+        
+        alert(`✅ Council successfully set to ${newCouncil}.`);
+
+    } catch (e) { 
+        log('cataSetCouncil err', e?.message || e);
+        // This will revert if the connected wallet is NOT the DEFAULT_ADMIN_ROLE holder.
+        alert(`Set Council failed: ${e.message || e}`);
+    } finally { 
+        hideLoading(); 
+    }
+}
+
+// --------------------------------------------------------------------------------------
+
+// Function for Admin to directly set a new Minter address
+async function cataSetMinter() {
+    try {
+        if (!contracts.cata) {
+            await attachContractsIfSet();
+            if (!contracts.cata) return alert('Set CATA contract address first');
+        }
+
+        const newMinter = $('newMinterAddress').value.trim();
+        if (!ethers.utils.isAddress(newMinter)) {
+            return alert("❌ Invalid new Minter address.");
+        }
+        
+        showLoading("Setting new Minter...");
+        
+        // Direct call to the token contract's setMinter function
+        const tx = await contracts.cata.setMinter(newMinter);
+        
+        log('cata.setMinter tx', tx.hash);
+        await tx.wait();
+        log('cata.setMinter completed');
+        
+        alert(`✅ Minter successfully set to ${newMinter}.`);
+
+    } catch (e) { 
+        log('cataSetMinter err', e?.message || e);
+        // This will revert if the connected wallet is NOT the DEFAULT_ADMIN_ROLE holder.
+        alert(`Set Minter failed: ${e.message || e}`);
+    } finally { 
+        hideLoading(); 
+    }
+}
+
+			   // Function for Admin to directly revoke the Minter role from an address
+async function cataRevokeMinter() {
+    try {
+        if (!contracts.cata) {
+            await attachContractsIfSet();
+            if (!contracts.cata) return alert('Set CATA contract address first');
+        }
+
+        const minterToRevoke = $('revokeMinterAddress').value.trim();
+        if (!ethers.utils.isAddress(minterToRevoke)) {
+            return alert("❌ Invalid address to revoke.");
+        }
+        
+        showLoading(`Revoking Minter role from ${minterToRevoke}...`);
+        
+        // DIRECT CALL: The connected wallet must be the DEFAULT_ADMIN_ROLE holder.
+        const tx = await contracts.cata.revokeMinter(minterToRevoke);
+        
+        log('cata.revokeMinter tx', tx.hash);
+        await tx.wait();
+        log('cata.revokeMinter completed');
+        
+        alert(`✅ Minter Role successfully revoked from ${minterToRevoke}.`);
+
+    } catch (e) { 
+        log('cataRevokeMinter err', e?.message || e);
+        // This will revert if the connected wallet is NOT the DEFAULT_ADMIN_ROLE holder.
+        alert(`Revoke Minter failed: ${e.message || e}`);
+    } finally { 
+        hideLoading(); 
+    }
+}
+
+// BINDING TO BUTTON
+$('revokeMinterRoleBtn').onclick = cataRevokeMinter;
+
+// BINDING TO BUTTONS (Add this to your main init/binding block)
+$('grantCouncilRoleBtn').onclick = cataSetCouncil;
+$('grantMinterRoleBtn').onclick = cataSetMinter;
+
+// Pause (admin only)
+async function cataPause() {
+  try {
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert('Set CATA contract address first');
+    }
+
+    showLoading("Pausing contract...");
+    const tx = await contracts.cata.pause();
+    log('cata.pause tx', tx.hash);
+    await tx.wait();
+    log('cata.pause completed');
+  } catch (e) {
+    log('cataPause err', e?.message || e);
+    alert(`Pause failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Unpause (admin only)
+async function cataUnpause() {
+  try {
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert('Set CATA contract address first');
+    }
+
+    showLoading("Unpausing contract...");
+    const tx = await contracts.cata.unpause();
+    log('cata.unpause tx', tx.hash);
+    await tx.wait();
+    log('cata.unpause completed');
+  } catch (e) {
+    log('cataUnpause err', e?.message || e);
+    alert(`Unpause failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Swap Admin (council only)
+async function cataSwapAdmin() {
+  try {
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) return alert('Set CATA contract address first');
+    }
+
+    const newAdmin = $('swapNewAdmin').value.trim();
+    const oldAdmin = $('swapOldAdmin').value.trim() || ethers.constants.AddressZero;
+
+    if (!newAdmin) return alert('New admin address required');
+
+    showLoading("Swapping admin...");
+    const tx = await contracts.cata.swapAdmin(newAdmin, oldAdmin);
+    log('cata.swapAdmin tx', tx.hash);
+    await tx.wait();
+    log('cata.swapAdmin completed');
+  } catch (e) {
+    log('cataSwapAdmin err', e?.message || e);
+    alert(`Swap admin failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+	  // Transparency (view supply, roles, minters) - OPTIMIZED WITH Promise.all
+async function fetchTransparency() {
+  try {
+    if (!contracts.cata || !provider) {
+      if (!contracts.cata) return alert('Please connect wallet and set CATA contract address first');
+    }
+
+    showLoading("Fetching transparency...");
+
+    // 1. --- PARALLEL READS (FASTEST PART) ---
+    // Execute all independent state reads simultaneously
+    const [
+      totalSupply, 
+      maxSupply, 
+      councilAddress
+    ] = await Promise.all([
+      contracts.cata.totalSupply(),
+      contracts.cata.MAX_SUPPLY(),
+      contracts.cata.council()
+    ]);
+    
+    const remainingMintable = maxSupply.sub(totalSupply);
+
+    // 2. --- PARALLEL EVENT LOOKUPS (SLOWEST PART) ---
+    // Execute all necessary historical queries simultaneously
+    const [
+      adminSwapEvents,
+      minterSetEvents,
+      minterRevokedEvents
+    ] = await Promise.all([
+      contracts.cata.queryFilter("AdminSwapped", 0, "latest"),
+      contracts.cata.queryFilter("MinterSet", 0, "latest"),
+      contracts.cata.queryFilter("MinterRevoked", 0, "latest")
+    ]);
+
+
+    // 3. --- POST-PROCESSING LOGIC (Admin Address - Sequential Logic) ---
+    let adminAddress = "⚠️ Unknown";
+
+    if (adminSwapEvents.length > 0) {
+      // Find the admin via the last 'AdminSwapped' event
+      adminAddress = adminSwapEvents[adminSwapEvents.length - 1].args.newAdmin;
+    } else {
+      // Fallback: Check the first ever 'TokensMinted' event (less reliable)
+      const mintedEvents = await contracts.cata.queryFilter("TokensMinted", 0, "latest");
+      if (mintedEvents.length > 0) {
+        adminAddress = mintedEvents[0].args.to;
+      }
+    }
+    
+    // 4. --- POST-PROCESSING LOGIC (Minters - Sequential Logic) ---
+    let activeMinters = new Set();
+    
+    // Process MinterSet and MinterRevoked events
+    for (const evt of minterSetEvents) {
+      const minter = evt.args.newMinter;
+      if (minter && minter !== ethers.ZeroAddress) {
+        activeMinters.add(minter);
+      }
+    }
+    for (const evt of minterRevokedEvents) {
+      const revoked = evt.args.revokedMinter;
+      activeMinters.delete(revoked);
+    }
+    const minterList = Array.from(activeMinters);
+
+
+    // 5. --- UI Update ---
+    $('cataAdminAddress').innerText = adminAddress;
+    $('cataCouncilAddress').innerText = councilAddress;
+    $('cataTotalSupply').innerText =
+  Number(ethers.utils.formatUnits(totalSupply, 18)).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }) + " CATA";
+
+$('cataMaxSupply').innerText =
+  Number(ethers.utils.formatUnits(maxSupply, 18)).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }) + " CATA";
+
+$('cataRemainingMintable').innerText =
+  Number(ethers.utils.formatUnits(remainingMintable, 18)).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }) + " CATA";
+    $('cataMinters').innerText = minterList.length > 0 
+      ? minterList.join("\n")
+      : "None";
+
+	   log('fetchTransparency done');
+	  
+  } catch (e) {
+    log('fetchTransparency err', e?.message || e);
+    alert(`Transparency fetch failed: ${e.message || e}. Check the console.`);
+  } finally {
+    hideLoading();
+  }
+}
+
+/********************************************************************
+ * Collection Registration logic
+ ********************************************************************/
+const MIN_ERC20_ABI = [
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function approve(address spender, uint256 amount) returns (bool)'
+];
+
+const ONE = ethers.BigNumber.from("1000000000000000000");
+const SMALL_MIN_FEE = ONE.mul(1);
+const SMALL_MAX_FEE = ONE.mul(10);
+const MED_MIN_FEE = ONE.mul(11);
+const MED_MAX_FEE = ONE.mul(50);
+const LARGE_MIN_FEE = ONE.mul(51);
+const LARGE_MAX_FEE_CAP = ONE.mul(200);
+const BP_DENOM = 10000;
+
+function calculateRegistrationBaseFeeBN(declaredSupplyInt) {
+  if (!Number.isInteger(declaredSupplyInt) || declaredSupplyInt < 1) {
+    throw new Error('declaredSupply must be integer >= 1');
+  }
+  const dsBN = ethers.BigNumber.from(String(declaredSupplyInt));
+  if (declaredSupplyInt <= 5000) {
+    const numer = dsBN.mul(SMALL_MAX_FEE.sub(SMALL_MIN_FEE));
+    return SMALL_MIN_FEE.add(numer.div(5000));
+  } else if (declaredSupplyInt <= 10000) {
+    const numer = dsBN.sub(5000).mul(MED_MAX_FEE.sub(MED_MIN_FEE));
+    return MED_MIN_FEE.add(numer.div(5000));
+  } else {
+    const extra = declaredSupplyInt - 10000;
+    const range = 10000;
+    if (extra >= range) return LARGE_MAX_FEE_CAP;
+    const numer = ethers.BigNumber.from(String(extra)).mul(LARGE_MAX_FEE_CAP.sub(LARGE_MIN_FEE));
+    return LARGE_MIN_FEE.add(numer.div(range));
+  }
+}
+
+async function computeTotalFeeBN(baseFeeBN, tier) {
+  let multBP = BP_DENOM;
+  try {
+    if (tier === 0) {
+      if (contracts.staking && typeof contracts.staking.unverifiedSurchargeBP === 'function') {
+        const bp = await contracts.staking.unverifiedSurchargeBP();
+        multBP = bp.toNumber();
+      } else {
+        multBP = 12000;
+      }
+    }
+  } catch (e) {
+    log('computeTotalFeeBN: could not read unverifiedSurchargeBP, using fallback 12000', e);
+    if (tier === 0) multBP = 12000;
+  }
+  const total = baseFeeBN.mul(ethers.BigNumber.from(String(multBP))).div(ethers.BigNumber.from(String(BP_DENOM)));
+  const surcharge = total.gt(baseFeeBN) ? total.sub(baseFeeBN) : ethers.BigNumber.from("0");
+  return { totalFeeBN: total, surchargeBN: surcharge, multBP };
+}
+
+function fmtCata(bn) { return ethers.utils.formatEther(bn) + ' CATA'; }
+
+function getCataERC20ContractInstance() {
+  const cataAddr = $('addrCata').value.trim();
+  if (!cataAddr) throw new Error('CATA address not set in UI');
+  if (contracts.cata && typeof contracts.cata.allowance === 'function') return contracts.cata;
+  return new ethers.Contract(cataAddr, MIN_ERC20_ABI, signer);
+}
+
+async function handleCalcRegFee() {
+  showLoading();
+  try {
+    const supplyStr = $('regDeclaredSupply').value.trim();
+    const collection = $('regCollectionAddr').value.trim();
+    if (!supplyStr || !collection) return alert('collection and declared supply required for fee calc');
+    const declaredSupply = parseInt(supplyStr, 10);
+    const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
+    const tier = parseInt($('regTier').value, 10);
+    const { totalFeeBN, surchargeBN, multBP } = await computeTotalFeeBN(baseFeeBN, tier);
+    $('regFeeInfo').innerText = `Base: ${fmtCata(baseFeeBN)}  |  SurchargeBP: ${multBP}  |  Total: ${fmtCata(totalFeeBN)}  |  Surcharge: ${fmtCata(surchargeBN)}`;
+    return { baseFeeBN, totalFeeBN, surchargeBN };
+  } catch (e) {
+    log('handleCalcRegFee err', e && e.message ? e.message : e);
+    alert('Fee calc error: ' + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleApproveForRegistration() {
+  showLoading();
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    const stakingAddr = $('addrStaking').value.trim();
+    if (!stakingAddr) return alert('set staking address first');
+    const supplyStr = $('regDeclaredSupply').value.trim();
+    const declaredSupply = parseInt(supplyStr, 10);
+    if (!supplyStr || isNaN(declaredSupply)) return alert('enter declared supply to compute fee before approving');
+    const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
+    const tier = parseInt($('regTier').value, 10);
+    const { totalFeeBN } = await computeTotalFeeBN(baseFeeBN, tier);
+    const cata = getCataERC20ContractInstance();
+    const tx = await cata.approve(stakingAddr, totalFeeBN);
+    log('approve tx', tx.hash);
+    await tx.wait();
+    log('approve completed for', fmtCata(totalFeeBN));
+  } catch (e) {
+    log('handleApproveForRegistration err', e && e.message ? e.message : e);
+    alert('Approve failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleRegisterCollection() {
+  showLoading();
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    const collection = $('regCollectionAddr').value.trim();
+    const supplyStr = $('regDeclaredSupply').value.trim();
+    if (!collection || !supplyStr) return alert('collection & declared supply required');
+    const declaredSupply = parseInt(supplyStr, 10);
+    const tier = parseInt($('regTier').value, 10);
+    const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
+    const { totalFeeBN } = await computeTotalFeeBN(baseFeeBN, tier);
+    const cata = getCataERC20ContractInstance();
+    const myAddr = await signer.getAddress();
+    const stakingAddr = $('addrStaking').value.trim();
+    if (!stakingAddr) return alert('Set staking contract address first');
+    const allowance = await cata.allowance(myAddr, stakingAddr);
+    if (allowance.lt(totalFeeBN)) {
+      const ok = confirm('You need to approve CATA for the registration fee: ' + fmtCata(totalFeeBN) + '. Approve now?');
+      if (!ok) return;
+      const txA = await cata.approve(stakingAddr, totalFeeBN);
+      log('approve tx', txA.hash);
+      await txA.wait();
+      log('approve done');
+    }
+    if (!contracts.staking || typeof contracts.staking.registerCollection !== 'function') {
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.registerCollection !== 'function') {
+        return alert('staking contract ABI missing registerCollection function or contract not attached');
+      }
+    }
+    const tx = await contracts.staking.registerCollection(collection, declaredSupply, tier);
+    log('registerCollection tx', tx.hash);
+    await tx.wait();
+    log('registerCollection completed — watch CollectionAdded event for details');
+  } catch (e) {
+    log('handleRegisterCollection err', e && e.message ? e.message : e);
+    alert('Register failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleAdminSetCollectionConfig() {
+  showLoading();
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    if (!contracts.staking || typeof contracts.staking.setCollectionConfig !== 'function') {
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.setCollectionConfig !== 'function') {
+        return alert('staking contract ABI missing setCollectionConfig or contract not attached');
+      }
+    }
+    const collection = $('adminCollAddr').value.trim();
+    const declaredSupply = parseInt($('adminDeclaredSupply').value.trim(), 10);
+    const tier = parseInt($('adminTier').value, 10);
+    if (!collection || !declaredSupply) return alert('collection & declared supply required');
+    const tx = await contracts.staking.setCollectionConfig(collection, declaredSupply, tier);
+    log('setCollectionConfig tx', tx.hash);
+    await tx.wait();
+    log('setCollectionConfig completed (admin)');
+  } catch (e) {
+    log('handleAdminSetCollectionConfig err', e && e.message ? e.message : e);
+    alert('Admin set failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleRemoveCollection() {
+  showLoading();
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    if (!contracts.staking || typeof contracts.staking.removeCollection !== 'function') {
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.removeCollection !== 'function') {
+        return alert('staking contract ABI missing removeCollection or not attached');
+      }
+    }
+    const collection = $('manageCollAddr').value.trim();
+    if (!collection) return alert('collection required');
+    const tx = await contracts.staking.removeCollection(collection);
+    log('removeCollection tx', tx.hash);
+    await tx.wait();
+    log('Collection removed:', collection);
+  } catch (e) {
+    log('handleRemoveCollection err', e && e.message ? e.message : e);
+    alert('Remove failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleForfeitEscrow() {
+  showLoading();
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    if (!contracts.staking || typeof contracts.staking.forfeitEscrowIfExpired !== 'function') {
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.forfeitEscrowIfExpired !== 'function') {
+        return alert('staking contract ABI missing forfeitEscrowIfExpired or not attached');
+      }
+    }
+    const collection = $('manageCollAddr').value.trim();
+    if (!collection) return alert('collection required');
+    const tx = await contracts.staking.forfeitEscrowIfExpired(collection);
+    log('forfeitEscrowIfExpired tx', tx.hash);
+    await tx.wait();
+    log('Escrow forfeited for:', collection);
+  } catch (e) {
+    log('handleForfeitEscrow err', e && e.message ? e.message : e);
+    alert('Forfeit failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleToggleBluechip() {
+  showLoading();
+  try {
+    if (!provider || !signer) return alert('connect wallet first');
+    if (!contracts.staking || typeof contracts.staking.setBluechipCollection !== 'function') {
+      await attachContractsIfSet();
+      if (!contracts.staking || typeof contracts.staking.setBluechipCollection !== 'function') {
+        return alert('staking contract ABI missing setBluechipCollection or not attached');
+      }
+    }
+    const collection = $('manageCollAddr').value.trim();
+    if (!collection) return alert('collection required');
+    let newStatus = true;
+    if (typeof contracts.staking.isBluechipCollection === 'function') {
+      const current = await contracts.staking.isBluechipCollection(collection);
+      newStatus = !current;
+    }
+    const tx = await contracts.staking.setBluechipCollection(collection, newStatus);
+    log('setBluechipCollection tx', tx.hash);
+    await tx.wait();
+    log('Bluechip status updated:', collection, '=>', newStatus);
+  } catch (e) {
+    log('handleToggleBluechip err', e && e.message ? e.message : e);
+    alert('Bluechip toggle failed: ' + (e.message || e));
+  } finally {
+    hideLoading();
+  }
+}
+
+
+	  async function fetchCollectionStatus(addr) {
+  if (!addr || addr.length !== 42 || !addr.startsWith("0x")) {
+    return "—"; // Basic ETH address validation
+  }
+
+  try {
+    // ✅ Use ethers instance — not web3
+    const status = await contracts.staking.getCollectionStatus(addr);
+
+    switch (parseInt(status)) {
+      case 0: return "❌ Not Registered";
+      case 1: return "⚪ Unverified";
+      case 2: return "✅ Verified";
+      case 3: return "💎 Bluechip";
+      default: return "—";
+    }
+
+  } catch (err) {
+    const msg = (err?.message || "").toLowerCase();
+
+    // ✅ Handle all "not registered" revert variants gracefully
+    if (
+      msg.includes("notregistered") ||
+      msg.includes("not registered") ||
+      msg.includes("execution reverted") ||
+      msg.includes("revert")
+    ) {
+      console.warn("Collection not registered, safe fallback.");
+      return "❌ Not Registered";
+    }
+
+    console.error("Status check error:", err);
+    return "⚠️ Error fetching status";
+  }
+	}
+	  
+function attachStatusChecker(inputId, statusDivId) {
+  const inputEl = document.getElementById(inputId);
+  const statusEl = document.getElementById(statusDivId);
+  let debounceTimer;
+
+  inputEl.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      const addr = inputEl.value.trim();
+      if (addr.length !== 42 || !addr.startsWith("0x")) {
+        statusEl.innerText = "Status: —";
+        return;
+      }
+
+      statusEl.innerText = "⏳ Checking...";
+      const statusText = await fetchCollectionStatus(addr);
+      if (statusText.includes("✅") || statusText.includes("💎")) {
+        alert("This collection is already registered or bluechip.");
+      }
+      statusEl.innerText = `Status: ${statusText}`;
+    }, 1000); // waits 1 second after typing stops
+  });
+}
+	  
+
+// Attach to each field
+attachStatusChecker("regCollectionAddr", "regStatusInfo");
+attachStatusChecker("adminCollAddr", "adminStatusInfo");
+attachStatusChecker("manageCollAddr", "manageStatusInfo");
+// Attach status checkers to new fields
+attachStatusChecker("bluechipCollectionInput", "bluechipStatusInfo");
+attachStatusChecker("nftCollection", "nftStatusInfo");	  
+	  
+
+// ======== Fetch and Display Top Collections (UI only, no Solidity change) ========
+async function fetchTopCollectionsUI() {
+  try {
+    showLoading("Loading top collections...");
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return log("⚠️ Staking contract not set.");
+    }
+
+    // Detect total collections
+    let total = 0;
+    try {
+      if (typeof contracts.staking.registeredCollectionsLength === "function") {
+        total = await contracts.staking.registeredCollectionsLength();
+      } else {
+        for (let i = 0; i < 1000; i++) {
+          try {
+            await contracts.staking.registeredCollections(i);
+            total++;
+          } catch {
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      log("⚠️ Could not determine total collections:", err.message);
+    }
+
+    if (!total || total === 0) {
+      $("topCollectionsContent").innerHTML =
+        "<p class='text-slate-400 text-xs'>No collections registered yet.</p>";
+      hideLoading();
+      return;
+    }
+
+    const limit = Math.min(Number(total), 50);
+    const collections = [];
+
+    for (let i = 0; i < limit; i++) {
+      try {
+        const addr = await contracts.staking.registeredCollections(i);
+        const statusEnum = await contracts.staking.getCollectionStatus(addr);
+        const meta = await contracts.staking.collectionMeta(addr);
+        const burned = await contracts.staking.burnedCatalystByCollection(addr);
+
+        collections.push({
+          address: addr,
+          tier: Number(meta.tier),
+          status: Number(statusEnum),
+          registeredAt: Number(meta.registeredAtBlock),
+          burned: Number(ethers.utils.formatEther(burned))
+        });
+      } catch {
+        break;
+      }
+    }
+
+    // Sort by burned amount
+    collections.sort((a, b) => b.burned - a.burned);
+
+    // Filter top 10 verified & unverified
+    const verified = collections.filter(c => c.tier === 1).slice(0, 10);
+    const unverified = collections.filter(c => c.tier === 0).slice(0, 10);
+
+    // Build combined HTML view
+    const html = `
+      <div>
+        <h4 class="text-sm font-semibold text-green-400 mb-1">✅ Top 10 VERIFIED</h4>
+        <ul class="text-xs space-y-1">
+          ${
+            verified.length
+              ? verified.map((c, i) =>
+                  `<li>#${i + 1}: <span class="text-sky-400 break-all">${c.address}</span> — 🔥 ${c.burned.toLocaleString(undefined, { maximumFractionDigits: 2 })} CATA burned</li>`
+                ).join("")
+              : "<li class='text-slate-500'>None yet.</li>"
+          }
+        </ul>
+      </div>
+
+      <div class="mt-4">
+        <h4 class="text-sm font-semibold text-amber-400 mb-1">🕵️ Top 10 UNVERIFIED</h4>
+        <ul class="text-xs space-y-1">
+          ${
+            unverified.length
+              ? unverified.map((c, i) =>
+                  `<li>#${i + 1}: <span class="text-sky-400 break-all">${c.address}</span> — 🔥 ${c.burned.toLocaleString(undefined, { maximumFractionDigits: 2 })} CATA burned</li>`
+                ).join("")
+              : "<li class='text-slate-500'>None yet.</li>"
+          }
+        </ul>
+      </div>
+    `;
+
+    $("topCollectionsContent").innerHTML = html;
+    log("✅ Top collections loaded");
+  } catch (e) {
+    log("⚠️ fetchTopCollectionsUI error:", e.message || e);
+  } finally {
+    hideLoading();
+  }
+	  }
+	  
+
+// ---------- Bluechip Actions ----------
+// Enroll as Bluechip
+async function enrollBluechip(){
+  try {
+    if(!contracts.staking){ 
+      await attachContractsIfSet(); 
+      if(!contracts.staking) return alert('Set staking contract'); 
+    }
+    if(typeof contracts.staking.enrollBluechip === 'function'){
+      showLoading("Enrolling as Bluechip...");
+      const tx = await contracts.staking.enrollBluechip();
+      log('enrollBluechip tx', tx.hash);
+      await tx.wait();
+      log('enrollBluechip done');
+    } else {
+      alert('enrollBluechip not found in ABI');
+    }
+  } catch(e){ 
+    log('enrollBluechip err', e?.message || e); 
+    alert(`Enroll failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Harvest Bluechip
+async function harvestBluechip(){
+  try {
+    const collection = document.getElementById('bluechipCollectionInput').value.trim();
+    if(!collection) return alert('Enter a collection address');
+    if(!contracts.staking){ 
+      await attachContractsIfSet(); 
+      if(!contracts.staking) return alert('Set staking contract'); 
+    }
+    if(typeof contracts.staking.harvestBluechip === 'function'){
+      showLoading("Harvesting Bluechip rewards...");
+      const tx = await contracts.staking.harvestBluechip(collection);
+      log('harvestBluechip tx', tx.hash);
+      await tx.wait();
+      log('harvestBluechip done');
+    } else {
+      alert('harvestBluechip not found in ABI');
+    }
+  } catch(e){ 
+    log('harvestBluechip err', e?.message || e); 
+    alert(`Harvest failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Refresh Bluechip Info
+async function refreshBluechip(){
+  try {
+    if(!contracts.staking){
+      await attachContractsIfSet();
+      if(!contracts.staking) return alert('Set staking contract');
+    }
+    if(typeof contracts.staking.bluechipWallets === 'function'){
+      showLoading("Refreshing Bluechip info...");
+      const me = await signer.getAddress();
+
+      const enrolled = await contracts.staking.bluechipWallets(
+        ethers.constants.AddressZero,
+        me
+      );
+      $('bluechipStatus').innerText = enrolled ? '✅ Enrolled' : '❌ Not Enrolled';
+
+      const lastBlock = await contracts.staking.bluechipLastHarvestBlock(
+        ethers.constants.AddressZero,
+        me
+      );
+      if(lastBlock.toString() !== '0'){
+        const currentBlock = await provider.getBlockNumber();
+        const diff = currentBlock - lastBlock.toNumber();
+        const approxDays = (diff * 12) / (60 * 60 * 24); // ⏱ 12s per block → days
+        $('bluechipLastBlock').innerText =
+          `${lastBlock.toString()} (≈ ${approxDays.toFixed(2)} days ago)`;
+      } else {
+        $('bluechipLastBlock').innerText = '—';
+      }
+
+      const fee = await contracts.staking.bluechipWalletFee();
+      const readableFee = ethers.utils.formatUnits(fee, 18); // assumes 18 decimals
+      $('bluechipFee').innerText = `${readableFee} CATA`;
+
+      log('refreshBluechip done');
+    } else {
+      alert('bluechipWallets not found in ABI');
+    }
+  } catch(e){ 
+    log('refreshBluechip err', e?.message || e); 
+    alert(`Refresh failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function refreshTopBluechipLeaderboard() {
+  try {
+    showLoading("Fetching Top Bluechip Burners...");
+
+    const total = await contracts.staking.registeredCount();
+    const count = Number(total.toString());
+    const data = [];
+
+    for (let i = 0; i < count; i++) {
+      const addr = await contracts.staking.registeredCollections(i);
+      const isBluechip = await contracts.staking.isBluechipCollection(addr);
+      if (!isBluechip) continue;
+
+      const burned = await contracts.staking.burnedCatalystByCollection(addr);
+      data.push({
+        address: addr,
+        burned: Number(burned.toString()) / 1e18,
+      });
+    }
+
+    data.sort((a, b) => b.burned - a.burned);
+    const top10 = data.slice(0, 10);
+    const maxBurn = top10[0]?.burned || 1;
+
+    const container = $("topBluechipList");
+    container.innerHTML = "";
+
+    top10.forEach((item, i) => {
+      const percent = Math.min(100, (item.burned / maxBurn) * 100);
+      const rankColor =
+        i === 0
+          ? "text-yellow-400"
+          : i === 1
+          ? "text-gray-300"
+          : i === 2
+          ? "text-amber-600"
+          : "text-gray-400";
+
+      const row = document.createElement("div");
+      row.className = "flex items-center justify-between py-3 px-2 hover:bg-gray-800/50 rounded-lg transition-all";
+
+      row.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="font-bold ${rankColor} text-lg w-5 text-center">#${i + 1}</span>
+          <div>
+            <p class="font-semibold text-sm">${shortAddr(item.address)}</p>
+            <div class="w-36 bg-gray-800 rounded-full h-2 mt-1 overflow-hidden">
+              <div class="bg-gradient-to-r from-orange-400 to-yellow-500 h-2 rounded-full" style="width:${percent}%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="font-mono text-orange-400">${item.burned.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+          <p class="text-xs text-gray-500">CATA Burned</p>
+        </div>
+      `;
+
+      container.appendChild(row);
+    });
+
+    $("bluechipLastUpdated").innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
+  } catch (e) {
+    log("❌ refreshTopBluechipLeaderboard error:", e.message || e);
+    $("topBluechipList").innerHTML = `<div class='text-center py-3 text-red-400'>Failed to load leaderboard</div>`;
+  } finally {
+    hideLoading();
+  }
+}
+
+    	  
+// ---------- NFT approval ----------	  
+async function approveNFT(){
+  try {
+    const collection = $('nftCollection').value.trim();
+    if(!collection) return alert('collection required');
+    const stakingAddr = $('addrStaking').value.trim();
+    if(!stakingAddr) return alert('staking address required');
+    const nft = new ethers.Contract(collection, ERC721_ABI, signer);
+    const me = await signer.getAddress();
+
+    showLoading("Approving NFT...");
+    const already = await nft.isApprovedForAll(me, stakingAddr);
+    if(already){ 
+      log('already approved'); 
+      alert('Already approved for staking');
+      return; 
+    }
+    const tx = await nft.setApprovalForAll(stakingAddr, true);
+    log('approve tx', tx.hash);
+    await tx.wait();
+    log('approve complete');
+  } catch(e){ 
+    log('approveNFT err', e?.message || e); 
+    alert(`Approve failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+	$('permApproveFeeBtn').onclick = async () => {
+  try {
+    showLoading("Approving CATA tokens for staking fees...");
+
+    if (!contracts.cata) {
+      await attachContractsIfSet();
+      if (!contracts.cata) {
+        hideLoading();
+        return alert("⚠️ CATA contract not found. Please set it first.");
+      }
+    }
+
+    const stakingAddr = $('addrStaking').value.trim();
+    if (!stakingAddr) {
+      hideLoading();
+      return alert("❗ Staking contract address required.");
+    }
+
+    const amt = ethers.constants.MaxUint256;
+
+    // 👇 Disable button + visual feedback
+    const btn = $('permApproveFeeBtn');
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Waiting for wallet...";
+
+    // 🔹 Send tx
+    const tx = await contracts.cata.approve(stakingAddr, amt);
+    log("approve CATA tx", tx.hash);
+
+    // 👇 Update message
+    showLoading("⏳ Transaction sent... waiting for confirmation...");
+    btn.innerHTML = "⏳ Confirming...";
+
+    await tx.wait();
+
+    // ✅ Done
+    log("approve CATA done");
+    alert("✅ Successfully approved CATA for staking fees!");
+  } catch (e) {
+    const msg = e?.message || e;
+    log("permApproveFee err", msg);
+    alert("❌ Approval failed: " + msg);
+  } finally {
+    // Restore button + remove loader
+    const btn = $('permApproveFeeBtn');
+    btn.disabled = false;
+    btn.innerHTML = "Approve Fee (CATA)";
+    hideLoading();
+  }
+};
+
+// ---------- Staking single ----------
+async function termStake(){
+  try {
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+    const collection = $('nftCollection').value.trim();
+    const tokenId = $('nftTokenId').value.trim();
+    if(!collection || !tokenId) return alert('collection & tokenId required');
+
+    showLoading("Staking (term)...");
+    const tx = await contracts.staking.termStake(collection, tokenId);
+    log('termStake tx', tx.hash);
+    await tx.wait();
+    log('termStake done');
+  } catch(e){ 
+    log('termStake err', e?.message || e); 
+    alert(`Stake failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function permanentStake(){
+  try {
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+    const collection = $('nftCollection').value.trim();
+    const tokenId = $('nftTokenId').value.trim();
+    if(!collection || !tokenId) return alert('collection & tokenId required');
+
+    showLoading("Staking (permanent)...");
+    const tx = await contracts.staking.permanentStake(collection, tokenId);
+    log('permanentStake tx', tx.hash);
+    await tx.wait();
+    log('permanentStake done');
+  } catch(e){ 
+    log('permanentStake err', e?.message || e); 
+    alert(`Permanent stake failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function unstake(){
+  try {
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+    const collection = $('nftCollection').value.trim();
+    const tokenId = $('nftTokenId').value.trim();
+    if(!collection || !tokenId) return alert('collection & tokenId required');
+
+    showLoading("Unstaking...");
+    const tx = await contracts.staking.unstake(collection, tokenId);
+    log('unstake tx', tx.hash);
+    await tx.wait();
+    log('unstake done');
+  } catch(e){ 
+    log('unstake err', e?.message || e); 
+    alert(`Unstake failed: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// harvest - contract may or may not expose public harvest
+async function harvest(){
+  try {
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
+    if(typeof contracts.staking.harvest === 'function'){
+      const collection = $('nftCollection').value.trim();
+      const tokenId = $('nftTokenId').value.trim();
+
+      showLoading("Harvesting rewards...");
+      const tx = await contracts.staking.harvest(collection, tokenId);
+      log('harvest tx', tx.hash);
+      await tx.wait();
+      log('harvest done');
+      return;
+    }
+    alert('No public harvest function found in staking ABI');
+  } catch(e){ 
+    log('harvest err', e?.message || e); 
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+
+// -----------------------------
+// ✅ Helper: parse "collection,tokenId"
+// -----------------------------
+function parseBatchPairs() {
+  const raw = $('batchNFTs').value.trim();
+  if (!raw) return [];
+  return raw
+    .split(/\r?\n/)
+    .map(line => {
+      const [collection, tokenId] = line.split(',').map(s => s.trim());
+      return collection && tokenId ? { collection, tokenId: Number(tokenId) } : null;
+    })
+    .filter(Boolean);
+}
+
+// -----------------------------
+// ✅ Group helper
+// -----------------------------
+function groupByCollection(pairs) {
+  const grouped = {};
+  for (const { collection, tokenId } of pairs) {
+    if (!ethers.utils.isAddress(collection)) {
+      throw new Error(`Invalid address: ${collection}`);
+    }
+    if (!grouped[collection]) grouped[collection] = [];
+    grouped[collection].push(Number(tokenId));
+  }
+  return grouped;
+}
+
+// -----------------------------
+// ✅ Batch Term Stake
+// -----------------------------
+async function batchTermStake() {
+  try {
+    showLoading();
+    const pairs = parseBatchPairs();
+    if (pairs.length === 0) return alert('No pairs to stake');
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Set staking contract first');
+    }
+
+    const grouped = groupByCollection(pairs);
+
+    for (const [collection, tokenIds] of Object.entries(grouped)) {
+      console.log('batchTermStake:', collection, tokenIds);
+      const tx = await contracts.staking.batchTermStake(collection, tokenIds);
+      log('batchTermStake tx', tx.hash);
+      await tx.wait();
+      log(`✅ batchTermStake complete for ${collection}`);
+    }
+  } catch (e) {
+    log('batchTermStake err', e?.message || e);
+    alert(e?.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// -----------------------------
+// ✅ Batch Permanent Stake
+// -----------------------------
+async function batchPermStake() {
+  try {
+    showLoading();
+    const pairs = parseBatchPairs();
+    if (pairs.length === 0) return alert('No pairs to stake');
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Set staking contract first');
+    }
+
+    const grouped = groupByCollection(pairs);
+
+    for (const [collection, tokenIds] of Object.entries(grouped)) {
+      console.log('batchPermanentStake:', collection, tokenIds);
+      const tx = await contracts.staking.batchPermanentStake(collection, tokenIds);
+      log('batchPermanentStake tx', tx.hash);
+      await tx.wait();
+      log(`✅ batchPermanentStake complete for ${collection}`);
+    }
+  } catch (e) {
+    log('batchPermStake err', e?.message || e);
+    alert(e?.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// -----------------------------
+// ✅ Batch Unstake
+// -----------------------------
+async function batchUnstake() {
+  try {
+    showLoading();
+    const pairs = parseBatchPairs();
+    if (pairs.length === 0) return alert('No pairs to unstake');
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Set staking contract first');
+    }
+
+    const grouped = groupByCollection(pairs);
+
+    for (const [collection, tokenIds] of Object.entries(grouped)) {
+      console.log('batchUnstake:', collection, tokenIds);
+      const tx = await contracts.staking.batchUnstake(collection, tokenIds);
+      log('batchUnstake tx', tx.hash);
+      await tx.wait();
+      log(`✅ batchUnstake complete for ${collection}`);
+    }
+  } catch (e) {
+    log('batchUnstake err', e?.message || e);
+    alert(e?.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+// -----------------------------
+// ✅ Batch Harvest
+// -----------------------------
+async function batchHarvest() {
+  try {
+    showLoading();
+    const raw = $('batchHarvestNFTs').value.trim();
+    if (!raw) return alert('No pairs to harvest');
+
+    const pairs = raw
+      .split(/\r?\n/)
+      .map(line => {
+        const [collection, tokenId] = line.split(',').map(s => s.trim());
+        return collection && tokenId ? { collection, tokenId: Number(tokenId) } : null;
+      })
+      .filter(Boolean);
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Set staking contract first');
+    }
+
+    const grouped = groupByCollection(pairs);
+
+    for (const [collection, tokenIds] of Object.entries(grouped)) {
+      console.log('batchHarvest:', collection, tokenIds);
+      if (typeof contracts.staking.harvestBatch === 'function') {
+        const tx = await contracts.staking.harvestBatch(collection, tokenIds);
+        log('harvestBatch tx', tx.hash);
+        await tx.wait();
+        log(`✅ harvestBatch complete for ${collection}`);
+      } else {
+        // fallback per token
+        for (const id of tokenIds) {
+          const tx = await contracts.staking.harvest(collection, id);
+          log('harvest tx', tx.hash);
+          await tx.wait();
+        }
+        log(`✅ harvest (sequential) complete for ${collection}`);
+      }
+    }
+  } catch (e) {
+    log('batchHarvest err', e?.message || e);
+    alert(e?.message || e);
+  } finally {
+    hideLoading();
+  }
+	}
+
+	  
+
+// ======== Smooth Number Animation ========
+function animateNumber(elementId, newValue, duration = 600) {
+  const el = $(elementId);
+  if (!el) return;
+  const oldValue = parseFloat(el.innerText.replace(/,/g, "")) || 0;
+  const diff = newValue - oldValue;
+  const steps = Math.max(10, Math.floor(duration / 16));
+  let currentStep = 0;
+  const timer = setInterval(() => {
+    currentStep++;
+    const progress = currentStep / steps;
+    const eased = progress * (2 - progress);
+    const value = oldValue + diff * eased;
+    el.innerText = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    if (currentStep >= steps) clearInterval(timer);
+  }, 16);
+}
+
+
+	  // ======== Optimized & Cached Auto User-Based Staking Stats ========
+async function refreshStakingStats() {
+  try {
+    showLoading("Fetching your staking stats...");
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert("Staking contract not found.");
+    }
+
+    if (!userAddr) userAddr = await signer.getAddress();
+
+    const globalCap = Number(await contracts.staking.GLOBAL_NFT_CAP());
+    let total = 0, term = 0, perm = 0;
+
+    // ✅ STEP 1: Check if we already cached user’s collections
+    window._cachedUserCollections = window._cachedUserCollections || {};
+    let userCollections = window._cachedUserCollections[userAddr];
+
+    if (!userCollections) {
+      console.log("🔍 No cache found, scanning events...");
+      const blockRange = 1_000_000;
+      const latestBlock = await provider.getBlockNumber();
+      const fromBlock = Math.max(0, latestBlock - blockRange);
+
+      let stakeEvents = [];
+      try {
+        const allStaked = await contracts.staking.queryFilter("NFTStaked", fromBlock, "latest");
+        stakeEvents = allStaked.filter(e => e.args?.who?.toLowerCase() === userAddr.toLowerCase());
+      } catch (err) {
+        console.warn("⚠️ Could not query NFTStaked events:", err.message);
+      }
+
+      userCollections = [...new Set(stakeEvents.map(e => e.args.collection.toLowerCase()))];
+      window._cachedUserCollections[userAddr] = userCollections; // ✅ save to cache
+    } else {
+      console.log(`🧠 Using cached collections for ${userAddr}`);
+    }
+
+    if (userCollections.length === 0) {
+      log("⚠️ No user-related collections found.");
+      animateNumber("userStakedTotal", 0);
+      animateNumber("userStakedTerm", 0);
+      animateNumber("userStakedPerm", 0);
+      $("userStakingUsageText").innerText = `0.00% of Global Cap (Max ${globalCap})`;
+      $("userStakingUsageBar").style.width = "0%";
+      $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+      return;
+    }
+
+    // ✅ STEP 2: Scan user's active collections (efficient batching)
+    const batchSize = 5;
+    for (let i = 0; i < userCollections.length; i += batchSize) {
+      const slice = userCollections.slice(i, i + batchSize);
+      const promises = slice.map(async (collection) => {
+        for (let j = 0; j < 1000; j++) {
+          try {
+            const tokenIdBN = await contracts.staking.stakePortfolioByUser(collection, userAddr, j);
+            const tokenId = Number(tokenIdBN.toString());
+            if (isNaN(tokenId)) break;
+
+            const info = await contracts.staking.stakeLog(collection, userAddr, tokenId);
+            const currentlyStaked = info.currentlyStaked ?? info[0];
+            const isPermanent = info.isPermanent ?? info[1];
+
+            if (currentlyStaked) {
+              total++;
+              if (isPermanent) perm++;
+              else term++;
+            }
+          } catch {
+            break;
+          }
+        }
+      });
+      await Promise.all(promises);
+    }
+
+    // ✅ STEP 3: Update UI
+    animateNumber("userStakedTotal", total);
+    animateNumber("userStakedTerm", term);
+    animateNumber("userStakedPerm", perm);
+
+    const percent = globalCap > 0 ? ((total / globalCap) * 100).toFixed(2) : 0;
+    $("userStakingUsageText").innerText = `${percent}% of Global Cap (Max ${globalCap})`;
+    $("userStakingUsageBar").style.width = `${percent}%`;
+    $("stakingStatsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+
+    log(`✅ Portfolio updated — Total=${total}, Term=${term}, Perm=${perm}, Collections=${userCollections.length}`);
+	  animateNumber("userCollectionCount", userCollections.length);
+  } catch (e) {
+    console.error("❌ refreshStakingStats error:", e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+
+
+
+    
+	  // ======== View Portfolio (using existing wallet logic) ========
+async function viewPortfolio() {
+  try {
+    showLoading();
+
+    const collection = $('nftCollection').value.trim();
+    if (!collection) return alert('Enter a collection address.');
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Set staking contract.');
+    }
+
+    if (!userAddr) return alert('Please connect your wallet first.');
+
+    const tokenIds = [];
+    for (let i = 0; i < 1000; i++) {
+      try {
+        const tokenId = await contracts.staking.stakePortfolioByUser(collection, userAddr, i);
+        tokenIds.push(tokenId.toString());
+      } catch {
+        break;
+      }
+    }
+
+    if (tokenIds.length === 0) {
+      $('portfolioResult').innerText = 'No NFTs staked.';
+    } else {
+      $('portfolioResult').innerText = tokenIds.join(', ');
+    }
+
+    $('portfolioResult').innerHTML +=
+      `<br><span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
+    log('✅ Portfolio loaded', tokenIds);
+  } catch (e) {
+    log('viewPortfolio error', e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+	  
+// ======== 🔹 Helper: Aggregate All Pending Rewards (Off-chain math version) ========
+async function getAllPendingRewards() {
+  if (!contracts.staking || !userAddr) {
+    await attachContractsIfSet();
+    if (!contracts.staking) throw new Error("Staking contract not found.");
+  }
+
+  const totalCollections = await contracts.staking.registeredCount();
+  const count = Number(totalCollections.toString());
+  let totalRewards = 0;
+  const pendingDetails = [];
+  const currentBlock = await provider.getBlockNumber();
+  const baseRewardRate = (await contracts.staking.baseRewardRate()).toNumber();
+  const blocksPerUnit = (await contracts.staking.numberOfBlocksPerRewardUnit()).toNumber();
+  const MAX_INDEX_SCAN = 200;
+
+  for (let i = 0; i < count; i++) {
+    const collectionAddr = await contracts.staking.registeredCollections(i);
+    const tokenIds = [];
+    let collectionRewards = 0;
+
+    for (let j = 0; j < MAX_INDEX_SCAN; j++) {
+      try {
+        const tokenIdBN = await contracts.staking.stakePortfolioByUser(collectionAddr, userAddr, j);
+        const tokenId = tokenIdBN.toString();
+        if (!tokenId || tokenId === "0") break;
+
+        const log = await contracts.staking.stakeLog(collectionAddr, userAddr, tokenId);
+        const currentlyStaked = log[0];
+        const lastHarvestBlock = log[4];
+
+        if (currentlyStaked) {
+          const blocksElapsed = currentBlock - lastHarvestBlock.toNumber();
+          const reward = (blocksElapsed * baseRewardRate) / blocksPerUnit;
+          collectionRewards += reward;
+          tokenIds.push(tokenId);
+        }
+      } catch {
+        break;
+      }
+    }
+
+    if (tokenIds.length > 0 && collectionRewards > 0) {
+      totalRewards += collectionRewards;
+      pendingDetails.push({
+        collection: collectionAddr,
+        tokenIds,
+        tokenCount: tokenIds.length,
+        rewards: collectionRewards,
+      });
+    }
+  }
+
+  return { totalRewards, pendingDetails };
+}
+
+// ======== 💰 Refresh Pending Rewards UI ========
+async function refreshPendingRewards() {
+  try {
+    showLoading("Fetching pending rewards...");
+    setPendingStatus?.("Fetching...", "#fbbf24");
+
+    const list = $("pendingRewardsList");
+    list.innerHTML = `<div class="text-center py-3 text-gray-500 animate-pulse">
+      Fetching rewards...
+    </div>`;
+
+    const { totalRewards, pendingDetails } = await getAllPendingRewards();
+    list.innerHTML = "";
+
+    // --- Render ---
+    let totalReadable = totalRewards;
+
+    for (const item of pendingDetails) {
+      const readable = item.rewards;
+
+      const div = document.createElement("div");
+      div.className =
+        "flex justify-between py-2 px-3 hover:bg-gray-800/50 transition items-center";
+      div.innerHTML = `
+        <div class="flex flex-col">
+          <div class="text-sm text-gray-300 font-semibold">${shortenAddress(item.collection)}</div>
+          <div class="text-xs text-gray-500">${item.tokenCount} NFT${item.tokenCount > 1 ? "s" : ""}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-amber-400 font-semibold">
+            ${readable.toLocaleString(undefined, { maximumFractionDigits: 4 })} CATA
+          </div>
+          <div class="text-xs text-gray-500">(estimated)</div>
+        </div>
+      `;
+      list.appendChild(div);
+    }
+
+    // --- Update total ---
+    animateNumber("userPendingTotal", totalReadable);
+
+    if (pendingDetails.length === 0) {
+      list.innerHTML = `<div class="text-center py-3 text-gray-500">No active rewards</div>`;
+    }
+
+    $("pendingRewardsUpdated").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+    setPendingStatus?.("Up to date ✅", "#10b981");
+  } catch (e) {
+    console.error("❌ refreshPendingRewards error:", e);
+    const msg = e?.message || JSON.stringify(e);
+    $("pendingRewardsList").innerHTML = `
+      <div class="text-center py-3 text-red-400">
+        Error loading rewards:<br>
+        <span class="text-xs text-gray-500">${msg}</span>
+      </div>`;
+    setPendingStatus?.("Error ❌", "#ef4444");
+  } finally {
+    hideLoading();
+  }
+}
+
+	$("refreshPendingBtn").onclick = async () => {
+  try {
+    if (!contracts.staking || !userAddr) {
+      await attachContractsIfSet();
+    }
+    setPendingStatus?.("Fetching...", "#fbbf24");
+    await refreshPendingRewards();
+    setPendingStatus?.("Up to date ✅", "#10b981");
+  } catch (err) {
+    console.error("refreshPendingBtn error:", err);
+    setPendingStatus?.("Error ❌", "#ef4444");
+  }
+};
+
+// ======== 🌾 Harvest All Button (Optimized batch version) ========
+$("harvestAllBtn").onclick = async () => {
+  try {
+    showLoading("Harvesting all rewards...");
+    setPendingStatus?.("Harvesting...", "#fbbf24");
+
+    const { pendingDetails } = await getAllPendingRewards();
+    let harvestedCount = 0;
+
+    // ✅ Loop once per collection instead of per NFT
+    for (const item of pendingDetails) {
+      if (!item.tokenIds || item.tokenIds.length === 0) continue;
+
+      try {
+        log(`🌾 Harvesting ${item.tokenIds.length} NFTs from ${item.collection}...`);
+        const tx = await contracts.staking.harvestBatch(item.collection, item.tokenIds);
+        log("🌾 HarvestBatch tx sent:", tx.hash);
+        await tx.wait();
+        harvestedCount++;
+      } catch (err) {
+        console.warn(`❌ Harvest failed for ${item.collection}:`, err.message);
+      }
+    }
+
+    hideLoading();
+    setPendingStatus?.("Up to date ✅", "#10b981");
+
+    if (harvestedCount > 0) {
+      alert(`✅ Successfully harvested from ${harvestedCount} collection${harvestedCount > 1 ? "s" : ""}!`);
+    } else {
+      alert("ℹ️ No rewards available to harvest.");
+    }
+
+    await refreshPendingRewards();
+  } catch (err) {
+    hideLoading();
+    setPendingStatus?.("Error ❌", "#ef4444");
+    alert("Harvest failed: " + (err.message || err));
+  }
+};
+    
+
+// ======== 🟢 Optional: Status Helper ========
+function setPendingStatus(status, color) {
+  const dot = $("pendingStatusDot");
+  const text = $("pendingRewardsStatus");
+  if (dot) dot.style.backgroundColor = color || "gray";
+  if (text) text.innerText = status;
+	}
+    
+  
+
+    
+// ======== Check Pending Rewards (using existing wallet logic) ========
+async function checkPendingRewards() {
+  try {
+    showLoading();
+
+    const collection = $('nftCollection').value.trim();
+    const tokenId = parseInt($('nftTokenId').value.trim(), 10);
+    if (!collection) return alert('Enter a collection address.');
+    if (isNaN(tokenId)) return alert('Enter a valid token ID.');
+
+    if (!contracts.staking) {
+      await attachContractsIfSet();
+      if (!contracts.staking) return alert('Set staking contract.');
+    }
+
+    if (!userAddr) return alert('Please connect your wallet first.');
+
+    // Fetch staking data
+    const [currentlyStaked, , , , lastHarvestBlock] =
+      await contracts.staking.stakeLog(collection, userAddr, tokenId);
+
+    if (!currentlyStaked) {
+      $('pendingRewardsResult').innerText = 'NFT not currently staked.';
+      return;
+    }
+
+    const baseRewardRate = await contracts.staking.baseRewardRate();
+    const blocksPerUnit = await contracts.staking.numberOfBlocksPerRewardUnit();
+    const currentBlock = await provider.getBlockNumber();
+
+    const blocksElapsed = currentBlock - lastHarvestBlock.toNumber();
+    const reward = (blocksElapsed * baseRewardRate.toNumber()) / blocksPerUnit.toNumber();
+
+    $('pendingRewardsResult').innerHTML =
+      `${reward.toFixed(4)} <span class="text-slate-500">CATA (estimated)</span><br>
+       <span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
+
+    log('✅ Estimated pending rewards:', reward);
+  } catch (e) {
+    log('checkPendingRewards error', e);
+    alert(e.message || e);
+  } finally {
+    hideLoading();
+  }
+}
+	  
+
+    // ======== Fetch Staking Transparency ========
+async function fetchStakingTransparency() {
+  try {
+    if (!contracts.staking || !provider) {
+      return alert('⚠️ Please connect wallet and set Staking contract first');
+    }
+
+    showLoading("Fetching staking transparency...");
+
+    // --- Parallel Reads ---
+    const [
+      councilAddress,
+      deployerCouncilAddress,
+      deployerAddress,
+      bonusModule,
+      cataToken
+    ] = await Promise.all([
+      contracts.staking.council(),
+      contracts.staking.deployerCouncil(),
+      contracts.staking.deployerAddress(),
+      contracts.staking.bonusModule(),
+      contracts.staking.cata()
+    ]);
+
+    // --- AccessControl Roles ---
+    let defaultAdminHolder = "—";
+    let contractAdminHolder = "—";
+    try {
+      const defaultRole = await contracts.staking.DEFAULT_ADMIN_ROLE();
+      const contractRole = await contracts.staking.CONTRACT_ADMIN_ROLE();
+      defaultAdminHolder = await contracts.staking.getRoleMember(defaultRole, 0);
+      contractAdminHolder = await contracts.staking.getRoleMember(contractRole, 0);
+    } catch (e) {
+      console.warn("AccessControl roles unavailable:", e);
+    }
+
+    // --- Admin/Ownership Resolution ---
+    const [
+      adminSwappedEvents,
+      deployerAddrUpdatedEvents,
+      councilSetEvents,
+      deployerCouncilSetEvents
+    ] = await Promise.all([
+      contracts.staking.queryFilter("AdminSwapped", 0, "latest"),
+      contracts.staking.queryFilter("DeployerAddressUpdated", 0, "latest"),
+      contracts.staking.queryFilter("CouncilSet", 0, "latest"),
+      contracts.staking.queryFilter("DeployerCouncilSet", 0, "latest")
+    ]);
+
+    let currentAdmin = "⚠️ Unknown";
+    if (adminSwappedEvents.length > 0) {
+      currentAdmin = adminSwappedEvents.at(-1).args.newAdmin;
+    } else if (deployerAddrUpdatedEvents.length > 0) {
+      currentAdmin = deployerAddrUpdatedEvents.at(-1).args.newDeployer;
+    } else if (councilSetEvents.length > 0) {
+      currentAdmin = councilSetEvents.at(-1).args.newCouncil;
+    } else {
+      try {
+        const deployerAddr = await contracts.staking.deployerAddress();
+        if (deployerAddr && deployerAddr !== ethers.ZeroAddress)
+          currentAdmin = deployerAddr;
+      } catch (e) {
+        console.warn("Could not read deployerAddress():", e);
+      }
+    }
+
+    // --- UI Update ---
+    $('stakingCouncilAddress').innerText = councilAddress || '—';
+    $('stakingDeployerCouncil').innerText = deployerCouncilAddress || '—';
+    $('stakingDeployerAddress').innerText = deployerAddress || '—';
+    $('stakingBonusModule').innerText = bonusModule || '—';
+    $('stakingCataToken').innerText = cataToken || '—';
+    $('stakingDefaultAdmin').innerText = defaultAdminHolder || '—';
+    $('stakingContractAdmin').innerText = contractAdminHolder || '—';
+    $('stakingAdminAddress').innerText = currentAdmin || '—';
+
+    log('✅ Staking transparency fetched');
+
+  } catch (e) {
+    log('❌ fetchStakingTransparency error', e?.message || e);
+    alert(`Staking transparency fetch failed: ${e.message || e}. Check console.`);
+  } finally {
+    hideLoading();
+  }
+}
+
+
+
+	// ================================
+// 🛡️ CHECK STAKING ADMIN ROLE
+// ================================
+async function checkStakingAdmin() {
+  try {
+    if (!signer || !contracts?.staking) {
+      console.warn("⚠️ Admin check skipped — wallet or contract not ready");
+      return;
+    }
+
+    const user = await signer.getAddress();
+    const role = await contracts.staking.DEFAULT_ADMIN_ROLE();
+    const isAdmin = await contracts.staking.hasRole(role, user);
+
+    const panel = document.querySelector('#stakingAdminPanel');
+    if (!panel) return;
+
+    // ✅ Always visible for transparency
+    panel.classList.remove('hidden');
+
+    // (Optional) Show admin-only note if not admin
+    if (!isAdmin) {
+      console.log("⚠️ Connected wallet is not admin — actions will revert.");
+    }
+  } catch (err) {
+    console.warn("⚠️ Admin check failed:", err.message || err);
+  }
+}
+
+	  // ============================================
+// 🧩 Staking Admin Panel — Button Actions
+// ============================================
+
+// Withdraw Treasury
+$('withdrawTreasuryBtn').onclick = async () => {
+  try {
+    const to = $('withdrawTo').value.trim();
+    const amount = ethers.utils.parseEther($('withdrawAmount').value.trim());
+    if (!ethers.utils.isAddress(to)) return alert("⚠️ Invalid recipient address");
+    if (amount.isZero()) return alert("⚠️ Amount must be > 0");
+
+    showLoading("Withdrawing from treasury...");
+    const tx = await contracts.staking.withdrawTreasury(to, amount);
+    await tx.wait();
+
+    alert("✅ Treasury withdrawn successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Withdraw failed: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
+// Set Bonus Module
+$('setBonusModuleBtn').onclick = async () => {
+  try {
+    const addr = $('bonusModuleAddr').value.trim();
+    if (!ethers.utils.isAddress(addr)) return alert("⚠️ Invalid address");
+
+    showLoading("Setting new bonus module...");
+    const tx = await contracts.staking.setBonusModule(addr);
+    await tx.wait();
+
+    alert("✅ Bonus module updated!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to set bonus module: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
+// Trigger Top Burner Bonus
+$('triggerTopBurnerBtn').onclick = async () => {
+  try {
+    showLoading("Triggering top burner bonus...");
+    const tx = await contracts.staking.triggerTopBurnerBonus();
+    await tx.wait();
+
+    alert("🔥 Top burner bonus triggered successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to trigger bonus: " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
+
+
+  // ---------- Governance Section ----------
+const PROPOSAL_MAPPING = {
+  BASE_REWARD: 0,
+  HARVEST_FEE: 1,
+  UNSTAKE_FEE: 2,
+  REGISTRATION_FEE_FALLBACK: 3,
+  VOTING_PARAM: 4,
+  TIER_UPGRADE: 5,
+  COUNCIL_RESEED_ACTIVE: 6,
+  COUNCIL_PROPOSE_STANDBY: 7,
+  COUNCIL_COMMIT_STANDBY: 8,
+  COUNCIL_ACTIVATE_STANDBY: 9,
+  COUNCIL_PROPOSE_NEW_DAO: 10,
+  COUNCIL_COMMIT_NEW_DAO: 11,
+  COUNCIL_CLEAR_LOCK: 12,
+  UPGRADE_COUNCIL: 13,
+  UPGRADE_GOVERNANCE: 14,
+  SET_NEW_COUNCIL: 15,
+  DAO_PAUSE: 16,
+  DAO_UNPAUSE: 17
+};
+
+// === Toggle dynamic sections ===
+$('proposalType').addEventListener('change', () => {
+  [
+    'tierUpgradeRow',
+    'councilBatchRow',
+    'newDaoRow',
+    'upgradeCouncilRow',
+    'upgradeGovernanceRow',
+    'setCouncilRow'
+  ].forEach(id => {
+    const el = $(id);
+    if (el) el.classList.add('hidden');
+  });
+
+  const type = $('proposalType').value;
+
+  if (type === 'TIER_UPGRADE') $('tierUpgradeRow').classList.remove('hidden');
+  if (['COUNCIL_RESEED_ACTIVE', 'COUNCIL_PROPOSE_STANDBY'].includes(type)) $('councilBatchRow').classList.remove('hidden');
+  if (type === 'COUNCIL_PROPOSE_NEW_DAO') $('newDaoRow').classList.remove('hidden');
+  if (type === 'UPGRADE_COUNCIL') $('upgradeCouncilRow').classList.remove('hidden');
+  if (type === 'UPGRADE_GOVERNANCE') $('upgradeGovernanceRow').classList.remove('hidden');
+  if (type === 'SET_NEW_COUNCIL') $('setCouncilRow').classList.remove('hidden');
+});
+
+// === Create Proposal ===
+$('createProposalBtn').onclick = async () => {
+  try {
+    if (!contracts.governance) {
+      await attachContractsIfSet();
+      if (!contracts.governance) return alert('⚠️ Governance contract not set.');
+    }
+
+    showLoading();
+
+    const typeStr = $('proposalType').value;
+    const pType = PROPOSAL_MAPPING[typeStr];
+
+    let paramTarget = parseInt($('paramTarget').value || '0');
+    let newValue = ethers.BigNumber.from($('proposalValue').value.trim() || '0');
+    let ctx = $('proposalCollectionCtx').value.trim() || ethers.constants.AddressZero;
+
+    if (typeStr === 'TIER_UPGRADE') {
+      ctx = $('tierCollection').value.trim();
+      paramTarget = parseInt($('tierTo').value);
+      newValue = ethers.BigNumber.from($('tierDeclaredSupply').value || '0');
+    } else if (['COUNCIL_RESEED_ACTIVE', 'COUNCIL_PROPOSE_STANDBY'].includes(typeStr)) {
+      const addrs = Array.from(document.querySelectorAll('.councilAddr')).map(el => el.value.trim());
+      if (addrs.length !== 7 || addrs.some(a => !ethers.utils.isAddress(a))) {
+        hideLoading(); return alert('⚠️ Must provide 7 valid guardian addresses');
+      }
+      const payload = await contracts.governance.encodeCouncilBatch(addrs);
+      ctx = payload; newValue = 0; paramTarget = 0;
+    } else if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
+      ctx = $('govNewDaoAddr').value.trim();
+      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return alert("⚠️ Invalid DAO address"); }
+    } else if (typeStr === 'UPGRADE_COUNCIL') {
+      ctx = $('newCouncilImpl').value.trim();
+      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return alert("⚠️ Invalid council implementation address"); }
+    } else if (typeStr === 'UPGRADE_GOVERNANCE') {
+      ctx = $('newGovernanceImpl').value.trim();
+      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return alert("⚠️ Invalid governance implementation address"); }
+    } else if (typeStr === 'SET_NEW_COUNCIL') {
+      ctx = $('newCouncilAddr').value.trim();
+      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return alert("⚠️ Invalid council address"); }
+    }
+
+    if (!confirm(`Create proposal?\n\nType: ${typeStr}\nValue: ${$('proposalValue').value}\nTarget: ${ctx}\n\nPress OK to confirm.`)) {
+      hideLoading(); return;
+    }
+
+    const tx = await contracts.governance.propose(pType, paramTarget, newValue, ctx);
+    log('propose tx', tx.hash);
+    await tx.wait();
+
+    alert("✅ Proposal created successfully!");
+  } catch (e) {
+    console.error(e);
+    alert("❌ " + (e.reason || e.message || e));
+  } finally {
+    hideLoading();
+  }
+};
+
+
+	  // ======== Vote ========
+$('voteProposalBtn').onclick = async () => {
+  try {
+    if (!contracts.governance) await attachContractsIfSet();
+
+    const id = $('proposalId').value.trim();
+    if (!id) return alert('⚠️ Proposal ID required');
+
+    // Ask user to confirm voting intent
+    const support = confirm("Vote FOR this proposal?\nPress Cancel to vote AGAINST.");
+
+    // Determine collection context (if any)
+    let ctx = $('proposalCollectionCtx').value.trim();
+    if (!ethers.utils.isAddress(ctx)) ctx = ethers.constants.AddressZero;
+
+    showLoading("Casting vote...");
+
+    // Send transaction
+    const tx = await contracts.governance.vote(id, ctx);
+    await tx.wait();
+
+    alert(`✅ Vote cast ${support ? "FOR" : "AGAINST"} (context: ${ctx})`);
+  } catch (e) {
+    console.error(e);
+    alert("❌ " + (e.reason || e.message || e));
+  } finally {
+    hideLoading();
+  }
+};
+
+// ======== Execute ========
+$('execProposalBtn').onclick = async () => {
+  try {
+    if (!contracts.governance) await attachContractsIfSet();
+
+    const id = $('proposalId').value.trim();
+    if (!id) return alert('⚠️ Proposal ID required');
+
+    showLoading("Executing proposal...");
+
+    const tx = await contracts.governance.executeProposal(id);
+    await tx.wait();
+
+    alert("✅ Proposal executed!");
+  } catch (e) {
+    console.error(e);
+    alert("❌ " + (e.reason || e.message || e));
+  } finally {
+    hideLoading();
+  }
+};
+
+	// ======== Fetch Governance Proposals (for current contract ABI) ========
+async function fetchProposalsExplorer() {
+  try {
+    if (!contracts.governance) return alert('⚠️ Bind the Governance contract first.');
+    showLoading("Fetching proposals...");
+
+    const tbody = $('proposalsTbody');
+    tbody.innerHTML = "";
+
+    let ids = [];
+    let i = 0;
+    while (true) {
+      try {
+        const id = await contracts.governance.proposalIds(i);
+        if (id === ethers.ZeroHash) break; // stop at empty slot
+        ids.push(id);
+        i++;
+      } catch {
+        break; // stop if array index out of range
+      }
+    }
+
+    const total = ids.length;
+    $('proposalCount').innerText = `Total: ${total} proposal${total === 1 ? '' : 's'}`;
+
+    const currentBlock = await provider.getBlockNumber();
+
+    for (const [idx, id] of ids.entries()) {
+      const p = await contracts.governance.getProposalInfo(id);
+
+      const typeName =
+        Object.keys(PROPOSAL_MAPPING).find(
+          key => PROPOSAL_MAPPING[key] === Number(p.pType)
+        ) || "Unknown";
+
+      const proposer = p.proposer;
+      const endBlock = Number(p.endBlock);
+      const executed = p.executed;
+      const votes = ethers.utils.formatUnits(p.votesScaled, 18);
+      const isActive = currentBlock < endBlock;
+
+      const status = executed
+        ? "✅ Executed"
+        : isActive
+        ? `🟡 Active (${endBlock - currentBlock} blocks left)`
+        : "⛔ Ended";
+
+      let actionHTML = `<span class="text-slate-500">—</span>`;
+      if (isActive) {
+        actionHTML = `
+          <button onclick="voteOnProposal('${id}')" class="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs">🗳 Vote</button>
+        `;
+      } else if (!executed) {
+        actionHTML = `
+          <button onclick="executeProposal('${id}')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs">⚙️ Execute</button>
+        `;
+      }
+
+      const row = `
+        <tr class="border-t border-slate-700 hover:bg-slate-800/30">
+          <td class="p-2 text-center">${idx + 1}</td>
+          <td class="p-2 text-center font-semibold">${typeName}</td>
+          <td class="p-2 text-center text-cyan-400 break-all">${proposer}</td>
+          <td class="p-2 text-center text-green-400">${votes}</td>
+          <td class="p-2 text-center">${status}</td>
+          <td class="p-2 text-center">${actionHTML}</td>
+        </tr>
+      `;
+
+      tbody.insertAdjacentHTML("beforeend", row);
+    }
+
+    log(`fetchProposalsExplorer done (${total} proposals loaded)`);
+  } catch (e) {
+    log('fetchProposalsExplorer err', e);
+    alert(`Failed to fetch proposals: ${e.message || e}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// =====================================================
+// ⚖️ READY-TO-EXECUTE PROPOSALS (Timelock Model, Event-Based)
+// =====================================================
+
+$('loadReadyProposalsBtn').onclick = async () => {
+  try {
+    showLoading("Loading passed proposals...");
+
+    const tbody = $('readyProposalsTbody');
+    tbody.innerHTML = '';
+
+    // ✅ Pull proposals from on-chain events instead of proposalCount()
+    const proposalEvents = await contracts.governance.queryFilter("ProposalCreated", 0, "latest");
+    const count = proposalEvents.length;
+    const now = Math.floor(Date.now() / 1000);
+    let readyCount = 0;
+
+    for (let i = 0; i < count; i++) {
+      const id = proposalEvents[i].args.id || proposalEvents[i].args.proposalId;
+      const proposer = proposalEvents[i].args.proposer || "N/A";
+
+      const p = await contracts.governance.proposals(id);
+      const passed = await contracts.governance.isProposalPassed(id);
+      if (!passed || p.executed) continue;
+
+      readyCount++;
+      const typeName =
+        Object.keys(PROPOSAL_MAPPING).find(k => PROPOSAL_MAPPING[k] == p.pType) || "Unknown";
+      const forVotes = Number(p.forVotes) / 1e18;
+      const againstVotes = Number(p.againstVotes) / 1e18;
+
+      // --- Timelock handling ---
+      let unlockTime = 0;
+      try {
+        unlockTime = await contracts.governance.proposalReadyTime(id);
+      } catch {}
+      const remaining = unlockTime > now ? unlockTime - now : 0;
+      const hoursLeft = (remaining / 3600).toFixed(2);
+      const canExecute = remaining <= 0;
+
+      const status = canExecute
+        ? `<span class="text-green-400 text-xs font-semibold">✅ Ready</span>`
+        : `<span class="text-yellow-400 text-xs">⏳ ${hoursLeft}h remaining</span>`;
+
+      const actionBtn = canExecute
+        ? `<button class="execBtn bg-green-600 hover:bg-green-500 text-xs rounded px-2 py-1" data-id="${id}">
+             ⚙️ Execute
+           </button>`
+        : `<span class="text-slate-500 text-xs">Waiting</span>`;
+
+      const row = `
+        <tr>
+          <td class="p-2 font-mono text-xs">${id.slice(0, 10)}...</td>
+          <td class="p-2">${typeName}</td>
+          <td class="p-2">${proposer.slice(0, 8)}...</td>
+          <td class="p-2">${forVotes.toFixed(1)} / ${againstVotes.toFixed(1)}</td>
+          <td class="p-2 text-center">${status}</td>
+          <td class="p-2 text-center">${actionBtn}</td>
+        </tr>`;
+      tbody.insertAdjacentHTML('beforeend', row);
+    }
+
+    $('readyProposalCount').innerText = `${readyCount} ready`;
+    if (readyCount === 0)
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-500 p-2">No ready proposals found.</td></tr>`;
+  } catch (err) {
+    alert("❌ " + (err.message || err));
+  } finally {
+    hideLoading();
+  }
+};
+
+// --- Execute Proposal Handler ---
+document.addEventListener("click", async e => {
+  if (e.target.classList.contains("execBtn")) {
+    const id = e.target.dataset.id;
+    if (!confirm(`Execute proposal ${id.slice(0, 10)} now?`)) return;
+
+    try {
+      showLoading("Executing...");
+      const tx = await contracts.governance.executeProposal(id);
+      await tx.wait();
+      alert("✅ Proposal executed successfully!");
+      $('loadReadyProposalsBtn').click();
+    } catch (err) {
+      alert("❌ " + (err.message || err));
+    } finally {
+      hideLoading();
+    }
+  }
+});
+
+
+	  // ======== 🗳️ Check Governance Voting Eligibility ========
+async function checkVotingEligibility() {
+  try {
+    showLoading("Checking governance eligibility...");
+
+    // 🧩 Ensure contracts are ready
+    if (!contracts?.governance) {
+      await attachContractsIfSet();
+    }
+
+    if (!userAddr && typeof signer !== "undefined") {
+      userAddr = await signer.getAddress();
+    }
+
+    if (!contracts.governance || !userAddr) {
+      $("votingEligibilityStatus").innerText = "⚠️ Connect wallet first.";
+      $("votingEligibilityStatus").style.color = "#f87171";
+      hideLoading();
+      return false;
+    }
+
+    // 🔍 1️⃣ Get user's voting weight from governance contract
+    let weight = 0;
+    try {
+      const weightBN = await contracts.governance.getVotingWeight(userAddr);
+      weight = Number(weightBN.toString());
+    } catch (err) {
+      console.warn("⚠️ getVotingWeight not found, using fallback to staking...");
+      // Optional fallback if staking provides it
+      try {
+        const weightBN = await contracts.staking.votingWeight(userAddr);
+        weight = Number(weightBN.toString());
+      } catch {
+        weight = 0;
+      }
+    }
+
+    // 🔍 2️⃣ Get eligibility thresholds (if exist)
+    let minProposal = 0, minVoting = 0;
+    try {
+      minProposal = Number((await contracts.governance.minProposalWeight?.() || 0).toString());
+      minVoting = Number((await contracts.governance.minVotingWeight?.() || 0).toString());
+    } catch {
+      console.warn("⚠️ Governance thresholds not available, using default = 0");
+    }
+
+    const canVote = weight >= minVoting;
+    const canPropose = weight >= minProposal;
+
+    // 🧮 3️⃣ Update UI
+    const statusEl = $("votingEligibilityStatus");
+    const infoEl = $("votingWeightInfo");
+
+    if (weight === 0) {
+      statusEl.innerText = "🚫 Not eligible — stake NFTs to gain voting power";
+      statusEl.style.color = "#f87171"; // red
+      infoEl.innerText = "Voting weight: 0";
+    } else {
+      const roles = [
+        canVote ? "🗳️ Can Vote" : "❌ Cannot Vote",
+        canPropose ? "📜 Can Propose" : "❌ Cannot Propose",
+      ];
+      statusEl.innerText = `✅ Eligible (${roles.join(", ")})`;
+      statusEl.style.color = "#10b981"; // green
+      infoEl.innerText = `Your current voting weight: ${weight.toLocaleString()} points`;
+    }
+
+    log(`🗳️ Eligibility check — weight=${weight}, canVote=${canVote}, canPropose=${canPropose}`);
+	  
+	  // 🕒 Update last checked time
+const lastCheckedEl = $("lastCheckedInfo");
+if (lastCheckedEl) {
+  $("lastCheckedTime").innerText = new Date().toLocaleString();
+  lastCheckedEl.classList.remove("hidden");
+}
+	  
+    return { weight, canVote, canPropose };
+  } catch (err) {
+    console.error("❌ checkVotingEligibility error:", err);
+    $("votingEligibilityStatus").innerText = "Error checking eligibility";
+    $("votingEligibilityStatus").style.color = "#f87171";
+    return false;
+  } finally {
+    hideLoading();
+  }
+}
+
+// 🔘 Button handler
+$("checkEligibilityBtn").onclick = checkVotingEligibility;
+	  
+
+// ===============================
+// Governance Transparency 
+// ===============================
+function formatVotingDuration(blocks) {
+  const seconds = blocks * 12; // adjust block time if needed
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) return `≈ ${days} day${days > 1 ? 's' : ''} (${blocks} blocks @12s)`;
+  if (hours > 0) return `≈ ${hours} hr${hours > 1 ? 's' : ''} (${blocks} blocks @12s)`;
+  if (minutes > 0) return `≈ ${minutes} min${minutes > 1 ? 's' : ''} (${blocks} blocks @12s)`;
+  return `${blocks} blocks`;
+}
+	  
+	  async function fetchGovernanceTransparency() {
+  try {
+    if (!contracts.governance) return alert('Bind governance contract first');
+
+    showLoading("Fetching governance transparency...");
+
+    const [
+      council,
+      stakingAddr,
+      votingDuration,
+      minVotes,
+      capPercent
+    ] = await Promise.all([
+      contracts.governance.council(),                // ✅ FIXED
+      contracts.governance.staking(),                // ✅
+      contracts.governance.votingDurationBlocks(),   // ✅ FIXED
+      contracts.governance.minVotesRequiredScaled(), // ✅
+      contracts.governance.collectionVoteCapPercent()// ✅
+    ]);
+
+    $('govCouncil').innerText = council;
+    $('govStaking').innerText = stakingAddr;
+    $('govVotingDuration').innerText = formatVotingDuration(Number(votingDuration));
+    $('govMinVotes').innerText = ethers.utils.formatUnits(minVotes, 18) + " votes";
+    $('govCapPercent').innerText = capPercent.toString() + "%";
+
+    log('fetchGovernanceTransparency done');
+  } catch (e) {
+    log('fetchGovernanceTransparency err', e);
+    alert('Failed to fetch governance transparency. Check console for details.');
+  } finally {
+    hideLoading();
+  }
+	  }
+
+
+
+	  // Parse helper for 7 addresses
+function parse7(txt) {
+    const arr = txt.split('\n').map(s => s.trim()).filter(Boolean);
+    if (arr.length !== 7) throw new Error("Need exactly 7 addresses");
+    return arr;
+}
+	  
+// ---------- Guardian Council 
+// ---------- Council JS ----------
+// DAO Rotation
+$('proposeDaoBtn').onclick = async () => {
+  try {
+    if (!contracts.council) return alert("Council not attached");
+    showLoading();
+    const newDao = $('councilNewDaoAddr').value.trim();
+    if (!ethers.utils.isAddress(newDao)) throw new Error("Invalid DAO address");
+    const tx = await contracts.council.proposeNewDAO(newDao);
+    await tx.wait();
+    alert("✅ DAO proposed");
+  } catch (e) {
+    alert("❌ " + (e.reason || e.message));
+  } finally {
+    hideLoading();
+  }
+};
+
+$('commitDaoBtn').onclick = async () => {
+  try {
+    if (!contracts.council) return alert("Council not attached");
+    showLoading();
+    const tx = await contracts.council.commitNewDAO();
+    await tx.wait();
+    alert("✅ DAO committed");
+  } catch (e) {
+    alert("❌ " + (e.reason || e.message));
+  } finally {
+    hideLoading();
+  }
+};
+
+// Guardian Batches
+$('proposeActiveBatchBtn').onclick = async () => {
+  try {
+    showLoading();
+    const arr = parse7($('activeBatchInput').value);
+    const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
+    await tx.wait();
+    alert("✅ Active batch proposed");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+$('commitActiveBatchBtn').onclick = async () => {
+  try {
+    showLoading();
+    const tx = await contracts.council.daoCommitSeedActiveBatch();
+    await tx.wait();
+    alert("✅ Active batch committed");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+$('proposeStandbyBatchBtn').onclick = async () => {
+  try {
+    showLoading();
+    const arr = parse7($('standbyBatchInput').value);
+    const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
+    await tx.wait();
+    alert("✅ Standby batch proposed");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+$('commitStandbyBatchBtn').onclick = async () => {
+  try {
+    showLoading();
+    const tx = await contracts.council.daoCommitSeedStandbyBatch();
+    await tx.wait();
+    alert("✅ Standby batch committed");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+$('activateStandbyBtn').onclick = async () => {
+  try {
+    showLoading();
+    const tx = await contracts.council.daoActivateStandby();
+    await tx.wait();
+    alert("✅ Standby activated");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+
+// ------------------------------------
+// Function Signature Select - Handles UI Visibility and Pre-populates fields
+$('recoveryFunctionSelect').onchange = () => {
+  const selectedValue = $('recoveryFunctionSelect').value;
+  $('recoveryFunction').value = selectedValue;
+
+  $('inputRecoveryProposed').value = '';
+  $('recoveryArgs').value = '';
+  $('inputRecoveryCallData').value = '';
+
+  const argContainer = $('recoveryArgInputs');
+  const proposedInput = $('inputRecoveryProposed');
+
+  argContainer.style.display = 'block'; 
+  proposedInput.readOnly = false;
+  proposedInput.placeholder = 'Proposed address (e.g., new Admin or set address)';
+
+  const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+  let autoEncode = false;
+
+  if (selectedValue.includes('()')) {
+    argContainer.style.display = 'none'; 
+    proposedInput.value = ZERO_ADDRESS;
+    proposedInput.placeholder = '0x00...00 (Not Applicable - Action only)';
+    proposedInput.readOnly = true;
+    autoEncode = true;
+
+  } else if (selectedValue.includes('swapAdmin(address,address)')) {
+    $('recoveryArgs').value = '0xNewAdmin, 0xOldAdmin';
+    proposedInput.value = '0xNewAdmin';
+    proposedInput.placeholder = 'Proposed address (0xNewAdmin)';
+
+  } else if (
+    selectedValue.includes('(address)')
+  ) {
+    // Includes setCouncil, setMinter, upgradeTo, setBonusModule, setCata
+    $('recoveryArgs').value = '0xAddressToSet';
+    proposedInput.value = '0xAddressToSet';
+    proposedInput.placeholder = 'Proposed address (Address being set)';
+  }
+
+  if (autoEncode) {
+    try {
+      const fnSig = $('recoveryFunction').value.trim();
+      const iface = new ethers.utils.Interface([`function ${fnSig}`]);
+      const fnName = fnSig.split('(')[0];
+      $('inputRecoveryCallData').value = iface.encodeFunctionData(fnName, []);
+    } catch (e) {
+      $('inputRecoveryCallData').value = "Error during auto-encode.";
+      console.error(e);
+    }
+  }
+};
+
+	  
+// Encode Calldata Button - User clicks this after inputting addresses
+$('encodeCallDataBtn').onclick = async () => {
+    try {
+        const fnSig = $('recoveryFunction').value.trim();
+        const args = $('recoveryArgs').value.trim().split(',').map(a => a.trim()).filter(Boolean);
+        
+        if (!fnSig) return alert("❌ Function signature is required.");
+        
+        const iface = new ethers.utils.Interface([`function ${fnSig}`]);
+        const fnName = fnSig.split('(')[0];
+
+        // Filter out placeholder text before encoding
+        const cleanedArgs = args.filter(a => 
+            !a.startsWith('0xNewAdmin') && 
+            !a.startsWith('0xOldAdmin') && 
+            !a.startsWith('0xAddressToSet')
+        );
+
+        $('inputRecoveryCallData').value = iface.encodeFunctionData(fnName, cleanedArgs); 
+        alert("✅ Calldata encoded");
+    } catch (e) { alert("❌ Error encoding calldata. Check signature and arguments: " + (e.message || e)); }
+};
+    
+// Propose Recovery Button - Sends the transaction
+$('proposeRecoveryBtn').onclick = async () => {
+    try {
+        showLoading();
+        
+        const proposed = $('inputRecoveryProposed').value.trim(); 
+        const target = $('inputRecoveryCallTarget').value.trim(); 
+        const calldata = $('inputRecoveryCallData').value.trim();
+        
+        if (!target || target === '0x') return alert("❌ Target contract address is required.");
+        if (!calldata || calldata.length < 10) return alert("❌ Calldata must be encoded.");
+
+        // Check if the proposed address is a placeholder that needs to be replaced
+        let finalProposed = proposed;
+        if (finalProposed.startsWith('0xNewAdmin') || finalProposed.startsWith('0xAddressToSet')) {
+            return alert("❌ Please replace the placeholder in 'Proposed address' with a real address first.");
+        }
+        
+        // This is the call that executes the proposal on the council
+        const tx = await contracts.council.proposeRecovery(finalProposed, target, calldata);
+        await tx.wait();
+        alert("✅ Recovery proposed");
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+  
+$('approveRecoveryBtn').onclick = async () => {
+    try { 
+        showLoading(); 
+        const tx = await contracts.council.approveRecovery();
+        await tx.wait(); 
+        alert("✅ Recovery approved");
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+$('executeRecoveryBtn').onclick = async () => {
+    try { 
+        showLoading(); 
+        const tx = await contracts.council.executeRecovery(); 
+        await tx.wait(); 
+        alert("✅ Recovery executed");
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+$('vetoRecoveryBtn').onclick = async () => {
+    try { 
+        showLoading(); 
+        const tx = await contracts.council.lastHonestHaltAndPromote(); 
+        await tx.wait(); 
+        alert("✅ Recovery vetoed");
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+	    // Lock
+$('clearLockBtn').onclick = async () => {
+  try {
+    showLoading();
+    const tx = await contracts.council.daoClearLockAndWarning();
+    await tx.wait();
+    alert("✅ Lock cleared");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
+};
+
+
+	  // ===================================
+// UTILITY: Time Formatting Helper
+// ===================================
+
+/**
+ * Utility function to format seconds into readable Dd Hh Mm Ss format.
+ */
+function formatTimeRemaining(seconds) {
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+
+    let parts = [];
+    if (d > 0) parts.push(`${d}d`);
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0 && parts.length < 2) parts.push(`${m}m`);
+    // Only show seconds if less than a minute remaining and not already showing hours/days
+    if (s > 0 && parts.length < 2 && m < 1) parts.push(`${s}s`);
+    
+    // Ensure we show '0s' if time is 0 or less
+    return parts.length > 0 ? parts.join(' ') : '0s';
+}
+
+
+// ===================================
+// MAIN: REFRESH RECOVERY STATE
+// ===================================
+
+async function refreshRecovery() {
+    if (!contracts?.council) return;
+
+    showLoading("recovery");
+
+    // --- Time Lock Expiration Polling (NEW) ---
+    // Clear any existing interval to prevent duplicates
+    if (window.recoveryTimelockInterval) {
+        clearInterval(window.recoveryTimelockInterval);
+    }
+    
+    try {
+        const requiredApprovals = 5; // THRESHOLD constant (5/7)
+        const recoveryReadyTimeEl = $("recoveryReadyTime");
+        const recoveryStatusBanner = $("recoveryStatusBanner");
+
+        // --- Fetch Approvals (Moved to top for conditional checks) ---
+        let approvals = 0;
+        try {
+            approvals = await contracts.council.getRecoveryApprovals();
+            approvals = Number(approvals);
+            $("recoveryApprovals").innerText = approvals.toString();
+        } catch (err) {
+            console.error("DEBUG FAILED: getRecoveryApprovals failed.", err);
+            $("recoveryApprovals").innerText = "[!CALL FAILED]";
+        }
+
+        // --- Fetch Executed Status ---
+        let executed = false;
+        try {
+            executed = await contracts.council.getRecoveryExecuted();
+        } catch (err) {
+            console.warn("getRecoveryExecuted failed:", err);
+        }
+        $("recoveryExecuted").innerText = executed ? "✅ Executed" : "❌ Not executed";
+
+
+        // --- Fetch readyToExecuteTimestamp (NEW) ---
+        let readyTimeNum = 0;
+        try {
+            // ASSUMPTION: This getter function exists on the contract
+            readyTimeNum = await contracts.council.getRecoveryReadyToExecuteTimestamp();
+            readyTimeNum = Number(readyTimeNum);
+        } catch (err) {
+            console.warn("getRecoveryReadyToExecuteTimestamp failed:", err);
+        }
+        
+        // --- TIMELOCK STATUS LOGIC (NEW) ---
+        recoveryReadyTimeEl.innerText = "—";
+        recoveryStatusBanner.classList.add('hidden', 'bg-green-700', 'bg-yellow-700', 'text-white', 'text-black'); // Reset and clean banner classes
+
+        if (readyTimeNum > 0 && approvals >= requiredApprovals && !executed) {
+            const updateStatus = () => {
+                const currentTimeMs = Date.now();
+                const readyTimeMs = readyTimeNum * 1000;
+                const isReady = currentTimeMs >= readyTimeMs;
+                const formattedReadyTime = new Date(readyTimeMs).toLocaleString();
+                
+                if (isReady) {
+                    // State: Approved, Timelock Expired, Not Executed
+                    recoveryReadyTimeEl.innerText = `✅ READY (since ${formattedReadyTime})`;
+                    
+                    // Set status banner to green (Ready)
+                    recoveryStatusBanner.classList.remove('hidden', 'bg-yellow-700', 'text-black');
+                    recoveryStatusBanner.classList.add('bg-green-700', 'text-white');
+                    recoveryStatusBanner.innerText = `EXECUTION READY: Approved by ${approvals}/${requiredApprovals} and timelock has expired.`;
+                    
+                    // Stop the timer once ready
+                    clearInterval(window.recoveryTimelockInterval);
+
+                } else {
+                    // State: Approved, Timelock Active
+                    const timeRemainingSeconds = Math.max(0, Math.floor((readyTimeMs - currentTimeMs) / 1000));
+                    const timeRemainingText = formatTimeRemaining(timeRemainingSeconds);
+
+                    recoveryReadyTimeEl.innerText = `⏳ Executable in ${timeRemainingText}`;
+
+                    // Set status banner to yellow (Pending)
+                    recoveryStatusBanner.classList.remove('hidden', 'bg-green-700', 'text-white');
+                    recoveryStatusBanner.classList.add('bg-yellow-700', 'text-black');
+                    recoveryStatusBanner.innerText = `TIMELOCK ACTIVE: Approved by ${approvals}/${requiredApprovals}. Execution available in ${timeRemainingText}.`;
+                }
+            };
+            
+            // Initial call
+            updateStatus();
+            
+            // Set up a 1-second interval to count down the time remaining
+            window.recoveryTimelockInterval = setInterval(updateStatus, 1000);
+
+        } else if (readyTimeNum > 0) {
+            // State: Proposal exists, but not approved yet (show the target time if it was set)
+             recoveryReadyTimeEl.innerText = `Target: ${new Date(readyTimeNum * 1000).toLocaleString()}`;
+        }
+        // --- END NEW LOGIC ---
+
+        // --- Fetch deadline (Kept for completeness, though Ready Time is more informative) ---
+        let deadlineNum = 0;
+        try {
+            deadlineNum = await contracts.council.getRecoveryDeadline();
+            deadlineNum = Number(deadlineNum);
+        } catch (err) {
+            console.warn("getRecoveryDeadline failed:", err);
+        }
+        $("recoveryDeadline").innerText = deadlineNum > 0 ? new Date(deadlineNum * 1000).toLocaleString() : deadlineNum.toString();
+
+        // --- Fetch proposed (Core status, check for failure) ---
+        let proposed = ethers.constants.AddressZero;
+        try {
+            proposed = await contracts.council.getRecoveryProposed();
+        } catch (err) {
+            console.error("DEBUG FAILED: getRecoveryProposed failed.", err);
+            $("recoveryProposed").innerText = "[!CALL FAILED]";
+            throw new Error("Proposed fetch failed.");
+        }
+        $("recoveryProposed").innerText = proposed;
+
+        // Call target
+        try {
+          const target = await contracts.council.getRecoveryCallTarget();
+          $("recoveryCallTarget").innerText = target;
+        } catch (err) {
+          console.error("DEBUG FAILED: getRecoveryCallTarget failed.", err);
+          $("recoveryCallTarget").innerText = "[!CALL FAILED]";
+        }
+
+        // Call data
+        try {
+          const callData = await contracts.council.getRecoveryCallData();
+          $("recoveryCallData").innerText = callData;
+        } catch (err) {
+          console.error("DEBUG FAILED: getRecoveryCallData failed.", err);
+          $("recoveryCallData").innerText = "[!CALL FAILED]";
+        }
+
+        // Approved by (guardians list)
+        try {
+          const guardians = await contracts.council.getActiveGuardians();
+          const approvedBy = [];
+          const currentNonce = await contracts.council.getAdminRequestNonce(); 
+          for (const g of guardians) {
+            try {
+              const approved = await contracts.council.hasApproved(g);
+              if (approved) approvedBy.push(g);
+            } catch {}
+          }
+          $("recoveryApprovedBy").innerText =
+            approvedBy.length > 0 ? approvedBy.join(", ") : "—";
+        } catch (err) {
+          console.error("DEBUG FAILED: ApprovedBy block failed.", err);
+          $("recoveryApprovedBy").innerText = "[!BLOCK FAILED]";
+        }
+
+    } catch (err) {
+        console.error("refreshRecovery failed with re-thrown error:", err);
+        // Clear interval on failure
+        if (window.recoveryTimelockInterval) {
+             clearInterval(window.recoveryTimelockInterval);
+        }
+    }
+
+    hideLoading();
+}
+
+
+// ===========================
+// Recovery Event Watchers
+// ===========================
+function watchRecoveryEvents() {
+  if (!contracts?.council) return;
+
+  // Proposal created
+  contracts.council.on("RecoveryProposed", (proposer, proposed, callTarget, deadline, event) => {
+    console.log("⚡ RecoveryProposed", { proposer, proposed, callTarget, deadline: deadline.toString() });
+    refreshRecovery();
+  });
+
+  // Approval added
+  contracts.council.on("RecoveryApproved", (guardian, approvals, event) => {
+    console.log("⚡ RecoveryApproved by", guardian, " → approvals:", approvals.toString());
+    refreshRecovery();
+  });
+
+  // Proposal executed
+  contracts.council.on("RecoveryExecuted", (proposed, callTarget, event) => {
+    console.log("⚡ RecoveryExecuted", { proposed, callTarget });
+    refreshRecovery();
+  });
+			}
+
+    
+    
+// ===========================
+// Initialization Hook
+// ===========================
+// Call this once after contracts are connected
+async function initRecoveryUI() {
+  // First manual refresh
+  await refreshRecovery();
+
+  // Start listening for live events
+  watchRecoveryEvents();
+}
+       
+    
+async function refreshVetoWarning() {
+  if (!contracts.council) {
+    console.warn("❌ Council contract not attached yet");
+    return;
+  }
+
+  try {
+    const [guardian, expiry] = await contracts.council.tempVeto();
+    const warn = await contracts.council.warning();
+
+    // Guardian field: text + tooltip
+    $("lastHonestGuardian").innerText = guardian;
+    $("lastHonestGuardian").title = guardian;
+
+    // Expiry field
+    $("lastHonestExpiry").innerText =
+      expiry > 0 ? new Date(expiry * 1000).toLocaleString() : "—";
+
+    // Warning field (color coded)
+    const warningEl = $("warningFlag");
+    if (warn) {
+      warningEl.innerText = "⚠️ Warning Active";
+      warningEl.classList.add("text-yellow-400");
+      warningEl.classList.remove("text-green-400");
+    } else {
+      warningEl.innerText = "✅ No Warning";
+      warningEl.classList.add("text-green-400");
+      warningEl.classList.remove("text-yellow-400");
+    }
+  } catch (err) {
+    console.error("refreshVetoWarning failed:", err);
+    $("lastHonestGuardian").innerText = "ERROR";
+    $("lastHonestExpiry").innerText = "ERROR";
+    $("warningFlag").innerText = "ERROR";
+    $("warningFlag").classList.remove("text-green-400", "text-yellow-400");
+    $("warningFlag").classList.add("text-red-400");
+  }
+}
+
+async function refreshDao() {
+  const dao = await contracts.council.dao();
+  const [pending, earliest, deadline] = await contracts.council.getPendingDAOState();
+  $("daoAddr").innerText = dao;
+  $("pendingDaoAddr").innerText = pending;
+  $("pendingDaoWindow").innerText = `Earliest: ${new Date(earliest*1000).toLocaleString()} | Deadline: ${new Date(deadline*1000).toLocaleString()}`;
+}
+
+async function refreshGuardians() {
+  const active = await contracts.council.getActiveGuardians();
+  const standby = await contracts.council.getStandbyGuardians();
+  const [pa, paEarliest, paDeadline] = await contracts.council.getPendingActiveBatchState();
+  const [ps, psEarliest, psDeadline] = await contracts.council.getPendingStandbyBatchState();
+
+  $("activeGuardians").innerText = active.join("\n");
+  $("standbyGuardians").innerText = standby.join("\n");
+  $("pendingActiveGuardians").innerText = pa.join("\n");
+  $("pendingActiveWindow").innerText = `Earliest: ${new Date(paEarliest*1000).toLocaleString()} | Deadline: ${new Date(paDeadline*1000).toLocaleString()}`;
+  $("pendingStandbyGuardians").innerText = ps.join("\n");
+  $("pendingStandbyWindow").innerText = `Earliest: ${new Date(psEarliest*1000).toLocaleString()} | Deadline: ${new Date(psDeadline*1000).toLocaleString()}`;
+}
+
+async function refreshLock() {
+  const locked = await contracts.council.locked();
+  $("lockStatus").innerText = locked ? "🔒 Locked" : "✅ Unlocked";
+}
+	  
+
+  // ---------- Bind UI on load ----------
+  window.addEventListener('load', async ()=>{
+  // Manually set the default addresses
+  $('addrCata').value = DEFAULT_ADDRS.cata;
+  $('addrStaking').value = DEFAULT_ADDRS.staking;
+  $('addrGovernance').value = DEFAULT_ADDRS.governance;
+  $('addrCouncil').value = DEFAULT_ADDRS.council;
+	$('addrRecovery').value = DEFAULT_ADDRS.recovery;
+
+  await loadABIs();
+	  await attachContractsIfSet();
+
+  // Connect / disconnect
+  $('connectBtn').onclick = connect;
+  $('disconnectBtn').onclick = disconnect;
+
+$("refreshRecoveryBtn").addEventListener("click", () => {
+  refreshRecovery(); });
+$("refreshDaoBtn").onclick = refreshDao;
+$("refreshGuardiansBtn").onclick = refreshGuardians;
+$("refreshLockBtn").onclick = refreshLock;
+    
+
+  // Refreshes the contracts based on the addresses in the input fields
+  $('saveAddrs').onclick = ()=>{
+    if(signer) attachContractsIfSet();
+  };
+
+  $('loadAddrs').onclick = ()=>{
+    if(signer) attachContractsIfSet();
+  };
+		
+    // CATA
+	$('cataBurnBtn').onclick = cataBurn;
+  $('pauseBtn').onclick = cataPause;
+  $('unpauseBtn').onclick = cataUnpause;
+  $('swapAdminBtn').onclick = cataSwapAdmin;
+	$('refreshTransparencyBtn').onclick = fetchTransparency;
+
+	// Register Collection 
+/** Wire handlers to new UI elements — call this inside your window load / UI ready handler */
+function wireRegistrationUIs() {
+  // Existing
+  $('calcRegFeeBtn').onclick = handleCalcRegFee;
+  $('approveRegCataBtn').onclick = handleApproveForRegistration;
+  $('registerCollectionBtn').onclick = handleRegisterCollection;
+  $('adminSetConfigBtn').onclick = handleAdminSetCollectionConfig;
+
+  // New admin actions (safe checks in case button missing in DOM)
+  if ($('removeCollectionBtn')) $('removeCollectionBtn').onclick = handleRemoveCollection;
+  if ($('forfeitEscrowBtn')) $('forfeitEscrowBtn').onclick = handleForfeitEscrow;
+  if ($('setBluechipBtn')) $('setBluechipBtn').onclick = handleToggleBluechip;
+}
+
+// call this after your existing UI init (e.g., at end of window.load)
+wireRegistrationUIs();
+
+// ---------- Bluechip Binds ----------
+$('enrollBluechipBtn').onclick = enrollBluechip;
+$('harvestBluechipBtn').onclick = harvestBluechip;
+$('refreshBluechipBtn').onclick = refreshBluechip;
+	  $("refreshBluechipBtn2").onclick = refreshTopBluechipLeaderboard;
+	  
+    // Staking single
+	  $('refreshStakingTransparencyBtn').onclick = fetchStakingTransparency;
+    $('approveNFTBtn').onclick = approveNFT;
+    $('termStakeBtn').onclick = termStake;
+    $('permStakeBtn').onclick = permanentStake;
+    $('unstakeBtn').onclick = unstake;
+    $('harvestBtn').onclick = harvest;
+
+    // Batch
+    $('batchTermStakeBtn').onclick = batchTermStake;
+    $('batchPermStakeBtn').onclick = batchPermStake;
+    $('batchUnstakeBtn').onclick = batchUnstake;
+$('batchHarvestBtn').onclick = batchHarvest;
+
+	  // Extra staking binds
+$('pendingRewardsBtn').onclick = checkPendingRewards;
+	  $('refreshStakingStatsBtn').onclick = refreshStakingStats;
+$('viewPortfolioBtn').onclick = viewPortfolio;
+	  
+
+
+	  // Governance 
+	  $('refreshProposalsBtn').onclick = fetchProposalsExplorer;
+	    $('refreshGovernanceTransparencyBtn').onclick = fetchGovernanceTransparency;
+    
+
+	  
+    log('UI ready');
+  });
+
+	// Tab switching for top nav buttons
+document.querySelectorAll('.tabbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.getAttribute('data-tab');
+
+    // Toggle active button
+    document.querySelectorAll('.tabbtn').forEach(b => b.classList.remove('tab-active'));
+    btn.classList.add('tab-active');
+
+    // Toggle tab content
+    document.querySelectorAll('.tab-content').forEach(sec => sec.classList.add('hidden'));
+    document.getElementById(tab).classList.remove('hidden');
+  });
+});
+
+// Global function for internal links
+function selectTab(tabId) {
+  // Toggle active button
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.remove('tab-active'));
+  const btn = document.querySelector(`[data-tab="${tabId}"]`);
+  if (btn) btn.classList.add('tab-active');
+
+  // Toggle tab content
+  document.querySelectorAll('.tab-content').forEach(sec => sec.classList.add('hidden'));
+  const section = document.getElementById(tabId);
+  if (section) section.classList.remove('hidden');
+		}
+
+	  /********************************************************************
+ * Loading Indicator
+ ********************************************************************/
+function showLoading() {
+  // Use 'flex' to activate the centering rules defined in your CSS
+  $('loadingIndicator').style.display = 'flex';
+}
+function hideLoading() {
+  $('loadingIndicator').style.display = 'none';
+}
+	  
+  </script>
+</body>
+</html>
