@@ -1287,6 +1287,35 @@
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "getVotingEligibility",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "weight",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "canVote",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "canPropose",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "bytes32",
 				"name": "role",
 				"type": "bytes32"
