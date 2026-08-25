@@ -63,11 +63,8 @@
   </style>
 
 
-  return ["cata","staking","governance","council"].every(k => /^0x[a-fA-F0-9]{40}$/.test(a[k] || ""));
-};
-
 <script>
-/* v15.4: never launch the heavy dashboard against an empty deployment configuration. */
+/* v15.4.2: never launch the heavy dashboard against an empty deployment configuration. */
 window.v154DashboardGuard = function () {
   const a = window.__v154Addresses || {};
   return ["cata","staking","governance","council"].every(k => /^0x[a-fA-F0-9]{40}$/.test(a[k] || ""));
