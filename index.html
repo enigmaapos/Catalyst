@@ -60,7 +60,9 @@
     font-weight: bold;
     font-size: 14px;
   }
-  </style>
+  
+button:disabled{opacity:.55!important;cursor:not-allowed!important;filter:saturate(.65)}
+</style>
 
 
 <script>
@@ -110,6 +112,25 @@ window.v154DashboardGuard = function () {
 .v162-remote{margin-top:12px;padding-top:12px;border-top:1px solid rgba(148,163,184,.18)}
 .v162-remote-note{font-size:12px;line-height:1.45;color:#94a3b8;margin-bottom:8px}
 .v162-native-badge{font-size:11px;padding:3px 7px;border-radius:999px;background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.2)}
+</style>
+
+<style id="v1622-professional-ui">
+#v1622ToastRoot{position:fixed;right:18px;bottom:18px;z-index:2147483647;display:flex;flex-direction:column;gap:10px;max-width:min(420px,calc(100vw - 36px));pointer-events:none}
+.v1622-toast{pointer-events:auto;display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:13px 14px;border:1px solid rgba(148,163,184,.22);border-radius:14px;background:rgba(15,23,42,.96);box-shadow:0 18px 45px rgba(0,0,0,.35);backdrop-filter:blur(14px);color:#e2e8f0;animation:v1622In .18s ease-out}
+.v1622-toast.success{border-color:rgba(34,197,94,.38)} .v1622-toast.error{border-color:rgba(239,68,68,.48)}
+.v1622-toast.warning{border-color:rgba(245,158,11,.42)} .v1622-toast.info{border-color:rgba(34,211,238,.38)}
+.v1622-toast-icon{font-size:18px;line-height:1.2}.v1622-toast-title{font-weight:700;font-size:13px}.v1622-toast-msg{margin-top:3px;font-size:12px;line-height:1.45;color:#cbd5e1;overflow-wrap:anywhere}
+.v1622-toast-close{border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:17px;padding:0 2px}.v1622-toast-close:hover{color:#fff}
+#v1622ModalRoot{position:fixed;inset:0;z-index:2147483646;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(2,6,23,.72);backdrop-filter:blur(7px)}
+#v1622ModalRoot.open{display:flex}.v1622-modal{width:min(520px,100%);max-height:min(82vh,720px);overflow:auto;border:1px solid rgba(148,163,184,.22);border-radius:18px;background:#0f172a;color:#e2e8f0;box-shadow:0 25px 80px rgba(0,0,0,.5)}
+.v1622-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(148,163,184,.15)}
+.v1622-modal-title{font-size:17px;font-weight:800}.v1622-modal-body{padding:18px 20px}.v1622-modal-foot{display:flex;justify-content:flex-end;gap:9px;padding:14px 20px;border-top:1px solid rgba(148,163,184,.15)}
+.v1622-btn{border:1px solid rgba(148,163,184,.22);border-radius:10px;padding:9px 13px;background:#1e293b;color:#e2e8f0;cursor:pointer;font-weight:650}.v1622-btn:hover{background:#334155}
+.v1622-btn.primary{background:linear-gradient(135deg,#22c55e,#22d3ee);color:#06111b;border:0}.v1622-btn.danger{background:#7f1d1d;color:#fee2e2}
+.v1622-status{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;background:rgba(30,41,59,.65);font-size:12px;color:#cbd5e1}
+.v1622-spinner{width:16px;height:16px;border:2px solid rgba(226,232,240,.25);border-top-color:#22d3ee;border-radius:50%;animation:v1622Spin .7s linear infinite}
+@keyframes v1622Spin{to{transform:rotate(360deg)}}@keyframes v1622In{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(max-width:640px){#v1622ToastRoot{left:12px;right:12px;bottom:12px;max-width:none}.v1622-modal{border-radius:15px}}
 </style>
 </head>
 
@@ -5648,8 +5669,8 @@ function hideLoading() {
 </div>
 
 
-<script id="v16.2.1-universal-native-wallet">
-/* Catalyst Protocol v16.2.1 — Universal Native Wallet
+<script id="v16.2.2-universal-native-wallet">
+/* Catalyst Protocol v16.2.2 — Universal Native Wallet
    Native wallets are the primary connection path:
      EIP-6963 -> injected EIP-1193 -> optional WalletConnect fallback.
    A provider exposed by an in-app wallet browser is never forced through
@@ -6124,6 +6145,87 @@ function hideLoading() {
 })();
 </script>
 
+
+<script id="v1622-professional-ui-js">
+(() => {
+  const root = document.getElementById('v1622ToastRoot');
+  const modal = document.getElementById('v1622ModalRoot');
+  const titleEl = document.getElementById('v1622ModalTitle');
+  const bodyEl = document.getElementById('v1622ModalBody');
+  const footEl = document.getElementById('v1622ModalFoot');
+  const x = document.getElementById('v1622ModalX');
+
+  const icon = {success:'✓', error:'!', warning:'⚠', info:'i'};
+  const titles = {success:'Success', error:'Something went wrong', warning:'Action needed', info:'Catalyst'};
+
+  window.catalystNotify = function(type='info', message='', title=''){
+    const el = document.createElement('div');
+    el.className = `v1622-toast ${type}`;
+    el.innerHTML = `<div class="v1622-toast-icon">${icon[type]||'i'}</div>
+      <div><div class="v1622-toast-title">${title || titles[type] || 'Catalyst'}</div>
+      <div class="v1622-toast-msg"></div></div>
+      <button class="v1622-toast-close" aria-label="Dismiss">×</button>`;
+    el.querySelector('.v1622-toast-msg').textContent = String(message);
+    el.querySelector('.v1622-toast-close').onclick = () => el.remove();
+    root.appendChild(el);
+    setTimeout(() => el.remove(), type === 'error' ? 7000 : 4200);
+    return el;
+  };
+
+  window.catalystModal = function({title='Catalyst', message='', buttons=[]}={}){
+    titleEl.textContent = title;
+    bodyEl.innerHTML = '';
+    if(message instanceof Node) bodyEl.appendChild(message);
+    else { const p=document.createElement('div'); p.textContent=String(message); bodyEl.appendChild(p); }
+    footEl.innerHTML='';
+    (buttons.length ? buttons : [{label:'Close',value:true,primary:true}]).forEach(b=>{
+      const btn=document.createElement('button');
+      btn.className='v1622-btn'+(b.primary?' primary':'')+(b.danger?' danger':'');
+      btn.textContent=b.label;
+      btn.onclick=()=>{ modal.classList.remove('open'); if(b.onClick) b.onClick(); };
+      footEl.appendChild(btn);
+    });
+    modal.classList.add('open');
+  };
+  const close=()=>modal.classList.remove('open');
+  x.onclick=close;
+  modal.addEventListener('click',e=>{if(e.target===modal)close()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+
+  // Replace browser-native alerts with the Catalyst UI.
+  window.alert = function(message){ catalystNotify('info', message, 'Catalyst'); };
+
+  // Guard against double-clicks while an async handler is running.
+  document.addEventListener('click', e => {
+    const b=e.target?.closest?.('button');
+    if(!b || b.dataset.v1622Busy==='1') return;
+    const text=(b.textContent||'').trim().toLowerCase();
+    if(/connect wallet|save addresses|load saved|reset saved|validate deployment|claim|stake|unstake|submit|execute|approve|revoke|grant|pause|unpause/.test(text)){
+      b.dataset.v1622Last=String(Date.now());
+    }
+  }, true);
+
+  window.v1622SetBusy = function(button,busy,label){
+    if(!button)return;
+    if(busy){
+      if(!button.dataset.v1622Original) button.dataset.v1622Original=button.innerHTML;
+      button.dataset.v1622Busy='1'; button.disabled=true;
+      button.innerHTML=`<span class="v1622-spinner" style="display:inline-block;vertical-align:-3px;margin-right:7px"></span>${label||'Working…'}`;
+    }else{
+      button.dataset.v1622Busy='0'; button.disabled=false;
+      if(button.dataset.v1622Original) button.innerHTML=button.dataset.v1622Original;
+    }
+  };
+
+  // Make every button visibly respond even when an underlying handler fails.
+  document.addEventListener('click', e => {
+    const b=e.target?.closest?.('button');
+    if(!b || b.disabled) return;
+    b.classList.add('active');
+    setTimeout(()=>b.classList.remove('active'),180);
+  }, true);
+})();
+</script>
 </body>
 </html>
 
