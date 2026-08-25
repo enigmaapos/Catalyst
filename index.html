@@ -1688,8 +1688,8 @@ let abis = {}, contracts = { cata:null, staking:null, governance:null, council:n
 const V15_CONFIG = Object.freeze({
   RPC_URL: "",
   RPC_CONCURRENCY: 4,
-  RPC_TIMEOUT_MS: 12000,
-  RPC_RETRIES: 3,
+  RPC_TIMEOUT_MS: 7000,
+  RPC_RETRIES: 1,
   RPC_CACHE_TTL_MS: 8000,
   HEAVY_SCAN_MAX: 256,
   EVENT_SCAN_BLOCKS: 1_000_000,
@@ -1785,10 +1785,15 @@ function wrapContractReads(contract, name){
       let fragment = null;
       try { fragment = contract.interface.getFunction(prop); } catch {}
       const mutability = fragment?.stateMutability;
-      if(mutability !== 'view' && mutability !== 'pure') return value.bind(contract);
+      // Contract view/pure methods AND ethers read helpers such as queryFilter
+      // must pass through the same queue. Write methods remain direct.
+      const isReadHelper = ['queryFilter','filters','interface','provider','signer'].includes(String(prop));
+      if(mutability !== 'view' && mutability !== 'pure' && !isReadHelper) return value.bind(contract);
+      if(typeof value !== 'function') return value;
       return (...args)=>safeRpcRead(
         ()=>value.apply(contract,args),
-        rpcCacheKey(`${name}.${String(prop)}`, args)
+        rpcCacheKey(`${name}.${String(prop)}`, args),
+        String(prop)==='queryFilter' ? 30000 : V15_CONFIG.RPC_CACHE_TTL_MS
       );
     }
   });
@@ -2495,98 +2500,84 @@ async function cataSwapAdmin() {
 async function fetchTransparency() {
   try {
     if (!contracts.cata || !getProviderForReads()) {
-      if (!contracts.cata) return alert('Please connect wallet and set CATA contract address first');
+      if (!contracts.cata) return alert('Please set the CATA contract address first');
     }
 
     showLoading("Fetching transparency...");
 
-    // 1. --- PARALLEL READS (FASTEST PART) ---
-    // Execute all independent state reads simultaneously
-    const [
-      totalSupply, 
-      maxSupply, 
-      councilAddress
-    ] = await Promise.all([
+    // Core contract reads are cheap and individually queued/cached by v15.
+    const [totalSupply, maxSupply, councilAddress] = await Promise.all([
       contracts.cata.totalSupply(),
       contracts.cata.MAX_SUPPLY(),
       contracts.cata.council()
     ]);
-    
+
     const remainingMintable = maxSupply.sub(totalSupply);
 
-    // 2. --- PARALLEL EVENT LOOKUPS (SLOWEST PART) ---
-    // Execute all necessary historical queries simultaneously
-    const [
-      adminSwapEvents,
-      minterSetEvents,
-      minterRevokedEvents
-    ] = await Promise.all([
-      contracts.cata.queryFilter("AdminSwapped", 0, "latest"),
-      contracts.cata.queryFilter("MinterSet", 0, "latest"),
-      contracts.cata.queryFilter("MinterRevoked", 0, "latest")
+    // IMPORTANT: never query an entire chain history in one RPC call.
+    // Public/injected providers commonly time out on fromBlock=0 -> latest.
+    // Scan recent history in bounded chunks. This keeps the UI responsive and
+    // prevents a single historical query from monopolizing the RPC manager.
+    const rp = getProviderForReads();
+    const latest = await safeRpcRead(() => rp.getBlockNumber(), 'provider.blockNumber', 3000);
+    const CHUNK = 20000;
+    const MAX_BLOCKS = 200000;
+    const from = Math.max(0, latest - MAX_BLOCKS);
+
+    async function collectEvents(eventName) {
+      const out = [];
+      for (let to = latest; to >= from; to -= CHUNK) {
+        const startBlock = Math.max(from, to - CHUNK + 1);
+        try {
+          const part = await safeRpcRead(
+            () => contracts.cata.queryFilter(eventName, startBlock, to),
+            `cata.events.${eventName}.${startBlock}.${to}`,
+            30000
+          );
+          if (Array.isArray(part) && part.length) out.push(...part);
+        } catch (err) {
+          log(`⚠️ ${eventName} chunk ${startBlock}-${to} skipped:`, err?.message || err);
+        }
+      }
+      return out.sort((a,b) => (a.blockNumber-b.blockNumber) || (a.transactionIndex-b.transactionIndex));
+    }
+
+    const [adminSwapEvents, minterSetEvents, minterRevokedEvents] = await Promise.all([
+      collectEvents("AdminSwapped"),
+      collectEvents("MinterSet"),
+      collectEvents("MinterRevoked")
     ]);
 
-
-    // 3. --- POST-PROCESSING LOGIC (Admin Address - Sequential Logic) ---
     let adminAddress = "⚠️ Unknown";
-
     if (adminSwapEvents.length > 0) {
-      // Find the admin via the last 'AdminSwapped' event
       adminAddress = adminSwapEvents[adminSwapEvents.length - 1].args.newAdmin;
     } else {
-      // Fallback: Check the first ever 'TokensMinted' event (less reliable)
-      const mintedEvents = await contracts.cata.queryFilter("TokensMinted", 0, "latest");
-      if (mintedEvents.length > 0) {
-        adminAddress = mintedEvents[0].args.to;
-      }
+      const mintedEvents = await collectEvents("TokensMinted");
+      if (mintedEvents.length > 0) adminAddress = mintedEvents[0].args.to;
     }
-    
-    // 4. --- POST-PROCESSING LOGIC (Minters - Sequential Logic) ---
-    let activeMinters = new Set();
-    
-    // Process MinterSet and MinterRevoked events
+
+    const activeMinters = new Set();
     for (const evt of minterSetEvents) {
       const minter = evt.args.newMinter;
-      if (minter && minter !== ethers.ZeroAddress) {
-        activeMinters.add(minter);
-      }
+      if (minter && minter.toLowerCase() !== ethers.constants.AddressZero.toLowerCase()) activeMinters.add(minter);
     }
     for (const evt of minterRevokedEvents) {
       const revoked = evt.args.revokedMinter;
-      activeMinters.delete(revoked);
+      if (revoked) activeMinters.delete(revoked);
     }
-    const minterList = Array.from(activeMinters);
 
-
-    // 5. --- UI Update ---
     $('cataAdminAddress').innerText = adminAddress;
     $('cataCouncilAddress').innerText = councilAddress;
-    $('cataTotalSupply').innerText =
-  Number(ethers.utils.formatUnits(totalSupply, 18)).toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 6,
-  }) + " CATA";
+    $('cataTotalSupply').innerText = Number(ethers.utils.formatUnits(totalSupply,18)).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:6}) + " CATA";
+    $('cataMaxSupply').innerText = Number(ethers.utils.formatUnits(maxSupply,18)).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:6}) + " CATA";
+    $('cataRemainingMintable').innerText = Number(ethers.utils.formatUnits(remainingMintable,18)).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:6}) + " CATA";
+    $('cataMinters').innerText = activeMinters.size ? Array.from(activeMinters).join("\n") : "None";
 
-$('cataMaxSupply').innerText =
-  Number(ethers.utils.formatUnits(maxSupply, 18)).toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 6,
-  }) + " CATA";
-
-$('cataRemainingMintable').innerText =
-  Number(ethers.utils.formatUnits(remainingMintable, 18)).toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 6,
-  }) + " CATA";
-    $('cataMinters').innerText = minterList.length > 0 
-      ? minterList.join("\n")
-      : "None";
-
-	   log('fetchTransparency done');
-	  
+    log(`fetchTransparency done — history window: ${MAX_BLOCKS.toLocaleString()} blocks`);
   } catch (e) {
     log('fetchTransparency err', e?.message || e);
-    alert(`Transparency fetch failed: ${e.message || e}. Check the console.`);
+    // Do not interrupt the rest of the staged dashboard because one optional
+    // transparency read failed or timed out.
   } finally {
     hideLoading();
   }
