@@ -62,12 +62,17 @@
   }
   </style>
 
+
+  return ["cata","staking","governance","council"].every(k => /^0x[a-fA-F0-9]{40}$/.test(a[k] || ""));
+};
+
+<script>
 /* v15.4: never launch the heavy dashboard against an empty deployment configuration. */
 window.v154DashboardGuard = function () {
   const a = window.__v154Addresses || {};
   return ["cata","staking","governance","council"].every(k => /^0x[a-fA-F0-9]{40}$/.test(a[k] || ""));
 };
-
+</script>
 </head>
 
 <!-- Loading Indicator -->
@@ -1674,13 +1679,13 @@ const ERC721_ABI = [
   'function isApprovedForAll(address owner, address operator) view returns (bool)'
 ];
 
-// Default addresses (replace with your deployed addresses)
+// v15.4: No built-in deployment addresses. Configure actual deployed contracts via the UI.
 const DEFAULT_ADDRS = {
-  cata: "0x9C3c5B8aF0CcA433725419CBB21665880c53ca09",
-  staking: "0x00Dd46EE2FDaCDD5F0d5C8375272880A9d667663",
-  governance: "0x7b87ED33bEEFCF03b89Ba38BE7e77527611BCDF4",
-  council: "0x493E4ba582300890ce0F36De5629D22A1E6276d7",
-  recovery: "0x1606d1F1B67246c664A9758B3Da3B0d95F5a4DA8"
+  cata: "",
+  staking: "",
+  governance: "",
+  council: "",
+  recovery: ""
 };
 
 // App state
@@ -1895,52 +1900,35 @@ const $ = id => document.getElementById(id);
   }
 
   function loadSavedAddrs(){
-  try {
-    const raw = localStorage.getItem('catalyst_addrs');
-    if(!raw){
-      // Prefill defaults
-      $('addrCata').value = DEFAULT_ADDRS.cata;
-      $('addrStaking').value = DEFAULT_ADDRS.staking;
-      $('addrGovernance').value = DEFAULT_ADDRS.governance;
-      $('addrCouncil').value = DEFAULT_ADDRS.council;
-      log('Prefilled default addresses');
-      return;
+    try {
+      const raw = localStorage.getItem('catalyst_addrs');
+      if(!raw){
+        $('addrCata').value = '';
+        $('addrStaking').value = '';
+        $('addrGovernance').value = '';
+        $('addrCouncil').value = '';
+        if($('addrRecovery')) $('addrRecovery').value = '';
+        log('ℹ️ No saved contract addresses — Contracts Not Configured');
+        return;
+      }
+      const obj = JSON.parse(raw) || {};
+      const valid = v => /^0x[a-fA-F0-9]{40}$/.test(String(v || '').trim()) ? String(v).trim() : '';
+      $('addrCata').value = valid(obj.addrCata);
+      $('addrStaking').value = valid(obj.addrStaking);
+      $('addrGovernance').value = valid(obj.addrGovernance);
+      $('addrCouncil').value = valid(obj.addrCouncil);
+      if($('addrRecovery')) $('addrRecovery').value = valid(obj.addrRecovery);
+      log('📂 Loaded saved addresses (no defaults fallback)');
+    } catch(e){
+      $('addrCata').value = '';
+      $('addrStaking').value = '';
+      $('addrGovernance').value = '';
+      $('addrCouncil').value = '';
+      if($('addrRecovery')) $('addrRecovery').value = '';
+      log('⚠️ loadSavedAddrs failed — Contracts Not Configured', e);
     }
-    const obj = JSON.parse(raw);
-
-    // Only apply saved values if they are DIFFERENT from defaults
-    if(obj.addrCata && obj.addrCata !== DEFAULT_ADDRS.cata) {
-      $('addrCata').value = obj.addrCata;
-    } else {
-      $('addrCata').value = DEFAULT_ADDRS.cata;
-    }
-
-    if(obj.addrStaking && obj.addrStaking !== DEFAULT_ADDRS.staking) {
-      $('addrStaking').value = obj.addrStaking;
-    } else {
-      $('addrStaking').value = DEFAULT_ADDRS.staking;
-    }
-
-    if(obj.addrGovernance && obj.addrGovernance !== DEFAULT_ADDRS.governance) {
-      $('addrGovernance').value = obj.addrGovernance;
-    } else {
-      $('addrGovernance').value = DEFAULT_ADDRS.governance;
-    }
-
-    if(obj.addrCouncil && obj.addrCouncil !== DEFAULT_ADDRS.council) {
-      $('addrCouncil').value = obj.addrCouncil;
-    } else {
-      $('addrCouncil').value = DEFAULT_ADDRS.council;
-    }
-    if($('addrRecovery')) {
-      $('addrRecovery').value = obj.addrRecovery || DEFAULT_ADDRS.recovery;
-    }
-
-    log('Loaded saved addresses (with defaults fallback)');
-  } catch(e){
-    log('loadSavedAddrs err', e);
   }
-  }
+
 	  
 
 	  // ================================================================
@@ -5157,7 +5145,7 @@ async function refreshLock() {
 
   // ---------- Bind UI on load ----------
   window.addEventListener('load', async ()=>{
-  // v15: load persisted addresses first, then fall back to defaults.
+  // v15.4: load persisted addresses only; never fall back to deployment placeholders.
   loadSavedAddrs();
   await loadABIs();
   await attachContractsIfSet({refresh:true});
