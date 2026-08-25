@@ -6081,6 +6081,17 @@ function hideLoading() {
     if(typeof originalDisconnect === "function") originalDisconnect();
   };
 
+  // IMPORTANT: the legacy Catalyst code still assigns connectBtn.onclick = connect.
+  // Capture the button click so the v16.2.1 universal wallet controller always
+  // owns the Connect Wallet button, including MetaMask's in-app browser.
+  document.addEventListener("click", (ev)=>{
+    const btn = ev.target?.closest?.("#connectBtn");
+    if(!btn) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    open();
+  }, true);
+
   document.addEventListener("DOMContentLoaded",()=>{
     document.getElementById("v16WalletClose")?.addEventListener("click",()=>{
       const m=modal();
