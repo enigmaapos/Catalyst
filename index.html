@@ -1681,7 +1681,7 @@ let provider = null, signer = null, userAddr = null;
 let abis = {}, contracts = { cata:null, staking:null, governance:null, council:null, recovery:null };
 
 // ================================================================
-// CATALYST v15 — PRODUCTION RPC SAFETY LAYER
+// CATALYST v15.3 — DIAGNOSTIC + RPC SAFETY LAYER
 // ================================================================
 // Configure RPC_URL if you want read-only operation before wallet connect.
 // If left blank, the app will use the injected wallet provider when available.
@@ -1692,7 +1692,9 @@ const V15_CONFIG = Object.freeze({
   RPC_RETRIES: 1,
   RPC_CACHE_TTL_MS: 8000,
   HEAVY_SCAN_MAX: 256,
-  EVENT_SCAN_BLOCKS: 1_000_000,
+  EVENT_SCAN_BLOCKS: 200_000,
+  PREFLIGHT_TIMEOUT_MS: 5000,
+  PREFLIGHT_PROBES: true,
   STAGE_DELAY_MS: 120,
 });
 
@@ -1830,7 +1832,7 @@ async function refreshDashboardV15(){
       await sleep(V15_CONFIG.STAGE_DELAY_MS);
       // Heavy analytics are intentionally NOT executed automatically in v15.
       setPendingStatus?.("Ready — heavy analytics on demand", "#10b981");
-      log("✅ v15 staged dashboard refresh complete");
+      log("✅ v15.3 staged dashboard refresh complete");
     }finally{
       dashboardRefreshPromise = null;
       hideLoading();
@@ -1934,7 +1936,122 @@ const $ = id => document.getElementById(id);
   }
 	  
 
-	  // Attach contract instances (requires signer)
+	  // ================================================================
+// CATALYST v15.3 — NETWORK / DEPLOYMENT PREFLIGHT
+// ================================================================
+// Purpose: distinguish RPC transport failures from wrong-network,
+// wrong-address, missing-bytecode, or ABI/deployment mismatches before
+// the dashboard starts making many reads.
+let v153Preflight = { ok:false, chainId:null, chainName:'Unknown', contracts:{} };
+
+function v153Timeout(task, ms=V15_CONFIG.PREFLIGHT_TIMEOUT_MS){
+  return Promise.race([
+    task(),
+    new Promise((_, reject)=>setTimeout(()=>reject(new Error('Preflight request timed out')), ms))
+  ]);
+}
+
+function v153ChainName(chainId){
+  const n = Number(chainId);
+  const names = {1:'Ethereum Mainnet',56:'BNB Smart Chain',137:'Polygon',8453:'Base',42161:'Arbitrum One',10:'Optimism',43114:'Avalanche C-Chain',11155111:'Sepolia',97:'BNB Smart Chain Testnet'};
+  return names[n] || `Chain ${n}`;
+}
+
+function v153HasFunction(abi, name){
+  try {
+    return !!(abi || []).some(x => {
+      if(typeof x === 'string') return new ethers.utils.Interface([x]).functions[name] != null;
+      return x?.type === 'function' && x?.name === name;
+    });
+  } catch { return false; }
+}
+
+async function v153ProbeContract(label, address, abi, probeNames, runner){
+  const result = { label, address, code:false, validAddress:false, probes:[], ok:false };
+  if(!address){ result.reason='address missing'; return result; }
+  try { result.validAddress = ethers.utils.isAddress(address); } catch {}
+  if(!result.validAddress){ result.reason='invalid address'; return result; }
+  try {
+    const code = await v153Timeout(()=>readProvider.getCode(address));
+    result.code = !!code && code !== '0x';
+    if(!result.code){ result.reason='no contract bytecode at address'; return result; }
+  } catch(e){ result.reason=e?.message || String(e); return result; }
+
+  // Probe only functions actually declared by the supplied ABI. A probe that
+  // reverts is diagnostic evidence of an ABI/deployment mismatch, not proof
+  // that the address has no contract.
+  if(V15_CONFIG.PREFLIGHT_PROBES && runner){
+    const candidates = (probeNames || []).filter(n=>{
+      try {
+        if(!v153HasFunction(abi,n)) return false;
+        const f = new ethers.utils.Interface(abi).getFunction(n);
+        return (f.inputs || []).length === 0;
+      } catch { return false; }
+    });
+    for(const name of candidates.slice(0,2)){
+      try {
+        const c = new ethers.Contract(address, abi, runner);
+        const value = await v153Timeout(()=>c[name]());
+        result.probes.push({name,ok:true,value:ethers.BigNumber.isBigNumber(value)?value.toString():String(value)});
+      } catch(e){
+        result.probes.push({name,ok:false,error:e?.code || e?.reason || e?.message || String(e)});
+      }
+    }
+  }
+  result.ok = result.code && (result.probes.length === 0 || result.probes.some(p=>p.ok));
+  if(!result.ok && result.probes.length) result.reason='contract code exists, but ABI/function probe reverted';
+  return result;
+}
+
+async function runV153Preflight(){
+  const rp = getProviderForReads();
+  if(!rp) throw new Error('No read provider available');
+  readProvider = rp;
+  let network;
+  try { network = await v153Timeout(()=>rp.getNetwork()); }
+  catch(e){
+    v153Preflight = {ok:false,chainId:null,chainName:'Unavailable',contracts:{}};
+    log('❌ v15.3 network preflight failed', e?.message || e);
+    return v153Preflight;
+  }
+  const chainId = Number(network.chainId);
+  const runner = signer || rp;
+  const specs = [
+    ['cata','CATA',$('addrCata')?.value?.trim(), abis.cata, ['totalSupply','balanceOf']],
+    ['staking','Staking',$('addrStaking')?.value?.trim(), abis.staking, ['deployerCouncil','bluechipWallets','staking']],
+    ['governance','Governance',$('addrGovernance')?.value?.trim(), abis.governance, ['staking','council','guardianCouncil']],
+    ['council','Council',$('addrCouncil')?.value?.trim(), abis.council, ['council','guardians','memberCount']],
+    ['recovery','Recovery',$('addrRecovery')?.value?.trim(), abis.recovery, ['proposer','timelock','admin']]
+  ];
+  const results = await Promise.all(specs.map(([key,label,address,abi,probes])=>
+    v153ProbeContract(label,address,abi,probes,runner)
+  ));
+  const map = {};
+  results.forEach((r,i)=>map[specs[i][0]]=r);
+  const coreKeys=['cata','staking','governance','council'];
+  const coreGood=coreKeys.every(k=>map[k]?.ok);
+  const anyMissing=coreKeys.some(k=>!map[k]?.code);
+  const probeMismatch=coreKeys.some(k=>map[k]?.code && !map[k]?.ok);
+  v153Preflight = {ok:coreGood,chainId,chainName:v153ChainName(chainId),contracts:map,anyMissing,probeMismatch};
+  log('🔎 v15.3 NETWORK PREFLIGHT', {chainId,chainName:v153Preflight.chainName,ok:v153Preflight.ok});
+  for(const k of Object.keys(map)){
+    const r=map[k];
+    log(`v15.3 ${k}`, {address:r.address,bytecode:r.code,ok:r.ok,probes:r.probes,reason:r.reason||null});
+  }
+  if(!v153Preflight.ok){
+    const failures=coreKeys.filter(k=>!map[k]?.ok).map(k=>`${map[k].label}: ${map[k].reason||'probe failed'}`);
+    log('⚠️ v15.3 CONTRACT/NETWORK MISMATCH — dashboard reads will be limited', failures.join(' | '));
+  } else {
+    log('✅ v15.3 contract/network preflight passed', `${v153Preflight.chainName} (${chainId})`);
+  }
+  return v153Preflight;
+}
+
+function v153ContractIsUsable(key){
+  return !!v153Preflight?.contracts?.[key]?.ok;
+}
+
+// Attach contract instances with a read-only provider when no signer exists.
 async function attachContractsIfSet(options = {}) {
   const { refresh = true } = options;
   try {
@@ -1950,6 +2067,12 @@ async function attachContractsIfSet(options = {}) {
     const recoveryA = $('addrRecovery')?.value?.trim();
     const runner = signer || rp;
 
+    // v15.3: validate the active chain and deployments before creating a
+    // dashboard-wide read burst. We still attach contracts even when a probe
+    // fails so write/admin screens can remain available, but dashboard code
+    // can use v153ContractIsUsable() to avoid noisy guaranteed reverts.
+    await runV153Preflight();
+
     contracts.cata = cataA && abis.cata ? wrapContractReads(new ethers.Contract(cataA, abis.cata, runner), 'cata') : null;
     contracts.staking = stakingA && abis.staking ? wrapContractReads(new ethers.Contract(stakingA, abis.staking, runner), 'staking') : null;
     contracts.governance = govA && abis.governance ? wrapContractReads(new ethers.Contract(govA, abis.governance, runner), 'governance') : null;
@@ -1958,9 +2081,15 @@ async function attachContractsIfSet(options = {}) {
 
     log("v15 contracts attached", {readOnly:!signer,cata:!!contracts.cata,staking:!!contracts.staking,governance:!!contracts.governance,council:!!contracts.council,recovery:!!contracts.recovery});
 
-    if(userAddr && contracts.cata) await fetchCataBalance();
-    if(userAddr && signer && contracts.staking) await checkStakingAdmin();
-    if(refresh) await refreshDashboardV15();
+    if(userAddr && contracts.cata && v153ContractIsUsable('cata')) await fetchCataBalance();
+    if(userAddr && signer && contracts.staking && v153ContractIsUsable('staking')) await checkStakingAdmin();
+    if(refresh){
+      if(v153Preflight.ok) await refreshDashboardV15();
+      else {
+        setPendingStatus?.('Deployment/network check required', '#f59e0b');
+        log('⏸️ v15.3 staged dashboard paused because core contract preflight failed');
+      }
+    }
   } catch(e) {
     console.error("❌ v15 attachContractsIfSet error:",e);
     log("attachContractsIfSet error:",e.message||e);
@@ -1974,10 +2103,10 @@ async function fetchCataBalance() {
   try {
     showLoading("Fetching CATA balance..."); // show loading spinner
 
-    if (!contracts.cata) {
-      await attachContractsIfSet();
-      if (!contracts.cata) {
-        alert("CATA contract not set");
+    if (!contracts.cata || !v153ContractIsUsable('cata')) {
+      await attachContractsIfSet({refresh:false});
+      if (!contracts.cata || !v153ContractIsUsable('cata')) {
+        log('⏸️ CATA balance read skipped: preflight failed');
         return;
       }
     }
@@ -2499,6 +2628,10 @@ async function cataSwapAdmin() {
 	  // Transparency (view supply, roles, minters) - OPTIMIZED WITH Promise.all
 async function fetchTransparency() {
   try {
+    if (!v153ContractIsUsable('cata')) {
+      log('⏸️ fetchTransparency skipped: CATA preflight failed');
+      return;
+    }
     if (!contracts.cata || !getProviderForReads()) {
       if (!contracts.cata) return alert('Please set the CATA contract address first');
     }
@@ -3942,7 +4075,7 @@ async function updateRoleAwareUI(){
     ['grantCouncilRoleBtn','grantMinterRoleBtn','revokeMinterRoleBtn','adminSetConfigBtn','removeCollectionBtn','forfeitEscrowBtn','setBluechipBtn'].forEach(id=>{const el=$(id);if(el)el.disabled=false;});
   }
   if(cataAdmin) ['pauseBtn','unpauseBtn','swapAdminBtn'].forEach(id=>{const el=$(id);if(el)el.disabled=false;});
-  log('v15 role-aware UI',{stakingAdmin,cataAdmin});
+  log('v15.3 role-aware UI',{stakingAdmin,cataAdmin});
 }
 async function checkStakingAdmin(){ await updateRoleAwareUI(); }
 
