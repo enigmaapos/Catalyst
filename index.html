@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Catalyst Protocol — DApp v16.3</title>
+  <title>Catalyst Protocol — DApp v16.3.1</title>
 	  <script src="https://cdn.tailwindcss.com"></script>
   <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
 	<link rel="icon" type="image/png" href="assets/logo.png">	
@@ -5216,7 +5216,7 @@ async function refreshLock() {
   await attachContractsIfSet({refresh:true});
 
   // Connect / disconnect
-  // v16.3: Connect Wallet is owned exclusively by the Universal Native Wallet controller.
+  // v16.3.1: Connect Wallet is owned exclusively by the Universal Native Wallet controller.
   $('disconnectBtn').onclick = disconnect;
 
 $("refreshRecoveryBtn").addEventListener("click", () => {
@@ -5693,8 +5693,8 @@ function hideLoading() {
 </div>
 
 
-<script id="v16.3-universal-native-wallet">
-/* Catalyst Protocol v16.3 — Universal Native Wallet
+<script id="v16.3.1-universal-native-wallet">
+/* Catalyst Protocol v16.3.1 — Universal Native Wallet
    Native wallets are the primary connection path:
      EIP-6963 -> injected EIP-1193 -> optional WalletConnect fallback.
    A provider exposed by an in-app wallet browser is never forced through
@@ -6236,7 +6236,7 @@ function hideLoading() {
     });
     window.__v163ButtonAudit=rows;
     const bad=rows.filter(x=>x.status==="unwired");
-    if(typeof log==="function"){log("🔎 v16.3 button audit",{total:rows.length,wired:rows.length-bad.length,unwired:bad.length});if(bad.length)log("⚠️ v16.3 unwired buttons",bad);}
+    if(typeof log==="function"){log("🔎 v16.3.1 button audit",{total:rows.length,wired:rows.length-bad.length,unwired:bad.length});if(bad.length)log("⚠️ v16.3.1 unwired buttons",bad);}
     return rows;
   }
   window.CatalystUI={notify:catalystNotify,confirm:catalystConfirm,tx:catalystTx,audit};
@@ -6249,7 +6249,176 @@ window.addEventListener("load",()=>{
   const run=()=>{const rows=window.CatalystUI?.audit?.()||[],bad=rows.filter(x=>x.status==="unwired");if(summary)summary.textContent=`${rows.length-bad.length}/${rows.length} buttons wired • ${bad.length} require attention`;if(bad.length)catalystNotify("warning",bad.map(x=>x.id).join(", "),"Button audit found unwired controls");else catalystNotify("success",`${rows.length} button controls verified as wired or intentionally delegated.`,"Interaction audit passed");};
   b?.addEventListener("click",run);setTimeout(run,700);
 });
-</script></body>
+</script>
+<style id="v1631-button-fix">
+#v1631AuditPanel{margin-top:12px;padding:12px;border:1px solid rgba(148,163,184,.2);border-radius:14px;background:rgba(15,23,42,.55);font-size:12px}
+.v1631-audit-ok{color:#86efac}.v1631-audit-warn{color:#fbbf24}.v1631-audit-bad{color:#fca5a5}
+.v1631-btn-busy{opacity:.7!important;pointer-events:none!important}
+</style>
+<script id="v1631-button-fix-js">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const exists=name=>typeof window[name]==='function';
+const bind=(id,fnName,opts={})=>{
+  const el=$(id); if(!el) return false;
+  // Preserve the universal wallet's explicit ownership.
+  if(id==='connectBtn' && typeof window.__v1621UniversalConnect==='function'){
+    el.addEventListener('click', e=>{ e.preventDefault(); e.stopImmediatePropagation(); window.__v1621UniversalConnect(); }, true);
+    return true;
+  }
+  if(!exists(fnName)) return false;
+  el.addEventListener('click', async e=>{
+    e.preventDefault();
+    if(el.dataset.v1631Busy==='1') return;
+    el.dataset.v1631Busy='1'; el.classList.add('v1631-btn-busy');
+    try{ await window[fnName](); }
+    catch(err){ window.CatalystUI?.notify?.('error', err?.reason || err?.message || String(err), opts.title||'Action failed'); }
+    finally{ el.dataset.v1631Busy='0'; el.classList.remove('v1631-btn-busy'); }
+  });
+  return true;
+};
+
+function safeCall(names, args=[]){
+  for(const n of names){ if(exists(n)) return window[n](...args); }
+  throw new Error('This action is not available in the current build.');
+}
+
+function install(){
+  // Universal wallet / basic controls.
+  if($('disconnectBtn') && !$('disconnectBtn').dataset.v1631Bound){
+    $('disconnectBtn').dataset.v1631Bound='1';
+    $('disconnectBtn').addEventListener('click',e=>{e.preventDefault(); safeCall(['disconnect','disconnectWallet']);});
+  }
+  if($('copyAddrBtn') && !$('copyAddrBtn').dataset.v1631Bound){
+    $('copyAddrBtn').dataset.v1631Bound='1';
+    $('copyAddrBtn').addEventListener('click',async e=>{
+      e.preventDefault();
+      const a=window.userAddr || window.currentAccount || '';
+      if(!a) return window.CatalystUI?.notify?.('warning','Connect a wallet first.','Wallet not connected');
+      try{ await navigator.clipboard.writeText(a); window.CatalystUI?.notify?.('success','Wallet address copied.','Copied'); }
+      catch(_){ window.CatalystUI?.notify?.('error','Clipboard access was blocked by the browser.','Copy failed'); }
+    });
+  }
+
+  const map={
+    refreshTransparencyBtn:['fetchTransparency'],
+    saveAddrs:['saveAddrsToLocal','saveAddresses'],
+    loadAddrs:['loadSavedAddrs','loadAddresses'],
+    cataBurnBtn:['burnMyCata','burnCata'],
+    pauseBtn:['pauseCata','pause'],
+    unpauseBtn:['unpauseCata','unpause'],
+    swapAdminBtn:['swapAdmin'],
+    calcRegFeeBtn:['calculateRegistrationFee','calcRegistrationFee'],
+    approveRegCataBtn:['approveRegistrationCata'],
+    registerCollectionBtn:['registerCollection'],
+    adminSetConfigBtn:['adminSetCollectionConfig','adminSetConfig'],
+    removeCollectionBtn:['removeCollection'],
+    forfeitEscrowBtn:['forfeitEscrow'],
+    setBluechipBtn:['setBluechip'],
+    enrollBluechipBtn:['enrollBluechip'],
+    harvestBluechipBtn:['harvestBluechip'],
+    refreshBluechipBtn:['refreshBluechip'],
+    refreshBluechipBtn2:['refreshBluechip'],
+    approveNFTBtn:['approveNFT'],
+    termStakeBtn:['termStake'],
+    permStakeBtn:['permStake'],
+    harvestBtn:['harvest'],
+    unstakeBtn:['unstake'],
+    batchTermStakeBtn:['batchTermStake'],
+    batchPermStakeBtn:['batchPermStake'],
+    batchUnstakeBtn:['batchUnstake'],
+    batchHarvestBtn:['batchHarvest'],
+    refreshStakingStatsBtn:['refreshStakingStats'],
+    pendingRewardsBtn:['checkPendingRewards'],
+    viewPortfolioBtn:['viewPortfolio'],
+    refreshStakingTransparencyBtn:['fetchStakingTransparency'],
+    refreshProposalsBtn:['fetchProposalsExplorer'],
+    refreshGovernanceTransparencyBtn:['fetchGovernanceTransparency'],
+    refreshRecoveryBtn:['refreshRecovery'],
+    refreshVetoWarningBtn:['refreshVetoWarning'],
+    refreshDaoBtn:['refreshDao'],
+    refreshGuardiansBtn:['refreshGuardians'],
+    refreshLockBtn:['refreshLock']
+  };
+  for(const [id,names] of Object.entries(map)){
+    const el=$(id); if(!el || el.dataset.v1631Bound) continue;
+    const fn=names.find(exists);
+    if(fn){
+      el.dataset.v1631Bound='1';
+      el.addEventListener('click',async e=>{
+        e.preventDefault();
+        if(el.dataset.v1631Busy==='1') return;
+        el.dataset.v1631Busy='1'; el.classList.add('v1631-btn-busy');
+        try{ await window[fn](); }
+        catch(err){ window.CatalystUI?.notify?.('error',err?.reason||err?.message||String(err),'Action failed'); }
+        finally{ el.dataset.v1631Busy='0'; el.classList.remove('v1631-btn-busy'); }
+      });
+    }
+  }
+
+  // Recovery shortcut buttons map to the existing recovery section/actions.
+  const recoveryMap={
+    deployerViewRecoveryBtn:()=>safeCall(['refreshRecovery']),
+    deployerProposeRecoveryBtn:()=>{ if(exists('selectTab')) selectTab('recovery'); const x=$('proposedNewDeployer'); x?.focus(); },
+    deployerApproveRecoveryBtn:()=>safeCall(['approveRecovery']),
+    deployerExecuteRecoveryBtn:()=>safeCall(['executeRecovery'])
+  };
+  for(const [id,fn] of Object.entries(recoveryMap)){
+    const el=$(id); if(!el||el.dataset.v1631Bound) continue;
+    el.dataset.v1631Bound='1';
+    el.addEventListener('click',async e=>{
+      e.preventDefault();
+      try{ await fn(); }catch(err){ window.CatalystUI?.notify?.('error',err?.reason||err?.message||String(err),'Recovery action unavailable'); }
+    });
+  }
+
+  // Audit button audits actual handlers plus known delegated controls.
+  const audit=$('v163AuditBtn');
+  if(audit && !audit.dataset.v1631Bound){
+    audit.dataset.v1631Bound='1';
+    audit.addEventListener('click',()=>window.v1631RunAudit());
+  }
+}
+
+window.v1631RunAudit=function(){
+  const ids=[...document.querySelectorAll('button[id]')];
+  const knownDelegated=new Set(['connectBtn','disconnectBtn','execBtn']);
+  const ignored=new Set(['v163AuditBtn']);
+  const rows=[];
+  let wired=0;
+  for(const el of ids){
+    if(ignored.has(el.id)) continue;
+    const hasInline=!!el.onclick;
+    const hasMarker=el.dataset.v1631Bound==='1';
+    const hasOther=Object.keys(el).some(k=>/^on[a-z]+$/i.test(k)&&typeof el[k]==='function');
+    const delegated=knownDelegated.has(el.id) || el.classList.contains('execBtn');
+    const ok=hasInline||hasMarker||hasOther||delegated;
+    if(ok) wired++;
+    else rows.push({id:el.id,text:(el.textContent||'').trim().replace(/\s+/g,' ').slice(0,60),status:'unwired'});
+  }
+  const total=ids.length-1;
+  const result={total,wired,unwired:rows.length,details:rows};
+  window.__v1631Audit=result;
+  window.log?.(`🔎 v16.3.1 button audit ${JSON.stringify(result)}`);
+  window.CatalystUI?.notify?.(
+    rows.length?'warning':'success',
+    `${wired}/${total} buttons have an explicit or delegated handler.${rows.length?` ${rows.length} require attention.`:' All audited controls are wired.'}`,
+    rows.length?'Button audit':'Button audit passed'
+  );
+  return result;
+};
+
+window.addEventListener('load',()=>{
+  // Bind once after all original scripts have initialized.
+  setTimeout(install,250);
+  setTimeout(install,1000);
+  setTimeout(()=>window.v163RunAudit?.(),1300);
+});
+})();
+</script>
+
+</body>
 </html>
 
 
