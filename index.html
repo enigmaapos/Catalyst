@@ -61,6 +61,13 @@
     font-size: 14px;
   }
   </style>
+
+/* v15.4: never launch the heavy dashboard against an empty deployment configuration. */
+window.v154DashboardGuard = function () {
+  const a = window.__v154Addresses || {};
+  return ["cata","staking","governance","council"].every(k => /^0x[a-fA-F0-9]{40}$/.test(a[k] || ""));
+};
+
 </head>
 
 <!-- Loading Indicator -->
@@ -5286,5 +5293,319 @@ function hideLoading() {
 }
 	  
   </script>
+
+<script>
+/* ============================================================
+   Catalyst Protocol v15.4 — Deployment Configuration Hardening
+   - No placeholder contract addresses
+   - Saved-address validation/reset
+   - Network-aware configuration state
+   - Clean "Contracts Not Configured" behavior
+   ============================================================ */
+(function () {
+  const V154_EMPTY = {
+    cata: "",
+    staking: "",
+    governance: "",
+    council: "",
+    recovery: ""
+  };
+
+  const V154_KEY = "catalyst_addrs";
+  const V154_CHAIN_NAMES = {
+    1: "Ethereum Mainnet",
+    11155111: "Sepolia",
+    5: "Goerli",
+    137: "Polygon",
+    80002: "Polygon Amoy",
+    56: "BNB Smart Chain",
+    97: "BNB Testnet",
+    8453: "Base",
+    84532: "Base Sepolia",
+    42161: "Arbitrum One",
+    421614: "Arbitrum Sepolia",
+    10: "Optimism",
+    11155420: "Optimism Sepolia"
+  };
+
+  function v154CleanAddress(v) {
+    const x = String(v || "").trim();
+    return /^0x[a-fA-F0-9]{40}$/.test(x) ? x : "";
+  }
+
+  function v154ReadFields() {
+    const ids = {
+      cata: ["cataAddr", "cataAddress", "cataContractAddress"],
+      staking: ["stakingAddr", "stakingAddress", "stakingContractAddress"],
+      governance: ["governanceAddr", "governanceAddress", "governanceContractAddress"],
+      council: ["councilAddr", "councilAddress", "councilContractAddress"],
+      recovery: ["recoveryAddr", "recoveryAddress", "recoveryContractAddress"]
+    };
+    const result = {};
+    for (const [key, candidates] of Object.entries(ids)) {
+      let value = "";
+      for (const id of candidates) {
+        const el = document.getElementById(id);
+        if (el) { value = el.value || ""; break; }
+      }
+      result[key] = v154CleanAddress(value);
+    }
+    return result;
+  }
+
+  function v154WriteFields(addrs) {
+    const ids = {
+      cata: ["cataAddr", "cataAddress", "cataContractAddress"],
+      staking: ["stakingAddr", "stakingAddress", "stakingContractAddress"],
+      governance: ["governanceAddr", "governanceAddress", "governanceContractAddress"],
+      council: ["councilAddr", "councilAddress", "councilContractAddress"],
+      recovery: ["recoveryAddr", "recoveryAddress", "recoveryContractAddress"]
+    };
+    for (const [key, candidates] of Object.entries(ids)) {
+      const value = v154CleanAddress(addrs && addrs[key]);
+      for (const id of candidates) {
+        const el = document.getElementById(id);
+        if (el) { el.value = value; break; }
+      }
+    }
+  }
+
+  function v154LoadSaved() {
+    try {
+      const raw = localStorage.getItem(V154_KEY);
+      if (!raw) return { ...V154_EMPTY, found: false };
+      const parsed = JSON.parse(raw);
+      return {
+        ...V154_EMPTY,
+        cata: v154CleanAddress(parsed.cata),
+        staking: v154CleanAddress(parsed.staking),
+        governance: v154CleanAddress(parsed.governance),
+        council: v154CleanAddress(parsed.council),
+        recovery: v154CleanAddress(parsed.recovery),
+        found: true
+      };
+    } catch (_) {
+      return { ...V154_EMPTY, found: false };
+    }
+  }
+
+  function v154Save(addrs) {
+    const clean = {
+      cata: v154CleanAddress(addrs.cata),
+      staking: v154CleanAddress(addrs.staking),
+      governance: v154CleanAddress(addrs.governance),
+      council: v154CleanAddress(addrs.council),
+      recovery: v154CleanAddress(addrs.recovery)
+    };
+    localStorage.setItem(V154_KEY, JSON.stringify(clean));
+    return clean;
+  }
+
+  function v154Reset() {
+    localStorage.removeItem(V154_KEY);
+    v154WriteFields(V154_EMPTY);
+    window.__v154Addresses = { ...V154_EMPTY };
+    window.__v154Configured = false;
+    v154Render();
+    if (typeof log === "function") log("🧹 v15.4 saved contract configuration reset");
+  }
+
+  function v154Count(addrs) {
+    return ["cata","staking","governance","council","recovery"]
+      .filter(k => !!v154CleanAddress(addrs[k])).length;
+  }
+
+  function v154Render(chainId) {
+    const existing = document.getElementById("v154ConfigStatus");
+    if (!existing) return;
+
+    const addrs = window.__v154Addresses || V154_EMPTY;
+    const network = chainId != null
+      ? `${V154_CHAIN_NAMES[Number(chainId)] || "Unknown network"} (${Number(chainId)})`
+      : "Network not detected";
+
+    const rows = [
+      ["CATA", addrs.cata],
+      ["Staking", addrs.staking],
+      ["Governance", addrs.governance],
+      ["Council", addrs.council],
+      ["Recovery", addrs.recovery]
+    ];
+
+    existing.innerHTML =
+      `<div><strong>Network:</strong> ${network}</div>` +
+      rows.map(([name, addr]) =>
+        `<div class="v154-row"><span>${name}</span><span class="${addr ? "v154-ok" : "v154-missing"}">${addr ? addr : "Not configured"}</span></div>`
+      ).join("") +
+      `<div class="v154-summary">${v154Count(addrs) === 0
+        ? "⚠️ Contracts Not Configured"
+        : `${v154Count(addrs)}/5 contract addresses configured`}</div>`;
+  }
+
+  function v154EnsurePanel() {
+    if (document.getElementById("v154ConfigStatus")) return;
+
+    const style = document.createElement("style");
+    style.textContent = `
+      #v154ConfigPanel{margin:12px 0;padding:14px;border:1px solid rgba(148,163,184,.35);border-radius:12px;background:rgba(15,23,42,.72)}
+      #v154ConfigPanel h4{margin:0 0 8px}
+      #v154ConfigStatus{font-size:12px;line-height:1.65}
+      .v154-row{display:flex;justify-content:space-between;gap:12px;border-top:1px solid rgba(148,163,184,.12);padding:4px 0}
+      .v154-ok{word-break:break-all}
+      .v154-missing{opacity:.7}
+      .v154-summary{margin-top:8px;font-weight:700}
+      .v154-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    `;
+    document.head.appendChild(style);
+
+    const panel = document.createElement("section");
+    panel.id = "v154ConfigPanel";
+    panel.innerHTML = `
+      <h4>v15.4 Contract Configuration</h4>
+      <div id="v154ConfigStatus"></div>
+      <div class="v154-actions">
+        <button type="button" id="v154SaveBtn">💾 Save Addresses</button>
+        <button type="button" id="v154LoadBtn">📂 Load Saved</button>
+        <button type="button" id="v154ResetBtn">🧹 Reset Saved</button>
+        <button type="button" id="v154ValidateBtn">🔎 Validate Deployment</button>
+      </div>
+    `;
+
+    const anchor =
+      document.getElementById("contractConfig") ||
+      document.getElementById("settings") ||
+      document.querySelector("main") ||
+      document.body;
+    anchor.prepend(panel);
+
+    document.getElementById("v154SaveBtn").onclick = () => {
+      const clean = v154Save(v154ReadFields());
+      window.__v154Addresses = clean;
+      v154Render(window.__v154ChainId);
+      if (typeof log === "function") log("💾 v15.4 contract addresses saved");
+    };
+
+    document.getElementById("v154LoadBtn").onclick = () => {
+      const saved = v154LoadSaved();
+      v154WriteFields(saved);
+      window.__v154Addresses = { ...saved };
+      v154Render(window.__v154ChainId);
+      if (typeof log === "function") log(saved.found
+        ? "📂 v15.4 saved contract addresses loaded"
+        : "📂 v15.4 no saved contract configuration found");
+    };
+
+    document.getElementById("v154ResetBtn").onclick = v154Reset;
+
+    document.getElementById("v154ValidateBtn").onclick = async () => {
+      if (typeof window.v154RunPreflight === "function") {
+        await window.v154RunPreflight();
+      } else if (typeof log === "function") {
+        log("⚠️ v15.4 preflight is not available yet");
+      }
+    };
+  }
+
+  async function v154RunPreflight() {
+    let provider = window.provider;
+    if (!provider && window.ethereum && window.ethers) {
+      try { provider = new ethers.providers.Web3Provider(window.ethereum, "any"); } catch (_) {}
+    }
+
+    const addrs = v154ReadFields();
+    window.__v154Addresses = addrs;
+
+    if (!provider) {
+      v154Render();
+      if (typeof log === "function") log("⏸️ v15.4 preflight: wallet/provider not available");
+      return { ok: false, reason: "provider unavailable" };
+    }
+
+    let network;
+    try {
+      network = await provider.getNetwork();
+      window.__v154ChainId = Number(network.chainId);
+      v154Render(window.__v154ChainId);
+    } catch (e) {
+      if (typeof log === "function") log("⚠️ v15.4 network detection failed", e?.message || e);
+      return { ok: false, reason: "network detection failed" };
+    }
+
+    const required = ["cata","staking","governance","council"];
+    const missing = required.filter(k => !addrs[k]);
+    if (missing.length) {
+      if (typeof log === "function") log("⏸️ v15.4 Contracts Not Configured", {
+        network: `${V154_CHAIN_NAMES[window.__v154ChainId] || "Unknown"} (${window.__v154ChainId})`,
+        missing
+      });
+      return { ok: false, reason: "contracts not configured", missing };
+    }
+
+    const checks = {};
+    for (const key of ["cata","staking","governance","council","recovery"]) {
+      if (!addrs[key]) {
+        checks[key] = { configured: false, bytecode: false, ok: false, reason: "not configured" };
+        continue;
+      }
+      try {
+        const code = await provider.getCode(addrs[key]);
+        checks[key] = {
+          configured: true,
+          address: addrs[key],
+          bytecode: !!code && code !== "0x",
+          ok: !!code && code !== "0x",
+          reason: code && code !== "0x" ? "contract bytecode present" : "no contract bytecode at address"
+        };
+      } catch (e) {
+        checks[key] = {
+          configured: true,
+          address: addrs[key],
+          bytecode: false,
+          ok: false,
+          reason: e?.message || "getCode failed"
+        };
+      }
+    }
+
+    const coreOk = required.every(k => checks[k]?.ok);
+    if (typeof log === "function") {
+      log(coreOk ? "✅ v15.4 deployment bytecode preflight passed" :
+        "⚠️ v15.4 deployment preflight failed", {
+          chainId: window.__v154ChainId,
+          chainName: V154_CHAIN_NAMES[window.__v154ChainId] || "Unknown network",
+          checks
+        });
+    }
+    return { ok: coreOk, chainId: window.__v154ChainId, checks };
+  }
+
+  window.v154RunPreflight = v154RunPreflight;
+  window.v154ResetSavedAddresses = v154Reset;
+  window.v154LoadSavedAddresses = () => {
+    const saved = v154LoadSaved();
+    v154WriteFields(saved);
+    window.__v154Addresses = { ...saved };
+    return saved;
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    v154EnsurePanel();
+
+    // Never fall back to fake/default deployment addresses.
+    const saved = v154LoadSaved();
+    v154WriteFields(saved);
+    window.__v154Addresses = { ...saved };
+
+    if (typeof log === "function") {
+      log(saved.found
+        ? "📂 v15.4 loaded saved addresses (no placeholder fallback)"
+        : "ℹ️ v15.4 no saved addresses — Contracts Not Configured");
+    }
+
+    v154Render();
+  });
+})();
+</script>
+
 </body>
 </html>
