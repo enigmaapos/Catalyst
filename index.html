@@ -5649,28 +5649,6 @@ function hideLoading() {
     </div>
     <div id="v16WalletList" class="v16-wallet-list"></div>
     <div class="v16-wallet-section">
-      <div class="v16-wallet-note"><strong>Mobile / remote wallet:</strong> Scan the QR code with a compatible wallet, or open the generated connection URI on a mobile device. A Reown/WalletConnect Project ID is required for remote sessions.</div>
-      <div class="v1611-config">
-        <label for="v1611ProjectId">Reown / WalletConnect Project ID</label>
-        <div class="v1611-config-row">
-          <input id="v1611ProjectId" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Paste your Project ID">
-          <button id="v1611SaveProjectId" type="button">Save</button>
-        </div>
-        <small>Required for WalletConnect QR/mobile sessions. It is not a private key. Get it from the Reown dashboard.</small>
-      </div>
-      <div class="v16-wallet-actions">
-        <button id="v16WalletConnectRemote" type="button">📱 Connect Mobile / QR</button>
-      </div>
-      <div id="v161QrWrap" class="v161-qr-wrap">
-        <div class="v161-qr"><div id="v161QrCanvas">Generating QR…</div></div>
-        <div class="v161-mobile-actions">
-          <button id="v161CopyUri" type="button">Copy URI</button>
-          <button id="v161OpenUri" type="button">Open in Wallet</button>
-          <button id="v161CloseQr" type="button">Hide QR</button>
-        </div>
-        <div class="v161-config-hint">On desktop, scan this QR with your mobile wallet. On a phone, “Open in Wallet” uses the connection URI when the OS/browser permits it.</div>
-      </div>
-      <input id="v16WalletUri" class="v16-wallet-input" placeholder="WalletConnect URI" autocomplete="off" readonly>
       <div id="v16WalletStatus" class="v16-wallet-status"></div>
     </div>
   </div>
@@ -6328,3 +6306,136 @@ function hideLoading() {
 
 </body>
 </html>
+
+<style id="v162-native-wallet-css">
+.v162-remote{margin-top:12px;padding-top:12px;border-top:1px solid rgba(148,163,184,.18)}
+.v162-remote-note{font-size:12px;line-height:1.45;color:#94a3b8;margin-bottom:8px}
+.v162-native-badge{font-size:11px;padding:3px 7px;border-radius:999px;background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.2)}
+</style>
+<script id="v16.2-universal-native-wallet">
+/* Catalyst Protocol v16.2 — Universal Native Wallet
+   Native/injected wallet connections are ALWAYS first-class:
+   EIP-6963 -> legacy EIP-1193 -> optional WalletConnect fallback.
+   No Project ID is requested for normal wallet connections.
+*/
+(function(){
+  const S=window.__v162=window.__v162||{providers:new Map(),bound:new WeakSet(),connecting:false};
+  const V=window.V16_CONFIG=window.V16_CONFIG||{};
+  const log=(...a)=>typeof window.log==='function'?window.log(...a):console.log(...a);
+  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const short=a=>a?a.slice(0,6)+'…'+a.slice(-4):'Not connected';
+  const list=()=>document.getElementById('v16WalletList');
+  const modal=()=>document.getElementById('v16WalletModal');
+  const status=t=>{const e=document.getElementById('v16WalletStatus');if(e)e.textContent=t||'';};
+
+  function add(detail,kind){
+    if(!detail||!detail.provider)return;
+    const i=detail.info||{};
+    const key=String(i.uuid||i.rdns||i.name||('legacy-'+S.providers.size));
+    if(!S.providers.has(key)) S.providers.set(key,{provider:detail.provider,info:{
+      uuid:String(i.uuid||''),rdns:String(i.rdns||''),name:String(i.name||'Browser Wallet'),icon:String(i.icon||'')
+    },kind:kind||'eip6963'});
+  }
+  function discover(){
+    try{window.dispatchEvent(new Event('eip6963:requestProvider'));}catch(_){ }
+    const eth=window.ethereum;
+    if(eth){
+      if(Array.isArray(eth.providers)) eth.providers.forEach((p,i)=>add({provider:p,info:{uuid:'legacy-'+i,name:p.isMetaMask?'MetaMask':p.isTrust?'Trust Wallet':'Browser Wallet '+(i+1),rdns:p.isMetaMask?'io.metamask':p.isTrust?'com.trustwallet.app':''}},'legacy'));
+      else add({provider:eth,info:{uuid:'legacy-single',name:eth.isMetaMask?'MetaMask':eth.isTrust?'Trust Wallet':'Browser Wallet',rdns:eth.isMetaMask?'io.metamask':eth.isTrust?'com.trustwallet.app':''}},'legacy');
+    }
+  }
+  window.addEventListener('eip6963:announceProvider',e=>{add(e.detail,'eip6963');render();});
+
+  function render(){
+    const l=list();if(!l)return;
+    const arr=[...S.providers.values()];
+    if(!arr.length){
+      l.innerHTML='<div class="v16-wallet-note">No native wallet detected. Open Catalyst inside Trust Wallet, MetaMask, or another EVM wallet browser. Remote WalletConnect is available below only as an optional fallback.</div>';
+    }else{
+      l.innerHTML=arr.map((d,i)=>{
+        const native=d.kind==='legacy'?'Injected / legacy':'EIP-6963';
+        const icon=d.info.icon?`<img class="v16-wallet-icon" src="${esc(d.info.icon)}" alt="">`:'<div class="v16-wallet-icon" style="display:grid;place-items:center">👛</div>';
+        return `<button class="v16-wallet-option" type="button" data-v162-index="${i}">${icon}<div><div class="v16-wallet-name">${esc(d.info.name)}</div><div class="v16-wallet-meta">${esc(d.info.rdns||'EVM wallet')}</div></div><span class="v162-native-badge">${native}</span></button>`;
+      }).join('');
+      l.querySelectorAll('[data-v162-index]').forEach(b=>b.onclick=()=>connect([...S.providers.values()][Number(b.dataset.v162Index)]));
+    }
+    ensureRemoteUI();
+  }
+
+  function ensureRemoteUI(){
+    const card=document.querySelector('#v16WalletModal .v16-wallet-card'); if(!card)return;
+    const old=card.querySelector('.v162-remote'); if(old)old.remove();
+    const sec=document.createElement('div');sec.className='v162-remote';
+    sec.innerHTML='<div class="v162-remote-note"><strong>Optional remote connection:</strong> use WalletConnect only when this browser has no usable injected wallet. Normal Trust Wallet, MetaMask, and EIP-6963 wallet connections never require a Project ID.</div><button id="v162Remote" type="button">📱 Optional WalletConnect / QR</button>';
+    card.appendChild(sec);
+    sec.querySelector('#v162Remote').onclick=async()=>{
+      if(typeof window.v161ConnectMobileQr==='function') return window.v161ConnectMobileQr();
+      if(typeof window.v16ConnectRemote==='function') return window.v16ConnectRemote();
+      status('Optional WalletConnect fallback is unavailable in this build.');
+    };
+  }
+
+  async function connect(d){
+    if(S.connecting)return; S.connecting=true;
+    try{
+      const p=d?.provider;if(!p)throw new Error('Selected wallet provider unavailable');
+      const ep=new ethers.providers.Web3Provider(p,'any');
+      await ep.send('eth_requestAccounts',[]);
+      const accounts=await ep.send('eth_accounts',[]);
+      if(!accounts?.length)throw new Error('Wallet did not return an account');
+      provider=ep;readProvider=ep;signer=ep.getSigner();userAddr=ethers.utils.getAddress(accounts[0]);
+      const net=await ep.getNetwork();
+      const a=document.getElementById('addr');if(a){a.innerText=short(userAddr);a.title=userAddr;}
+      const n=document.getElementById('networkText');if(n)n.innerText=`${net.name} (${net.chainId})`;
+      document.getElementById('connectBtn')?.classList.add('hidden');
+      document.getElementById('disconnectBtn')?.classList.remove('hidden');
+      if(p.on&&!S.bound.has(p)){
+        const accountsChanged=async(a)=>{
+          if(!a?.length){if(typeof window.disconnect==='function')window.disconnect();return;}
+          try{await connect({...d,provider:p});}catch(e){log('⚠️ accountsChanged reconnect failed',e?.message||e);}
+        };
+        const chainChanged=async()=>{
+          try{clearRpcCache?.();provider=new ethers.providers.Web3Provider(p,'any');readProvider=provider;signer=provider.getSigner();userAddr=ethers.utils.getAddress((await provider.send('eth_accounts',[]))[0]);const nn=await provider.getNetwork();const n2=document.getElementById('networkText');if(n2)n2.innerText=`${nn.name} (${nn.chainId})`;await attachContractsIfSet({refresh:true});log('🔄 v16.2 native chain changed',{chainId:nn.chainId});}catch(e){log('⚠️ v16.2 chainChanged failed',e?.message||e);}
+        };
+        p.on('accountsChanged',accountsChanged);p.on('chainChanged',chainChanged);S.bound.add(p);
+      }
+      await loadABIs();
+      await attachContractsIfSet({refresh:true});
+      try{localStorage.setItem('catalyst_v16_wallet',JSON.stringify({kind:d.kind,name:d.info.name,rdns:d.info.rdns,uuid:d.info.uuid}));}catch(_){ }
+      log('✅ v16.2 native wallet connected',{address:userAddr,chainId:net.chainId,wallet:d.info.name,discovery:d.kind});
+      modal()?.classList.remove('open');modal()?.setAttribute('aria-hidden','true');
+    }catch(e){
+      log('❌ v16.2 native wallet connection failed',e?.message||e);
+      status('Connection failed: '+(e?.message||e));
+    }finally{S.connecting=false;}
+  }
+
+  async function open(){
+    discover();
+    await new Promise(r=>setTimeout(r,350));
+    discover();
+    const arr=[...S.providers.values()];
+    // One detected native wallet = direct connection. This is the desired
+    // behavior inside Trust Wallet/MetaMask in-app browsers.
+    if(arr.length===1){
+      status('Connecting to '+arr[0].info.name+'…');
+      return connect(arr[0]);
+    }
+    const m=modal();if(m){m.classList.add('open');m.setAttribute('aria-hidden','false');}
+    render();
+  }
+
+  window.v16OpenWalletModal=open;
+  window.connect=open;
+
+  window.addEventListener('load',()=>{
+    const b=document.getElementById('connectBtn');if(b)b.onclick=open;
+    discover();render();
+    log('🚀 v16.2 Universal Native Wallet ready',{eip6963:true,legacy:!!window.ethereum,nativeCount:S.providers.size,walletConnect:'optional-fallback'});
+  });
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('v16WalletClose')?.addEventListener('click',()=>{const m=modal();m?.classList.remove('open');m?.setAttribute('aria-hidden','true');});
+    modal()?.addEventListener('click',e=>{if(e.target===modal()){modal().classList.remove('open');modal().setAttribute('aria-hidden','true');}});
+  });
+})();
+</script>
