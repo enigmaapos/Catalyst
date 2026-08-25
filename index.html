@@ -70,6 +70,30 @@ window.v154DashboardGuard = function () {
   return ["cata","staking","governance","council"].every(k => /^0x[a-fA-F0-9]{40}$/.test(a[k] || ""));
 };
 </script>
+
+<style id="v16-wallet-css">
+  .v16-wallet-modal{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.78);backdrop-filter:blur(6px);padding:18px}
+  .v16-wallet-modal.open{display:flex}
+  .v16-wallet-card{width:min(560px,100%);max-height:88vh;overflow:auto;background:#0f172a;border:1px solid rgba(148,163,184,.35);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.45);padding:18px;color:#e5e7eb}
+  .v16-wallet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .v16-wallet-title{font-size:19px;font-weight:800}
+  .v16-wallet-sub{font-size:12px;opacity:.72;margin-top:3px}
+  .v16-wallet-close{border:0;background:transparent;color:#cbd5e1;font-size:24px;cursor:pointer}
+  .v16-wallet-list{display:grid;gap:9px}
+  .v16-wallet-option{display:flex;align-items:center;gap:12px;width:100%;padding:11px;border:1px solid rgba(148,163,184,.25);border-radius:13px;background:#111827;color:#f8fafc;cursor:pointer;text-align:left}
+  .v16-wallet-option:hover{background:#172033;border-color:rgba(96,165,250,.55)}
+  .v16-wallet-icon{width:38px;height:38px;border-radius:10px;object-fit:contain;background:#fff;flex:0 0 auto}
+  .v16-wallet-name{font-weight:700}
+  .v16-wallet-meta{font-size:11px;opacity:.65;margin-top:2px;word-break:break-all}
+  .v16-wallet-badge{margin-left:auto;font-size:10px;padding:3px 7px;border-radius:999px;background:rgba(34,197,94,.14);color:#86efac}
+  .v16-wallet-section{margin-top:15px;padding-top:14px;border-top:1px solid rgba(148,163,184,.15)}
+  .v16-wallet-note{font-size:12px;line-height:1.5;opacity:.78}
+  .v16-wallet-input{width:100%;box-sizing:border-box;margin-top:8px;padding:9px;border-radius:9px;border:1px solid rgba(148,163,184,.3);background:#020617;color:#e5e7eb}
+  .v16-wallet-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+  .v16-wallet-actions button{padding:8px 11px;border-radius:9px;border:1px solid rgba(148,163,184,.25);background:#1e293b;color:#f8fafc;cursor:pointer}
+  .v16-wallet-status{font-size:12px;margin-top:9px;min-height:18px}
+</style>
+
 </head>
 
 <!-- Loading Indicator -->
@@ -5588,6 +5612,415 @@ function hideLoading() {
     }
 
     v154Render();
+  });
+})();
+</script>
+
+
+<div id="v16WalletModal" class="v16-wallet-modal" aria-hidden="true">
+  <div class="v16-wallet-card" role="dialog" aria-modal="true" aria-labelledby="v16WalletTitle">
+    <div class="v16-wallet-head">
+      <div>
+        <div id="v16WalletTitle" class="v16-wallet-title">Connect Wallet</div>
+        <div class="v16-wallet-sub">Universal EVM wallet connection</div>
+      </div>
+      <button id="v16WalletClose" class="v16-wallet-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div id="v16WalletList" class="v16-wallet-list"></div>
+    <div class="v16-wallet-section">
+      <div class="v16-wallet-note"><strong>Mobile / remote wallet:</strong> WalletConnect can be enabled by adding your Reown/WalletConnect Project ID to <code>V16_CONFIG.WALLETCONNECT_PROJECT_ID</code>. This is intentionally not hard-coded.</div>
+      <div class="v16-wallet-actions">
+        <button id="v16WalletConnectRemote" type="button">📱 Connect Mobile / WalletConnect</button>
+      </div>
+      <input id="v16WalletUri" class="v16-wallet-input" placeholder="WalletConnect URI (optional)" autocomplete="off">
+      <div class="v16-wallet-actions">
+        <button id="v16WalletCopyUri" type="button">Copy URI</button>
+        <button id="v16WalletOpenUri" type="button">Open URI</button>
+      </div>
+      <div id="v16WalletStatus" class="v16-wallet-status"></div>
+    </div>
+  </div>
+</div>
+
+
+<script id="v16-universal-wallet">
+/* ============================================================
+   Catalyst Protocol v16 — Universal Wallet Connector
+   EIP-6963 discovery + legacy EIP-1193 fallback +
+   optional WalletConnect Universal Provider for mobile/remote wallets.
+
+   Existing v15.4 RPC manager, contract preflight, address validation,
+   staged refresh and role-aware logic are preserved.
+   ============================================================ */
+(function(){
+  const V16_CONFIG = window.V16_CONFIG = Object.assign({
+    WALLETCONNECT_PROJECT_ID: "",
+    WALLETCONNECT_RELAY_URL: "",
+    WALLETCONNECT_METADATA_URL: location.origin,
+    WALLETCONNECT_METADATA_ICON: location.origin + "/favicon.ico",
+    SUPPORTED_CHAIN_IDS: [1,56,137,8453,42161,10,43114],
+    AUTO_RECONNECT_EIP6963: true,
+    AUTO_RECONNECT_LEGACY: false
+  }, window.V16_CONFIG || {});
+
+  const state = window.__v16Wallet = {
+    providers: new Map(),
+    selected: null,
+    selectedKey: null,
+    wcProvider: null,
+    wcModule: null,
+    listeners: new WeakMap(),
+    connectedKind: null,
+    connectedRdns: null
+  };
+
+  const STORAGE_KEY = "catalyst_v16_wallet";
+
+  function v16Log(...a){
+    if(typeof window.log === "function") window.log(...a);
+    else console.log(...a);
+  }
+
+  function short(a){ return a ? a.slice(0,6)+"…"+a.slice(-4) : "Not connected"; }
+
+  function saveSelection(detail){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        kind: detail?.kind || "",
+        rdns: detail?.info?.rdns || "",
+        uuid: detail?.info?.uuid || "",
+        name: detail?.info?.name || ""
+      }));
+    }catch(_){}
+  }
+
+  function loadSelection(){
+    try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");}catch(_){return null;}
+  }
+
+  function addProvider(detail){
+    if(!detail || !detail.provider) return;
+    const info = detail.info || {};
+    const key = info.uuid || info.rdns || info.name || ("provider-"+state.providers.size);
+    if(!state.providers.has(key)){
+      state.providers.set(key, Object.freeze({
+        info: Object.freeze({
+          uuid:String(info.uuid||""),
+          name:String(info.name||"Browser Wallet"),
+          icon:String(info.icon||""),
+          rdns:String(info.rdns||"")
+        }),
+        provider:detail.provider,
+        kind:"eip6963"
+      }));
+      render();
+      v16Log("🔎 v16 wallet discovered", {name:info.name, rdns:info.rdns, uuid:info.uuid});
+    }
+  }
+
+  function requestDiscovery(){
+    try{ window.dispatchEvent(new Event("eip6963:requestProvider")); }catch(_){}
+  }
+
+  window.addEventListener("eip6963:announceProvider", e=>{
+    try{ addProvider(e.detail); }catch(err){v16Log("⚠️ EIP-6963 provider rejected", err?.message||err);}
+  });
+
+  function legacyProvider(){
+    const eth = window.ethereum;
+    if(!eth) return null;
+    // If a multi-provider array exists, expose each provider as a selectable
+    // legacy option when EIP-6963 was not implemented by that wallet.
+    if(Array.isArray(eth.providers)){
+      eth.providers.forEach((p,i)=>{
+        if(p) addProvider({
+          info:{uuid:"legacy-"+i,name:p.isMetaMask?"MetaMask":"Browser Wallet "+(i+1),icon:"",rdns:""},
+          provider:p
+        });
+      });
+    }
+    return eth;
+  }
+
+  function esc(x){
+    return String(x||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+  }
+
+  function render(){
+    const list=document.getElementById("v16WalletList");
+    if(!list) return;
+    const arr=[...state.providers.entries()];
+    if(!arr.length){
+      list.innerHTML='<div class="v16-wallet-note">No injected wallets announced yet. Try refreshing discovery or use Mobile / WalletConnect.</div>';
+      return;
+    }
+    list.innerHTML=arr.map(([key,d])=>{
+      const icon=d.info.icon ? `<img class="v16-wallet-icon" src="${esc(d.info.icon)}" alt="">`
+        : `<div class="v16-wallet-icon" style="display:grid;place-items:center;color:#111">👛</div>`;
+      return `<button class="v16-wallet-option" data-v16-key="${esc(key)}" type="button">
+        ${icon}<div><div class="v16-wallet-name">${esc(d.info.name)}</div>
+        <div class="v16-wallet-meta">${esc(d.info.rdns||"Injected EIP-1193 wallet")}</div></div>
+        <span class="v16-wallet-badge">EIP-6963</span>
+      </button>`;
+    }).join("");
+    list.querySelectorAll("[data-v16-key]").forEach(btn=>{
+      btn.onclick=()=>connectWithProvider(state.providers.get(btn.dataset.v16Key));
+    });
+  }
+
+  function openModal(){
+    requestDiscovery();
+    legacyProvider();
+    const m=document.getElementById("v16WalletModal");
+    if(m){m.classList.add("open");m.setAttribute("aria-hidden","false");}
+    render();
+  }
+
+  function closeModal(){
+    const m=document.getElementById("v16WalletModal");
+    if(m){m.classList.remove("open");m.setAttribute("aria-hidden","true");}
+  }
+
+  async function bindProviderEvents(p){
+    if(!p || !p.on) return;
+    if(state.listeners.has(p)) return;
+    const accountsChanged=async(accounts)=>{
+      if(!accounts || !accounts.length){
+        if(typeof window.disconnect==="function") window.disconnect();
+        return;
+      }
+      await completeConnection(p, false);
+    };
+    const chainChanged=async(chainId)=>{
+      try{
+        const hex=typeof chainId==="string"?chainId:"0x"+Number(chainId).toString(16);
+        v16Log("🔄 v16 wallet chainChanged", hex);
+        clearRpcCache?.();
+        if(typeof window.disconnectForChainChange==="function"){
+          // Existing disconnect is too destructive for a chain switch; normal
+          // flow below rebuilds the provider and reruns v15.4 preflight.
+        }
+        provider=new ethers.providers.Web3Provider(p,"any");
+        readProvider=provider;
+        signer=provider.getSigner();
+        userAddr=await signer.getAddress();
+        const net=await provider.getNetwork();
+        const nt=document.getElementById("networkText");
+        if(nt) nt.innerText=`${net.name} (${net.chainId})`;
+        await attachContractsIfSet({refresh:true});
+        v16Log("✅ v16 chain switch handled", {chainId:net.chainId,name:net.name});
+      }catch(e){v16Log("⚠️ v16 chainChanged handling failed",e?.message||e);}
+    };
+    const disconnectEvent=()=>v16Log("ℹ️ v16 provider disconnect event");
+    p.on("accountsChanged",accountsChanged);
+    p.on("chainChanged",chainChanged);
+    p.on("disconnect",disconnectEvent);
+    state.listeners.set(p,{accountsChanged,chainChanged,disconnectEvent});
+  }
+
+  async function completeConnection(p, requestAccounts=true){
+    if(!p) throw new Error("Wallet provider unavailable");
+    provider=new ethers.providers.Web3Provider(p,"any");
+    readProvider=provider;
+
+    if(requestAccounts) await provider.send("eth_requestAccounts",[]);
+    const accounts=await provider.send("eth_accounts",[]);
+    if(!accounts || !accounts.length) throw new Error("No wallet account returned");
+
+    signer=provider.getSigner();
+    userAddr=ethers.utils.getAddress(accounts[0]);
+
+    const net=await provider.getNetwork();
+    const addrEl=document.getElementById("addr");
+    if(addrEl){addrEl.innerText=short(userAddr);addrEl.title=userAddr;}
+    const networkText=document.getElementById("networkText");
+    if(networkText) networkText.innerText=`${net.name} (${net.chainId})`;
+
+    document.getElementById("connectBtn")?.classList.add("hidden");
+    document.getElementById("disconnectBtn")?.classList.remove("hidden");
+
+    document.getElementById("copyAddrBtn")?.addEventListener("click",()=>{
+      navigator.clipboard?.writeText(userAddr).then(()=>alert("✅ Address copied to clipboard!")).catch(()=>{});
+    },{once:true});
+
+    await bindProviderEvents(p);
+    await loadABIs();
+    await attachContractsIfSet({refresh:true});
+
+    state.selected=p;
+    state.connectedKind="injected";
+    saveSelection(state.providers.size ? [...state.providers.values()].find(x=>x.provider===p) : null);
+
+    v16Log("✅ v16 wallet connected",{address:userAddr,chainId:net.chainId,provider:p===window.ethereum?"legacy":"EIP-6963"});
+    closeModal();
+  }
+
+  async function connectWithProvider(detail){
+    try{
+      if(!detail?.provider) throw new Error("Selected wallet provider unavailable");
+      state.selected=detail.provider;
+      await completeConnection(detail.provider,true);
+    }catch(e){
+      v16Log("❌ v16 wallet connection failed",e?.message||e);
+      const st=document.getElementById("v16WalletStatus");
+      if(st) st.textContent="Connection failed: "+(e?.message||e);
+    }
+  }
+
+  async function connectLegacy(){
+    const p=legacyProvider();
+    if(!p) throw new Error("No EIP-1193 wallet detected");
+    await completeConnection(p,true);
+  }
+
+  async function initWalletConnect(){
+    if(state.wcProvider) return state.wcProvider;
+    const projectId=String(V16_CONFIG.WALLETCONNECT_PROJECT_ID||"").trim();
+    if(!projectId) throw new Error("WalletConnect is not configured. Set V16_CONFIG.WALLETCONNECT_PROJECT_ID.");
+
+    // Browser-native dynamic import keeps v16 usable as a single HTML file.
+    // The Universal Provider is the official WalletConnect transport.
+    const mod=await import("https://esm.sh/@walletconnect/universal-provider@2.23.10");
+    const UniversalProvider=mod.default||mod.UniversalProvider;
+    if(!UniversalProvider) throw new Error("WalletConnect Universal Provider failed to load");
+
+    const wc=await UniversalProvider.init({
+      projectId,
+      relayUrl:V16_CONFIG.WALLETCONNECT_RELAY_URL||undefined,
+      metadata:{
+        name:"Catalyst Protocol",
+        description:"Catalyst NFT staking, governance and guardian council",
+        url:V16_CONFIG.WALLETCONNECT_METADATA_URL||location.origin,
+        icons:[V16_CONFIG.WALLETCONNECT_METADATA_ICON||location.origin+"/favicon.ico"]
+      }
+    });
+    state.wcModule=mod;
+    state.wcProvider=wc;
+
+    if(wc.on){
+      wc.on("accountsChanged", async a=>{
+        if(a?.[0]){
+          const p=wc;
+          await completeConnection(p,false);
+        }
+      });
+      wc.on("chainChanged", async cid=>{
+        try{
+          provider=new ethers.providers.Web3Provider(wc,"any");
+          readProvider=provider;
+          const accounts=await wc.request({method:"eth_accounts"});
+          if(accounts?.[0]){
+            signer=provider.getSigner();
+            userAddr=ethers.utils.getAddress(accounts[0]);
+            await attachContractsIfSet({refresh:true});
+          }
+          v16Log("🔄 v16 WalletConnect chainChanged",cid);
+        }catch(e){v16Log("⚠️ v16 WalletConnect chain change failed",e?.message||e);}
+      });
+      wc.on("disconnect",()=>v16Log("ℹ️ v16 WalletConnect session disconnected"));
+    }
+    return wc;
+  }
+
+  async function connectRemote(){
+    const st=document.getElementById("v16WalletStatus");
+    try{
+      const wc=await initWalletConnect();
+      const chains=(V16_CONFIG.SUPPORTED_CHAIN_IDS||[1]).map(id=>"eip155:"+id);
+      const methods=["eth_sendTransaction","personal_sign","eth_signTypedData","eth_signTypedData_v4"];
+      const {uri}=await wc.connect({
+        requiredNamespaces:{
+          eip155:{methods,chains,events:["accountsChanged","chainChanged"]}
+        }
+      });
+      if(uri){
+        document.getElementById("v16WalletUri").value=uri;
+        if(st) st.textContent="WalletConnect URI generated. Copy it or use Open URI on a mobile device.";
+        v16Log("📱 v16 WalletConnect URI ready");
+      }
+      // If a mobile wallet completed the session, the provider will expose accounts.
+      const accounts=await wc.request({method:"eth_accounts",params:[]}).catch(()=>[]);
+      if(accounts?.[0]){
+        await completeConnection(wc,false);
+      }
+    }catch(e){
+      if(st) st.textContent="Mobile connection unavailable: "+(e?.message||e);
+      v16Log("⚠️ v16 WalletConnect error",e?.message||e);
+    }
+  }
+
+  async function restore(){
+    requestDiscovery();
+    await new Promise(r=>setTimeout(r,350));
+    const saved=loadSelection();
+    if(saved){
+      const found=[...state.providers.values()].find(d=>
+        (saved.uuid && d.info.uuid===saved.uuid) ||
+        (saved.rdns && d.info.rdns===saved.rdns)
+      );
+      if(found && V16_CONFIG.AUTO_RECONNECT_EIP6963){
+        try{
+          const accounts=await found.provider.request({method:"eth_accounts"});
+          if(accounts?.length) await completeConnection(found.provider,false);
+        }catch(_){}
+      }
+    }
+  }
+
+  window.v16OpenWalletModal=openModal;
+  window.v16ConnectLegacy=connectLegacy;
+  window.v16ConnectRemote=connectRemote;
+
+  // Replace the existing connect handler without changing the v15.4 contract/RPC code.
+  window.connect=async function(){
+    openModal();
+  };
+
+  // Keep disconnect semantics from v15.4, but also clear wallet selection.
+  const originalDisconnect=window.disconnect;
+  window.disconnect=function(){
+    try{localStorage.removeItem(STORAGE_KEY);}catch(_){}
+    state.selected=null;
+    state.connectedKind=null;
+    state.connectedRdns=null;
+    if(state.wcProvider){
+      try{state.wcProvider.disconnect();}catch(_){}
+      state.wcProvider=null;
+    }
+    if(typeof originalDisconnect==="function") originalDisconnect();
+  };
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    document.getElementById("v16WalletClose")?.addEventListener("click",closeModal);
+    document.getElementById("v16WalletConnectRemote")?.addEventListener("click",connectRemote);
+    document.getElementById("v16WalletCopyUri")?.addEventListener("click",()=>{
+      const v=document.getElementById("v16WalletUri")?.value||"";
+      if(v) navigator.clipboard?.writeText(v).then(()=>{
+        document.getElementById("v16WalletStatus").textContent="URI copied.";
+      }).catch(()=>{});
+    });
+    document.getElementById("v16WalletOpenUri")?.addEventListener("click",()=>{
+      const v=document.getElementById("v16WalletUri")?.value||"";
+      if(v) location.href=v;
+    });
+    document.getElementById("v16WalletModal")?.addEventListener("click",e=>{
+      if(e.target.id==="v16WalletModal") closeModal();
+    });
+  });
+
+  // Rebind after the original v15.4 load handler has run.
+  window.addEventListener("load",()=>{
+    const btn=document.getElementById("connectBtn");
+    if(btn) btn.onclick=window.connect;
+    requestDiscovery();
+    legacyProvider();
+    restore();
+    render();
+    v16Log("🚀 v16 Universal Wallet initialized",{
+      eip6963:true,
+      legacyFallback:!!window.ethereum,
+      walletConnectConfigured:!!String(V16_CONFIG.WALLETCONNECT_PROJECT_ID||"").trim()
+    });
   });
 })();
 </script>
