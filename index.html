@@ -1768,16 +1768,26 @@ function clearRpcCache(prefix=""){
 }
 function wrapContractReads(contract, name){
   if(!contract) return null;
-  return new Proxy(contract, {
+  // IMPORTANT: Do not Proxy the ethers Contract itself. Ethers defines some
+  // function properties (e.g. totalSupply) as non-configurable/non-writable.
+  // A Proxy that returns a wrapped function for those properties violates the
+  // JavaScript Proxy invariant and throws:
+  // "property ... is read-only and non-configurable ... expected ... but got ..."
+  //
+  // Instead, create a facade whose prototype is the real Contract. The facade
+  // has no conflicting own properties, while all ethers properties/methods are
+  // still resolved through the prototype chain.
+  const facade = Object.create(contract);
+  return new Proxy(facade, {
     get(target, prop, receiver){
       const value = Reflect.get(target, prop, receiver);
       if(typeof value !== 'function') return value;
       let fragment = null;
-      try { fragment = target.interface.getFunction(prop); } catch {}
+      try { fragment = contract.interface.getFunction(prop); } catch {}
       const mutability = fragment?.stateMutability;
-      if(mutability !== 'view' && mutability !== 'pure') return value.bind(target);
+      if(mutability !== 'view' && mutability !== 'pure') return value.bind(contract);
       return (...args)=>safeRpcRead(
-        ()=>value.apply(target,args),
+        ()=>value.apply(contract,args),
         rpcCacheKey(`${name}.${String(prop)}`, args)
       );
     }
@@ -2484,7 +2494,7 @@ async function cataSwapAdmin() {
 	  // Transparency (view supply, roles, minters) - OPTIMIZED WITH Promise.all
 async function fetchTransparency() {
   try {
-    if (!contracts.cata || !provider) {
+    if (!contracts.cata || !getProviderForReads()) {
       if (!contracts.cata) return alert('Please connect wallet and set CATA contract address first');
     }
 
