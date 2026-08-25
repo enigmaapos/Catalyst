@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Catalyst Protocol — DApp</title>
+  <title>Catalyst Protocol — DApp v16.3</title>
 	  <script src="https://cdn.tailwindcss.com"></script>
   <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
 	<link rel="icon" type="image/png" href="assets/logo.png">	
@@ -132,7 +132,12 @@ window.v154DashboardGuard = function () {
 @keyframes v1622Spin{to{transform:rotate(360deg)}}@keyframes v1622In{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(max-width:640px){#v1622ToastRoot{left:12px;right:12px;bottom:12px;max-width:none}.v1622-modal{border-radius:15px}}
 </style>
-</head>
+<style id="v163-professional-interaction-css">
+.v1622-toast{position:relative;overflow:hidden;border-radius:16px!important;padding:14px 15px!important;background:linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))!important;box-shadow:0 18px 55px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.025) inset!important}
+.v1622-toast::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#22d3ee}.v1622-toast.success::before{background:#22c55e}.v1622-toast.error::before{background:#ef4444}.v1622-toast.warning::before{background:#f59e0b}.v1622-toast.pending::before{background:#38bdf8}
+.v1622-toast-icon{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(56,189,248,.12);font-weight:900}.v1622-toast.success .v1622-toast-icon{background:rgba(34,197,94,.14);color:#86efac}.v1622-toast.error .v1622-toast-icon{background:rgba(239,68,68,.14);color:#fca5a5}.v1622-toast.warning .v1622-toast-icon{background:rgba(245,158,11,.14);color:#fcd34d}.v1622-toast.pending .v1622-toast-icon{background:rgba(56,189,248,.14);color:#7dd3fc}
+.v1622-toast-msg{white-space:pre-line}.v1622-toast-close{transition:.15s ease}.v1622-toast-close:hover{transform:scale(1.15)}.v163-pressed{transform:scale(.975)!important;filter:brightness(1.12)!important}
+</style></head>
 
 <!-- Loading Indicator -->
 <div id="loadingIndicator" style="display:none;">
@@ -1700,7 +1705,11 @@ Catalyst Whitepaper
 </main>
 
     <section class="glass p-4 rounded-lg mt-6">
-      <h3 class="font-semibold mb-2">Advanced / Logs</h3>
+      <div class="flex items-center justify-between gap-3 mb-2">
+        <h3 class="font-semibold">Advanced / Logs</h3>
+        <button id="v163AuditBtn" type="button" class="v1622-btn text-xs">🔎 Audit Buttons</button>
+      </div>
+      <div id="v163AuditSummary" class="text-xs text-slate-400 mb-2">Interaction audit: waiting…</div>
       <div id="logs" class="h-48 overflow-auto text-xs font-mono bg-black/20 p-3 rounded"></div>
     </section>
 
@@ -2898,7 +2907,7 @@ async function handleRegisterCollection() {
     if (!stakingAddr) return alert('Set staking contract address first');
     const allowance = await cata.allowance(myAddr, stakingAddr);
     if (allowance.lt(totalFeeBN)) {
-      const ok = confirm('You need to approve CATA for the registration fee: ' + fmtCata(totalFeeBN) + '. Approve now?');
+      const ok = await catalystConfirm({title:"CATA approval required",message:"You need to approve CATA for the registration fee: " + fmtCata(totalFeeBN) + ". Continue to your wallet for approval?",confirmLabel:"Approve CATA"});
       if (!ok) return;
       const txA = await cata.approve(stakingAddr, totalFeeBN);
       log('approve tx', txA.hash);
@@ -4281,7 +4290,7 @@ $('createProposalBtn').onclick = async () => {
       if (!ethers.utils.isAddress(ctx)) { hideLoading(); return alert("⚠️ Invalid council address"); }
     }
 
-    if (!confirm(`Create proposal?\n\nType: ${typeStr}\nValue: ${$('proposalValue').value}\nTarget: ${ctx}\n\nPress OK to confirm.`)) {
+    if (!(await catalystConfirm({title:"Create governance proposal?",message:`Type: ${typeStr}\nValue: ${$('proposalValue').value}\nTarget: ${ctx}`,confirmLabel:"Create Proposal"}))) {
       hideLoading(); return;
     }
 
@@ -4308,7 +4317,7 @@ $('voteProposalBtn').onclick = async () => {
     if (!id) return alert('⚠️ Proposal ID required');
 
     // Ask user to confirm voting intent
-    const support = confirm("Vote FOR this proposal?\nPress Cancel to vote AGAINST.");
+    const support = await catalystConfirm({title:"Cast governance vote",message:"Choose Confirm to vote FOR this proposal. Cancel means AGAINST.",confirmLabel:"Vote FOR"});
 
     // Determine collection context (if any)
     let ctx = $('proposalCollectionCtx').value.trim();
@@ -4508,7 +4517,7 @@ $('loadReadyProposalsBtn').onclick = async () => {
 document.addEventListener("click", async e => {
   if (e.target.classList.contains("execBtn")) {
     const id = e.target.dataset.id;
-    if (!confirm(`Execute proposal ${id.slice(0, 10)} now?`)) return;
+    if (!(await catalystConfirm({title:"Execute governance proposal?",message:`Execute proposal ${id.slice(0,10)}… now? This will submit an on-chain transaction.`,confirmLabel:"Execute",danger:true}))) return;
 
     try {
       showLoading("Executing...");
@@ -5207,11 +5216,26 @@ async function refreshLock() {
   await attachContractsIfSet({refresh:true});
 
   // Connect / disconnect
-  $('connectBtn').onclick = connect;
+  // v16.3: Connect Wallet is owned exclusively by the Universal Native Wallet controller.
   $('disconnectBtn').onclick = disconnect;
 
 $("refreshRecoveryBtn").addEventListener("click", () => {
   refreshRecovery(); });
+$("refreshVetoWarningBtn")?.addEventListener("click", () => refreshVetoWarning());
+$("deployerViewRecoveryBtn")?.addEventListener("click", async () => {
+  try { await refreshRecovery(); const el=$("deployerRecoveryStatus"); if(el) el.textContent="Recovery state refreshed. Review the Recovery State panel below."; catalystNotify("success","Recovery state refreshed.","Recovery status"); }
+  catch(e){ catalystNotify("error",e?.message||e,"Recovery refresh failed"); }
+});
+$("deployerApproveRecoveryBtn")?.addEventListener("click", () => $("approveRecoveryBtn")?.click());
+$("deployerExecuteRecoveryBtn")?.addEventListener("click", () => $("executeRecoveryBtn")?.click());
+$("deployerProposeRecoveryBtn")?.addEventListener("click", () => {
+  const addr=$("deployerNewDeployerAddr")?.value?.trim();
+  if(!addr || !ethers.utils.isAddress(addr)) return catalystNotify("warning","Enter a valid new deployer address first.","Recovery configuration");
+  $("inputRecoveryProposed").value=addr;
+  selectTab("council");
+  $("inputRecoveryProposed")?.scrollIntoView({behavior:"smooth",block:"center"});
+  catalystNotify("info","The new deployer address was placed into the Recovery Operations form. Review the target contract and calldata before submitting.","Recovery proposal prepared");
+});
 $("refreshDaoBtn").onclick = refreshDao;
 $("refreshGuardiansBtn").onclick = refreshGuardians;
 $("refreshLockBtn").onclick = refreshLock;
@@ -5669,8 +5693,8 @@ function hideLoading() {
 </div>
 
 
-<script id="v16.2.2-universal-native-wallet">
-/* Catalyst Protocol v16.2.2 — Universal Native Wallet
+<script id="v16.3-universal-native-wallet">
+/* Catalyst Protocol v16.3 — Universal Native Wallet
    Native wallets are the primary connection path:
      EIP-6963 -> injected EIP-1193 -> optional WalletConnect fallback.
    A provider exposed by an in-app wallet browser is never forced through
@@ -6146,87 +6170,86 @@ function hideLoading() {
 </script>
 
 
-<script id="v1622-professional-ui-js">
+<script id="v163-professional-interaction-js">
 (() => {
-  const root = document.getElementById('v1622ToastRoot');
-  const modal = document.getElementById('v1622ModalRoot');
-  const titleEl = document.getElementById('v1622ModalTitle');
-  const bodyEl = document.getElementById('v1622ModalBody');
-  const footEl = document.getElementById('v1622ModalFoot');
-  const x = document.getElementById('v1622ModalX');
-
-  const icon = {success:'✓', error:'!', warning:'⚠', info:'i'};
-  const titles = {success:'Success', error:'Something went wrong', warning:'Action needed', info:'Catalyst'};
-
-  window.catalystNotify = function(type='info', message='', title=''){
-    const el = document.createElement('div');
-    el.className = `v1622-toast ${type}`;
-    el.innerHTML = `<div class="v1622-toast-icon">${icon[type]||'i'}</div>
-      <div><div class="v1622-toast-title">${title || titles[type] || 'Catalyst'}</div>
-      <div class="v1622-toast-msg"></div></div>
-      <button class="v1622-toast-close" aria-label="Dismiss">×</button>`;
-    el.querySelector('.v1622-toast-msg').textContent = String(message);
-    el.querySelector('.v1622-toast-close').onclick = () => el.remove();
+  "use strict";
+  const root=document.getElementById("v1622ToastRoot");
+  const modal=document.getElementById("v1622ModalRoot");
+  const titleEl=document.getElementById("v1622ModalTitle");
+  const bodyEl=document.getElementById("v1622ModalBody");
+  const footEl=document.getElementById("v1622ModalFoot");
+  const x=document.getElementById("v1622ModalX");
+  const ICONS={success:"✓",error:"×",warning:"!",info:"i",pending:"◌"};
+  const TITLES={success:"Transaction confirmed",error:"Action failed",warning:"Action needed",info:"Catalyst",pending:"Transaction pending"};
+  const text=v=>v==null?"":String(v);
+  function classify(msg){
+    const m=text(msg).toLowerCase();
+    if(/reject|denied|user denied|cancelled|canceled|failed|revert|exception|invalid|error|insufficient/.test(m))return"error";
+    if(/waiting|pending|confirm|processing|submitted/.test(m))return"pending";
+    if(/warning|configure|not configured|connect|required/.test(m))return"warning";
+    if(/success|confirmed|complete|copied|connected|approved|executed|registered|saved/.test(m))return"success";
+    return"info";
+  }
+  window.catalystNotify=function(type="info",message="",title=""){
+    type=ICONS[type]?type:classify(message);
+    if(!root)return;
+    const el=document.createElement("div");
+    el.className=`v1622-toast ${type}`;
+    el.innerHTML=`<div class="v1622-toast-icon">${ICONS[type]}</div><div><div class="v1622-toast-title"></div><div class="v1622-toast-msg"></div></div><button class="v1622-toast-close" aria-label="Dismiss">×</button>`;
+    el.querySelector(".v1622-toast-title").textContent=title||TITLES[type];
+    el.querySelector(".v1622-toast-msg").textContent=text(message);
+    el.querySelector(".v1622-toast-close").onclick=()=>el.remove();
     root.appendChild(el);
-    setTimeout(() => el.remove(), type === 'error' ? 7000 : 4200);
+    setTimeout(()=>el.remove(),type==="error"?8000:type==="pending"?12000:5000);
     return el;
   };
-
-  window.catalystModal = function({title='Catalyst', message='', buttons=[]}={}){
-    titleEl.textContent = title;
-    bodyEl.innerHTML = '';
-    if(message instanceof Node) bodyEl.appendChild(message);
-    else { const p=document.createElement('div'); p.textContent=String(message); bodyEl.appendChild(p); }
-    footEl.innerHTML='';
-    (buttons.length ? buttons : [{label:'Close',value:true,primary:true}]).forEach(b=>{
-      const btn=document.createElement('button');
-      btn.className='v1622-btn'+(b.primary?' primary':'')+(b.danger?' danger':'');
-      btn.textContent=b.label;
-      btn.onclick=()=>{ modal.classList.remove('open'); if(b.onClick) b.onClick(); };
-      footEl.appendChild(btn);
+  window.catalystConfirm=function({title="Confirm transaction",message="Please confirm this action.",confirmLabel="Confirm",cancelLabel="Cancel",danger=false}={}){
+    return new Promise(resolve=>{
+      if(!modal){resolve(window.confirm(message));return;}
+      titleEl.textContent=title; bodyEl.innerHTML=""; footEl.innerHTML="";
+      const p=document.createElement("div"); p.className="v1622-status"; p.style.whiteSpace="pre-line"; p.textContent=text(message); bodyEl.appendChild(p);
+      const cancel=document.createElement("button"); cancel.className="v1622-btn"; cancel.textContent=cancelLabel;
+      const ok=document.createElement("button"); ok.className="v1622-btn"+(danger?" danger":" primary"); ok.textContent=confirmLabel;
+      const finish=v=>{modal.classList.remove("open");resolve(v);};
+      cancel.onclick=()=>finish(false); ok.onclick=()=>finish(true); footEl.append(cancel,ok); modal.classList.add("open"); setTimeout(()=>ok.focus(),20);
     });
-    modal.classList.add('open');
   };
-  const close=()=>modal.classList.remove('open');
-  x.onclick=close;
-  modal.addEventListener('click',e=>{if(e.target===modal)close()});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
-
-  // Replace browser-native alerts with the Catalyst UI.
-  window.alert = function(message){ catalystNotify('info', message, 'Catalyst'); };
-
-  // Guard against double-clicks while an async handler is running.
-  document.addEventListener('click', e => {
-    const b=e.target?.closest?.('button');
-    if(!b || b.dataset.v1622Busy==='1') return;
-    const text=(b.textContent||'').trim().toLowerCase();
-    if(/connect wallet|save addresses|load saved|reset saved|validate deployment|claim|stake|unstake|submit|execute|approve|revoke|grant|pause|unpause/.test(text)){
-      b.dataset.v1622Last=String(Date.now());
-    }
-  }, true);
-
-  window.v1622SetBusy = function(button,busy,label){
-    if(!button)return;
-    if(busy){
-      if(!button.dataset.v1622Original) button.dataset.v1622Original=button.innerHTML;
-      button.dataset.v1622Busy='1'; button.disabled=true;
-      button.innerHTML=`<span class="v1622-spinner" style="display:inline-block;vertical-align:-3px;margin-right:7px"></span>${label||'Working…'}`;
-    }else{
-      button.dataset.v1622Busy='0'; button.disabled=false;
-      if(button.dataset.v1622Original) button.innerHTML=button.dataset.v1622Original;
-    }
+  window.catalystTx={
+    submitted(txHash,label="Transaction"){return catalystNotify("pending",`${label} submitted.\nWaiting for network confirmation…`,"Transaction submitted");},
+    confirmed(txHash,label="Transaction"){return catalystNotify("success",`${label} confirmed on-chain.${txHash?" "+txHash.slice(0,10)+"…":""}`,"Transaction confirmed");},
+    failed(err,label="Transaction"){return catalystNotify("error",text(err?.reason||err?.data?.message||err?.message||err),`${label} failed`);}
   };
+  window.alert=function(message){catalystNotify(classify(message),message);};
+  const close=()=>modal?.classList.remove("open");
+  x?.addEventListener("click",close); modal?.addEventListener("click",e=>{if(e.target===modal)close()}); document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+  document.addEventListener("click",e=>{const b=e.target?.closest?.("button");if(!b||b.disabled)return;b.classList.add("v163-pressed");setTimeout(()=>b.classList.remove("v163-pressed"),180)},true);
 
-  // Make every button visibly respond even when an underlying handler fails.
-  document.addEventListener('click', e => {
-    const b=e.target?.closest?.('button');
-    if(!b || b.disabled) return;
-    b.classList.add('active');
-    setTimeout(()=>b.classList.remove('active'),180);
-  }, true);
+  function audit(){
+    const buttons=[...document.querySelectorAll("button[id]")];
+    const delegated=new Set(["v16WalletClose","v1621Remote"]);
+    const dynamic=new Set(["execBtn"]);
+    const rows=buttons.map(b=>{
+      const isTab=b.classList.contains("tabbtn");
+      const direct=typeof b.onclick==="function";
+      const status=(isTab||direct||delegated.has(b.id)||dynamic.has(b.id)||b.id.startsWith("v154"))?"wired":"unwired";
+      return{id:b.id,status,text:(b.textContent||"").trim().replace(/\s+/g," ").slice(0,70)};
+    });
+    window.__v163ButtonAudit=rows;
+    const bad=rows.filter(x=>x.status==="unwired");
+    if(typeof log==="function"){log("🔎 v16.3 button audit",{total:rows.length,wired:rows.length-bad.length,unwired:bad.length});if(bad.length)log("⚠️ v16.3 unwired buttons",bad);}
+    return rows;
+  }
+  window.CatalystUI={notify:catalystNotify,confirm:catalystConfirm,tx:catalystTx,audit};
+  window.addEventListener("load",()=>setTimeout(audit,300));
 })();
 </script>
-</body>
+<script id="v163-audit-ui">
+window.addEventListener("load",()=>{
+  const b=document.getElementById("v163AuditBtn"), summary=document.getElementById("v163AuditSummary");
+  const run=()=>{const rows=window.CatalystUI?.audit?.()||[],bad=rows.filter(x=>x.status==="unwired");if(summary)summary.textContent=`${rows.length-bad.length}/${rows.length} buttons wired • ${bad.length} require attention`;if(bad.length)catalystNotify("warning",bad.map(x=>x.id).join(", "),"Button audit found unwired controls");else catalystNotify("success",`${rows.length} button controls verified as wired or intentionally delegated.`,"Interaction audit passed");};
+  b?.addEventListener("click",run);setTimeout(run,700);
+});
+</script></body>
 </html>
 
 
