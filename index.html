@@ -105,6 +105,16 @@ window.v154DashboardGuard = function () {
 .v161-config-hint{font-size:11px;opacity:.72;margin-top:7px;line-height:1.45}
 </style>
 
+
+<style id="v1611-config-css">
+.v1611-config{margin:10px 0;padding:12px;border:1px solid rgba(148,163,184,.2);border-radius:12px;background:rgba(15,23,42,.55)}
+.v1611-config label{display:block;font-size:11px;font-weight:700;margin-bottom:6px;opacity:.8}
+.v1611-config-row{display:flex;gap:8px;align-items:center}
+.v1611-config input{flex:1;min-width:0;padding:9px 10px;border-radius:9px;border:1px solid rgba(148,163,184,.28);background:#020617;color:#f8fafc}
+.v1611-config button{padding:9px 11px;border-radius:9px;border:1px solid rgba(148,163,184,.28);background:#1e293b;color:#f8fafc;cursor:pointer}
+.v1611-config small{display:block;margin-top:6px;opacity:.65;line-height:1.4}
+</style>
+
 </head>
 
 <!-- Loading Indicator -->
@@ -5640,6 +5650,14 @@ function hideLoading() {
     <div id="v16WalletList" class="v16-wallet-list"></div>
     <div class="v16-wallet-section">
       <div class="v16-wallet-note"><strong>Mobile / remote wallet:</strong> Scan the QR code with a compatible wallet, or open the generated connection URI on a mobile device. A Reown/WalletConnect Project ID is required for remote sessions.</div>
+      <div class="v1611-config">
+        <label for="v1611ProjectId">Reown / WalletConnect Project ID</label>
+        <div class="v1611-config-row">
+          <input id="v1611ProjectId" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Paste your Project ID">
+          <button id="v1611SaveProjectId" type="button">Save</button>
+        </div>
+        <small>Required for WalletConnect QR/mobile sessions. It is not a private key. Get it from the Reown dashboard.</small>
+      </div>
       <div class="v16-wallet-actions">
         <button id="v16WalletConnectRemote" type="button">📱 Connect Mobile / QR</button>
       </div>
@@ -6042,21 +6060,26 @@ function hideLoading() {
 </script>
 
 
-<script id="v16.1-wallet-qr">
-/* ============================================================
-   Catalyst Protocol v16.1 — Universal Wallet + QR
-   Reuses v16 EIP-6963 + EIP-1193 discovery and upgrades the
-   remote-wallet path with WalletConnect QR/deep-link UX.
-   ============================================================ */
+<script id="v16.1.1-wallet-qr-fix">
+/* Catalyst Protocol v16.1.1 — WalletConnect QR connection fix.
+   Important fixes:
+   1) Project ID can be configured in the UI and persisted locally.
+   2) display_uri listener is attached BEFORE connect().
+   3) UniversalProvider uses optionalNamespaces, matching current API.
+   4) connect() is not assumed to return a URI.
+   5) EIP-1193 provider events are forwarded to the existing v16 lifecycle.
+*/
 (function(){
   const C = window.V16_CONFIG = Object.assign({
     WALLETCONNECT_PROJECT_ID: "",
     WALLETCONNECT_RELAY_URL: "",
     WALLETCONNECT_METADATA_URL: location.origin,
-    WALLETCONNECT_METADATA_ICON: location.origin + "/favicon.ico"
+    WALLETCONNECT_METADATA_ICON: location.origin + "/favicon.ico",
+    SUPPORTED_CHAIN_IDS: [1]
   }, window.V16_CONFIG || {});
 
-  const st = window.__v161 = { qrUri:"", qrLoaded:false };
+  const KEY = "catalyst_v1611_wc_project_id";
+  const st = window.__v1611 = { qrUri:"", wc:null, initialized:false };
 
   function log(...a){
     if(typeof window.log==="function") window.log(...a);
@@ -6066,38 +6089,62 @@ function hideLoading() {
     const el=document.getElementById("v16WalletStatus");
     if(el) el.textContent=t||"";
   }
+  function getProjectId(){
+    const ui=(document.getElementById("v1611ProjectId")?.value||"").trim();
+    if(ui) return ui;
+    const cfg=String(C.WALLETCONNECT_PROJECT_ID||"").trim();
+    if(cfg) return cfg;
+    try{return (localStorage.getItem(KEY)||"").trim();}catch(_){return "";}
+  }
+  function saveProjectId(){
+    const id=(document.getElementById("v1611ProjectId")?.value||"").trim();
+    C.WALLETCONNECT_PROJECT_ID=id;
+    try{
+      if(id) localStorage.setItem(KEY,id);
+      else localStorage.removeItem(KEY);
+    }catch(_){}
+    status(id ? "WalletConnect Project ID saved locally." : "WalletConnect Project ID cleared.");
+  }
+  function loadProjectId(){
+    let id=String(C.WALLETCONNECT_PROJECT_ID||"").trim();
+    if(!id){try{id=(localStorage.getItem(KEY)||"").trim();}catch(_){}}
+    const el=document.getElementById("v1611ProjectId");
+    if(el) el.value=id;
+    if(id) C.WALLETCONNECT_PROJECT_ID=id;
+  }
 
   async function ensureQrLib(){
-    if(st.qrLoaded && window.QRCode) return window.QRCode;
-    if(window.QRCode){ st.qrLoaded=true; return window.QRCode; }
-    // QRCode.js is loaded only on demand; no QR library is needed for normal
-    // EIP-6963 injected-wallet connections.
+    if(window.QRCode) return window.QRCode;
     await new Promise((resolve,reject)=>{
-      const existing=document.querySelector('script[data-v161-qrlib]');
-      if(existing){ existing.addEventListener("load",resolve,{once:true}); existing.addEventListener("error",reject,{once:true}); return; }
+      const old=document.querySelector('script[data-v1611-qrlib]');
+      if(old){
+        old.addEventListener("load",resolve,{once:true});
+        old.addEventListener("error",reject,{once:true});
+        return;
+      }
       const sc=document.createElement("script");
       sc.src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-      sc.async=true; sc.dataset.v161Qrlib="1";
-      sc.onload=resolve; sc.onerror=()=>reject(new Error("QR library could not be loaded"));
+      sc.async=true; sc.dataset.v1611Qrlib="1";
+      sc.onload=resolve; sc.onerror=()=>reject(new Error("QR renderer could not be loaded"));
       document.head.appendChild(sc);
     });
     if(!window.QRCode) throw new Error("QR renderer unavailable");
-    st.qrLoaded=true;
     return window.QRCode;
   }
 
   async function renderQr(uri){
-    st.qrUri=uri||"";
+    if(!uri) return;
+    st.qrUri=uri;
     const wrap=document.getElementById("v161QrWrap");
     const host=document.getElementById("v161QrCanvas");
-    if(!wrap||!host) return;
-    wrap.classList.add("open");
-    host.innerHTML="Generating QR…";
+    const input=document.getElementById("v16WalletUri");
+    if(input) input.value=uri;
+    if(wrap) wrap.classList.add("open");
+    if(!host) return;
+    host.textContent="Generating QR…";
     const QR=await ensureQrLib();
     host.innerHTML="";
     new QR(host,{text:uri,width:230,height:230,correctLevel:QR.CorrectLevel.M});
-    const input=document.getElementById("v16WalletUri");
-    if(input) input.value=uri;
   }
 
   function closeQr(){
@@ -6109,25 +6156,26 @@ function hideLoading() {
     if(input) input.value="";
   }
 
-  async function connectRemoteV161(){
-    const projectId=String(C.WALLETCONNECT_PROJECT_ID||"").trim();
+  async function connectRemote(){
+    const projectId=getProjectId();
     if(!projectId){
-      status("Mobile QR requires a Reown/WalletConnect Project ID. Add it to V16_CONFIG.WALLETCONNECT_PROJECT_ID.");
-      log("⚠️ v16.1 WalletConnect not configured — QR cannot be generated");
+      status("WalletConnect needs a Project ID. Paste it above, press Save, then tap Connect Mobile / QR.");
+      log("⚠️ v16.1.1 WalletConnect blocked: Project ID is empty");
+      document.getElementById("v1611ProjectId")?.focus();
       return;
     }
+    C.WALLETCONNECT_PROJECT_ID=projectId;
+    try{localStorage.setItem(KEY,projectId);}catch(_){}
+
     try{
-      status("Starting secure mobile wallet session…");
-      if(typeof window.__v16Wallet?.wcProvider === "undefined" && typeof window.initWalletConnect==="function"){
-        // v16 keeps init private; this branch is only documentary.
-      }
+      status("Initializing WalletConnect…");
       const mod=await import("https://esm.sh/@walletconnect/universal-provider@2.23.10");
       const UniversalProvider=mod.default||mod.UniversalProvider;
-      if(!UniversalProvider) throw new Error("WalletConnect Universal Provider unavailable");
+      if(!UniversalProvider) throw new Error("Universal Provider export unavailable");
 
-      let wc=window.__v16Wallet.wcProvider;
-      if(!wc){
-        wc=await UniversalProvider.init({
+      if(!st.wc){
+        st.wc=await UniversalProvider.init({
+          logger:"error",
           projectId,
           relayUrl:C.WALLETCONNECT_RELAY_URL||undefined,
           metadata:{
@@ -6137,74 +6185,116 @@ function hideLoading() {
             icons:[C.WALLETCONNECT_METADATA_ICON||location.origin+"/favicon.ico"]
           }
         });
-        window.__v16Wallet.wcProvider=wc;
+
+        // MUST be registered before connect(), because the URI is emitted as
+        // an event and connect() does not reliably return it.
+        if(st.wc.on){
+          st.wc.on("display_uri",(uri)=>{
+            log("📱 v16.1.1 WalletConnect display_uri received");
+            renderQr(uri).then(()=>status("QR ready — scan it with your mobile wallet."))
+              .catch(e=>status("QR rendering failed: "+(e?.message||e)));
+          });
+          st.wc.on("session_event",({event,chainId})=>{
+            log("🔄 WalletConnect session event",{event,chainId});
+          });
+          st.wc.on("session_delete",()=>{
+            status("Mobile wallet session disconnected.");
+            closeQr();
+            if(typeof window.disconnectWallet==="function") window.disconnectWallet();
+          });
+        }
       }
 
-      const chainIds=(C.SUPPORTED_CHAIN_IDS||[1]).map(x=>"eip155:"+x);
-      const methods=["eth_sendTransaction","personal_sign","eth_signTypedData","eth_signTypedData_v4"];
-      const result=await wc.connect({
-        requiredNamespaces:{
-          eip155:{chains:chainIds,methods,events:["accountsChanged","chainChanged"]}
+      const chainIds=(C.SUPPORTED_CHAIN_IDS||[1]).map(Number);
+      const chains=chainIds.map(id=>"eip155:"+id);
+
+      // Current Universal Provider API supports optionalNamespaces. This also
+      // avoids requiring a wallet to support every chain in a hard-required way.
+      await st.wc.connect({
+        optionalNamespaces:{
+          eip155:{
+            chains,
+            methods:[
+              "eth_sendTransaction",
+              "eth_signTransaction",
+              "eth_sign",
+              "personal_sign",
+              "eth_signTypedData",
+              "eth_signTypedData_v4"
+            ],
+            events:["accountsChanged","chainChanged"],
+            rpcMap:Object.fromEntries(chainIds.map(id=>[
+              id,
+              `https://rpc.walletconnect.com/v1/?chainId=eip155:${id}&projectId=${encodeURIComponent(projectId)}`
+            ]))
+          }
         }
       });
 
-      const uri=result?.uri || wc?.uri;
-      if(uri){
-        await renderQr(uri);
-        status("QR ready — scan it with your mobile wallet.");
-        log("📱 v16.1 WalletConnect QR ready");
-      }
-
-      // Some Universal Provider versions emit display_uri instead of returning
-      // it directly. Listen once for that event as a compatibility path.
-      if(wc.on){
-        const display=(u)=>{
-          if(u){renderQr(u).catch(e=>log("⚠️ QR render failed",e?.message||e)); status("QR ready — scan it with your mobile wallet.");}
-        };
-        try{wc.on("display_uri",display);}catch(_){}
-      }
-
-      const accounts=await wc.request({method:"eth_accounts",params:[]}).catch(()=>[]);
-      if(accounts?.[0]){
-        await connectRemoteProvider(wc);
-      }else{
-        status("Waiting for mobile wallet approval…");
-        const onSession=async()=>{
-          try{
-            const a=await wc.request({method:"eth_accounts",params:[]});
-            if(a?.[0]) await connectRemoteProvider(wc);
-          }catch(_){}
-        };
-        if(wc.on){
-          try{wc.on("session_update",onSession);}catch(_){}
-        }
-      }
+      await finishConnection();
     }catch(e){
-      status("Mobile QR connection failed: "+(e?.message||e));
-      log("❌ v16.1 WalletConnect QR error",e?.message||e);
+      const msg=e?.message||String(e);
+      status("WalletConnect failed: "+msg);
+      log("❌ v16.1.1 WalletConnect error",msg);
     }
   }
 
-  async function connectRemoteProvider(wc){
-    provider=new ethers.providers.Web3Provider(wc,"any");
+  async function finishConnection(){
+    const wc=st.wc;
+    if(!wc) throw new Error("WalletConnect provider is not initialized");
+
+    let accounts=[];
+    try{accounts=await wc.request({method:"eth_accounts",params:[]});}catch(_){}
+    if(!accounts?.length){
+      // Universal Provider may expose approved accounts on session data.
+      const sess=wc.session;
+      const raw=sess?.namespaces?.eip155?.accounts||[];
+      accounts=raw.map(x=>String(x).split(":").pop());
+    }
+    if(!accounts?.length){
+      status("QR scanned. Waiting for wallet approval…");
+      return;
+    }
+
+    const eip1193=wc;
+    window.__v16Wallet=window.__v16Wallet||{};
+    window.__v16Wallet.wcProvider=eip1193;
+    window.__v16Wallet.connectedKind="walletconnect";
+
+    provider=new ethers.providers.Web3Provider(eip1193,"any");
     readProvider=provider;
     signer=provider.getSigner();
-    userAddr=ethers.utils.getAddress((await wc.request({method:"eth_accounts"}))[0]);
+
+    const account=ethers.utils.getAddress(accounts[0]);
+    userAddr=account;
+
     const net=await provider.getNetwork();
-    const addrEl=document.getElementById("addr");
-    if(addrEl){addrEl.innerText=userAddr.slice(0,6)+"…"+userAddr.slice(-4);addrEl.title=userAddr;}
+    document.getElementById("addr")?.replaceChildren(document.createTextNode(account.slice(0,6)+"…"+account.slice(-4)));
     const nt=document.getElementById("networkText");
-    if(nt) nt.innerText=`${net.name} (${net.chainId})`;
+    if(nt) nt.textContent=`${net.name} (${net.chainId})`;
     document.getElementById("connectBtn")?.classList.add("hidden");
     document.getElementById("disconnectBtn")?.classList.remove("hidden");
 
+    // Forward EIP-1193 events into the existing v16 account/chain handlers.
+    if(!st.initialized && eip1193.on){
+      st.initialized=true;
+      eip1193.on("accountsChanged",(a)=>{
+        if(typeof window.handleWalletAccountsChanged==="function") window.handleWalletAccountsChanged(a);
+        else if(Array.isArray(a)&&a.length){ userAddr=ethers.utils.getAddress(a[0]); }
+      });
+      eip1193.on("chainChanged",(cid)=>{
+        if(typeof window.handleWalletChainChanged==="function") window.handleWalletChainChanged(cid);
+        else location.reload();
+      });
+    }
+
     if(typeof window.loadABIs==="function") await window.loadABIs();
     if(typeof window.attachContractsIfSet==="function") await window.attachContractsIfSet({refresh:true});
-    window.__v16Wallet.connectedKind="walletconnect";
+
     try{localStorage.setItem("catalyst_v16_wallet",JSON.stringify({kind:"walletconnect",name:"WalletConnect"}));}catch(_){}
     status("✅ Mobile wallet connected");
-    log("✅ v16.1 mobile wallet connected",{address:userAddr,chainId:net.chainId});
-    setTimeout(closeQr,800);
+    log("✅ v16.1.1 WalletConnect connected",{address:account,chainId:net.chainId});
+    setTimeout(closeQr,700);
     document.getElementById("v16WalletModal")?.classList.remove("open");
   }
 
@@ -6213,23 +6303,26 @@ function hideLoading() {
     try{
       await navigator.clipboard.writeText(st.qrUri);
       status("WalletConnect URI copied.");
-    }catch(_){status("Copy failed — select the URI manually.");}
+    }catch(_){status("Copy failed — copy the URI from the field manually.");}
   }
-
   function openUri(){
-    if(!st.qrUri) return;
-    // Universal URI: wallet apps that register the scheme can intercept it.
-    window.location.href=st.qrUri;
+    if(!st.qrUri){status("No WalletConnect URI is available yet.");return;}
+    location.href=st.qrUri;
   }
 
   document.addEventListener("DOMContentLoaded",()=>{
-    document.getElementById("v16WalletConnectRemote")?.addEventListener("click",connectRemoteV161);
+    loadProjectId();
+    document.getElementById("v1611SaveProjectId")?.addEventListener("click",saveProjectId);
+    document.getElementById("v1611ProjectId")?.addEventListener("keydown",(e)=>{
+      if(e.key==="Enter"){e.preventDefault();saveProjectId();}
+    });
+    document.getElementById("v16WalletConnectRemote")?.addEventListener("click",connectRemote);
     document.getElementById("v161CopyUri")?.addEventListener("click",copyUri);
     document.getElementById("v161OpenUri")?.addEventListener("click",openUri);
     document.getElementById("v161CloseQr")?.addEventListener("click",closeQr);
   });
 
-  window.v161ConnectMobileQr=connectRemoteV161;
+  window.v161ConnectMobileQr=connectRemote;
 })();
 </script>
 
