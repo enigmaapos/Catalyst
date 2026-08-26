@@ -157,12 +157,39 @@ async function refreshPositions(){try{if(!state.account)return;const ids=await r
 const kinds=["BASE_REWARD","HARVEST_FEE","UNSTAKE_FEE","REGISTRATION_FEE","VOTING_PARAMETER","TIER_UPGRADE","RESEED_ACTIVE","RESEED_STANDBY","COMMIT_GUARDIANS","ACTIVATE_STANDBY","PROPOSE_DAO","COMMIT_DAO","CLEAR_LOCK","UPGRADE_COUNCIL","UPGRADE_GOVERNANCE","SET_COUNCIL","PAUSE","UNPAUSE"];
 kinds.forEach((x,i)=>{const o=document.createElement("option");o.value=i;o.textContent=`${i} — ${x}`;$("proposalKind").appendChild(o)});
 async function action(name){
- const s=state.signer;if(!s){toast("Wallet required","Connect a wallet first.","warn");return}
- if(name==="connect"){$("walletModal").classList.add("open");renderWallets();return}
- if(name==="closeWallet"){$("walletModal").classList.remove("open");return}
- if(name==="disconnect"){location.reload();return}
- if(name==="saveAddrs"){save();return} if(name==="loadAddrs"){load();toast("Loaded","Saved addresses loaded.","success");return} if(name==="resetAddrs"){reset();return}
- if(name==="validate"){return validate()} if(name==="auditButtons"){auditButtons();return}
+ // Wallet/UI actions must work BEFORE a signer exists.
+ // v16.4 previously checked state.signer first, making Connect Wallet unreachable.
+ if(name==="connect"){
+  $("walletModal").classList.add("open");
+  renderWallets();
+  if(!state.wallets.length){
+   toast("Wallet discovery","Checking for available browser wallets…","info");
+   try{await discover();renderWallets()}catch(e){toast("Wallet discovery failed",e?.message||String(e),"error")}
+  }
+  if(!state.wallets.length)toast("No wallet detected","Open this page inside MetaMask/Trust Wallet or use an injected EIP-1193 wallet.","warn");
+  return;
+ }
+ if(name==="closeWallet"){
+  $("walletModal").classList.remove("open");
+  return;
+ }
+ if(name==="disconnect"){
+  state.provider=null;state.signer=null;state.account=null;state.chainId=null;
+  $("connPill").textContent="Not connected";$("connPill").className="pill";
+  $("networkPill").textContent="Network —";$("networkPill").className="pill";
+  toast("Wallet disconnected","Your wallet session was cleared.","info");
+  return;
+ }
+ // These actions do not require a connected signer.
+ if(name==="saveAddrs"){save();return}
+ if(name==="loadAddrs"){load();toast("Loaded","Saved addresses loaded.","success");return}
+ if(name==="resetAddrs"){reset();return}
+ if(name==="validate"){return validate()}
+ if(name==="auditButtons"){auditButtons();return}
+
+ // Transaction/read actions require a connected signer.
+ const s=state.signer;
+ if(!s){toast("Wallet required","Connect a wallet before performing this action.","warn");return}
  try{
   if(name==="refreshAll")return refreshAll();
   if(name==="refreshStaking")return refreshStaking();
