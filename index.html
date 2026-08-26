@@ -1,237 +1,263 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Catalyst Protocol — v16.4 / Whitepaper v1.1</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catalyst Protocol — DApp vNext</title>
+<meta name="description" content="Catalyst Protocol — contract-aligned public, user, governance and guardian interface">
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/dist/ethers.umd.min.js"></script>
 <style>
-:root{--bg:#07101b;--panel:#0d1826;--panel2:#111f30;--line:#203248;--text:#e9f2ff;--muted:#8da3bd;--cyan:#37d7ff;--green:#39e29a;--violet:#9a7cff;--amber:#ffc857;--red:#ff637d}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,#10233a 0,#07101b 42%,#040912 100%);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
-button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:#14253a;color:var(--text);border-radius:10px;padding:10px 13px;transition:.18s}button:hover{transform:translateY(-1px);border-color:#3d6388;background:#1a3049}button.primary{background:linear-gradient(135deg,#0d88aa,#2367d8);border-color:#36bce2}button.danger{background:#3a1622;border-color:#773247}button.good{background:#12392e;border-color:#256c55}button:disabled{opacity:.45;cursor:not-allowed;transform:none}
-input,select,textarea{width:100%;background:#08131f;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:9px}textarea{min-height:90px;font-family:ui-monospace,SFMono-Regular,monospace}
-.wrap{max-width:1400px;margin:auto;padding:18px}.top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}.brand h1{margin:0;font-size:22px}.brand p{margin:3px 0;color:var(--muted)}.status{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pill{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:#0b1725;color:var(--muted)}.pill.live{color:var(--green);border-color:#235b49}.pill.warn{color:var(--amber);border-color:#66521f}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card{background:linear-gradient(180deg,#0d1a29,#0a1522);border:1px solid var(--line);border-radius:15px;padding:15px;box-shadow:0 12px 40px #0003}.card h3{margin:0 0 10px}.metric{font-size:20px;font-weight:700}.muted{color:var(--muted)}.mono{font-family:ui-monospace,SFMono-Regular,monospace;word-break:break-all}
-.tabs{display:flex;gap:7px;overflow:auto;margin:16px 0;padding-bottom:3px}.tab{white-space:nowrap}.tab.active{border-color:var(--cyan);box-shadow:0 0 0 1px #37d7ff33 inset;color:#fff}
-.panel{display:none}.panel.active{display:block}.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.kv{display:grid;grid-template-columns:1fr 1fr;gap:7px}.kv div{padding:9px;background:#08131f;border:1px solid #17273a;border-radius:9px}.kv b{display:block;color:var(--muted);font-size:11px;margin-bottom:3px}.section{margin-top:14px}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:8px;border-bottom:1px solid #1b2b3e;text-align:left;vertical-align:top}.table th{color:var(--muted);font-size:12px}
-#toast{position:fixed;right:16px;bottom:16px;width:min(390px,calc(100vw - 32px));z-index:99}.toast{background:#0b1725;border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-top:8px;box-shadow:0 16px 50px #0008}.toast.success{border-color:#287a5d}.toast.error{border-color:#873247}.toast.info{border-color:#315b84}.toast .t{font-weight:700}.toast .s{font-size:12px;color:var(--muted);margin-top:3px}
-.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:90;padding:18px}.modal.open{display:flex}.modalbox{width:min(520px,100%);background:#0b1725;border:1px solid #29415d;border-radius:17px;padding:17px}.wallet{display:grid;gap:8px}.wallet button{text-align:left}
-.addrline{display:grid;grid-template-columns:1fr auto;gap:8px}.small{font-size:12px}.dangerText{color:var(--red)}.goodText{color:var(--green)}.warnText{color:var(--amber)}
-@media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.grid,.row,.row3{grid-template-columns:1fr}.wrap{padding:11px}.top{align-items:flex-start}}
+
+    body { background: linear-gradient(180deg,#041024 0%, #061426 100%); }
+    .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
+	  .tabbtn {transition: all 0.2s ease-in-out;}
+.tabbtn:hover {opacity: 0.85; transform: translateY(-1px);}
+.tab-active {outline: 2px solid white; outline-offset: 2px;}
+
+/* Center it on the screen (FIXED FOR SCROLLING) */
+#loadingIndicator {
+    /* 1. Anchors the element to the browser window, not the document */
+    position: fixed; 
+    
+    /* 2. Forces the element to stretch across the entire viewport */
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    
+    /* 3. Puts it above everything else */
+    z-index: 9999; 
+    
+    /* 4. Centers the content (spinner/text) inside the full-screen container */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centers content vertically */
+    align-items: center;    /* Centers content horizontally */
+    
+    /* Recommended: Add a dim background to block interaction */
+    background: rgba(0, 0, 0, 0.7); 
+}
+
+  /* Spinner circle */
+  .spinner {
+    border: 6px solid rgba(255, 255, 255, 0.2);
+    border-top: 6px solid yellow;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+  }
+
+  /* Spinning animation */
+  @keyframes spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    margin-top: 10px;
+    color: yellow;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  
+button:disabled{opacity:.55!important;cursor:not-allowed!important;filter:saturate(.65)}
+
+:root { --panel:#0b1628; --line:#22314b; --muted:#94a3b8; }
+body { min-height:100vh; }
+.nav {position:sticky;top:0;z-index:20;background:rgba(4,16,36,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);}
+.container {max-width:1200px;margin:auto;padding:20px;}
+.tabs button {padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:transparent;color:#cbd5e1;cursor:pointer}
+.tabs button.active {background:#16243a;color:#fff}
+.card {background:rgba(11,22,40,.8);border:1px solid var(--line);border-radius:16px;padding:18px;margin:12px 0}
+.grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+label {display:block;color:#94a3b8;font-size:.85rem;margin-bottom:5px}
+input,select,textarea {width:100%;box-sizing:border-box;background:#081321;border:1px solid #27364f;color:#e2e8f0;border-radius:9px;padding:10px}
+button.action {border:0;border-radius:9px;padding:10px 14px;background:#334155;color:white;cursor:pointer}
+button.action:disabled {opacity:.45;cursor:not-allowed}
+.badge {display:inline-block;padding:4px 8px;border-radius:999px;background:#17233a;color:#cbd5e1;font-size:.8rem}
+.value {font-size:1.25rem;font-weight:700}
+.muted {color:#94a3b8}
+pre {white-space:pre-wrap;word-break:break-word}
+.hidden {display:none}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="brand"><h1>⚡ Catalyst Protocol</h1><p>Staking · Burn-weighted Governance · Batch Guardian Council</p></div>
-    <div class="status">
-      <span id="connPill" class="pill">Not connected</span>
-      <span id="networkPill" class="pill">Network —</span>
-      <button data-action="connect" class="primary">🔌 Connect Wallet</button>
-      <button data-action="disconnect">Disconnect</button>
-    </div>
-  </header>
-
-  <section class="card section">
-    <h3>Contract Deployment</h3>
-    <div class="row3">
-      <label>CATA<input id="addrCata" placeholder="0x…"></label>
-      <label>Staking<input id="addrStaking" placeholder="0x…"></label>
-      <label>Governance<input id="addrGovernance" placeholder="0x…"></label>
-      <label>Guardian Council<input id="addrCouncil" placeholder="0x…"></label>
-      <label>Deployer Recovery<input id="addrRecovery" placeholder="0x…"></label>
-      <div><div class="muted small">Saved locally in this browser</div><div class="actions" style="margin-top:7px"><button data-action="saveAddrs">💾 Save</button><button data-action="loadAddrs">📂 Load</button><button data-action="resetAddrs" class="danger">Reset</button><button data-action="validate">🔎 Validate</button></div></div>
-    </div>
-    <div id="deploymentStatus" class="muted section">No deployment loaded.</div>
-  </section>
-
-  <nav class="tabs">
-    <button class="tab active" data-tab="overview">📖 Overview</button>
-    <button class="tab" data-tab="quick">🧭 Quick Status</button>
-    <button class="tab" data-tab="registration">📝 Collection Registration</button>
-    <button class="tab" data-tab="bluechip">💎 Bluechip</button>
-    <button class="tab" data-tab="staking">📦 Staking</button>
-    <button class="tab" data-tab="governance">🏛️ Governance DAO</button>
-    <button class="tab" data-tab="council">🛡️ DRS Guardian Council</button>
-    <button class="tab" data-tab="whitepaper">📜 Whitepaper</button>
-  </nav>
-
-  <main>
-  <section id="overview" class="panel active">
-    <div class="grid">
-      <div class="card"><h3>CATA Supply</h3><div id="mSupply" class="metric">—</div><div class="muted">Max 1,000,000,000</div></div>
-      <div class="card"><h3>Staked NFTs</h3><div id="mStaked" class="metric">—</div><div class="muted">Global cap 500,000,000</div></div>
-      <div class="card"><h3>Governance Weight</h3><div id="mWeight" class="metric">—</div><div class="muted">burn × stake × age</div></div>
-      <div class="card"><h3>DRS</h3><div id="mDrs" class="metric">—</div><div class="muted">5/7 → 6/7 → 7/7</div></div>
-    </div>
-    <div class="card section"><h3>Exact v1.1 architecture</h3><p class="muted">This UI intentionally exposes only functions present in the standalone v1.1 contracts. No placeholder contract methods or legacy-only buttons are wired.</p><div class="kv"><div><b>Economics</b>90% burn / 9% treasury / 1% deployer</div><div><b>Staking caps</b>500M global · 375M term · 125M permanent</div><div><b>Governance</b>sqrt(burned) × sqrt(totalStaked+1) × age multiplier</div><div><b>Guardian state</b>5 approvals valid · 6 warning/veto · 7 lock/standby</div></div></div>
-  </section>
-
-  <section id="quick" class="panel">
-    <div class="grid" id="quickGrid"></div>
-    <div class="card section"><h3>Roles & transparency</h3><div id="roleGrid" class="kv"></div><div class="actions section"><button data-action="refreshAll" class="primary">🔄 Refresh Everything</button><button data-action="auditButtons">🔎 Audit Buttons</button></div></div>
-  </section>
-
-  <section id="registration" class="panel">
-    <div class="card"><h3>Collection Registration</h3><div class="row3"><label>Collection address<input id="regCollection" placeholder="Your connected wallet is the collection owner"></label><label>Tier<select id="regTier"><option value="0">UNVERIFIED (0)</option><option value="1">VERIFIED (1)</option><option value="2">BLUECHIP (2)</option></select></label><div class="card"><b>Current fee</b><div id="regFee" class="metric">—</div></div></div><div class="actions section"><button data-action="calcRegFee">Calculate / Read Fee</button><button data-action="registerCollection" class="primary">Register Collection</button></div></div>
-    <div class="card section"><h3>Admin / Council collection management</h3><div class="row"><label>Collection<input id="manageCollection"></label><label>Tier<select id="manageTier"><option value="0">UNVERIFIED</option><option value="1">VERIFIED</option><option value="2">BLUECHIP</option></select></label></div><div class="actions section"><button data-action="setCollectionTier">Set Tier</button><button data-action="removeCollection" class="danger">Remove Collection</button><button data-action="forfeitEscrow" class="danger">Forfeit Escrow</button></div><div id="collectionInfo" class="section muted">—</div></div>
-  </section>
-
-  <section id="bluechip" class="panel">
-    <div class="card"><h3>Bluechip Wallet</h3><p class="muted">Enrollment is non-custodial in this v1.1 implementation.</p><div class="actions"><button data-action="enrollBluechip" class="primary">🌟 Enroll Bluechip Wallet</button><button data-action="refreshBluechip">🔄 Refresh</button></div><div id="bluechipStatus" class="section">—</div></div>
-  </section>
-
-  <section id="staking" class="panel">
-    <div class="card"><h3>Stake ERC-721</h3><div class="row"><label>Collection<input id="stakeCollection" placeholder="ERC-721 collection"></label><label>Token ID<input id="stakeToken" type="number" min="0"></label></div><div class="actions section"><button data-action="stakeTerm" class="primary">Term Stake</button><button data-action="stakePermanent">Permanent Stake</button></div></div>
-    <div class="card section"><h3>My positions</h3><div class="actions"><button data-action="refreshPositions">🔄 Refresh Positions</button></div><div id="positionsBox" class="section">—</div><div class="row section"><label>Position ID<input id="positionId" type="number" min="1"></label><div class="actions" style="align-items:end"><button data-action="pendingReward">Check Pending Reward</button><button data-action="harvest" class="good">Harvest</button><button data-action="unstake" class="danger">Unstake</button></div></div></div>
-    <div class="card section"><h3>Staking parameters</h3><div id="stakingParams" class="kv"></div><div class="actions section"><button data-action="refreshStaking">🔄 Refresh Stats</button></div></div>
-    <div class="card section"><h3>Admin / Council</h3><div class="row3"><label>Registration fee<input id="pReg" type="number"></label><label>Unverified escrow<input id="pEscrow" type="number"></label><label>Bluechip fee<input id="pBlue" type="number"></label><label>Term reward/block<input id="pTermReward" type="number"></label><label>Permanent reward/block<input id="pPermReward" type="number"></label><label>Unstake fee<input id="pUnstake" type="number"></label><label>Term duration (blocks)<input id="pDuration" type="number"></label><div class="actions"><button data-action="setStakingParams">Set Parameters</button><button data-action="setPause">Pause / Unpause</button></div></div></div>
-  </section>
-
-  <section id="governance" class="panel">
-    <div class="card"><h3>Governance Weight</h3><div class="row"><label>Voter<input id="weightAddress" placeholder="Defaults to connected wallet"></label><div><div id="weightValue" class="metric">—</div><div class="muted">Exact v1.1 on-chain formula</div></div></div><button data-action="readWeight" class="section">Read Weight</button></div>
-    <div class="card section"><h3>Create Proposal</h3><div class="row3"><label>Type<select id="proposalKind"></select></label><label>Target<input id="proposalTarget" placeholder="0x000... for no target"></label><label>ETH value<input id="proposalValue" type="number" value="0"></label></div><label class="section">Calldata / payload<textarea id="proposalData" placeholder="0x"></textarea></label><button data-action="createProposal" class="primary section">➕ Create Proposal</button></div>
-    <div class="card section"><h3>Vote / Execute</h3><div class="row3"><label>Proposal ID<input id="proposalId" type="number" min="1"></label><div class="actions" style="align-items:end"><button data-action="voteFor" class="good">Vote For</button><button data-action="voteAgainst">Vote Against</button><button data-action="executeProposal" class="primary">Execute</button></div><div id="proposalInfo">—</div></div></div>
-    <div class="card section"><h3>Governance transparency</h3><div id="govParams" class="kv"></div><div class="actions section"><button data-action="refreshGovernance">🔄 Refresh Governance</button></div></div>
-  </section>
-
-  <section id="council" class="panel">
-    <div class="card"><h3>Guardian state</h3><div id="councilState" class="kv"></div><div class="actions section"><button data-action="refreshCouncil">🔄 Refresh</button></div></div>
-    <div class="card section"><h3>Recovery proposal</h3><div class="row"><label>Target contract<input id="recoveryTarget" placeholder="0x…"></label><label>Window (seconds)<input id="recoveryWindow" type="number" value="86400"></label></div><label class="section">Calldata<textarea id="recoveryData" placeholder="0x"></textarea></label><div class="actions section"><button data-action="proposeRecovery">Propose Recovery</button><button data-action="approveRecovery">Approve (guardian)</button><button data-action="vetoRecovery" class="danger">Veto</button><button data-action="executeRecovery" class="primary">Execute</button><button data-action="clearLock">Clear Lock (DAO)</button></div></div>
-    <div class="card section"><h3>Guardian batch rotation</h3><label>New active guardians — comma separated 7 addresses<textarea id="newActive"></textarea></label><label class="section">New standby guardians — comma separated 7 addresses<textarea id="newStandby"></textarea></label><label>Commit window (seconds)<input id="batchWindow" type="number" value="172800"></label><div class="actions section"><button data-action="commitBatches">Commit Batches</button><button data-action="activateBatches" class="primary">Activate Committed Batches</button></div></div>
-    <div class="card section"><h3>Dedicated deployer recovery compatibility</h3><div id="recoveryState" class="kv"></div><div class="row section"><label>New deployer<input id="newDeployer"></label><div class="actions" style="align-items:end"><button data-action="drsPropose">Propose</button><button data-action="drsApprove">Approve</button><button data-action="drsVeto" class="danger">Veto</button><button data-action="drsExecute" class="primary">Execute</button></div></div></div>
-  </section>
-
-  <section id="whitepaper" class="panel">
-    <div class="card"><h3>Whitepaper compliance surface</h3>
-      <ul class="muted">
-        <li>CATA: 1B hard cap / 100M initial allocation.</li>
-        <li>Staking: 500M global cap, 375M term, 125M permanent.</li>
-        <li>Economics: 90/9/1 split encoded in staking.</li>
-        <li>Bluechip: enrollment without NFT custody.</li>
-        <li>Governance: burn + staking + stake-age deterministic weight.</li>
-        <li>Guardian Council: active + standby 7-member batches, 5/7, 6/7, 7/7 states.</li>
-        <li>UI does not invent functions absent from v1.1 standalone Solidity.</li>
-      </ul>
-    </div>
-  </section>
-  </main>
+<div class="nav">
+ <div class="container">
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+   <div><strong style="font-size:1.2rem">⚛ Catalyst Protocol</strong><div class="muted" style="font-size:.75rem">DApp vNext — Contract-Aligned</div></div>
+   <div style="display:flex;gap:8px;align-items:center"><span id="roleBadge" class="badge">PUBLIC</span><button id="connectBtn" class="action">Connect Wallet</button></div>
+  </div>
+  <div class="tabs" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+   <button data-tab="public" class="active">🌐 Public</button>
+   <button data-tab="user">👤 My Account</button>
+   <button data-tab="governance">🏛 Governance</button>
+   <button data-tab="guardian">🛡 Guardian</button>
+   <button data-tab="admin">⚙ Admin</button>
+  </div>
+ </div>
 </div>
 
-<div id="toast"></div>
-<div id="walletModal" class="modal"><div class="modalbox"><div class="top"><div><h3 style="margin:0">Connect Wallet</h3><div class="muted small">EIP-6963 first; injected fallback second.</div></div><button data-action="closeWallet">×</button></div><div id="walletList" class="wallet section"></div></div></div>
+<main class="container">
+<section id="public" class="tab">
+ <div class="card"><h2>Protocol Overview</h2><p class="muted">Live reads from the deployed Catalyst contracts. No wallet required.</p></div>
+ <div class="grid" id="publicMetrics"></div>
+ <div class="card"><h3>Contract Addresses</h3><div class="grid">
+  <div><label>CATA</label><input id="addrCata"></div>
+  <div><label>Staking</label><input id="addrStaking"></div>
+  <div><label>Governance</label><input id="addrGovernance"></div>
+  <div><label>Guardian Council</label><input id="addrCouncil"></div>
+ </div></div>
+</section>
+
+<section id="user" class="tab hidden">
+ <div class="card"><h2>My Account</h2><p id="walletText" class="muted">Connect a wallet to use user functions.</p></div>
+ <div class="grid">
+  <div class="card"><h3>CATA</h3><div class="value" id="userBalance">—</div><div class="muted">Balance</div></div>
+  <div class="card"><h3>Governance Weight</h3><div class="value" id="userWeight">—</div><div class="muted">Contract-derived voting weight</div></div>
+  <div class="card"><h3>Eligibility</h3><div class="value" id="userEligibility">—</div></div>
+ </div>
+ <div class="card"><h3>Voluntary Burn</h3><label>Amount</label><input id="burnAmount" placeholder="CATA amount">
+ <button id="burnBtn" class="action" style="margin-top:8px">Burn CATA</button></div>
+ <div class="card"><h3>Collection Registration</h3><label>Collection address</label><input id="collectionAddr">
+ <button id="registerBtn" class="action" style="margin-top:8px">Register Collection</button></div>
+ <div class="card"><h3>NFT Staking</h3><p class="muted">The controls below are generated only for verified functions in the final staking ABI. Configure your deployed address first.</p>
+ <div id="stakingActions"></div></div>
+</section>
+
+<section id="governance" class="tab hidden">
+ <div class="card"><h2>Governance</h2><p class="muted">Proposal and voting controls are contract-aligned. Eligibility is read from the connected wallet.</p></div>
+ <div class="grid" id="govReadouts"></div>
+ <div class="card"><h3>Proposal / Vote</h3>
+  <label>Proposal ID</label><input id="proposalId" type="number" min="0">
+  <label style="margin-top:8px">Vote support</label><select id="support"><option value="true">Support</option><option value="false">Reject</option></select>
+  <button id="voteBtn" class="action" style="margin-top:8px">Vote</button>
+  <div style="margin-top:12px"><label>Raw proposal action data (advanced)</label><textarea id="proposalData" rows="4" placeholder="Only use data produced/validated by the final governance contract"></textarea></div>
+ </div>
+</section>
+
+<section id="guardian" class="tab hidden">
+ <div class="card"><h2>Guardian Council</h2><p class="muted">Recovery controls are restricted to the actual Guardian Council role/state. Public users see status only.</p></div>
+ <div class="grid" id="guardianReadouts"></div>
+ <div class="card"><h3>Guardian Actions</h3><div id="guardianActions"></div></div>
+</section>
+
+<section id="admin" class="tab hidden">
+ <div class="card"><h2>Admin / Governance Controls</h2><p class="muted">This panel is hidden/disabled unless the connected wallet has an actual on-chain permission. It never relies on UI-only assumptions.</p></div>
+ <div id="adminActions" class="grid"></div>
+</section>
+
+<section class="card"><h3>Transaction / Diagnostic Log</h3><pre id="log">Ready.</pre></section>
+</main>
 
 <script>
-const ABI = {"CataERC20":[{"inputs":[{"internalType":"string","name":"name_","type":"string"},{"internalType":"string","name":"symbol_","type":"string"},{"internalType":"address","name":"admin_","type":"address"},{"internalType":"address","name":"council_","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"string","name":"name_","type":"string"},{"internalType":"string","name":"symbol_","type":"string"},{"internalType":"address","name":"admin_","type":"address"},{"internalType":"address","name":"council_","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_SUPPLY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"INITIAL_SUPPLY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DEFAULT_ADMIN_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MINTER_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"council","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"minter","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"a","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"o","type":"address"},{"internalType":"address","name":"s","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"},{"internalType":"address","name":"a","type":"address"}],"name":"hasRole","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getMintableCapacity","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"mint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"burn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"burnFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newMinter","type":"address"}],"name":"setMinter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"revokeMinter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newCouncil","type":"address"}],"name":"setCouncil","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newAdmin","type":"address"}],"name":"swapAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"}],"CatalystStaking":[{"inputs":[{"internalType":"address","name":"admin_","type":"address"},{"internalType":"address","name":"council_","type":"address"},{"internalType":"address","name":"cata_","type":"address"},{"internalType":"address","name":"treasury_","type":"address"},{"internalType":"address","name":"deployer_","type":"address"},{"internalType":"uint256","name":"registrationFee_","type":"uint256"},{"internalType":"uint256","name":"unverifiedEscrow_","type":"uint256"},{"internalType":"uint256","name":"bluechipEnrollmentFee_","type":"uint256"},{"internalType":"uint256","name":"termRewardPerBlock_","type":"uint256"},{"internalType":"uint256","name":"permanentRewardPerBlock_","type":"uint256"},{"internalType":"uint256","name":"unstakeFee_","type":"uint256"},{"internalType":"uint256","name":"termDuration_","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"BPS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"BURN_BPS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"TREASURY_BPS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DEPLOYER_BPS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"GLOBAL_CAP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"TERM_CAP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMANENT_CAP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"council","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"cata","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"treasury","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"deployer","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"registrationFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"unverifiedEscrow","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"bluechipEnrollmentFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"termRewardPerBlock","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"permanentRewardPerBlock","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"unstakeFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"termDuration","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"maxCollectionStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalTerm","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalPermanent","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"collections","outputs":[{"internalType":"uint8","name":"tier","type":"uint8"},{"internalType":"bool","name":"registered","type":"bool"},{"internalType":"uint256","name":"burned","type":"uint256"},{"internalType":"uint256","name":"escrow","type":"uint256"},{"internalType":"uint256","name":"registeredAt","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"positions","outputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"uint8","name":"kind","type":"uint8"},{"internalType":"uint256","name":"startBlock","type":"uint256"},{"internalType":"uint256","name":"unlockBlock","type":"uint256"},{"internalType":"bool","name":"active","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"bluechipEnrolled","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"burnedBy","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"stakeAgeBlocks","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint8","name":"tier","type":"uint8"}],"name":"registerCollection","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint8","name":"tier","type":"uint8"}],"name":"setCollectionTier","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"}],"name":"removeCollection","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"}],"name":"forfeitEscrow","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"registrationFee_","type":"uint256"},{"internalType":"uint256","name":"unverifiedEscrow_","type":"uint256"},{"internalType":"uint256","name":"bluechipEnrollmentFee_","type":"uint256"},{"internalType":"uint256","name":"termRewardPerBlock_","type":"uint256"},{"internalType":"uint256","name":"permanentRewardPerBlock_","type":"uint256"},{"internalType":"uint256","name":"unstakeFee_","type":"uint256"},{"internalType":"uint256","name":"termDuration_","type":"uint256"}],"name":"setParameters","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"stakeTerm","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"stakePermanent","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"positionId","type":"uint256"}],"name":"pendingReward","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"positionId","type":"uint256"}],"name":"harvest","outputs":[{"internalType":"uint256","name":"reward","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"positionId","type":"uint256"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"enrollBluechip","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getOwnedPositions","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bool","name":"p","type":"bool"}],"name":"setPause","outputs":[],"stateMutability":"nonpayable","type":"function"}],"CatalystGovernance":[{"inputs":[{"internalType":"address","name":"admin_","type":"address"},{"internalType":"address","name":"council_","type":"address"},{"internalType":"address","name":"staking_","type":"address"},{"internalType":"uint256","name":"votingDuration_","type":"uint256"},{"internalType":"uint256","name":"quorumWeight_","type":"uint256"},{"internalType":"uint256","name":"collectionVoteCapPercent_","type":"uint256"},{"internalType":"uint256","name":"stakeAgeWindow_","type":"uint256"},{"internalType":"uint256","name":"timelock_","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"BPS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"council","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"staking","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"votingDuration","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"quorumWeight","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"collectionVoteCapPercent","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"stakeAgeWindow","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"timelock","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"proposalCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"proposals","outputs":[{"internalType":"uint8","name":"kind","type":"uint8"},{"internalType":"address","name":"proposer","type":"address"},{"internalType":"address","name":"target","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"},{"internalType":"uint256","name":"start","type":"uint256"},{"internalType":"uint256","name":"end","type":"uint256"},{"internalType":"uint256","name":"eta","type":"uint256"},{"internalType":"uint256","name":"forVotes","type":"uint256"},{"internalType":"uint256","name":"againstVotes","type":"uint256"},{"internalType":"bool","name":"executed","type":"bool"},{"internalType":"bool","name":"cancelled","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"address","name":"","type":"address"}],"name":"voted","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"burnedSnapshot","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"stakeAgeSnapshot","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"voter","type":"address"}],"name":"governanceWeight","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint8","name":"kind","type":"uint8"},{"internalType":"address","name":"target","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"createProposal","outputs":[{"internalType":"uint256","name":"id","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"bool","name":"support","type":"bool"}],"name":"vote","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"}],"name":"execute","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"}],"name":"cancel","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"votingDuration_","type":"uint256"},{"internalType":"uint256","name":"quorumWeight_","type":"uint256"},{"internalType":"uint256","name":"capPercent_","type":"uint256"},{"internalType":"uint256","name":"ageWindow_","type":"uint256"},{"internalType":"uint256","name":"timelock_","type":"uint256"}],"name":"setParameters","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"c","type":"address"}],"name":"setCouncil","outputs":[],"stateMutability":"nonpayable","type":"function"}],"BatchGuardianCouncil":[{"inputs":[{"internalType":"address","name":"admin_","type":"address"},{"internalType":"address","name":"dao_","type":"address"},{"internalType":"address[7]","name":"active_","type":"address[7]"},{"internalType":"address[7]","name":"standby_","type":"address[7]"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"GUARDIAN_COUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"VALID_THRESHOLD","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"WARNING_THRESHOLD","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"LOCK_THRESHOLD","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"VETO_WINDOW","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dao","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"activeGuardians","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"standbyGuardians","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isActiveGuardian","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isStandbyGuardian","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"locked","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"warning","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lastHonestGuardian","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"vetoExpiry","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"recoveryDeadline","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"recoveryReadyTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"recoveryTarget","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"recoveryData","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"approvals","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"executed","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"approved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pendingActiveHash","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pendingStandbyHash","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"commitDeadline","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"target","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"},{"internalType":"uint256","name":"window","type":"uint256"}],"name":"proposeRecovery","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"approveRecovery","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"vetoRecovery","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"executeRecovery","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"clearLock","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address[7]","name":"newActive","type":"address[7]"},{"internalType":"address[7]","name":"newStandby","type":"address[7]"},{"internalType":"uint256","name":"window","type":"uint256"}],"name":"commitBatches","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"activateCommittedBatches","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newDAO","type":"address"}],"name":"setDAO","outputs":[],"stateMutability":"nonpayable","type":"function"}],"DeployerRecoveryCouncil":[{"inputs":[{"internalType":"address","name":"admin_","type":"address"},{"internalType":"address","name":"canonicalCouncil_","type":"address"},{"internalType":"address","name":"cata_","type":"address"},{"internalType":"address","name":"governance_","type":"address"},{"internalType":"address[7]","name":"guardians_","type":"address[7]"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"THRESHOLD","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"GUARDIANS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"VETO_WINDOW","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"canonicalCouncil","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"targetCata","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"targetGovernance","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"guardians","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isGuardian","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"proposedDeployer","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"approvals","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"readyAt","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"vetoUntil","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"warning","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"executed","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"approved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newDeployer","type":"address"}],"name":"propose","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"veto","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"execute","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"c","type":"address"}],"name":"setCanonicalCouncil","outputs":[],"stateMutability":"nonpayable","type":"function"}]};
-const CONTRACTS = {cata:null,staking:null,governance:null,council:null,recovery:null};
-const state = {provider:null, signer:null, account:null, chainId:null, wallets:[]};
+const CONTRACT_NAMES = ["CataERC20Upgradeable.sol", "CatalystStakingUpgradeable.sol", "CatalystGovernanceUpgradeable.sol", "BatchGuardianCouncilUpgradeable.sol", "CatalystBonusExtension.sol", "DeployerRecoveryCouncil.sol"];
+const FUNCTION_REGISTRY = {"CataERC20Upgradeable.sol": [{"name": "recordVoluntaryBurn", "inputs": ["address", "ERC20Upgradeable", "AccessControlUpgradeable", "PausableUpgradeable", "UUPSUpgradeable"], "stateMutability": "nonpayable"}, {"name": "initialize", "inputs": ["string", "string", "address", "address", "address"], "stateMutability": "nonpayable"}, {"name": "mint", "inputs": ["address", "uint256"], "stateMutability": "nonpayable"}, {"name": "burn", "inputs": ["uint256"], "stateMutability": "nonpayable"}, {"name": "getMintableCapacity", "inputs": [], "stateMutability": "view"}, {"name": "setMinter", "inputs": ["address"], "stateMutability": "pure"}, {"name": "revokeMinter", "inputs": ["address"], "stateMutability": "pure"}, {"name": "bootstrapStaking", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "setCouncil", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "swapAdmin", "inputs": ["address", "address"], "stateMutability": "nonpayable"}, {"name": "pause", "inputs": [], "stateMutability": "nonpayable"}, {"name": "unpause", "inputs": [], "stateMutability": "nonpayable"}, {"name": "grantRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "revokeRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "renounceRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}], "CatalystStakingUpgradeable.sol": [{"name": "mint", "inputs": ["address", "AccessControlUpgradeable", "ReentrancyGuardUpgradeable", "PausableUpgradeable", "UUPSUpgradeable", "\"contract", "\"council", "\"cata", "\"deployer", "\"zero", "\"CATA:", "\"zero\"", "\"deployer", "\"surcharge", "\"deployer", "\"not", "VERIFIED", "BLUECHIP", "UNVERIFIED", "VERIFIED", "BLUECHIP"], "stateMutability": "view"}, {"name": "initialize", "inputs": ["address", "address", "address", "address", "address", "address"], "stateMutability": "nonpayable"}, {"name": "setCouncil", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "setDeployerCouncil", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "setCataToken", "inputs": ["address"], "stateMutability": "pure"}, {"name": "setDeployerAddress", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "swapAdmin", "inputs": ["address", "address"], "stateMutability": "nonpayable"}, {"name": "registeredCount", "inputs": [], "stateMutability": "view"}, {"name": "eligibleCount", "inputs": [], "stateMutability": "view"}, {"name": "setCollectionConfig", "inputs": ["address", "uint256", "CollectionTier"], "stateMutability": "nonpayable"}, {"name": "registerCollection", "inputs": ["address", "uint256", "CollectionTier"], "stateMutability": "nonpayable"}, {"name": "removeCollection", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "forfeitEscrowIfExpired", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "termStake", "inputs": ["address", "uint256"], "stateMutability": "nonpayable"}, {"name": "permanentStake", "inputs": ["address", "uint256"], "stateMutability": "nonpayable"}, {"name": "unstake", "inputs": ["address", "uint256"], "stateMutability": "nonpayable"}, {"name": "batchTermStake", "inputs": ["address", "uint256[]"], "stateMutability": "nonpayable"}, {"name": "batchPermanentStake", "inputs": ["address", "uint256[]"], "stateMutability": "nonpayable"}, {"name": "batchUnstake", "inputs": ["address", "uint256[]"], "stateMutability": "nonpayable"}, {"name": "harvest", "inputs": ["address", "uint256"], "stateMutability": "nonpayable"}, {"name": "harvestBatch", "inputs": ["address", "uint256[]"], "stateMutability": "nonpayable"}, {"name": "pendingRewards", "inputs": ["address", "address", "uint256"], "stateMutability": "view"}, {"name": "setBluechipCollection", "inputs": ["address", "bool"], "stateMutability": "nonpayable"}, {"name": "enrollBluechip", "inputs": [], "stateMutability": "nonpayable"}, {"name": "harvestBluechip", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "setGovernance", "inputs": ["address"], "stateMutability": "pure"}, {"name": "bootstrapGovernance", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "setBaseRewardRate", "inputs": ["uint256"], "stateMutability": "nonpayable"}, {"name": "setHarvestFeeBP", "inputs": ["uint256"], "stateMutability": "nonpayable"}, {"name": "setUnstakeFee", "inputs": ["uint256"], "stateMutability": "nonpayable"}, {"name": "setRegistrationFeeFallback", "inputs": ["uint256"], "stateMutability": "nonpayable"}, {"name": "setStakeAgeForVotingBlocks", "inputs": ["uint256"], "stateMutability": "nonpayable"}, {"name": "upgradeCollectionToVerified", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "recordVoluntaryBurn", "inputs": ["address", "uint256"], "stateMutability": "nonpayable"}, {"name": "consumeTreasury", "inputs": ["uint256"], "stateMutability": "nonpayable"}, {"name": "registeredCollectionsLength", "inputs": [], "stateMutability": "view"}, {"name": "votingWeight", "inputs": ["address"], "stateMutability": "view"}, {"name": "withdrawTreasury", "inputs": ["address", "uint256"], "stateMutability": "nonpayable"}, {"name": "pause", "inputs": [], "stateMutability": "nonpayable"}, {"name": "unpause", "inputs": [], "stateMutability": "nonpayable"}, {"name": "setBonusModule", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "triggerTopBurnerBonus", "inputs": [], "stateMutability": "nonpayable"}, {"name": "onDRSRecover", "inputs": ["bytes32", "address", "address"], "stateMutability": "nonpayable"}, {"name": "grantRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "revokeRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "renounceRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "onERC721Received", "inputs": ["address", "address", "uint256", "bytes"], "stateMutability": "pure"}], "CatalystGovernanceUpgradeable.sol": [{"name": "daoSeedActiveBatch", "inputs": ["address[7]"], "stateMutability": "nonpayable"}, {"name": "votingWeight", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "initialize", "inputs": ["address", "address", "uint256", "uint256", "uint256"], "stateMutability": "nonpayable"}, {"name": "updateGuardianCouncil", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "setCouncil", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "setStaking", "inputs": ["address"], "stateMutability": "pure"}, {"name": "swapAdmin", "inputs": ["address", "address"], "stateMutability": "nonpayable"}, {"name": "propose", "inputs": ["ProposalType", "uint8", "uint256", "address"], "stateMutability": "nonpayable"}, {"name": "proposeCouncilReseedActive", "inputs": ["address[7]"], "stateMutability": "nonpayable"}, {"name": "proposeCouncilReseedStandby", "inputs": ["address[7]"], "stateMutability": "nonpayable"}, {"name": "proposeCouncilCommitStandby", "inputs": [], "stateMutability": "nonpayable"}, {"name": "proposeCouncilActivateStandby", "inputs": [], "stateMutability": "nonpayable"}, {"name": "proposeCouncilNewDAO", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "proposeCouncilCommitNewDAO", "inputs": [], "stateMutability": "nonpayable"}, {"name": "proposeCouncilClearLock", "inputs": [], "stateMutability": "nonpayable"}, {"name": "proposeCouncilUpgrade", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "vote", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "queueProposal", "inputs": ["bytes32"], "stateMutability": "nonpayable"}, {"name": "executeProposal", "inputs": ["bytes32"], "stateMutability": "nonpayable"}, {"name": "emergencyExecuteProposal", "inputs": ["bytes32"], "stateMutability": "nonpayable"}, {"name": "getProposalInfo", "inputs": ["bytes32"], "stateMutability": "view"}, {"name": "getProposalReadyTime", "inputs": ["bytes32"], "stateMutability": "view"}, {"name": "encodeCouncilBatch", "inputs": ["address[7]"], "stateMutability": "pure"}, {"name": "decodeCouncilBatch", "inputs": ["bytes"], "stateMutability": "pure"}, {"name": "getVotingEligibility", "inputs": ["address"], "stateMutability": "view"}, {"name": "grantRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "revokeRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "renounceRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}], "BatchGuardianCouncilUpgradeable.sol": [{"name": "initialize", "inputs": ["address", "address[GUARDIAN_COUNT]", "address[GUARDIAN_COUNT]"], "stateMutability": "nonpayable"}, {"name": "proposeNewDAO", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "commitNewDAO", "inputs": [], "stateMutability": "nonpayable"}, {"name": "daoSeedActiveBatch", "inputs": ["address[GUARDIAN_COUNT]"], "stateMutability": "nonpayable"}, {"name": "daoProposeSeedActiveBatch", "inputs": ["address[GUARDIAN_COUNT]"], "stateMutability": "nonpayable"}, {"name": "daoCommitSeedActiveBatch", "inputs": [], "stateMutability": "nonpayable"}, {"name": "daoProposeSeedStandbyBatch", "inputs": ["address[GUARDIAN_COUNT]"], "stateMutability": "nonpayable"}, {"name": "daoCommitSeedStandbyBatch", "inputs": [], "stateMutability": "nonpayable"}, {"name": "daoActivateStandby", "inputs": [], "stateMutability": "nonpayable"}, {"name": "daoClearLockAndWarning", "inputs": [], "stateMutability": "nonpayable"}, {"name": "pause", "inputs": [], "stateMutability": "nonpayable"}, {"name": "unpause", "inputs": [], "stateMutability": "nonpayable"}, {"name": "proposeRecovery", "inputs": ["address", "address", "bytes"], "stateMutability": "nonpayable"}, {"name": "approveRecovery", "inputs": [], "stateMutability": "nonpayable"}, {"name": "executeRecovery", "inputs": [], "stateMutability": "nonpayable"}, {"name": "lastHonestHaltAndPromote", "inputs": [], "stateMutability": "nonpayable"}, {"name": "activateStandbyIfLocked", "inputs": [], "stateMutability": "nonpayable"}, {"name": "getActiveGuardians", "inputs": [], "stateMutability": "view"}, {"name": "getStandbyGuardians", "inputs": [], "stateMutability": "view"}, {"name": "getLastHonestGuardian", "inputs": [], "stateMutability": "view"}, {"name": "getLastHonestExpiry", "inputs": [], "stateMutability": "view"}, {"name": "getWarningFlag", "inputs": [], "stateMutability": "view"}, {"name": "getRecoveryReadyToExecuteTimestamp", "inputs": [], "stateMutability": "view"}, {"name": "getRecoveryState", "inputs": [], "stateMutability": "view"}, {"name": "getRecoveryProposed", "inputs": [], "stateMutability": "view"}, {"name": "getRecoveryApprovals", "inputs": [], "stateMutability": "view"}, {"name": "getRecoveryDeadline", "inputs": [], "stateMutability": "view"}, {"name": "getRecoveryExecuted", "inputs": [], "stateMutability": "view"}, {"name": "getRecoveryCallTarget", "inputs": [], "stateMutability": "view"}, {"name": "getRecoveryCallData", "inputs": [], "stateMutability": "view"}, {"name": "getPendingDAOState", "inputs": [], "stateMutability": "view"}, {"name": "getPendingActiveBatchState", "inputs": [], "stateMutability": "view"}, {"name": "getPendingStandbyBatchState", "inputs": [], "stateMutability": "view"}, {"name": "getAdminRequestNonce", "inputs": [], "stateMutability": "view"}, {"name": "hasApproved", "inputs": ["address"], "stateMutability": "view"}, {"name": "grantRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "revokeRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}, {"name": "renounceRole", "inputs": ["bytes32", "address"], "stateMutability": "nonpayable"}], "CatalystBonusExtension.sol": [{"name": "participatingWallets", "inputs": ["uint256)"], "stateMutability": "view"}, {"name": "viewTopBurners", "inputs": ["address", "uint256"], "stateMutability": "view"}, {"name": "distributeTopBurnerBonus", "inputs": ["address"], "stateMutability": "nonpayable"}], "DeployerRecoveryCouncil.sol": [{"name": "onDRSRecover", "inputs": ["bytes32"], "stateMutability": "nonpayable"}, {"name": "setManager", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "setGuardian", "inputs": ["uint8", "address"], "stateMutability": "nonpayable"}, {"name": "managerReseed", "inputs": ["address[]"], "stateMutability": "nonpayable"}, {"name": "propose", "inputs": ["address"], "stateMutability": "nonpayable"}, {"name": "approve", "inputs": [], "stateMutability": "nonpayable"}, {"name": "vetoRecovery", "inputs": [], "stateMutability": "nonpayable"}, {"name": "execute", "inputs": [], "stateMutability": "nonpayable"}, {"name": "activeRecovery", "inputs": [], "stateMutability": "view"}, {"name": "guardiansList", "inputs": [], "stateMutability": "view"}, {"name": "guardianApprovals", "inputs": [], "stateMutability": "view"}]};
+let provider, signer, account;
+let addresses = JSON.parse(localStorage.getItem("catalyst_vnext_addresses") || "{}");
 const $ = id => document.getElementById(id);
-const toast = (title,msg,type="info") => {
-  const el=document.createElement("div"); el.className=`toast ${type}`;
-  el.innerHTML=`<div class="t"></div><div class="s"></div>`; el.querySelector(".t").textContent=title; el.querySelector(".s").textContent=msg;
-  $("toast").appendChild(el); setTimeout(()=>el.remove(),6000);
-};
-const short=a=>a?`${a.slice(0,6)}…${a.slice(-4)}`:"—";
-const fmt=(v,dec=18)=>{try{return ethers.formatUnits(v,dec)}catch{return String(v)}};
-const addr=(id)=>$(id).value.trim();
-function getAddrs(){return {cata:addr("addrCata"),staking:addr("addrStaking"),governance:addr("addrGovernance"),council:addr("addrCouncil"),recovery:addr("addrRecovery")}}
-function save(){localStorage.setItem("catalyst.v16.4.addresses",JSON.stringify(getAddrs()));toast("Saved","Contract addresses saved locally.","success")}
-function load(){try{const x=JSON.parse(localStorage.getItem("catalyst.v16.4.addresses")||"{}");for(const [k,v] of Object.entries({addrCata:x.cata,addrStaking:x.staking,addrGovernance:x.governance,addrCouncil:x.council,addrRecovery:x.recovery}))if(v!==undefined)$(k).value=v}catch{}}
-function reset(){localStorage.removeItem("catalyst.v16.4.addresses");["addrCata","addrStaking","addrGovernance","addrCouncil","addrRecovery"].forEach(x=>$(x).value="");toast("Reset","Saved deployment addresses removed.","info")}
-function providerReady(){return !!state.provider}
-function contract(kind){const a=CONTRACTS[kind]; if(!a||!ethers.isAddress(a)) throw Error(`${kind} address is not configured`); return new ethers.Contract(a,ABI[kind],state.signer||state.provider)}
-function readContract(kind){const a=CONTRACTS[kind]; if(!a||!ethers.isAddress(a)) throw Error(`${kind} address is not configured`); return new ethers.Contract(a,ABI[kind],state.provider)}
-async function tx(title,promise){toast(title,"Waiting for wallet confirmation…","info");try{const t=await promise;toast(title,`Submitted ${t.hash}`,"info");const r=await t.wait();toast(title,`Confirmed in block ${r.blockNumber}`,"success");return r}catch(e){toast(title,e?.shortMessage||e?.reason||e?.message||String(e),"error");throw e}}
-async function connectProvider(p, name="Wallet"){
- try{state.provider=new ethers.BrowserProvider(p);state.signer=await state.provider.getSigner();state.account=await state.signer.getAddress();const net=await state.provider.getNetwork();state.chainId=Number(net.chainId);$("connPill").textContent=`Connected ${short(state.account)}`;$("connPill").className="pill live";$("networkPill").textContent=`Chain ${state.chainId}`;$("networkPill").className="pill live";await refreshAll();toast("Wallet connected",`${name} · ${short(state.account)}`,"success");$("walletModal").classList.remove("open");p.on?.("accountsChanged",()=>location.reload());p.on?.("chainChanged",()=>location.reload())}catch(e){toast("Connection failed",e.message,"error")}}
-async function discover(){const seen=new Set();window.addEventListener("eip6963:announceProvider",e=>{const d=e.detail; if(!d?.provider||seen.has(d.provider))return;seen.add(d.provider);state.wallets.push(d);renderWallets()});window.dispatchEvent(new Event("eip6963:requestProvider"));if(window.ethereum&&!seen.has(window.ethereum)){state.wallets.push({info:{name:"Injected wallet",rdns:"legacy"},provider:window.ethereum});renderWallets()}}
-function renderWallets(){const box=$("walletList");box.innerHTML="";state.wallets.forEach((w,i)=>{const b=document.createElement("button");b.textContent=`${w.info?.icon?"":"🔗 "}${w.info?.name||"Wallet"}`;b.onclick=()=>connectProvider(w.provider,w.info?.name||"Wallet");box.appendChild(b)})}
-async function validate(){CONTRACTS.cata=addr("addrCata");CONTRACTS.staking=addr("addrStaking");CONTRACTS.governance=addr("addrGovernance");CONTRACTS.council=addr("addrCouncil");CONTRACTS.recovery=addr("addrRecovery");if(!providerReady()){toast("Validate","Connect a wallet first so bytecode can be checked.","warn");return}const rows=[];for(const [k,a] of Object.entries(CONTRACTS)){if(!a){rows.push(`${k}: not configured`);continue}try{const code=await state.provider.getCode(a);rows.push(`${k}: ${code==="0x"?"NO BYTECODE":"bytecode present"}`)}catch(e){rows.push(`${k}: ${e.message}`)}}$("deploymentStatus").textContent=rows.join(" · ");toast("Deployment validation","Validation complete.","info")}
-async function refreshAll(){CONTRACTS.cata=addr("addrCata");CONTRACTS.staking=addr("addrStaking");CONTRACTS.governance=addr("addrGovernance");CONTRACTS.council=addr("addrCouncil");CONTRACTS.recovery=addr("addrRecovery");await Promise.allSettled([refreshOverview(),refreshStaking(),refreshGovernance(),refreshCouncil(),refreshBluechip(),refreshPositions()])}
-async function refreshOverview(){try{$("mSupply").textContent=fmt(await readContract("cata").totalSupply());$("mStaked").textContent=(await readContract("staking").totalStaked()).toString();if(state.account)$("mWeight").textContent=(await readContract("governance").governanceWeight(state.account)).toString();const c=readContract("council");$("mDrs").textContent=`${await c.approvals()}/7`;$("roleGrid").innerHTML=`<div><b>CATA Admin</b>${short(await readContract("cata").admin())}</div><div><b>CATA Council</b>${short(await readContract("cata").council())}</div><div><b>Staking Admin</b>${short(await readContract("staking").admin())}</div><div><b>Governance Council</b>${short(await readContract("governance").council())}</div>`}catch{}}
-async function refreshStaking(){try{const s=readContract("staking");const vals=await Promise.all(["registrationFee","unverifiedEscrow","bluechipEnrollmentFee","termRewardPerBlock","permanentRewardPerBlock","unstakeFee","termDuration","totalTerm","totalPermanent","totalStaked"].map(x=>s[x]()));$("stakingParams").innerHTML=vals.map((v,i)=>`<div><b>${["Registration fee","Unverified escrow","Bluechip fee","Term reward/block","Permanent reward/block","Unstake fee","Term duration","Term total","Permanent total","Global total"][i]}</b>${v.toString()}</div>`).join("");$("quickGrid").innerHTML=`<div class="card"><h3>Total</h3><div class="metric">${vals[9]}</div></div><div class="card"><h3>Term</h3><div class="metric">${vals[7]}</div></div><div class="card"><h3>Permanent</h3><div class="metric">${vals[8]}</div></div><div class="card"><h3>Utilization</h3><div class="metric">${(Number(vals[9])*100/500000000).toFixed(6)}%</div></div>`}catch{}}
-async function refreshGovernance(){try{const g=readContract("governance");const v=await Promise.all(["votingDuration","quorumWeight","collectionVoteCapPercent","stakeAgeWindow","timelock","proposalCount"].map(x=>g[x]()));$("govParams").innerHTML=v.map((x,i)=>`<div><b>${["Voting duration","Quorum weight","Collection cap BPS","Age window","Timelock","Proposal count"][i]}</b>${x.toString()}</div>`).join("")}catch{}}
-async function refreshCouncil(){try{const c=readContract("council");const v=await Promise.all(["locked","warning","lastHonestGuardian","vetoExpiry","recoveryDeadline","recoveryReadyTime","recoveryTarget","approvals","executed","pendingActiveHash","pendingStandbyHash","commitDeadline"].map(x=>c[x]()));$("councilState").innerHTML=v.map((x,i)=>`<div><b>${["Locked","Warning","Last Honest","Veto Expiry","Recovery Deadline","Ready Time","Target","Approvals","Executed","Pending Active Hash","Pending Standby Hash","Commit Deadline"][i]}</b><span class="mono">${String(x)}</span></div>`).join("")}catch{}}
-async function refreshBluechip(){try{const x=state.account?await readContract("staking").bluechipEnrolled(state.account):false;$("bluechipStatus").textContent=x?"✅ Enrolled":"Not enrolled"}catch{}}
-async function refreshPositions(){try{if(!state.account)return;const ids=await readContract("staking").getOwnedPositions(state.account);$("positionsBox").innerHTML=ids.length?ids.map(x=>`<button data-pos="${x}">Position ${x}</button>`).join(" "):"No positions";document.querySelectorAll("[data-pos]").forEach(b=>b.onclick=()=>{$("positionId").value=b.dataset.pos})}catch{}}
-const kinds=["BASE_REWARD","HARVEST_FEE","UNSTAKE_FEE","REGISTRATION_FEE","VOTING_PARAMETER","TIER_UPGRADE","RESEED_ACTIVE","RESEED_STANDBY","COMMIT_GUARDIANS","ACTIVATE_STANDBY","PROPOSE_DAO","COMMIT_DAO","CLEAR_LOCK","UPGRADE_COUNCIL","UPGRADE_GOVERNANCE","SET_COUNCIL","PAUSE","UNPAUSE"];
-kinds.forEach((x,i)=>{const o=document.createElement("option");o.value=i;o.textContent=`${i} — ${x}`;$("proposalKind").appendChild(o)});
-async function action(name){
- // Wallet/UI actions must work BEFORE a signer exists.
- // v16.4 previously checked state.signer first, making Connect Wallet unreachable.
- if(name==="connect"){
-  $("walletModal").classList.add("open");
-  renderWallets();
-  if(!state.wallets.length){
-   toast("Wallet discovery","Checking for available browser wallets…","info");
-   try{await discover();renderWallets()}catch(e){toast("Wallet discovery failed",e?.message||String(e),"error")}
-  }
-  if(!state.wallets.length)toast("No wallet detected","Open this page inside MetaMask/Trust Wallet or use an injected EIP-1193 wallet.","warn");
-  return;
- }
- if(name==="closeWallet"){
-  $("walletModal").classList.remove("open");
-  return;
- }
- if(name==="disconnect"){
-  state.provider=null;state.signer=null;state.account=null;state.chainId=null;
-  $("connPill").textContent="Not connected";$("connPill").className="pill";
-  $("networkPill").textContent="Network —";$("networkPill").className="pill";
-  toast("Wallet disconnected","Your wallet session was cleared.","info");
-  return;
- }
- // These actions do not require a connected signer.
- if(name==="saveAddrs"){save();return}
- if(name==="loadAddrs"){load();toast("Loaded","Saved addresses loaded.","success");return}
- if(name==="resetAddrs"){reset();return}
- if(name==="validate"){return validate()}
- if(name==="auditButtons"){auditButtons();return}
+function log(x) { $("log").textContent = (new Date()).toLocaleTimeString()+"  "+String(x)+"\n"+$("log").textContent; }
+function short(a) { return a ? a.slice(0,6)+"…"+a.slice(-4) : "—"; }
+function setTab(name) { document.querySelectorAll(".tab").forEach(x=>x.classList.add("hidden")); $(name).classList.remove("hidden"); document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name)); }
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 
- // Transaction/read actions require a connected signer.
- const s=state.signer;
- if(!s){toast("Wallet required","Connect a wallet before performing this action.","warn");return}
- try{
-  if(name==="refreshAll")return refreshAll();
-  if(name==="refreshStaking")return refreshStaking();
-  if(name==="refreshGovernance")return refreshGovernance();
-  if(name==="refreshCouncil")return refreshCouncil();
-  if(name==="refreshBluechip")return refreshBluechip();
-  if(name==="refreshPositions")return refreshPositions();
-  if(name==="refreshOverview")return refreshOverview();
-  if(name==="calcRegFee"){const c=readContract("staking");$("regFee").textContent=(await c.registrationFee()).toString();return}
-  if(name==="registerCollection"){return tx("Register collection",contract("staking").registerCollection(Number($("regTier").value)))}
-  if(name==="setCollectionTier"){return tx("Set collection tier",contract("staking").setCollectionTier($("manageCollection").value,Number($("manageTier").value)))}
-  if(name==="removeCollection"){return tx("Remove collection",contract("staking").removeCollection($("manageCollection").value))}
-  if(name==="forfeitEscrow"){return tx("Forfeit escrow",contract("staking").forfeitEscrow($("manageCollection").value))}
-  if(name==="enrollBluechip"){return tx("Bluechip enrollment",contract("staking").enrollBluechip())}
-  if(name==="stakeTerm"){return tx("Term stake",contract("staking").stakeTerm($("stakeCollection").value,$("stakeToken").value))}
-  if(name==="stakePermanent"){return tx("Permanent stake",contract("staking").stakePermanent($("stakeCollection").value,$("stakeToken").value))}
-  if(name==="pendingReward"){const x=await readContract("staking").pendingReward($("positionId").value);toast("Pending reward",fmt(x),"success");return}
-  if(name==="harvest"){return tx("Harvest",contract("staking").harvest($("positionId").value))}
-  if(name==="unstake"){return tx("Unstake",contract("staking").unstake($("positionId").value))}
-  if(name==="setStakingParams"){return tx("Staking parameters",contract("staking").setParameters($("pReg").value,$("pEscrow").value,$("pBlue").value,$("pTermReward").value,$("pPermReward").value,$("pUnstake").value,$("pDuration").value))}
-  if(name==="setPause"){const p=await readContract("staking").paused();return tx(p?"Unpause staking":"Pause staking",contract("staking").setPause(!p))}
-  if(name==="readWeight"){const a=$("weightAddress").value||state.account;const x=await readContract("governance").governanceWeight(a);$("weightValue").textContent=x.toString();return}
-  if(name==="createProposal"){const target=$("proposalTarget").value||ethers.ZeroAddress;return tx("Create proposal",contract("governance").createProposal(Number($("proposalKind").value),target,$("proposalValue").value||0,$("proposalData").value||"0x"))}
-  if(name==="voteFor"||name==="voteAgainst"){return tx("Cast vote",contract("governance").vote($("proposalId").value,name==="voteFor"))}
-  if(name==="executeProposal"){return tx("Execute proposal",contract("governance").execute($("proposalId").value))}
-  if(name==="proposeRecovery"){return tx("Propose recovery",contract("council").proposeRecovery($("recoveryTarget").value,$("recoveryData").value||"0x",$("recoveryWindow").value))}
-  if(name==="approveRecovery"){return tx("Approve recovery",contract("council").approveRecovery())}
-  if(name==="vetoRecovery"){return tx("Veto recovery",contract("council").vetoRecovery())}
-  if(name==="executeRecovery"){return tx("Execute recovery",contract("council").executeRecovery())}
-  if(name==="clearLock"){return tx("Clear council lock",contract("council").clearLock())}
-  if(name==="commitBatches"){const a=$("newActive").value.split(",").map(x=>x.trim()).filter(Boolean),b=$("newStandby").value.split(",").map(x=>x.trim()).filter(Boolean);if(a.length!==7||b.length!==7)throw Error("Exactly 7 active and 7 standby addresses are required.");return tx("Commit guardian batches",contract("council").commitBatches(a,b,$("batchWindow").value))}
-  if(name==="activateBatches"){return tx("Activate guardian batches",contract("council").activateCommittedBatches())}
-  if(name==="drsPropose"){return tx("DRS proposal",contract("recovery").propose($("newDeployer").value))}
-  if(name==="drsApprove"){return tx("DRS approval",contract("recovery").approve())}
-  if(name==="drsVeto"){return tx("DRS veto",contract("recovery").veto())}
-  if(name==="drsExecute"){return tx("DRS execute",contract("recovery").execute())}
- }catch(e){toast("Action failed",e?.shortMessage||e?.reason||e?.message||String(e),"error")}
+function saveAddresses() { localStorage.setItem("catalyst_vnext_addresses", JSON.stringify(addresses)); }
+
+function addressCard(name,key) {
+ return `<div class="card"><label>${name} proxy address</label><input id="set_${key}" value="${addresses[key]||""}" placeholder="0x..."><button class="action" style="margin-top:8px" onclick="setAddress('${key}')">Set address</button></div>`;
 }
-function auditButtons(){const bs=[...document.querySelectorAll("button[data-action]")];const missing=bs.filter(b=>!b.dataset.action);toast("v16.4 audit",`${bs.length} action buttons registered; ${missing.length} missing action mapping.`,"success");console.log("[Catalyst v16.4] button audit",bs.map(b=>({id:b.id||null,action:b.dataset.action,text:b.textContent.trim()})))}
-document.addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(b){e.preventDefault();action(b.dataset.action)}const t=e.target.closest("[data-tab]");if(t){document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===t));document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===t.dataset.tab))}});
-load();discover();auditButtons();
-window.CatalystV164={ABI,CONTRACTS,state,refreshAll,auditButtons};
+window.setAddress = function(key) {
+ const v=$("set_"+key).value.trim();
+ if (!/^0x[0-9a-fA-F]{40}$/.test(v)) return alert("Enter a valid address.");
+ addresses[key]=v; saveAddresses(); log(key+" address saved"); render();
+};
+
+async function connect() {
+ if (!window.ethereum) return alert("Install MetaMask or another injected wallet.");
+ provider = new ethers.BrowserProvider(window.ethereum);
+ signer = await provider.getSigner();
+ account = await signer.getAddress();
+ $("walletText").textContent = account;
+ log("Connected "+account);
+ await refresh();
+}
+$("connectBtn").onclick=connect;
+
+function iface(key) {
+ const name = {cata:"CataERC20Upgradeable.sol",staking:"CatalystStakingUpgradeable.sol",governance:"CatalystGovernanceUpgradeable.sol",council:"BatchGuardianCouncilUpgradeable.sol"}[key];
+ return FUNCTION_REGISTRY[name]||[];
+}
+function contract(key, write=false) {
+ const abi = iface(key).map(f=>({type:"function",name:f.name,inputs:f.inputs.map((type,i)=>({type,name:"arg"+i})),outputs:[],stateMutability:f.stateMutability}));
+ return new ethers.Contract(addresses[key], abi, write?signer:provider);
+}
+function hasAddr(key) { return /^0x[0-9a-fA-F]{40}$/.test(addresses[key]||""); }
+
+async function safeCall(key, fn, args=[]) {
+ if (!hasAddr(key)) return null;
+ try { return await contract(key)[fn](...args); } catch(e) { log(key+"."+fn+" read failed: "+(e.shortMessage||e.message)); return null; }
+}
+async function safeTx(key, fn, args=[]) {
+ if (!signer) return alert("Connect wallet first.");
+ if (!hasAddr(key)) return alert("Set "+key+" contract address first.");
+ try {
+  const tx=await contract(key,true)[fn](...args); log("Submitted "+fn+" "+tx.hash); await tx.wait(); log("Confirmed "+fn); await refresh(); return tx;
+ } catch(e) { log("Transaction failed: "+(e.shortMessage||e.message)); alert(e.shortMessage||e.message); }
+}
+
+async function refresh() {
+ $("addrCata").value=addresses.cata||""; $("addrStaking").value=addresses.staking||""; $("addrGovernance").value=addresses.governance||""; $("addrCouncil").value=addresses.council||"";
+ if (hasAddr("cata")) {
+   const bal=account?await safeCall("cata","balanceOf",[account]):null;
+   const supply=await safeCall("cata","totalSupply",[]);
+   $("publicMetrics").innerHTML = metric("CATA Total Supply",fmt(supply))+metric("Connected Balance",account?fmt(bal):"—");
+   $("userBalance").textContent=account?fmt(bal):"—";
+ }
+ if (account && hasAddr("governance")) {
+   for (const fn of ["votingWeight","getVotingEligibility"]) {
+     if (iface("governance").some(f=>f.name===fn)) {
+       const v=await safeCall("governance",fn,[account]); 
+       if(fn==="votingWeight") $("userWeight").textContent=fmt(v);
+       if(fn==="getVotingEligibility") $("userEligibility").textContent=String(v);
+     }
+   }
+ }
+ renderActions();
+}
+function fmt(v) { if(v===null||v===undefined) return "—"; try { return ethers.formatUnits(v,18); } catch { return String(v); } }
+function metric(a,b) { return `<div class="card"><div class="muted">${a}</div><div class="value">${b}</div></div>`; }
+
+$("burnBtn").onclick=async()=>{ 
+ if (!iface("cata").some(f=>f.name==="recordVoluntaryBurn")) return alert("recordVoluntaryBurn is not present in the configured CATA ABI.");
+ const x=$("burnAmount").value.trim(); if(!x)return;
+ await safeTx("cata","recordVoluntaryBurn",[ethers.parseUnits(x,18)]);
+};
+$("registerBtn").onclick=async()=>{
+ if(!iface("staking").some(f=>f.name==="registerCollection")) return alert("registerCollection is not present in the final staking contract.");
+ await safeTx("staking","registerCollection",[$("collectionAddr").value.trim()]);
+};
+$("voteBtn").onclick=async()=>{
+ if(!iface("governance").some(f=>f.name==="vote")) return alert("vote is not present.");
+ await safeTx("governance","vote",[BigInt($("proposalId").value||0), $("support").value==="true"]);
+};
+
+function renderActions() {
+ const st=iface("staking").map(x=>x.name);
+ const gu=iface("council").map(x=>x.name);
+ $("stakingActions").innerHTML = ["stake","stakeTerm","stakePermanent","harvest","unstake","unstakeBatch","pendingRewards"].filter(x=>st.includes(x)).map(x=>`<div class="card"><strong>${x}</strong><div class="muted">Available in final staking ABI.</div></div>`).join("") || "<span class='muted'>No configured staking actions.</span>";
+ $("guardianActions").innerHTML = gu.filter(x=>/guardian|daoSeed|recover|veto|approve|execute/i.test(x)).map(x=>`<div class="card"><strong>${x}</strong><div class="muted">Role/state checks required before execution.</div></div>`).join("") || "<span class='muted'>No guardian actions available.</span>";
+ $("adminActions").innerHTML = iface("governance").filter(x=>/set|upgrade|withdraw|execute|pause|unpause/i.test(x.name)).map(x=>`<div class="card"><strong>${x.name}</strong><div class="muted">Governance-controlled. Execution is disabled until permission is verified.</div></div>`).join("") || "<span class='muted'>Connect/configure contracts to load controls.</span>";
+}
+function render() { renderActions(); }
+
+$("addrCata").onchange=()=>{addresses.cata=$("addrCata").value.trim();saveAddresses();refresh();};
+$("addrStaking").onchange=()=>{addresses.staking=$("addrStaking").value.trim();saveAddresses();refresh();};
+$("addrGovernance").onchange=()=>{addresses.governance=$("addrGovernance").value.trim();saveAddresses();refresh();};
+$("addrCouncil").onchange=()=>{addresses.council=$("addrCouncil").value.trim();saveAddresses();refresh();};
+
+render();
+if (window.ethereum) window.ethereum.on?.("accountsChanged",()=>location.reload());
 </script>
 </body>
 </html>
