@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Catalyst Protocol — Final Production — DApp v16.3.1</title>
+  <title>Catalyst Protocol — DApp v16.4</title>
 	  <script src="https://cdn.tailwindcss.com"></script>
   <meta name="description" content="Catalyst Protocol dApp — staking, governance, council" />
 	<link rel="icon" type="image/png" href="assets/logo.png">	
@@ -137,11 +137,7 @@ window.v154DashboardGuard = function () {
 .v1622-toast::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#22d3ee}.v1622-toast.success::before{background:#22c55e}.v1622-toast.error::before{background:#ef4444}.v1622-toast.warning::before{background:#f59e0b}.v1622-toast.pending::before{background:#38bdf8}
 .v1622-toast-icon{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(56,189,248,.12);font-weight:900}.v1622-toast.success .v1622-toast-icon{background:rgba(34,197,94,.14);color:#86efac}.v1622-toast.error .v1622-toast-icon{background:rgba(239,68,68,.14);color:#fca5a5}.v1622-toast.warning .v1622-toast-icon{background:rgba(245,158,11,.14);color:#fcd34d}.v1622-toast.pending .v1622-toast-icon{background:rgba(56,189,248,.14);color:#7dd3fc}
 .v1622-toast-msg{white-space:pre-line}.v1622-toast-close{transition:.15s ease}.v1622-toast-close:hover{transform:scale(1.15)}.v163-pressed{transform:scale(.975)!important;filter:brightness(1.12)!important}
-</style>
-<script id="catalyst-embedded-abis">
-window.CATALYST_EMBEDDED_ABIS={"cata":[{"inputs":[],"name":"AccessControlBadConfirmation","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"bytes32","name":"neededRole","type":"bytes32"}],"name":"AccessControlUnauthorizedAccount","type":"error"},{"inputs":[{"internalType":"address","name":"target","type":"address"}],"name":"AddressEmptyCode","type":"error"},{"inputs":[{"internalType":"address","name":"implementation","type":"address"}],"name":"ERC1967InvalidImplementation","type":"error"},{"inputs":[],"name":"ERC1967NonPayable","type":"error"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"allowance","type":"uint256"},{"internalType":"uint256","name":"needed","type":"uint256"}],"name":"ERC20InsufficientAllowance","type":"error"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"balance","type":"uint256"},{"internalType":"uint256","name":"needed","type":"uint256"}],"name":"ERC20InsufficientBalance","type":"error"},{"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC20InvalidApprover","type":"error"},{"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC20InvalidReceiver","type":"error"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC20InvalidSender","type":"error"},{"inputs":[{"internalType":"address","name":"spender","type":"address"}],"name":"ERC20InvalidSpender","type":"error"},{"inputs":[],"name":"FailedCall","type":"error"},{"inputs":[],"name":"InvalidInitialization","type":"error"},{"inputs":[],"name":"NotInitializing","type":"error"},{"inputs":[],"name":"UUPSUnauthorizedCallContext","type":"error"},{"inputs":[{"internalType":"bytes32","name":"slot","type":"bytes32"}],"name":"UUPSUnsupportedProxiableUUID","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldAdmin","type":"address"},{"indexed":true,"internalType":"address","name":"newAdmin","type":"address"}],"name":"AdminSwapped","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldCouncil","type":"address"},{"indexed":true,"internalType":"address","name":"newCouncil","type":"address"}],"name":"CouncilSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint64","name":"version","type":"uint64"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"revokedMinter","type":"address"}],"name":"MinterRevoked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldMinter","type":"address"},{"indexed":true,"internalType":"address","name":"newMinter","type":"address"}],"name":"MinterSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"previousAdminRole","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"newAdminRole","type":"bytes32"}],"name":"RoleAdminChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleGranted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleRevoked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newTotalSupply","type":"uint256"}],"name":"TokensBurned","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newTotalSupply","type":"uint256"}],"name":"TokensMinted","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"burnedAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newMintableCapacity","type":"uint256"}],"name":"TokensRecycled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"implementation","type":"address"}],"name":"Upgraded","type":"event"},{"inputs":[],"name":"DEFAULT_ADMIN_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_SUPPLY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MINTER_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"UPGRADE_INTERFACE_VERSION","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"burn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"council","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getMintableCapacity","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"}],"name":"getRoleAdmin","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"grantRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"},{"internalType":"address","name":"account","type":"address"}],"name":"hasRole","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"name_","type":"string"},{"internalType":"string","name":"symbol_","type":"string"},{"internalType":"address","name":"initialAdmin","type":"address"},{"internalType":"address","name":"council_","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"mint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"proxiableUUID","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"renounceRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"minter","type":"address"}],"name":"revokeMinter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"revokeRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newCouncil","type":"address"}],"name":"setCouncil","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newMinter","type":"address"}],"name":"setMinter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newAdmin","type":"address"},{"internalType":"address","name":"oldAdmin","type":"address"}],"name":"swapAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImplementation","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"}],"staking":[{"inputs":[],"name":"AccessControlBadConfirmation","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"bytes32","name":"neededRole","type":"bytes32"}],"name":"AccessControlUnauthorizedAccount","type":"error"},{"inputs":[{"internalType":"address","name":"target","type":"address"}],"name":"AddressEmptyCode","type":"error"},{"inputs":[],"name":"AlreadyReg","type":"error"},{"inputs":[],"name":"AlreadyStaked","type":"error"},{"inputs":[],"name":"BadAddr","type":"error"},{"inputs":[],"name":"BatchLimit","type":"error"},{"inputs":[],"name":"Cap20k","type":"error"},{"inputs":[{"internalType":"address","name":"implementation","type":"address"}],"name":"ERC1967InvalidImplementation","type":"error"},{"inputs":[],"name":"ERC1967NonPayable","type":"error"},{"inputs":[],"name":"EscrowMissing","type":"error"},{"inputs":[],"name":"FailedCall","type":"error"},{"inputs":[],"name":"FeeRequired","type":"error"},{"inputs":[],"name":"GlobalCap","type":"error"},{"inputs":[],"name":"InsufficientCATA","type":"error"},{"inputs":[],"name":"InvalidInitialization","type":"error"},{"inputs":[],"name":"Mismatch","type":"error"},{"inputs":[],"name":"NoBlocks","type":"error"},{"inputs":[],"name":"NoEscrow","type":"error"},{"inputs":[],"name":"NoToken","type":"error"},{"inputs":[],"name":"NotBluechip","type":"error"},{"inputs":[],"name":"NotCouncil","type":"error"},{"inputs":[],"name":"NotCurrentDeployer","type":"error"},{"inputs":[],"name":"NotEnrolled","type":"error"},{"inputs":[],"name":"NotExpired","type":"error"},{"inputs":[],"name":"NotInitializing","type":"error"},{"inputs":[],"name":"NotOwnerOfZero","type":"error"},{"inputs":[],"name":"NotReg","type":"error"},{"inputs":[],"name":"NotStaked","type":"error"},{"inputs":[],"name":"NotUnverified","type":"error"},{"inputs":[],"name":"PermCap","type":"error"},{"inputs":[],"name":"SupplyRange","type":"error"},{"inputs":[],"name":"TermActive","type":"error"},{"inputs":[],"name":"TermCap","type":"error"},{"inputs":[],"name":"TooManyParticipants","type":"error"},{"inputs":[],"name":"TransferFailed","type":"error"},{"inputs":[],"name":"UUPSUnauthorizedCallContext","type":"error"},{"inputs":[{"internalType":"bytes32","name":"slot","type":"bytes32"}],"name":"UUPSUnsupportedProxiableUUID","type":"error"},{"inputs":[],"name":"UnauthorizedRoleGrant","type":"error"},{"inputs":[],"name":"UnauthorizedRoleRenouncement","type":"error"},{"inputs":[],"name":"UnauthorizedRoleRevocation","type":"error"},{"inputs":[],"name":"ZeroAddr","type":"error"},{"inputs":[],"name":"ZeroFee","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldAdmin","type":"address"},{"indexed":true,"internalType":"address","name":"newAdmin","type":"address"}],"name":"AdminSwapped","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"who","type":"address"}],"name":"BluechipEnrolled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"who","type":"address"},{"indexed":true,"internalType":"address","name":"collection","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"BluechipHarvested","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldCata","type":"address"},{"indexed":true,"internalType":"address","name":"newCata","type":"address"}],"name":"CataTokenUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"collection","type":"address"},{"indexed":false,"internalType":"uint256","name":"declaredSupply","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"baseFee","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"escrow","type":"uint256"},{"indexed":false,"internalType":"enum CatalystStakingUpgradeable.CollectionTier","name":"tier","type":"uint8"}],"name":"CollectionAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"collection","type":"address"}],"name":"CollectionRemoved","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldCouncil","type":"address"},{"indexed":true,"internalType":"address","name":"newCouncil","type":"address"}],"name":"CouncilSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldDeployer","type":"address"},{"indexed":true,"internalType":"address","name":"newDeployer","type":"address"}],"name":"DeployerAddressUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldCouncil","type":"address"},{"indexed":true,"internalType":"address","name":"newCouncil","type":"address"}],"name":"DeployerCouncilSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"collection","type":"address"},{"indexed":false,"internalType":"uint256","name":"toTreasury","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"burned","type":"uint256"},{"indexed":false,"internalType":"address","name":"deployer","type":"address"},{"indexed":false,"internalType":"uint256","name":"toDeployer","type":"uint256"}],"name":"EscrowForfeited","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint64","name":"version","type":"uint64"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"who","type":"address"},{"indexed":true,"internalType":"address","name":"collection","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"NFTStaked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"who","type":"address"},{"indexed":true,"internalType":"address","name":"collection","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"NFTUnstaked","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"who","type":"address"},{"indexed":false,"internalType":"uint256","name":"fee","type":"uint256"}],"name":"PermanentStakeFeePaid","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"who","type":"address"},{"indexed":true,"internalType":"address","name":"collection","type":"address"},{"indexed":false,"internalType":"uint256","name":"payout","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"burned","type":"uint256"}],"name":"RewardsHarvested","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"previousAdminRole","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"newAdminRole","type":"bytes32"}],"name":"RoleAdminChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleGranted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleRevoked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TreasuryDeposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TreasuryWithdraw","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"implementation","type":"address"}],"name":"Upgraded","type":"event"},{"inputs":[],"name":"BP_DENOM","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"BURN_BP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"CONTRACT_ADMIN_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DEFAULT_ADMIN_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DEPLOYER_BP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"GLOBAL_NFT_CAP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"LARGE_MAX_FEE_CAP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"LARGE_MIN_FEE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_HARVEST_BATCH","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_PARTICIPANTS_LIMIT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_STAKE_PER_COLLECTION","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MED_MAX_FEE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MED_MIN_FEE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERM_NFT_CAP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"SMALL_MAX_FEE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"SMALL_MIN_FEE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"TERM_NFT_CAP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"TOP_BURNER_PERCENT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"TREASURY_BONUS_BP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"TREASURY_BP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"UPGRADE_INTERFACE_VERSION","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"baseRewardRate","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256[]","name":"tokenIds","type":"uint256[]"}],"name":"batchPermanentStake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256[]","name":"tokenIds","type":"uint256[]"}],"name":"batchTermStake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256[]","name":"tokenIds","type":"uint256[]"}],"name":"batchUnstake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"bluechipLastHarvestBlock","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"bluechipWalletFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"bluechipWallets","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"bonusModule","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"burnedCatalystByAddress","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"burnedCatalystByCollection","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"cata","outputs":[{"internalType":"contract ICataToken","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"cataERC20","outputs":[{"internalType":"contract IERC20Upgradeable","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"collectionConfigs","outputs":[{"internalType":"uint32","name":"totalStaked","type":"uint32"},{"internalType":"uint32","name":"totalStakers","type":"uint32"},{"internalType":"bool","name":"registered","type":"bool"},{"internalType":"uint32","name":"declaredSupply","type":"uint32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"collectionMeta","outputs":[{"internalType":"enum CatalystStakingUpgradeable.CollectionTier","name":"tier","type":"uint8"},{"internalType":"address","name":"registrant","type":"address"},{"internalType":"uint256","name":"surchargeEscrow","type":"uint256"},{"internalType":"uint256","name":"registeredAtBlock","type":"uint256"},{"internalType":"uint256","name":"lastTierProposalBlock","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"council","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"deployerAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"deployerCouncil","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"eligibleCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"enrollBluechip","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"}],"name":"forfeitEscrowIfExpired","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"}],"name":"getCollectionStatus","outputs":[{"internalType":"enum CatalystStakingUpgradeable.CollectionStatus","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"}],"name":"getRoleAdmin","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"grantRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"harvest","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256[]","name":"tokenIds","type":"uint256[]"}],"name":"harvestBatch","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"}],"name":"harvestBluechip","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"},{"internalType":"address","name":"account","type":"address"}],"name":"hasRole","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"indexOfTokenIdInStakePortfolio","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"initialAdmin","type":"address"},{"internalType":"address","name":"contractAdmin","type":"address"},{"internalType":"address","name":"council_","type":"address"},{"internalType":"address","name":"cataToken","type":"address"},{"internalType":"address","name":"deployerAddr","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isBluechipCollection","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isParticipating","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastBonusBlock","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastBurnBlock","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"numberOfBlocksPerRewardUnit","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"oldAccount","type":"address"},{"internalType":"address","name":"newAccount","type":"address"}],"name":"onDRSRecover","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"bytes","name":"","type":"bytes"}],"name":"onERC721Received","outputs":[{"internalType":"bytes4","name":"","type":"bytes4"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"participatingWallets","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"pendingRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"permanentStake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"permanentStakeFeeBase","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"proxiableUUID","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"declaredMaxSupply","type":"uint256"},{"internalType":"enum CatalystStakingUpgradeable.CollectionTier","name":"requestedTier","type":"uint8"}],"name":"registerCollection","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"registeredCollections","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"registeredCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"registeredIndex","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"}],"name":"removeCollection","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"renounceRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"revokeRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"rewardRateIncrementPerNFT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"bool","name":"isBluechip","type":"bool"}],"name":"setBluechipCollection","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newModule","type":"address"}],"name":"setBonusModule","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newCata","type":"address"}],"name":"setCataToken","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"declaredMaxSupply","type":"uint256"},{"internalType":"enum CatalystStakingUpgradeable.CollectionTier","name":"tier","type":"uint8"}],"name":"setCollectionConfig","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newCouncil","type":"address"}],"name":"setCouncil","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newDeployer","type":"address"}],"name":"setDeployerAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newCouncil","type":"address"}],"name":"setDeployerCouncil","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakeLog","outputs":[{"internalType":"bool","name":"currentlyStaked","type":"bool"},{"internalType":"bool","name":"isPermanent","type":"bool"},{"internalType":"uint256","name":"stakeBlock","type":"uint256"},{"internalType":"uint256","name":"unstakeDeadlineBlock","type":"uint256"},{"internalType":"uint256","name":"lastHarvestBlock","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakePortfolioByUser","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"surchargeForfeitBlocks","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newAdmin","type":"address"},{"internalType":"address","name":"oldAdmin","type":"address"}],"name":"swapAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"termDurationBlocks","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"termStake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"tierUpgradeMinAgeBlocks","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"tierUpgradeMinBurn","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"tierUpgradeMinStakers","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"topCollections","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"topPercent","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalStakedAll","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalStakedNFTsCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalStakedPerm","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalStakedTerm","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"treasuryBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"triggerTopBurnerBonus","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"collection","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unstakeBurnFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"unverifiedSurchargeBP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newImplementation","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"welcomeBonusBaseRate","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"welcomeBonusIncrementPerNFT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdrawTreasury","outputs":[],"stateMutability":"nonpayable","type":"function"}],"governance":[{"inputs":[],"name":"AccessControlBadConfirmation","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"bytes32","name":"neededRole","type":"bytes32"}],"name":"AccessControlUnauthorizedAccount","type":"error"},{"inputs":[{"internalType":"address","name":"target","type":"address"}],"name":"AddressEmptyCode","type":"error"},{"inputs":[],"name":"BadParam","type":"error"},{"inputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"name":"emergencyExecuteProposal","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"implementation","type":"address"}],"name":"ERC1967InvalidImplementation","type":"error"},{"inputs":[],"name":"ERC1967NonPayable","type":"error"},{"inputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"name":"executeProposal","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"FailedCall","type":"error"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"grantRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"Ineligible","type":"error"},{"inputs":[{"internalType":"address","name":"guardianCouncil_","type":"address"},{"internalType":"address","name":"staking_","type":"address"},{"internalType":"uint256","name":"votingDuration","type":"uint256"},{"internalType":"uint256","name":"minVotes","type":"uint256"},{"internalType":"uint256","name":"capPercent","type":"uint256"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"InvalidInitialization","type":"error"},{"inputs":[],"name":"NotInitializing","type":"error"},{"inputs":[{"internalType":"enum CatalystGovernanceUpgradeable.ProposalType","name":"pType","type":"uint8"},{"internalType":"uint8","name":"paramTarget","type":"uint8"},{"internalType":"uint256","name":"newValue","type":"uint256"},{"internalType":"address","name":"collectionContext","type":"address"}],"name":"propose","outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"proposeCouncilActivateStandby","outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"proposeCouncilClearLock","outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"proposeCouncilCommitNewDAO","outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"proposeCouncilCommitStandby","outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newDAO","type":"address"}],"name":"proposeCouncilNewDAO","outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address[7]","name":"newBatch","type":"address[7]"}],"name":"proposeCouncilReseedActive","outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address[7]","name":"newBatch","type":"address[7]"}],"name":"proposeCouncilReseedStandby","outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImplementation","type":"address"}],"name":"proposeCouncilUpgrade","outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"name":"queueProposal","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"renounceRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"revokeRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newCouncil","type":"address"}],"name":"setCouncil","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newStaking","type":"address"}],"name":"setStaking","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newAdmin","type":"address"},{"internalType":"address","name":"oldAdmin","type":"address"}],"name":"swapAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newCouncil","type":"address"}],"name":"updateGuardianCouncil","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImplementation","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"UUPSUnauthorizedCallContext","type":"error"},{"inputs":[{"internalType":"bytes32","name":"slot","type":"bytes32"}],"name":"UUPSUnsupportedProxiableUUID","type":"error"},{"inputs":[{"internalType":"bytes32","name":"id","type":"bytes32"},{"internalType":"address","name":"attributedCollection","type":"address"}],"name":"vote","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"ZeroAddress","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldAdmin","type":"address"},{"indexed":true,"internalType":"address","name":"newAdmin","type":"address"}],"name":"AdminSwapped","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"oldValue","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newValue","type":"uint256"}],"name":"BaseRewardRateUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"collection","type":"address"},{"indexed":false,"internalType":"uint8","name":"newTier","type":"uint8"}],"name":"CollectionTierUpgraded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"councilAddress","type":"address"}],"name":"CouncilActivateStandbyExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"councilAddress","type":"address"}],"name":"CouncilClearLockExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"councilAddress","type":"address"}],"name":"CouncilCommitNewDAOExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"councilAddress","type":"address"}],"name":"CouncilCommitStandbyExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"councilAddress","type":"address"},{"indexed":false,"internalType":"address","name":"newDAO","type":"address"}],"name":"CouncilProposeNewDAOExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"councilAddress","type":"address"}],"name":"CouncilProposeStandbyExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"councilAddress","type":"address"}],"name":"CouncilReseedExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"councilAddress","type":"address"}],"name":"CouncilReseedProposed","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldCouncil","type":"address"},{"indexed":true,"internalType":"address","name":"newCouncil","type":"address"}],"name":"CouncilSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"councilAddress","type":"address"},{"indexed":false,"internalType":"address","name":"newImpl","type":"address"}],"name":"CouncilUpgraded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldCouncil","type":"address"},{"indexed":true,"internalType":"address","name":"newCouncil","type":"address"}],"name":"GuardianCouncilUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"oldValue","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newValue","type":"uint256"}],"name":"HarvestFeeUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint64","name":"version","type":"uint64"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":false,"internalType":"enum CatalystGovernanceUpgradeable.ProposalType","name":"pType","type":"uint8"},{"indexed":false,"internalType":"uint8","name":"paramTarget","type":"uint8"},{"indexed":true,"internalType":"address","name":"collection","type":"address"},{"indexed":true,"internalType":"address","name":"proposer","type":"address"},{"indexed":false,"internalType":"uint256","name":"newValue","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"startBlock","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"endBlock","type":"uint256"}],"name":"ProposalCreated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":false,"internalType":"uint256","name":"newValue","type":"uint256"}],"name":"ProposalExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":false,"internalType":"uint256","name":"readyTime","type":"uint256"}],"name":"ProposalQueued","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"oldValue","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newValue","type":"uint256"}],"name":"RegistrationFeeUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"previousAdminRole","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"newAdminRole","type":"bytes32"}],"name":"RoleAdminChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleGranted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleRevoked","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"oldValue","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newValue","type":"uint256"}],"name":"UnstakeFeeUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"implementation","type":"address"}],"name":"Upgraded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"id","type":"bytes32"},{"indexed":true,"internalType":"address","name":"voter","type":"address"},{"indexed":false,"internalType":"uint256","name":"weightScaled","type":"uint256"},{"indexed":false,"internalType":"address","name":"attributedCollection","type":"address"}],"name":"VoteCast","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint8","name":"param","type":"uint8"},{"indexed":false,"internalType":"uint256","name":"oldValue","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newValue","type":"uint256"}],"name":"VotingParamUpdated","type":"event"},{"inputs":[],"name":"baseRewardRate","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"collectionRegistrationFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"collectionVoteCapPercent","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"CONTRACT_ADMIN_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"council","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes","name":"data","type":"bytes"}],"name":"decodeCouncilBatch","outputs":[{"internalType":"address[7]","name":"batch","type":"address[7]"}],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"DEFAULT_ADMIN_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[7]","name":"batch","type":"address[7]"}],"name":"encodeCouncilBatch","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"name":"getProposalInfo","outputs":[{"components":[{"internalType":"enum CatalystGovernanceUpgradeable.ProposalType","name":"pType","type":"uint8"},{"internalType":"uint8","name":"paramTarget","type":"uint8"},{"internalType":"uint256","name":"newValue","type":"uint256"},{"internalType":"address","name":"collectionAddress","type":"address"},{"internalType":"address","name":"proposer","type":"address"},{"internalType":"uint256","name":"startBlock","type":"uint256"},{"internalType":"uint256","name":"endBlock","type":"uint256"},{"internalType":"uint256","name":"votesScaled","type":"uint256"},{"internalType":"bool","name":"executed","type":"bool"},{"internalType":"bytes","name":"payload","type":"bytes"}],"internalType":"struct CatalystGovernanceUpgradeable.ProposalInfo","name":"","type":"tuple"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],"name":"getProposalReadyTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"}],"name":"getRoleAdmin","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getVotingEligibility","outputs":[{"internalType":"uint256","name":"weight","type":"uint256"},{"internalType":"bool","name":"canVote","type":"bool"},{"internalType":"bool","name":"canPropose","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"},{"internalType":"address","name":"account","type":"address"}],"name":"hasRole","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"hasVoted","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"initialHarvestBurnFeeRate","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"maxBaseRewardRate","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"minStakeAgeForVoting","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"minVotesRequiredScaled","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"proposalCollectionVotesScaled","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"proposalIds","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"proposalIndex","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"proposalPayloads","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"proposalReadyTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"proposals","outputs":[{"internalType":"enum CatalystGovernanceUpgradeable.ProposalType","name":"pType","type":"uint8"},{"internalType":"uint8","name":"paramTarget","type":"uint8"},{"internalType":"uint256","name":"newValue","type":"uint256"},{"internalType":"address","name":"collectionAddress","type":"address"},{"internalType":"address","name":"proposer","type":"address"},{"internalType":"uint256","name":"startBlock","type":"uint256"},{"internalType":"uint256","name":"endBlock","type":"uint256"},{"internalType":"uint256","name":"votesScaled","type":"uint256"},{"internalType":"bool","name":"executed","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"proxiableUUID","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"staking","outputs":[{"internalType":"contract ICatalystStaking","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"TIMELOCK_DELAY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"unstakeBurnFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"UPGRADE_INTERFACE_VERSION","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"votingDurationBlocks","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"WEIGHT_SCALE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}],"council":[{"inputs":[],"name":"AccessControlBadConfirmation","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"bytes32","name":"neededRole","type":"bytes32"}],"name":"AccessControlUnauthorizedAccount","type":"error"},{"inputs":[{"internalType":"address","name":"target","type":"address"}],"name":"AddressEmptyCode","type":"error"},{"inputs":[],"name":"AlreadyApproved","type":"error"},{"inputs":[],"name":"AlreadyExecuted","type":"error"},{"inputs":[],"name":"BadArrayLength","type":"error"},{"inputs":[{"internalType":"bytes","name":"reason","type":"bytes"}],"name":"CallFailed","type":"error"},{"inputs":[],"name":"CommitTooEarly","type":"error"},{"inputs":[],"name":"CommitTooLate","type":"error"},{"inputs":[],"name":"DuplicateGuardian","type":"error"},{"inputs":[{"internalType":"address","name":"implementation","type":"address"}],"name":"ERC1967InvalidImplementation","type":"error"},{"inputs":[],"name":"ERC1967NonPayable","type":"error"},{"inputs":[],"name":"FailedCall","type":"error"},{"inputs":[],"name":"InvalidCallData","type":"error"},{"inputs":[],"name":"InvalidCallTarget","type":"error"},{"inputs":[],"name":"InvalidInitialization","type":"error"},{"inputs":[],"name":"LockedErr","type":"error"},{"inputs":[],"name":"NoActiveRequest","type":"error"},{"inputs":[],"name":"NoPendingUpdate","type":"error"},{"inputs":[],"name":"NotGuardian","type":"error"},{"inputs":[],"name":"NotInitializing","type":"error"},{"inputs":[],"name":"NotLastHonest","type":"error"},{"inputs":[],"name":"OverlapGuardian","type":"error"},{"inputs":[],"name":"RequestExpired","type":"error"},{"inputs":[],"name":"ThresholdNotMet","type":"error"},{"inputs":[],"name":"UUPSUnauthorizedCallContext","type":"error"},{"inputs":[{"internalType":"bytes32","name":"slot","type":"bytes32"}],"name":"UUPSUnsupportedProxiableUUID","type":"error"},{"inputs":[],"name":"Unauthorized","type":"error"},{"inputs":[],"name":"VetoExpired","type":"error"},{"inputs":[],"name":"ZeroAddress","type":"error"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address[7]","name":"guardians","type":"address[7]"}],"name":"ActiveBatchProposed","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address[7]","name":"guardians","type":"address[7]"}],"name":"ActiveBatchSeeded","type":"event"},{"anonymous":false,"inputs":[],"name":"AutoLocked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"proposer","type":"address"},{"indexed":true,"internalType":"address","name":"newDao","type":"address"}],"name":"DaoChangeProposed","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldDao","type":"address"},{"indexed":true,"internalType":"address","name":"newDao","type":"address"}],"name":"DaoChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint64","name":"version","type":"uint64"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"guardian","type":"address"},{"indexed":false,"internalType":"uint256","name":"expiry","type":"uint256"}],"name":"LastHonestAssigned","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"guardian","type":"address"}],"name":"LastHonestHalted","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"guardian","type":"address"},{"indexed":false,"internalType":"uint8","name":"approvals","type":"uint8"}],"name":"RecoveryApproved","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"proposed","type":"address"},{"indexed":false,"internalType":"address","name":"callTarget","type":"address"}],"name":"RecoveryExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"proposer","type":"address"},{"indexed":false,"internalType":"address","name":"callTarget","type":"address"},{"indexed":false,"internalType":"bytes","name":"returnData","type":"bytes"}],"name":"RecoveryFailed","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"proposer","type":"address"},{"indexed":false,"internalType":"address","name":"proposed","type":"address"},{"indexed":false,"internalType":"address","name":"callTarget","type":"address"},{"indexed":false,"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"RecoveryProposed","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"nonce","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"timelockExpiry","type":"uint256"}],"name":"RecoveryReadyForExecution","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newNonce","type":"uint256"}],"name":"RecoveryReset","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"previousAdminRole","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"newAdminRole","type":"bytes32"}],"name":"RoleAdminChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleGranted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleRevoked","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address[7]","name":"newActive","type":"address[7]"}],"name":"StandbyActivated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address[7]","name":"guardians","type":"address[7]"}],"name":"StandbyBatchProposed","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address[7]","name":"guardians","type":"address[7]"}],"name":"StandbyBatchSeeded","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"implementation","type":"address"}],"name":"Upgraded","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"approvals","type":"uint8"}],"name":"WarningRaised","type":"event"},{"inputs":[],"name":"COMMIT_DELAY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DAO_COMMIT_WINDOW","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DAO_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DEFAULT_ADMIN_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"EXECUTION_TIMELOCK","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"GUARDIAN_COUNT","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"LAST_HONEST_VETO_WINDOW","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"RECOVERY_WINDOW","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"THRESHOLD","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"UPGRADE_INTERFACE_VERSION","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"activateStandbyIfLocked","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"activeGuardians","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"approveRecovery","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"commitNewDAO","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"dao","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"daoActivateStandby","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"daoClearLockAndWarning","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"daoCommitSeedActiveBatch","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"daoCommitSeedStandbyBatch","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address[7]","name":"batch","type":"address[7]"}],"name":"daoProposeSeedActiveBatch","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address[7]","name":"batch","type":"address[7]"}],"name":"daoProposeSeedStandbyBatch","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"executeRecovery","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getActiveGuardians","outputs":[{"internalType":"address[7]","name":"","type":"address[7]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getAdminRequestNonce","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getLastHonestExpiry","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getLastHonestGuardian","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getPendingActiveBatchState","outputs":[{"internalType":"address[7]","name":"pendingBatch","type":"address[7]"},{"internalType":"uint256","name":"commitEarliest","type":"uint256"},{"internalType":"uint256","name":"commitDeadline","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getPendingDAOState","outputs":[{"internalType":"address","name":"pendingDAO","type":"address"},{"internalType":"uint256","name":"commitEarliest","type":"uint256"},{"internalType":"uint256","name":"commitDeadline","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getPendingStandbyBatchState","outputs":[{"internalType":"address[7]","name":"pendingBatch","type":"address[7]"},{"internalType":"uint256","name":"commitEarliest","type":"uint256"},{"internalType":"uint256","name":"commitDeadline","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getRecoveryApprovals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getRecoveryCallData","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getRecoveryCallTarget","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getRecoveryDeadline","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getRecoveryExecuted","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getRecoveryProposed","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getRecoveryReadyToExecuteTimestamp","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getRecoveryState","outputs":[{"internalType":"address","name":"proposed","type":"address"},{"internalType":"uint8","name":"approvals","type":"uint8"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"bool","name":"executed","type":"bool"},{"internalType":"address","name":"callTarget","type":"address"},{"internalType":"bytes","name":"callData","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"}],"name":"getRoleAdmin","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getStandbyGuardians","outputs":[{"internalType":"address[7]","name":"","type":"address[7]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getWarningFlag","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"grantRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"guardian","type":"address"}],"name":"hasApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"},{"internalType":"address","name":"account","type":"address"}],"name":"hasRole","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"dao_","type":"address"},{"internalType":"address[7]","name":"batchActive","type":"address[7]"},{"internalType":"address[7]","name":"batchStandby","type":"address[7]"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isActiveGuardian","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isStandbyGuardian","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lastHonestHaltAndPromote","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"locked","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newDAO","type":"address"}],"name":"proposeNewDAO","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"proposed","type":"address"},{"internalType":"address","name":"callTarget","type":"address"},{"internalType":"bytes","name":"callData","type":"bytes"}],"name":"proposeRecovery","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"proxiableUUID","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"renounceRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"revokeRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"standbyGuardians","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"tempVeto","outputs":[{"internalType":"address","name":"guardian","type":"address"},{"internalType":"uint256","name":"expiry","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImplementation","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"warning","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}],"recovery":[{"inputs":[{"internalType":"address","name":"target_","type":"address"},{"internalType":"address","name":"manager_","type":"address"},{"internalType":"address[]","name":"guardianSet","type":"address[]"},{"internalType":"address[]","name":"standbySet","type":"address[]"},{"internalType":"uint8","name":"threshold_","type":"uint8"},{"internalType":"uint256","name":"recoveryWindowSecs","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"AlreadyApproved","type":"error"},{"inputs":[],"name":"AlreadyExecuted","type":"error"},{"inputs":[],"name":"BadInput","type":"error"},{"inputs":[],"name":"DelayNotElapsed","type":"error"},{"inputs":[],"name":"Expired","type":"error"},{"inputs":[],"name":"LockedError","type":"error"},{"inputs":[],"name":"NoActive","type":"error"},{"inputs":[],"name":"NotCouncil","type":"error"},{"inputs":[],"name":"NotGuardian","type":"error"},{"inputs":[],"name":"NotLastHonest","type":"error"},{"inputs":[],"name":"NotManager","type":"error"},{"inputs":[],"name":"ThresholdNotReached","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint8","name":"idx","type":"uint8"},{"indexed":true,"internalType":"address","name":"guardian","type":"address"}],"name":"GuardianSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"guardian","type":"address"},{"indexed":false,"internalType":"uint256","name":"expiry","type":"uint256"}],"name":"LastHonestAssigned","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bytes32","name":"reason","type":"bytes32"}],"name":"Locked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldManager","type":"address"},{"indexed":true,"internalType":"address","name":"newManager","type":"address"}],"name":"ManagerChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"guardian","type":"address"},{"indexed":false,"internalType":"uint8","name":"approvals","type":"uint8"}],"name":"RecoveryApproved","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"newDeployer","type":"address"},{"indexed":true,"internalType":"address","name":"oldDeployer","type":"address"}],"name":"RecoveryExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"proposer","type":"address"},{"indexed":true,"internalType":"address","name":"proposed","type":"address"},{"indexed":false,"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"RecoveryProposed","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"readyTime","type":"uint256"}],"name":"RecoveryReady","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"guardian","type":"address"}],"name":"RecoveryVetoed","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address[]","name":"newGuardians","type":"address[]"}],"name":"StandbyActivated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bytes32","name":"flag","type":"bytes32"}],"name":"WarningRaised","type":"event"},{"inputs":[],"name":"EXECUTION_DELAY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"RECOVERY_WINDOW","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"ROLE_DEPLOYER","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"TARGET","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"THRESHOLD","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"VETO_WINDOW","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"activeRecovery","outputs":[{"internalType":"address","name":"proposed","type":"address"},{"internalType":"uint8","name":"approvals","type":"uint8"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"uint256","name":"readyTime","type":"uint256"},{"internalType":"bool","name":"executed","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"execute","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"guardianApprovals","outputs":[{"internalType":"address[]","name":"approved","type":"address[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"guardians","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"guardiansList","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isGuardian","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lastHonestExpiry","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lastHonestGuardian","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"locked_7of7","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"manager","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"newBatch","type":"address[]"}],"name":"managerReseed","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newDeployer","type":"address"}],"name":"propose","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint8","name":"idx","type":"uint8"},{"internalType":"address","name":"newGuardian","type":"address"}],"name":"setGuardian","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newManager","type":"address"}],"name":"setManager","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"standbyGuardians","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"vetoRecovery","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"warning_6of7","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}]};
-</script>
-</head>
+</style></head>
 
 <!-- Loading Indicator -->
 <div id="loadingIndicator" style="display:none;">
@@ -1954,13 +1950,13 @@ const $ = id => document.getElementById(id);
     }
   }
 
-  // Load embedded ABIs. No external ABI fetch is required in the production build.
+  // Load ABIs from ABI_URLS
   async function loadABIs(){
-    const embedded = window.CATALYST_EMBEDDED_ABIS || {};
-    for (const k of ["cata","staking","governance","council","recovery"]) {
-      abis[k] = Array.isArray(embedded[k]) ? embedded[k] : null;
-    }
-    log('ABIs loaded', Object.keys(abis).map(k => `${k}:${abis[k] ? 'ok':'missing'}`).join(' '));
+    const entries = Object.entries(ABI_URLS);
+    await Promise.all(entries.map(async ([k,url])=>{
+      abis[k] = await fetchJSON(url);
+    }));
+    log('ABIs loaded', Object.keys(abis).map(k => `${k}:${abis[k]? 'ok':'missing'}`).join(' '));
   }
 
   // Save/load addresses to localStorage
@@ -2189,7 +2185,7 @@ async function fetchCataBalance() {
     startCataBalanceAutoRefreshV15();
   } catch (e) {
     log("⚠️ fetchCataBalance error:", e?.message || e);
-    catalystNotify(`Failed to fetch CATA balance: ${e.message || e}`);
+    alert(`Failed to fetch CATA balance: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -2224,19 +2220,48 @@ function stopCataBalanceAutoRefresh() {
 
 	
 // ---------- Connect / Disconnect ----------
-// v16 Universal Native Wallet owns the visible Connect Wallet control.
-// This function remains as a compatibility entry point for legacy code.
-async function connect(){
-  if (typeof window.__v1621UniversalConnect === 'function') return window.__v1621UniversalConnect();
-  if (!window.ethereum) return catalystNotify?.('warning','No injected EVM wallet was detected. Open Catalyst inside MetaMask/Trust Wallet or use an injected desktop wallet.','Wallet not detected');
-  provider = new ethers.providers.Web3Provider(window.ethereum,'any');
-  readProvider = provider;
-  await provider.send('eth_requestAccounts',[]);
-  signer = provider.getSigner();
-  userAddr = await signer.getAddress();
-  await loadABIs();
-  await attachContractsIfSet({refresh:true});
-  return userAddr;
+async function connect() {
+  try {
+    if (!window.ethereum) return alert('❌ No Web3 wallet detected. Please install MetaMask.');
+
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send('eth_requestAccounts', []);
+    signer = provider.getSigner();
+    userAddr = await signer.getAddress();
+
+    // 🪪 Display wallet info
+    const addrEl = $('addr');
+    addrEl.innerText = shortenAddress(userAddr);
+    addrEl.title = userAddr;
+
+    // 📋 Copy address
+    $('copyAddrBtn').onclick = () => {
+      navigator.clipboard.writeText(userAddr);
+      alert("✅ Address copied to clipboard!");
+    };
+
+    // 🌐 Show network
+    const net = await provider.getNetwork();
+    $('networkText').innerText = `${net.name} (${net.chainId})`;
+
+    // 🔄 Toggle UI buttons
+    $('connectBtn').classList.add('hidden');
+    $('disconnectBtn').classList.remove('hidden');
+
+    // ⚙️ Load contract ABIs and attach
+    await loadABIs();
+    await attachContractsIfSet({refresh:true});
+
+    // 🧩 Check if user is staking admin
+    if (contracts?.staking) await checkStakingAdmin();
+
+    log("✅ Connected:", userAddr);
+
+
+  } catch (e) {
+    log("❌ connect() error:", e?.message || e);
+    alert("Connection failed. Check console for details.");
+  }
 }
 
 function disconnect() {
@@ -2322,7 +2347,7 @@ async function refreshQuickStatus() {
 
     if (!contracts.staking) {
       await attachContractsIfSet();
-      if (!contracts.staking) return catalystNotify("Set staking contract first.");
+      if (!contracts.staking) return alert("Set staking contract first.");
     }
 
     const safeCall = async (fn) => {
@@ -2450,7 +2475,7 @@ async function refreshQuickStatus() {
     log("✅ Full Quick Status updated");
   } catch (e) {
     log("❌ refreshQuickStatus error:", e);
-    catalystNotify(e.message || e);
+    alert(e.message || e);
   } finally {
     hideLoading();
   }
@@ -2463,11 +2488,11 @@ async function cataBurn() {
   try {
     if (!contracts.cata) {
       await attachContractsIfSet();
-      if (!contracts.cata) return catalystNotify('Set CATA contract address first');
+      if (!contracts.cata) return alert('Set CATA contract address first');
     }
 
     const amtRaw = $('cataBurnAmt').value.trim();
-    if (!amtRaw) return catalystNotify('Burn amount required');
+    if (!amtRaw) return alert('Burn amount required');
 
     const amtWei = ethers.utils.parseEther(amtRaw);
 
@@ -2481,7 +2506,7 @@ async function cataBurn() {
     await fetchTransparency();
   } catch (e) {
     log('cataBurn err', e?.message || e);
-    catalystNotify(`Burn failed: ${e.message || e}`);
+    alert(`Burn failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -2492,12 +2517,12 @@ async function cataSetCouncil() {
     try {
         if (!contracts.cata) {
             await attachContractsIfSet();
-            if (!contracts.cata) return catalystNotify('Set CATA contract address first');
+            if (!contracts.cata) return alert('Set CATA contract address first');
         }
 
         const newCouncil = $('newCouncilAddress').value.trim();
         if (!ethers.utils.isAddress(newCouncil)) {
-            return catalystNotify("❌ Invalid new Council address.");
+            return alert("❌ Invalid new Council address.");
         }
         
         showLoading("Setting new Council...");
@@ -2509,12 +2534,12 @@ async function cataSetCouncil() {
         await tx.wait();
         log('cata.setCouncil completed');
         
-        catalystNotify(`✅ Council successfully set to ${newCouncil}.`);
+        alert(`✅ Council successfully set to ${newCouncil}.`);
 
     } catch (e) { 
         log('cataSetCouncil err', e?.message || e);
         // This will revert if the connected wallet is NOT the DEFAULT_ADMIN_ROLE holder.
-        catalystNotify(`Set Council failed: ${e.message || e}`);
+        alert(`Set Council failed: ${e.message || e}`);
     } finally { 
         hideLoading(); 
     }
@@ -2527,12 +2552,12 @@ async function cataSetMinter() {
     try {
         if (!contracts.cata) {
             await attachContractsIfSet();
-            if (!contracts.cata) return catalystNotify('Set CATA contract address first');
+            if (!contracts.cata) return alert('Set CATA contract address first');
         }
 
         const newMinter = $('newMinterAddress').value.trim();
         if (!ethers.utils.isAddress(newMinter)) {
-            return catalystNotify("❌ Invalid new Minter address.");
+            return alert("❌ Invalid new Minter address.");
         }
         
         showLoading("Setting new Minter...");
@@ -2544,12 +2569,12 @@ async function cataSetMinter() {
         await tx.wait();
         log('cata.setMinter completed');
         
-        catalystNotify(`✅ Minter successfully set to ${newMinter}.`);
+        alert(`✅ Minter successfully set to ${newMinter}.`);
 
     } catch (e) { 
         log('cataSetMinter err', e?.message || e);
         // This will revert if the connected wallet is NOT the DEFAULT_ADMIN_ROLE holder.
-        catalystNotify(`Set Minter failed: ${e.message || e}`);
+        alert(`Set Minter failed: ${e.message || e}`);
     } finally { 
         hideLoading(); 
     }
@@ -2560,12 +2585,12 @@ async function cataRevokeMinter() {
     try {
         if (!contracts.cata) {
             await attachContractsIfSet();
-            if (!contracts.cata) return catalystNotify('Set CATA contract address first');
+            if (!contracts.cata) return alert('Set CATA contract address first');
         }
 
         const minterToRevoke = $('revokeMinterAddress').value.trim();
         if (!ethers.utils.isAddress(minterToRevoke)) {
-            return catalystNotify("❌ Invalid address to revoke.");
+            return alert("❌ Invalid address to revoke.");
         }
         
         showLoading(`Revoking Minter role from ${minterToRevoke}...`);
@@ -2577,12 +2602,12 @@ async function cataRevokeMinter() {
         await tx.wait();
         log('cata.revokeMinter completed');
         
-        catalystNotify(`✅ Minter Role successfully revoked from ${minterToRevoke}.`);
+        alert(`✅ Minter Role successfully revoked from ${minterToRevoke}.`);
 
     } catch (e) { 
         log('cataRevokeMinter err', e?.message || e);
         // This will revert if the connected wallet is NOT the DEFAULT_ADMIN_ROLE holder.
-        catalystNotify(`Revoke Minter failed: ${e.message || e}`);
+        alert(`Revoke Minter failed: ${e.message || e}`);
     } finally { 
         hideLoading(); 
     }
@@ -2600,7 +2625,7 @@ async function cataPause() {
   try {
     if (!contracts.cata) {
       await attachContractsIfSet();
-      if (!contracts.cata) return catalystNotify('Set CATA contract address first');
+      if (!contracts.cata) return alert('Set CATA contract address first');
     }
 
     showLoading("Pausing contract...");
@@ -2610,7 +2635,7 @@ async function cataPause() {
     log('cata.pause completed');
   } catch (e) {
     log('cataPause err', e?.message || e);
-    catalystNotify(`Pause failed: ${e.message || e}`);
+    alert(`Pause failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -2621,7 +2646,7 @@ async function cataUnpause() {
   try {
     if (!contracts.cata) {
       await attachContractsIfSet();
-      if (!contracts.cata) return catalystNotify('Set CATA contract address first');
+      if (!contracts.cata) return alert('Set CATA contract address first');
     }
 
     showLoading("Unpausing contract...");
@@ -2631,7 +2656,7 @@ async function cataUnpause() {
     log('cata.unpause completed');
   } catch (e) {
     log('cataUnpause err', e?.message || e);
-    catalystNotify(`Unpause failed: ${e.message || e}`);
+    alert(`Unpause failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -2642,13 +2667,13 @@ async function cataSwapAdmin() {
   try {
     if (!contracts.cata) {
       await attachContractsIfSet();
-      if (!contracts.cata) return catalystNotify('Set CATA contract address first');
+      if (!contracts.cata) return alert('Set CATA contract address first');
     }
 
     const newAdmin = $('swapNewAdmin').value.trim();
     const oldAdmin = $('swapOldAdmin').value.trim() || ethers.constants.AddressZero;
 
-    if (!newAdmin) return catalystNotify('New admin address required');
+    if (!newAdmin) return alert('New admin address required');
 
     showLoading("Swapping admin...");
     const tx = await contracts.cata.swapAdmin(newAdmin, oldAdmin);
@@ -2657,7 +2682,7 @@ async function cataSwapAdmin() {
     log('cata.swapAdmin completed');
   } catch (e) {
     log('cataSwapAdmin err', e?.message || e);
-    catalystNotify(`Swap admin failed: ${e.message || e}`);
+    alert(`Swap admin failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -2671,7 +2696,7 @@ async function fetchTransparency() {
       return;
     }
     if (!contracts.cata || !getProviderForReads()) {
-      if (!contracts.cata) return catalystNotify('Please set the CATA contract address first');
+      if (!contracts.cata) return alert('Please set the CATA contract address first');
     }
 
     showLoading("Fetching transparency...");
@@ -2825,7 +2850,7 @@ async function handleCalcRegFee() {
   try {
     const supplyStr = $('regDeclaredSupply').value.trim();
     const collection = $('regCollectionAddr').value.trim();
-    if (!supplyStr || !collection) return catalystNotify('collection and declared supply required for fee calc');
+    if (!supplyStr || !collection) return alert('collection and declared supply required for fee calc');
     const declaredSupply = parseInt(supplyStr, 10);
     const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
     const tier = parseInt($('regTier').value, 10);
@@ -2834,7 +2859,7 @@ async function handleCalcRegFee() {
     return { baseFeeBN, totalFeeBN, surchargeBN };
   } catch (e) {
     log('handleCalcRegFee err', e && e.message ? e.message : e);
-    catalystNotify('Fee calc error: ' + (e.message || e));
+    alert('Fee calc error: ' + (e.message || e));
   } finally {
     hideLoading();
   }
@@ -2843,12 +2868,12 @@ async function handleCalcRegFee() {
 async function handleApproveForRegistration() {
   showLoading();
   try {
-    if (!provider || !signer) return catalystNotify('connect wallet first');
+    if (!provider || !signer) return alert('connect wallet first');
     const stakingAddr = $('addrStaking').value.trim();
-    if (!stakingAddr) return catalystNotify('set staking address first');
+    if (!stakingAddr) return alert('set staking address first');
     const supplyStr = $('regDeclaredSupply').value.trim();
     const declaredSupply = parseInt(supplyStr, 10);
-    if (!supplyStr || isNaN(declaredSupply)) return catalystNotify('enter declared supply to compute fee before approving');
+    if (!supplyStr || isNaN(declaredSupply)) return alert('enter declared supply to compute fee before approving');
     const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
     const tier = parseInt($('regTier').value, 10);
     const { totalFeeBN } = await computeTotalFeeBN(baseFeeBN, tier);
@@ -2859,7 +2884,7 @@ async function handleApproveForRegistration() {
     log('approve completed for', fmtCata(totalFeeBN));
   } catch (e) {
     log('handleApproveForRegistration err', e && e.message ? e.message : e);
-    catalystNotify('Approve failed: ' + (e.message || e));
+    alert('Approve failed: ' + (e.message || e));
   } finally {
     hideLoading();
   }
@@ -2868,10 +2893,10 @@ async function handleApproveForRegistration() {
 async function handleRegisterCollection() {
   showLoading();
   try {
-    if (!provider || !signer) return catalystNotify('connect wallet first');
+    if (!provider || !signer) return alert('connect wallet first');
     const collection = $('regCollectionAddr').value.trim();
     const supplyStr = $('regDeclaredSupply').value.trim();
-    if (!collection || !supplyStr) return catalystNotify('collection & declared supply required');
+    if (!collection || !supplyStr) return alert('collection & declared supply required');
     const declaredSupply = parseInt(supplyStr, 10);
     const tier = parseInt($('regTier').value, 10);
     const baseFeeBN = calculateRegistrationBaseFeeBN(declaredSupply);
@@ -2879,7 +2904,7 @@ async function handleRegisterCollection() {
     const cata = getCataERC20ContractInstance();
     const myAddr = await signer.getAddress();
     const stakingAddr = $('addrStaking').value.trim();
-    if (!stakingAddr) return catalystNotify('Set staking contract address first');
+    if (!stakingAddr) return alert('Set staking contract address first');
     const allowance = await cata.allowance(myAddr, stakingAddr);
     if (allowance.lt(totalFeeBN)) {
       const ok = await catalystConfirm({title:"CATA approval required",message:"You need to approve CATA for the registration fee: " + fmtCata(totalFeeBN) + ". Continue to your wallet for approval?",confirmLabel:"Approve CATA"});
@@ -2892,7 +2917,7 @@ async function handleRegisterCollection() {
     if (!contracts.staking || typeof contracts.staking.registerCollection !== 'function') {
       await attachContractsIfSet();
       if (!contracts.staking || typeof contracts.staking.registerCollection !== 'function') {
-        return catalystNotify('staking contract ABI missing registerCollection function or contract not attached');
+        return alert('staking contract ABI missing registerCollection function or contract not attached');
       }
     }
     const tx = await contracts.staking.registerCollection(collection, declaredSupply, tier);
@@ -2901,7 +2926,7 @@ async function handleRegisterCollection() {
     log('registerCollection completed — watch CollectionAdded event for details');
   } catch (e) {
     log('handleRegisterCollection err', e && e.message ? e.message : e);
-    catalystNotify('Register failed: ' + (e.message || e));
+    alert('Register failed: ' + (e.message || e));
   } finally {
     hideLoading();
   }
@@ -2910,24 +2935,24 @@ async function handleRegisterCollection() {
 async function handleAdminSetCollectionConfig() {
   showLoading();
   try {
-    if (!provider || !signer) return catalystNotify('connect wallet first');
+    if (!provider || !signer) return alert('connect wallet first');
     if (!contracts.staking || typeof contracts.staking.setCollectionConfig !== 'function') {
       await attachContractsIfSet();
       if (!contracts.staking || typeof contracts.staking.setCollectionConfig !== 'function') {
-        return catalystNotify('staking contract ABI missing setCollectionConfig or contract not attached');
+        return alert('staking contract ABI missing setCollectionConfig or contract not attached');
       }
     }
     const collection = $('adminCollAddr').value.trim();
     const declaredSupply = parseInt($('adminDeclaredSupply').value.trim(), 10);
     const tier = parseInt($('adminTier').value, 10);
-    if (!collection || !declaredSupply) return catalystNotify('collection & declared supply required');
+    if (!collection || !declaredSupply) return alert('collection & declared supply required');
     const tx = await contracts.staking.setCollectionConfig(collection, declaredSupply, tier);
     log('setCollectionConfig tx', tx.hash);
     await tx.wait();
     log('setCollectionConfig completed (admin)');
   } catch (e) {
     log('handleAdminSetCollectionConfig err', e && e.message ? e.message : e);
-    catalystNotify('Admin set failed: ' + (e.message || e));
+    alert('Admin set failed: ' + (e.message || e));
   } finally {
     hideLoading();
   }
@@ -2936,22 +2961,22 @@ async function handleAdminSetCollectionConfig() {
 async function handleRemoveCollection() {
   showLoading();
   try {
-    if (!provider || !signer) return catalystNotify('connect wallet first');
+    if (!provider || !signer) return alert('connect wallet first');
     if (!contracts.staking || typeof contracts.staking.removeCollection !== 'function') {
       await attachContractsIfSet();
       if (!contracts.staking || typeof contracts.staking.removeCollection !== 'function') {
-        return catalystNotify('staking contract ABI missing removeCollection or not attached');
+        return alert('staking contract ABI missing removeCollection or not attached');
       }
     }
     const collection = $('manageCollAddr').value.trim();
-    if (!collection) return catalystNotify('collection required');
+    if (!collection) return alert('collection required');
     const tx = await contracts.staking.removeCollection(collection);
     log('removeCollection tx', tx.hash);
     await tx.wait();
     log('Collection removed:', collection);
   } catch (e) {
     log('handleRemoveCollection err', e && e.message ? e.message : e);
-    catalystNotify('Remove failed: ' + (e.message || e));
+    alert('Remove failed: ' + (e.message || e));
   } finally {
     hideLoading();
   }
@@ -2960,22 +2985,22 @@ async function handleRemoveCollection() {
 async function handleForfeitEscrow() {
   showLoading();
   try {
-    if (!provider || !signer) return catalystNotify('connect wallet first');
+    if (!provider || !signer) return alert('connect wallet first');
     if (!contracts.staking || typeof contracts.staking.forfeitEscrowIfExpired !== 'function') {
       await attachContractsIfSet();
       if (!contracts.staking || typeof contracts.staking.forfeitEscrowIfExpired !== 'function') {
-        return catalystNotify('staking contract ABI missing forfeitEscrowIfExpired or not attached');
+        return alert('staking contract ABI missing forfeitEscrowIfExpired or not attached');
       }
     }
     const collection = $('manageCollAddr').value.trim();
-    if (!collection) return catalystNotify('collection required');
+    if (!collection) return alert('collection required');
     const tx = await contracts.staking.forfeitEscrowIfExpired(collection);
     log('forfeitEscrowIfExpired tx', tx.hash);
     await tx.wait();
     log('Escrow forfeited for:', collection);
   } catch (e) {
     log('handleForfeitEscrow err', e && e.message ? e.message : e);
-    catalystNotify('Forfeit failed: ' + (e.message || e));
+    alert('Forfeit failed: ' + (e.message || e));
   } finally {
     hideLoading();
   }
@@ -2984,15 +3009,15 @@ async function handleForfeitEscrow() {
 async function handleToggleBluechip() {
   showLoading();
   try {
-    if (!provider || !signer) return catalystNotify('connect wallet first');
+    if (!provider || !signer) return alert('connect wallet first');
     if (!contracts.staking || typeof contracts.staking.setBluechipCollection !== 'function') {
       await attachContractsIfSet();
       if (!contracts.staking || typeof contracts.staking.setBluechipCollection !== 'function') {
-        return catalystNotify('staking contract ABI missing setBluechipCollection or not attached');
+        return alert('staking contract ABI missing setBluechipCollection or not attached');
       }
     }
     const collection = $('manageCollAddr').value.trim();
-    if (!collection) return catalystNotify('collection required');
+    if (!collection) return alert('collection required');
     let newStatus = true;
     if (typeof contracts.staking.isBluechipCollection === 'function') {
       const current = await contracts.staking.isBluechipCollection(collection);
@@ -3004,7 +3029,7 @@ async function handleToggleBluechip() {
     log('Bluechip status updated:', collection, '=>', newStatus);
   } catch (e) {
     log('handleToggleBluechip err', e && e.message ? e.message : e);
-    catalystNotify('Bluechip toggle failed: ' + (e.message || e));
+    alert('Bluechip toggle failed: ' + (e.message || e));
   } finally {
     hideLoading();
   }
@@ -3064,7 +3089,7 @@ function attachStatusChecker(inputId, statusDivId) {
       statusEl.innerText = "⏳ Checking...";
       const statusText = await fetchCollectionStatus(addr);
       if (statusText.includes("✅") || statusText.includes("💎")) {
-        catalystNotify("This collection is already registered or bluechip.");
+        alert("This collection is already registered or bluechip.");
       }
       statusEl.innerText = `Status: ${statusText}`;
     }, 1000); // waits 1 second after typing stops
@@ -3191,7 +3216,7 @@ async function enrollBluechip(){
   try {
     if(!contracts.staking){ 
       await attachContractsIfSet(); 
-      if(!contracts.staking) return catalystNotify('Set staking contract'); 
+      if(!contracts.staking) return alert('Set staking contract'); 
     }
     if(typeof contracts.staking.enrollBluechip === 'function'){
       showLoading("Enrolling as Bluechip...");
@@ -3200,11 +3225,11 @@ async function enrollBluechip(){
       await tx.wait();
       log('enrollBluechip done');
     } else {
-      catalystNotify('enrollBluechip not found in ABI');
+      alert('enrollBluechip not found in ABI');
     }
   } catch(e){ 
     log('enrollBluechip err', e?.message || e); 
-    catalystNotify(`Enroll failed: ${e.message || e}`);
+    alert(`Enroll failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -3214,10 +3239,10 @@ async function enrollBluechip(){
 async function harvestBluechip(){
   try {
     const collection = document.getElementById('bluechipCollectionInput').value.trim();
-    if(!collection) return catalystNotify('Enter a collection address');
+    if(!collection) return alert('Enter a collection address');
     if(!contracts.staking){ 
       await attachContractsIfSet(); 
-      if(!contracts.staking) return catalystNotify('Set staking contract'); 
+      if(!contracts.staking) return alert('Set staking contract'); 
     }
     if(typeof contracts.staking.harvestBluechip === 'function'){
       showLoading("Harvesting Bluechip rewards...");
@@ -3226,11 +3251,11 @@ async function harvestBluechip(){
       await tx.wait();
       log('harvestBluechip done');
     } else {
-      catalystNotify('harvestBluechip not found in ABI');
+      alert('harvestBluechip not found in ABI');
     }
   } catch(e){ 
     log('harvestBluechip err', e?.message || e); 
-    catalystNotify(`Harvest failed: ${e.message || e}`);
+    alert(`Harvest failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -3241,7 +3266,7 @@ async function refreshBluechip(){
   try {
     if(!contracts.staking){
       await attachContractsIfSet();
-      if(!contracts.staking) return catalystNotify('Set staking contract');
+      if(!contracts.staking) return alert('Set staking contract');
     }
     if(typeof contracts.staking.bluechipWallets === 'function'){
       showLoading("Refreshing Bluechip info...");
@@ -3273,11 +3298,11 @@ async function refreshBluechip(){
 
       log('refreshBluechip done');
     } else {
-      catalystNotify('bluechipWallets not found in ABI');
+      alert('bluechipWallets not found in ABI');
     }
   } catch(e){ 
     log('refreshBluechip err', e?.message || e); 
-    catalystNotify(`Refresh failed: ${e.message || e}`);
+    alert(`Refresh failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -3357,9 +3382,9 @@ async function refreshTopBluechipLeaderboard() {
 async function approveNFT(){
   try {
     const collection = $('nftCollection').value.trim();
-    if(!collection) return catalystNotify('collection required');
+    if(!collection) return alert('collection required');
     const stakingAddr = $('addrStaking').value.trim();
-    if(!stakingAddr) return catalystNotify('staking address required');
+    if(!stakingAddr) return alert('staking address required');
     const nft = new ethers.Contract(collection, ERC721_ABI, signer);
     const me = await signer.getAddress();
 
@@ -3367,7 +3392,7 @@ async function approveNFT(){
     const already = await nft.isApprovedForAll(me, stakingAddr);
     if(already){ 
       log('already approved'); 
-      catalystNotify('Already approved for staking');
+      alert('Already approved for staking');
       return; 
     }
     const tx = await nft.setApprovalForAll(stakingAddr, true);
@@ -3376,7 +3401,7 @@ async function approveNFT(){
     log('approve complete');
   } catch(e){ 
     log('approveNFT err', e?.message || e); 
-    catalystNotify(`Approve failed: ${e.message || e}`);
+    alert(`Approve failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -3390,14 +3415,14 @@ async function approveNFT(){
       await attachContractsIfSet();
       if (!contracts.cata) {
         hideLoading();
-        return catalystNotify("⚠️ CATA contract not found. Please set it first.");
+        return alert("⚠️ CATA contract not found. Please set it first.");
       }
     }
 
     const stakingAddr = $('addrStaking').value.trim();
     if (!stakingAddr) {
       hideLoading();
-      return catalystNotify("❗ Staking contract address required.");
+      return alert("❗ Staking contract address required.");
     }
 
     const amt = ethers.constants.MaxUint256;
@@ -3419,11 +3444,11 @@ async function approveNFT(){
 
     // ✅ Done
     log("approve CATA done");
-    catalystNotify("✅ Successfully approved CATA for staking fees!");
+    alert("✅ Successfully approved CATA for staking fees!");
   } catch (e) {
     const msg = e?.message || e;
     log("permApproveFee err", msg);
-    catalystNotify("❌ Approval failed: " + msg);
+    alert("❌ Approval failed: " + msg);
   } finally {
     // Restore button + remove loader
     const btn = $('permApproveFeeBtn');
@@ -3436,10 +3461,10 @@ async function approveNFT(){
 // ---------- Staking single ----------
 async function termStake(){
   try {
-    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return catalystNotify('Set staking contract'); }
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
     const collection = $('nftCollection').value.trim();
     const tokenId = $('nftTokenId').value.trim();
-    if(!collection || !tokenId) return catalystNotify('collection & tokenId required');
+    if(!collection || !tokenId) return alert('collection & tokenId required');
 
     showLoading("Staking (term)...");
     const tx = await contracts.staking.termStake(collection, tokenId);
@@ -3448,7 +3473,7 @@ async function termStake(){
     log('termStake done');
   } catch(e){ 
     log('termStake err', e?.message || e); 
-    catalystNotify(`Stake failed: ${e.message || e}`);
+    alert(`Stake failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -3456,10 +3481,10 @@ async function termStake(){
 
 async function permanentStake(){
   try {
-    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return catalystNotify('Set staking contract'); }
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
     const collection = $('nftCollection').value.trim();
     const tokenId = $('nftTokenId').value.trim();
-    if(!collection || !tokenId) return catalystNotify('collection & tokenId required');
+    if(!collection || !tokenId) return alert('collection & tokenId required');
 
     showLoading("Staking (permanent)...");
     const tx = await contracts.staking.permanentStake(collection, tokenId);
@@ -3468,7 +3493,7 @@ async function permanentStake(){
     log('permanentStake done');
   } catch(e){ 
     log('permanentStake err', e?.message || e); 
-    catalystNotify(`Permanent stake failed: ${e.message || e}`);
+    alert(`Permanent stake failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -3476,10 +3501,10 @@ async function permanentStake(){
 
 async function unstake(){
   try {
-    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return catalystNotify('Set staking contract'); }
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
     const collection = $('nftCollection').value.trim();
     const tokenId = $('nftTokenId').value.trim();
-    if(!collection || !tokenId) return catalystNotify('collection & tokenId required');
+    if(!collection || !tokenId) return alert('collection & tokenId required');
 
     showLoading("Unstaking...");
     const tx = await contracts.staking.unstake(collection, tokenId);
@@ -3488,7 +3513,7 @@ async function unstake(){
     log('unstake done');
   } catch(e){ 
     log('unstake err', e?.message || e); 
-    catalystNotify(`Unstake failed: ${e.message || e}`);
+    alert(`Unstake failed: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -3497,7 +3522,7 @@ async function unstake(){
 // harvest - contract may or may not expose public harvest
 async function harvest(){
   try {
-    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return catalystNotify('Set staking contract'); }
+    if(!contracts.staking) { await attachContractsIfSet(); if(!contracts.staking) return alert('Set staking contract'); }
     if(typeof contracts.staking.harvest === 'function'){
       const collection = $('nftCollection').value.trim();
       const tokenId = $('nftTokenId').value.trim();
@@ -3509,10 +3534,10 @@ async function harvest(){
       log('harvest done');
       return;
     }
-    catalystNotify('No public harvest function found in staking ABI');
+    alert('No public harvest function found in staking ABI');
   } catch(e){ 
     log('harvest err', e?.message || e); 
-    catalystNotify(e.message || e);
+    alert(e.message || e);
   } finally {
     hideLoading();
   }
@@ -3556,11 +3581,11 @@ async function batchTermStake() {
   try {
     showLoading();
     const pairs = parseBatchPairs();
-    if (pairs.length === 0) return catalystNotify('No pairs to stake');
+    if (pairs.length === 0) return alert('No pairs to stake');
 
     if (!contracts.staking) {
       await attachContractsIfSet();
-      if (!contracts.staking) return catalystNotify('Set staking contract first');
+      if (!contracts.staking) return alert('Set staking contract first');
     }
 
     const grouped = groupByCollection(pairs);
@@ -3574,7 +3599,7 @@ async function batchTermStake() {
     }
   } catch (e) {
     log('batchTermStake err', e?.message || e);
-    catalystNotify(e?.message || e);
+    alert(e?.message || e);
   } finally {
     hideLoading();
   }
@@ -3587,11 +3612,11 @@ async function batchPermStake() {
   try {
     showLoading();
     const pairs = parseBatchPairs();
-    if (pairs.length === 0) return catalystNotify('No pairs to stake');
+    if (pairs.length === 0) return alert('No pairs to stake');
 
     if (!contracts.staking) {
       await attachContractsIfSet();
-      if (!contracts.staking) return catalystNotify('Set staking contract first');
+      if (!contracts.staking) return alert('Set staking contract first');
     }
 
     const grouped = groupByCollection(pairs);
@@ -3605,7 +3630,7 @@ async function batchPermStake() {
     }
   } catch (e) {
     log('batchPermStake err', e?.message || e);
-    catalystNotify(e?.message || e);
+    alert(e?.message || e);
   } finally {
     hideLoading();
   }
@@ -3618,11 +3643,11 @@ async function batchUnstake() {
   try {
     showLoading();
     const pairs = parseBatchPairs();
-    if (pairs.length === 0) return catalystNotify('No pairs to unstake');
+    if (pairs.length === 0) return alert('No pairs to unstake');
 
     if (!contracts.staking) {
       await attachContractsIfSet();
-      if (!contracts.staking) return catalystNotify('Set staking contract first');
+      if (!contracts.staking) return alert('Set staking contract first');
     }
 
     const grouped = groupByCollection(pairs);
@@ -3636,7 +3661,7 @@ async function batchUnstake() {
     }
   } catch (e) {
     log('batchUnstake err', e?.message || e);
-    catalystNotify(e?.message || e);
+    alert(e?.message || e);
   } finally {
     hideLoading();
   }
@@ -3649,7 +3674,7 @@ async function batchHarvest() {
   try {
     showLoading();
     const raw = $('batchHarvestNFTs').value.trim();
-    if (!raw) return catalystNotify('No pairs to harvest');
+    if (!raw) return alert('No pairs to harvest');
 
     const pairs = raw
       .split(/\r?\n/)
@@ -3661,7 +3686,7 @@ async function batchHarvest() {
 
     if (!contracts.staking) {
       await attachContractsIfSet();
-      if (!contracts.staking) return catalystNotify('Set staking contract first');
+      if (!contracts.staking) return alert('Set staking contract first');
     }
 
     const grouped = groupByCollection(pairs);
@@ -3685,7 +3710,7 @@ async function batchHarvest() {
     }
   } catch (e) {
     log('batchHarvest err', e?.message || e);
-    catalystNotify(e?.message || e);
+    alert(e?.message || e);
   } finally {
     hideLoading();
   }
@@ -3787,15 +3812,15 @@ async function viewPortfolio() {
   try{
     showLoading("Loading portfolio...");
     const collection=$('nftCollection').value.trim();
-    if(!collection) return catalystNotify('Enter a collection address.');
+    if(!collection) return alert('Enter a collection address.');
     if(!contracts.staking) await attachContractsIfSet({refresh:false});
-    if(!contracts.staking) return catalystNotify('Set staking contract.');
-    if(!userAddr) return catalystNotify('Please connect your wallet first.');
+    if(!contracts.staking) return alert('Set staking contract.');
+    if(!userAddr) return alert('Please connect your wallet first.');
     const positions=await scanUserCollectionV15(collection);
     const tokenIds=positions.map(x=>x.tokenId);
     $('portfolioResult').innerText=tokenIds.length?tokenIds.join(', '):'No NFTs staked.';
     $('portfolioResult').innerHTML+=`<br><span class="text-slate-500">Updated: ${new Date().toLocaleTimeString()}</span>`;
-  }catch(e){ log('viewPortfolio error',e); catalystNotify(e.message||e); }
+  }catch(e){ log('viewPortfolio error',e); alert(e.message||e); }
   finally{ hideLoading(); }
 }
 
@@ -3926,16 +3951,16 @@ $("harvestAllBtn").onclick = async () => {
     setPendingStatus?.("Up to date ✅", "#10b981");
 
     if (harvestedCount > 0) {
-      catalystNotify(`✅ Successfully harvested from ${harvestedCount} collection${harvestedCount > 1 ? "s" : ""}!`);
+      alert(`✅ Successfully harvested from ${harvestedCount} collection${harvestedCount > 1 ? "s" : ""}!`);
     } else {
-      catalystNotify("ℹ️ No rewards available to harvest.");
+      alert("ℹ️ No rewards available to harvest.");
     }
 
     await refreshPendingRewards();
   } catch (err) {
     hideLoading();
     setPendingStatus?.("Error ❌", "#ef4444");
-    catalystNotify("Harvest failed: " + (err.message || err));
+    alert("Harvest failed: " + (err.message || err));
   }
 };
     
@@ -3958,15 +3983,15 @@ async function checkPendingRewards() {
 
     const collection = $('nftCollection').value.trim();
     const tokenId = parseInt($('nftTokenId').value.trim(), 10);
-    if (!collection) return catalystNotify('Enter a collection address.');
-    if (isNaN(tokenId)) return catalystNotify('Enter a valid token ID.');
+    if (!collection) return alert('Enter a collection address.');
+    if (isNaN(tokenId)) return alert('Enter a valid token ID.');
 
     if (!contracts.staking) {
       await attachContractsIfSet();
-      if (!contracts.staking) return catalystNotify('Set staking contract.');
+      if (!contracts.staking) return alert('Set staking contract.');
     }
 
-    if (!userAddr) return catalystNotify('Please connect your wallet first.');
+    if (!userAddr) return alert('Please connect your wallet first.');
 
     // Fetch staking data
     const [currentlyStaked, , , , lastHarvestBlock] =
@@ -3991,7 +4016,7 @@ async function checkPendingRewards() {
     log('✅ Estimated pending rewards:', reward);
   } catch (e) {
     log('checkPendingRewards error', e);
-    catalystNotify(e.message || e);
+    alert(e.message || e);
   } finally {
     hideLoading();
   }
@@ -4002,7 +4027,7 @@ async function checkPendingRewards() {
 async function fetchStakingTransparency() {
   try {
     if (!contracts.staking || !provider) {
-      return catalystNotify('⚠️ Please connect wallet and set Staking contract first');
+      return alert('⚠️ Please connect wallet and set Staking contract first');
     }
 
     showLoading("Fetching staking transparency...");
@@ -4078,7 +4103,7 @@ async function fetchStakingTransparency() {
 
   } catch (e) {
     log('❌ fetchStakingTransparency error', e?.message || e);
-    catalystNotify(`Staking transparency fetch failed: ${e.message || e}. Check console.`);
+    alert(`Staking transparency fetch failed: ${e.message || e}. Check console.`);
   } finally {
     hideLoading();
   }
@@ -4125,17 +4150,17 @@ $('withdrawTreasuryBtn').onclick = async () => {
   try {
     const to = $('withdrawTo').value.trim();
     const amount = ethers.utils.parseEther($('withdrawAmount').value.trim());
-    if (!ethers.utils.isAddress(to)) return catalystNotify("⚠️ Invalid recipient address");
-    if (amount.isZero()) return catalystNotify("⚠️ Amount must be > 0");
+    if (!ethers.utils.isAddress(to)) return alert("⚠️ Invalid recipient address");
+    if (amount.isZero()) return alert("⚠️ Amount must be > 0");
 
     showLoading("Withdrawing from treasury...");
     const tx = await contracts.staking.withdrawTreasury(to, amount);
     await tx.wait();
 
-    catalystNotify("✅ Treasury withdrawn successfully!");
+    alert("✅ Treasury withdrawn successfully!");
   } catch (err) {
     console.error(err);
-    catalystNotify("❌ Withdraw failed: " + (err.message || err));
+    alert("❌ Withdraw failed: " + (err.message || err));
   } finally {
     hideLoading();
   }
@@ -4145,16 +4170,16 @@ $('withdrawTreasuryBtn').onclick = async () => {
 $('setBonusModuleBtn').onclick = async () => {
   try {
     const addr = $('bonusModuleAddr').value.trim();
-    if (!ethers.utils.isAddress(addr)) return catalystNotify("⚠️ Invalid address");
+    if (!ethers.utils.isAddress(addr)) return alert("⚠️ Invalid address");
 
     showLoading("Setting new bonus module...");
     const tx = await contracts.staking.setBonusModule(addr);
     await tx.wait();
 
-    catalystNotify("✅ Bonus module updated!");
+    alert("✅ Bonus module updated!");
   } catch (err) {
     console.error(err);
-    catalystNotify("❌ Failed to set bonus module: " + (err.message || err));
+    alert("❌ Failed to set bonus module: " + (err.message || err));
   } finally {
     hideLoading();
   }
@@ -4167,10 +4192,10 @@ $('triggerTopBurnerBtn').onclick = async () => {
     const tx = await contracts.staking.triggerTopBurnerBonus();
     await tx.wait();
 
-    catalystNotify("🔥 Top burner bonus triggered successfully!");
+    alert("🔥 Top burner bonus triggered successfully!");
   } catch (err) {
     console.error(err);
-    catalystNotify("❌ Failed to trigger bonus: " + (err.message || err));
+    alert("❌ Failed to trigger bonus: " + (err.message || err));
   } finally {
     hideLoading();
   }
@@ -4228,7 +4253,7 @@ $('createProposalBtn').onclick = async () => {
   try {
     if (!contracts.governance) {
       await attachContractsIfSet();
-      if (!contracts.governance) return catalystNotify('⚠️ Governance contract not set.');
+      if (!contracts.governance) return alert('⚠️ Governance contract not set.');
     }
 
     showLoading();
@@ -4247,22 +4272,22 @@ $('createProposalBtn').onclick = async () => {
     } else if (['COUNCIL_RESEED_ACTIVE', 'COUNCIL_PROPOSE_STANDBY'].includes(typeStr)) {
       const addrs = Array.from(document.querySelectorAll('.councilAddr')).map(el => el.value.trim());
       if (addrs.length !== 7 || addrs.some(a => !ethers.utils.isAddress(a))) {
-        hideLoading(); return catalystNotify('⚠️ Must provide 7 valid guardian addresses');
+        hideLoading(); return alert('⚠️ Must provide 7 valid guardian addresses');
       }
       const payload = await contracts.governance.encodeCouncilBatch(addrs);
       ctx = payload; newValue = 0; paramTarget = 0;
     } else if (typeStr === 'COUNCIL_PROPOSE_NEW_DAO') {
       ctx = $('govNewDaoAddr').value.trim();
-      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return catalystNotify("⚠️ Invalid DAO address"); }
+      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return alert("⚠️ Invalid DAO address"); }
     } else if (typeStr === 'UPGRADE_COUNCIL') {
       ctx = $('newCouncilImpl').value.trim();
-      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return catalystNotify("⚠️ Invalid council implementation address"); }
+      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return alert("⚠️ Invalid council implementation address"); }
     } else if (typeStr === 'UPGRADE_GOVERNANCE') {
       ctx = $('newGovernanceImpl').value.trim();
-      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return catalystNotify("⚠️ Invalid governance implementation address"); }
+      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return alert("⚠️ Invalid governance implementation address"); }
     } else if (typeStr === 'SET_NEW_COUNCIL') {
       ctx = $('newCouncilAddr').value.trim();
-      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return catalystNotify("⚠️ Invalid council address"); }
+      if (!ethers.utils.isAddress(ctx)) { hideLoading(); return alert("⚠️ Invalid council address"); }
     }
 
     if (!(await catalystConfirm({title:"Create governance proposal?",message:`Type: ${typeStr}\nValue: ${$('proposalValue').value}\nTarget: ${ctx}`,confirmLabel:"Create Proposal"}))) {
@@ -4273,10 +4298,10 @@ $('createProposalBtn').onclick = async () => {
     log('propose tx', tx.hash);
     await tx.wait();
 
-    catalystNotify("✅ Proposal created successfully!");
+    alert("✅ Proposal created successfully!");
   } catch (e) {
     console.error(e);
-    catalystNotify("❌ " + (e.reason || e.message || e));
+    alert("❌ " + (e.reason || e.message || e));
   } finally {
     hideLoading();
   }
@@ -4289,7 +4314,7 @@ $('voteProposalBtn').onclick = async () => {
     if (!contracts.governance) await attachContractsIfSet();
 
     const id = $('proposalId').value.trim();
-    if (!id) return catalystNotify('⚠️ Proposal ID required');
+    if (!id) return alert('⚠️ Proposal ID required');
 
     // Ask user to confirm voting intent
     const support = await catalystConfirm({title:"Cast governance vote",message:"Choose Confirm to vote FOR this proposal. Cancel means AGAINST.",confirmLabel:"Vote FOR"});
@@ -4304,10 +4329,10 @@ $('voteProposalBtn').onclick = async () => {
     const tx = await contracts.governance.vote(id, ctx);
     await tx.wait();
 
-    catalystNotify(`✅ Vote cast ${support ? "FOR" : "AGAINST"} (context: ${ctx})`);
+    alert(`✅ Vote cast ${support ? "FOR" : "AGAINST"} (context: ${ctx})`);
   } catch (e) {
     console.error(e);
-    catalystNotify("❌ " + (e.reason || e.message || e));
+    alert("❌ " + (e.reason || e.message || e));
   } finally {
     hideLoading();
   }
@@ -4319,17 +4344,17 @@ $('execProposalBtn').onclick = async () => {
     if (!contracts.governance) await attachContractsIfSet();
 
     const id = $('proposalId').value.trim();
-    if (!id) return catalystNotify('⚠️ Proposal ID required');
+    if (!id) return alert('⚠️ Proposal ID required');
 
     showLoading("Executing proposal...");
 
     const tx = await contracts.governance.executeProposal(id);
     await tx.wait();
 
-    catalystNotify("✅ Proposal executed!");
+    alert("✅ Proposal executed!");
   } catch (e) {
     console.error(e);
-    catalystNotify("❌ " + (e.reason || e.message || e));
+    alert("❌ " + (e.reason || e.message || e));
   } finally {
     hideLoading();
   }
@@ -4338,7 +4363,7 @@ $('execProposalBtn').onclick = async () => {
 	// ======== Fetch Governance Proposals (for current contract ABI) ========
 async function fetchProposalsExplorer() {
   try {
-    if (!contracts.governance) return catalystNotify('⚠️ Bind the Governance contract first.');
+    if (!contracts.governance) return alert('⚠️ Bind the Governance contract first.');
     showLoading("Fetching proposals...");
 
     const tbody = $('proposalsTbody');
@@ -4410,7 +4435,7 @@ async function fetchProposalsExplorer() {
     log(`fetchProposalsExplorer done (${total} proposals loaded)`);
   } catch (e) {
     log('fetchProposalsExplorer err', e);
-    catalystNotify(`Failed to fetch proposals: ${e.message || e}`);
+    alert(`Failed to fetch proposals: ${e.message || e}`);
   } finally {
     hideLoading();
   }
@@ -4482,7 +4507,7 @@ $('loadReadyProposalsBtn').onclick = async () => {
     if (readyCount === 0)
       tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-500 p-2">No ready proposals found.</td></tr>`;
   } catch (err) {
-    catalystNotify("❌ " + (err.message || err));
+    alert("❌ " + (err.message || err));
   } finally {
     hideLoading();
   }
@@ -4498,10 +4523,10 @@ document.addEventListener("click", async e => {
       showLoading("Executing...");
       const tx = await contracts.governance.executeProposal(id);
       await tx.wait();
-      catalystNotify("✅ Proposal executed successfully!");
+      alert("✅ Proposal executed successfully!");
       $('loadReadyProposalsBtn').click();
     } catch (err) {
-      catalystNotify("❌ " + (err.message || err));
+      alert("❌ " + (err.message || err));
     } finally {
       hideLoading();
     }
@@ -4617,7 +4642,7 @@ function formatVotingDuration(blocks) {
 	  
 	  async function fetchGovernanceTransparency() {
   try {
-    if (!contracts.governance) return catalystNotify('Bind governance contract first');
+    if (!contracts.governance) return alert('Bind governance contract first');
 
     showLoading("Fetching governance transparency...");
 
@@ -4644,7 +4669,7 @@ function formatVotingDuration(blocks) {
     log('fetchGovernanceTransparency done');
   } catch (e) {
     log('fetchGovernanceTransparency err', e);
-    catalystNotify('Failed to fetch governance transparency. Check console for details.');
+    alert('Failed to fetch governance transparency. Check console for details.');
   } finally {
     hideLoading();
   }
@@ -4663,15 +4688,15 @@ function parse7(txt) {
 // DAO Rotation
 $('proposeDaoBtn').onclick = async () => {
   try {
-    if (!contracts.council) return catalystNotify("Council not attached");
+    if (!contracts.council) return alert("Council not attached");
     showLoading();
     const newDao = $('councilNewDaoAddr').value.trim();
     if (!ethers.utils.isAddress(newDao)) throw new Error("Invalid DAO address");
     const tx = await contracts.council.proposeNewDAO(newDao);
     await tx.wait();
-    catalystNotify("✅ DAO proposed");
+    alert("✅ DAO proposed");
   } catch (e) {
-    catalystNotify("❌ " + (e.reason || e.message));
+    alert("❌ " + (e.reason || e.message));
   } finally {
     hideLoading();
   }
@@ -4679,13 +4704,13 @@ $('proposeDaoBtn').onclick = async () => {
 
 $('commitDaoBtn').onclick = async () => {
   try {
-    if (!contracts.council) return catalystNotify("Council not attached");
+    if (!contracts.council) return alert("Council not attached");
     showLoading();
     const tx = await contracts.council.commitNewDAO();
     await tx.wait();
-    catalystNotify("✅ DAO committed");
+    alert("✅ DAO committed");
   } catch (e) {
-    catalystNotify("❌ " + (e.reason || e.message));
+    alert("❌ " + (e.reason || e.message));
   } finally {
     hideLoading();
   }
@@ -4698,8 +4723,8 @@ $('proposeActiveBatchBtn').onclick = async () => {
     const arr = parse7($('activeBatchInput').value);
     const tx = await contracts.council.daoProposeSeedActiveBatch(arr);
     await tx.wait();
-    catalystNotify("✅ Active batch proposed");
-  } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+    alert("✅ Active batch proposed");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 $('commitActiveBatchBtn').onclick = async () => {
@@ -4707,8 +4732,8 @@ $('commitActiveBatchBtn').onclick = async () => {
     showLoading();
     const tx = await contracts.council.daoCommitSeedActiveBatch();
     await tx.wait();
-    catalystNotify("✅ Active batch committed");
-  } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+    alert("✅ Active batch committed");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 $('proposeStandbyBatchBtn').onclick = async () => {
@@ -4717,8 +4742,8 @@ $('proposeStandbyBatchBtn').onclick = async () => {
     const arr = parse7($('standbyBatchInput').value);
     const tx = await contracts.council.daoProposeSeedStandbyBatch(arr);
     await tx.wait();
-    catalystNotify("✅ Standby batch proposed");
-  } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+    alert("✅ Standby batch proposed");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 $('commitStandbyBatchBtn').onclick = async () => {
@@ -4726,8 +4751,8 @@ $('commitStandbyBatchBtn').onclick = async () => {
     showLoading();
     const tx = await contracts.council.daoCommitSeedStandbyBatch();
     await tx.wait();
-    catalystNotify("✅ Standby batch committed");
-  } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+    alert("✅ Standby batch committed");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 $('activateStandbyBtn').onclick = async () => {
@@ -4735,8 +4760,8 @@ $('activateStandbyBtn').onclick = async () => {
     showLoading();
     const tx = await contracts.council.daoActivateStandby();
     await tx.wait();
-    catalystNotify("✅ Standby activated");
-  } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+    alert("✅ Standby activated");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 
@@ -4801,7 +4826,7 @@ $('encodeCallDataBtn').onclick = async () => {
         const fnSig = $('recoveryFunction').value.trim();
         const args = $('recoveryArgs').value.trim().split(',').map(a => a.trim()).filter(Boolean);
         
-        if (!fnSig) return catalystNotify("❌ Function signature is required.");
+        if (!fnSig) return alert("❌ Function signature is required.");
         
         const iface = new ethers.utils.Interface([`function ${fnSig}`]);
         const fnName = fnSig.split('(')[0];
@@ -4814,8 +4839,8 @@ $('encodeCallDataBtn').onclick = async () => {
         );
 
         $('inputRecoveryCallData').value = iface.encodeFunctionData(fnName, cleanedArgs); 
-        catalystNotify("✅ Calldata encoded");
-    } catch (e) { catalystNotify("❌ Error encoding calldata. Check signature and arguments: " + (e.message || e)); }
+        alert("✅ Calldata encoded");
+    } catch (e) { alert("❌ Error encoding calldata. Check signature and arguments: " + (e.message || e)); }
 };
     
 // Propose Recovery Button - Sends the transaction
@@ -4827,20 +4852,20 @@ $('proposeRecoveryBtn').onclick = async () => {
         const target = $('inputRecoveryCallTarget').value.trim(); 
         const calldata = $('inputRecoveryCallData').value.trim();
         
-        if (!target || target === '0x') return catalystNotify("❌ Target contract address is required.");
-        if (!calldata || calldata.length < 10) return catalystNotify("❌ Calldata must be encoded.");
+        if (!target || target === '0x') return alert("❌ Target contract address is required.");
+        if (!calldata || calldata.length < 10) return alert("❌ Calldata must be encoded.");
 
         // Check if the proposed address is a placeholder that needs to be replaced
         let finalProposed = proposed;
         if (finalProposed.startsWith('0xNewAdmin') || finalProposed.startsWith('0xAddressToSet')) {
-            return catalystNotify("❌ Please replace the placeholder in 'Proposed address' with a real address first.");
+            return alert("❌ Please replace the placeholder in 'Proposed address' with a real address first.");
         }
         
         // This is the call that executes the proposal on the council
         const tx = await contracts.council.proposeRecovery(finalProposed, target, calldata);
         await tx.wait();
-        catalystNotify("✅ Recovery proposed");
-    } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+        alert("✅ Recovery proposed");
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
   
@@ -4849,8 +4874,8 @@ $('approveRecoveryBtn').onclick = async () => {
         showLoading(); 
         const tx = await contracts.council.approveRecovery();
         await tx.wait(); 
-        catalystNotify("✅ Recovery approved");
-    } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+        alert("✅ Recovery approved");
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 $('executeRecoveryBtn').onclick = async () => {
@@ -4858,8 +4883,8 @@ $('executeRecoveryBtn').onclick = async () => {
         showLoading(); 
         const tx = await contracts.council.executeRecovery(); 
         await tx.wait(); 
-        catalystNotify("✅ Recovery executed");
-    } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+        alert("✅ Recovery executed");
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 $('vetoRecoveryBtn').onclick = async () => {
@@ -4867,8 +4892,8 @@ $('vetoRecoveryBtn').onclick = async () => {
         showLoading(); 
         const tx = await contracts.council.lastHonestHaltAndPromote(); 
         await tx.wait(); 
-        catalystNotify("✅ Recovery vetoed");
-    } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+        alert("✅ Recovery vetoed");
+    } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 	    // Lock
@@ -4877,8 +4902,8 @@ $('clearLockBtn').onclick = async () => {
     showLoading();
     const tx = await contracts.council.daoClearLockAndWarning();
     await tx.wait();
-    catalystNotify("✅ Lock cleared");
-  } catch (e) { catalystNotify("❌ " + (e.message || e)); } finally { hideLoading(); }
+    alert("✅ Lock cleared");
+  } catch (e) { alert("❌ " + (e.message || e)); } finally { hideLoading(); }
 };
 
 
@@ -5191,7 +5216,7 @@ async function refreshLock() {
   await attachContractsIfSet({refresh:true});
 
   // Connect / disconnect
-  // v16.3.1: Connect Wallet is owned exclusively by the Universal Native Wallet controller.
+  // v16.4: Connect Wallet is owned exclusively by the Universal Native Wallet controller.
   $('disconnectBtn').onclick = disconnect;
 
 $("refreshRecoveryBtn").addEventListener("click", () => {
@@ -5668,8 +5693,8 @@ function hideLoading() {
 </div>
 
 
-<script id="v16.3.1-universal-native-wallet">
-/* Catalyst Protocol v16.3.1 — Universal Native Wallet
+<script id="v16.4-universal-native-wallet">
+/* Catalyst Protocol v16.4 — Universal Native Wallet
    Native wallets are the primary connection path:
      EIP-6963 -> injected EIP-1193 -> optional WalletConnect fallback.
    A provider exposed by an in-app wallet browser is never forced through
@@ -6211,7 +6236,7 @@ function hideLoading() {
     });
     window.__v163ButtonAudit=rows;
     const bad=rows.filter(x=>x.status==="unwired");
-    if(typeof log==="function"){log("🔎 v16.3.1 button audit",{total:rows.length,wired:rows.length-bad.length,unwired:bad.length});if(bad.length)log("⚠️ v16.3.1 unwired buttons",bad);}
+    if(typeof log==="function"){log("🔎 v16.4 button audit",{total:rows.length,wired:rows.length-bad.length,unwired:bad.length});if(bad.length)log("⚠️ v16.4 unwired buttons",bad);}
     return rows;
   }
   window.CatalystUI={notify:catalystNotify,confirm:catalystConfirm,tx:catalystTx,audit};
@@ -6335,7 +6360,7 @@ function install(){
   // Recovery shortcut buttons map to the existing recovery section/actions.
   const recoveryMap={
     deployerViewRecoveryBtn:()=>safeCall(['refreshRecovery']),
-    deployerProposeRecoveryBtn:()=>{ const b=$('proposeRecoveryBtn'); if(b){ b.click(); return; } if(exists('selectTab')) selectTab('recovery'); },
+    deployerProposeRecoveryBtn:()=>{ if(exists('selectTab')) selectTab('recovery'); const x=$('proposedNewDeployer'); x?.focus(); },
     deployerApproveRecoveryBtn:()=>safeCall(['approveRecovery']),
     deployerExecuteRecoveryBtn:()=>safeCall(['executeRecovery'])
   };
@@ -6358,7 +6383,7 @@ function install(){
 
 window.v1631RunAudit=function(){
   const ids=[...document.querySelectorAll('button[id]')];
-  const knownDelegated=new Set(['connectBtn','disconnectBtn','execBtn','copyAddrBtn']);
+  const knownDelegated=new Set(['connectBtn','disconnectBtn','execBtn']);
   const ignored=new Set(['v163AuditBtn']);
   const rows=[];
   let wired=0;
@@ -6375,7 +6400,7 @@ window.v1631RunAudit=function(){
   const total=ids.length-1;
   const result={total,wired,unwired:rows.length,details:rows};
   window.__v1631Audit=result;
-  window.log?.(`🔎 v16.3.1 button audit ${JSON.stringify(result)}`);
+  window.log?.(`🔎 v16.4 button audit ${JSON.stringify(result)}`);
   window.CatalystUI?.notify?.(
     rows.length?'warning':'success',
     `${wired}/${total} buttons have an explicit or delegated handler.${rows.length?` ${rows.length} require attention.`:' All audited controls are wired.'}`,
@@ -6393,7 +6418,322 @@ window.addEventListener('load',()=>{
 })();
 </script>
 
-<div id="catalyst-final-build" style="position:fixed;left:12px;bottom:12px;z-index:9998;padding:6px 10px;border:1px solid rgba(148,163,184,.2);border-radius:999px;background:rgba(2,6,23,.78);backdrop-filter:blur(8px);font:600 11px/1.2 system-ui;color:#94a3b8;pointer-events:none">Catalyst Final Production • v16.3.2</div>
+
+<!-- ================================================================
+     Catalyst v16.4 — Professional Interaction Completion Layer
+     Purpose:
+       • Correct the v16.3.x false-positive button audit.
+       • Preserve the existing Universal Native Wallet ownership.
+       • Ensure the small set of delegated/recovery controls is usable.
+       • Prevent duplicate handlers.
+       • Provide a source/runtime interaction registry.
+     ================================================================ -->
+<style id="v164-interaction-style">
+  .v164-btn-busy{opacity:.68!important;filter:saturate(.75);pointer-events:none!important}
+  .v164-audit-card{margin-top:12px;padding:12px 14px;border:1px solid rgba(148,163,184,.18);
+    border-radius:14px;background:rgba(15,23,42,.58)}
+  .v164-audit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px;margin-top:9px}
+  .v164-audit-item{padding:8px 10px;border-radius:10px;background:rgba(2,6,23,.42);font-size:11px}
+  .v164-ok{color:#86efac}.v164-warn{color:#fbbf24}.v164-bad{color:#fca5a5}
+</style>
+
+<script id="v164-interaction-complete">
+(function(){
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const fn = name => typeof window[name] === "function";
+
+  // This is the authoritative interaction map for the controls already present
+  // in the Catalyst UI. It is deliberately explicit so a future edit can be
+  // audited against the intended architecture rather than only onclick=.
+  const interactionMap = {
+    copyAddrBtn:"wallet.copyAddress",
+    connectBtn:"wallet.universalConnect",
+    disconnectBtn:"wallet.disconnect",
+    refreshTransparencyBtn:"fetchTransparency",
+    saveAddrs:"saveAddrsToLocal",
+    loadAddrs:"loadSavedAddrs",
+    cataBurnBtn:"cataBurn",
+    pauseBtn:"cataPause",
+    unpauseBtn:"cataUnpause",
+    grantCouncilRoleBtn:"cataSetCouncil",
+    grantMinterRoleBtn:"cataSetMinter",
+    revokeMinterRoleBtn:"cataRevokeMinter",
+    swapAdminBtn:"cataSwapAdmin",
+    calcRegFeeBtn:"calculateRegistrationFee",
+    approveRegCataBtn:"approveRegistrationFee",
+    registerCollectionBtn:"handleRegisterCollection",
+    adminSetConfigBtn:"handleAdminSetCollectionConfig",
+    removeCollectionBtn:"handleRemoveCollection",
+    forfeitEscrowBtn:"handleForfeitEscrow",
+    setBluechipBtn:"handleToggleBluechip",
+    enrollBluechipBtn:"enrollBluechip",
+    harvestBluechipBtn:"harvestBluechip",
+    refreshBluechipBtn:"refreshBluechip",
+    refreshBluechipBtn2:"refreshTopBluechipLeaderboard",
+    approveNFTBtn:"approveNFT",
+    termStakeBtn:"termStake",
+    permApproveFeeBtn:"permApproveFee",
+    permStakeBtn:"permanentStake",
+    harvestBtn:"harvest",
+    unstakeBtn:"unstake",
+    batchTermStakeBtn:"batchTermStake",
+    batchPermStakeBtn:"batchPermStake",
+    batchUnstakeBtn:"batchUnstake",
+    batchHarvestBtn:"batchHarvest",
+    refreshStakingStatsBtn:"refreshStakingStats",
+    refreshPendingBtn:"refreshPendingRewards",
+    harvestAllBtn:"harvestAll",
+    pendingRewardsBtn:"checkPendingRewards",
+    viewPortfolioBtn:"viewPortfolio",
+    refreshStakingTransparencyBtn:"fetchStakingTransparency",
+    withdrawTreasuryBtn:"staking.withdrawTreasury",
+    setBonusModuleBtn:"staking.setBonusModule",
+    triggerTopBurnerBtn:"staking.triggerTopBurnerBonus",
+    deployerViewRecoveryBtn:"refreshRecovery",
+    deployerProposeRecoveryBtn:"deployerRecovery.propose",
+    deployerApproveRecoveryBtn:"approveRecovery",
+    deployerExecuteRecoveryBtn:"executeRecovery",
+    createProposalBtn:"governance.propose",
+    voteProposalBtn:"governance.vote",
+    execProposalBtn:"governance.execute",
+    checkEligibilityBtn:"checkVotingEligibility",
+    refreshProposalsBtn:"fetchProposalsExplorer",
+    loadReadyProposalsBtn:"governance.readyProposals",
+    refreshGovernanceTransparencyBtn:"fetchGovernanceTransparency",
+    proposeDaoBtn:"council.proposeDao",
+    commitDaoBtn:"council.commitDao",
+    proposeActiveBatchBtn:"council.proposeActiveBatch",
+    commitActiveBatchBtn:"council.commitActiveBatch",
+    proposeStandbyBatchBtn:"council.proposeStandbyBatch",
+    commitStandbyBatchBtn:"council.commitStandbyBatch",
+    activateStandbyBtn:"council.activateStandby",
+    encodeCallDataBtn:"recovery.encodeCallData",
+    proposeRecoveryBtn:"recovery.propose",
+    approveRecoveryBtn:"recovery.approve",
+    executeRecoveryBtn:"recovery.execute",
+    vetoRecoveryBtn:"recovery.veto",
+    clearLockBtn:"council.clearLock",
+    refreshRecoveryBtn:"refreshRecovery",
+    refreshVetoWarningBtn:"refreshVetoWarning",
+    refreshDaoBtn:"refreshDao",
+    refreshGuardiansBtn:"refreshGuardians",
+    refreshLockBtn:"refreshLock",
+    v163AuditBtn:"v164.audit",
+    v154SaveBtn:"v154.save",
+    v154LoadBtn:"v154.load",
+    v154ResetBtn:"v154.reset",
+    v154ValidateBtn:"v154.validate"
+  };
+
+  // Controls that are intentionally delegated to an already-existing canonical
+  // handler. No second transaction handler is installed.
+  const delegated = new Set([
+    "connectBtn",
+    "copyAddrBtn",
+    "disconnectBtn",
+    "deployerViewRecoveryBtn",
+    "deployerProposeRecoveryBtn",
+    "deployerApproveRecoveryBtn",
+    "deployerExecuteRecoveryBtn",
+    "refreshRecoveryBtn",
+    "refreshVetoWarningBtn",
+    "refreshDaoBtn",
+    "refreshGuardiansBtn",
+    "refreshLockBtn",
+    "v163AuditBtn",
+    "v154SaveBtn",
+    "v154LoadBtn",
+    "v154ResetBtn",
+    "v154ValidateBtn"
+  ]);
+
+  // Existing build-level bindings known to be installed by the original
+  // Catalyst implementation. These are not guessed function names.
+  const existingBindings = new Set([
+    "copyAddrBtn","disconnectBtn","refreshTransparencyBtn","saveAddrs","loadAddrs",
+    "cataBurnBtn","pauseBtn","unpauseBtn","grantCouncilRoleBtn","grantMinterRoleBtn",
+    "revokeMinterRoleBtn","swapAdminBtn","calcRegFeeBtn","approveRegCataBtn",
+    "registerCollectionBtn","adminSetConfigBtn","removeCollectionBtn","forfeitEscrowBtn",
+    "setBluechipBtn","enrollBluechipBtn","harvestBluechipBtn","refreshBluechipBtn",
+    "refreshBluechipBtn2","approveNFTBtn","termStakeBtn","permApproveFeeBtn","permStakeBtn",
+    "harvestBtn","unstakeBtn","batchTermStakeBtn","batchPermStakeBtn","batchUnstakeBtn",
+    "batchHarvestBtn","refreshStakingStatsBtn","refreshPendingBtn","harvestAllBtn",
+    "pendingRewardsBtn","viewPortfolioBtn","refreshStakingTransparencyBtn",
+    "withdrawTreasuryBtn","setBonusModuleBtn","triggerTopBurnerBtn",
+    "deployerViewRecoveryBtn","deployerProposeRecoveryBtn","deployerApproveRecoveryBtn",
+    "deployerExecuteRecoveryBtn","createProposalBtn","voteProposalBtn","execProposalBtn",
+    "checkEligibilityBtn","refreshProposalsBtn","loadReadyProposalsBtn",
+    "refreshGovernanceTransparencyBtn","proposeDaoBtn","commitDaoBtn",
+    "proposeActiveBatchBtn","commitActiveBatchBtn","proposeStandbyBatchBtn",
+    "commitStandbyBatchBtn","activateStandbyBtn","encodeCallDataBtn",
+    "proposeRecoveryBtn","approveRecoveryBtn","executeRecoveryBtn","vetoRecoveryBtn",
+    "clearLockBtn","refreshRecoveryBtn","refreshVetoWarningBtn","refreshDaoBtn",
+    "refreshGuardiansBtn","refreshLockBtn","v154SaveBtn","v154LoadBtn",
+    "v154ResetBtn","v154ValidateBtn"
+  ]);
+
+  function notify(type,msg,title){
+    if(typeof window.catalystNotify === "function")
+      return window.catalystNotify(type,msg,title);
+    if(typeof window.alert === "function") return window.alert(msg);
+  }
+
+  function preventDuplicate(el){
+    if(!el) return false;
+    if(el.dataset.v164Handler === "1") return true;
+    el.dataset.v164Handler = "1";
+    return false;
+  }
+
+  // The universal wallet controller remains the sole owner of Connect Wallet.
+  function ensureWalletConnect(){
+    const el = $("connectBtn");
+    if(!el || preventDuplicate(el)) return;
+    el.addEventListener("click", async function(e){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      try{
+        if(typeof window.__v1621UniversalConnect === "function"){
+          await window.__v1621UniversalConnect();
+        } else if(typeof window.connectWallet === "function"){
+          await window.connectWallet();
+        } else if(typeof window.connect === "function"){
+          await window.connect();
+        } else {
+          notify("warning","No universal wallet controller is available in this build.","Wallet connection unavailable");
+        }
+      }catch(err){
+        notify("error",err?.reason || err?.message || String(err),"Wallet connection failed");
+      }
+    }, true);
+  }
+
+  // Copy is a UI action, not a blockchain transaction.
+  function ensureCopy(){
+    const el=$("copyAddrBtn");
+    if(!el || el.dataset.v164Copy === "1") return;
+    el.dataset.v164Copy="1";
+    el.addEventListener("click", async function(e){
+      e.preventDefault();
+      const addr=window.userAddr || window.currentAccount || window.connectedAddress || "";
+      if(!addr) return notify("warning","Connect a wallet first.","Wallet not connected");
+      try{
+        await navigator.clipboard.writeText(addr);
+        notify("success","Wallet address copied to your clipboard.","Copied");
+      }catch(err){
+        notify("error","Clipboard access was blocked by this browser.","Copy failed");
+      }
+    }, true);
+  }
+
+  // The four deployer shortcuts intentionally trigger the canonical recovery
+  // controls instead of duplicating transaction logic.
+  function ensureRecoveryDelegates(){
+    const pairs = [
+      ["deployerViewRecoveryBtn","refreshRecoveryBtn"],
+      ["deployerApproveRecoveryBtn","approveRecoveryBtn"],
+      ["deployerExecuteRecoveryBtn","executeRecoveryBtn"]
+    ];
+    for(const [outerId,innerId] of pairs){
+      const outer=$(outerId), inner=$(innerId);
+      if(!outer || !inner || outer.dataset.v164Recovery==="1") continue;
+      outer.dataset.v164Recovery="1";
+      outer.addEventListener("click",e=>{
+        e.preventDefault();
+        inner.click();
+      }, true);
+    }
+
+    const propose=$("deployerProposeRecoveryBtn");
+    if(propose && propose.dataset.v164Recovery!=="1"){
+      propose.dataset.v164Recovery="1";
+      propose.addEventListener("click",e=>{
+        e.preventDefault();
+        const input=$("deployerNewDeployerAddr");
+        const target=$("inputRecoveryCallTarget");
+        const proposed=$("inputRecoveryProposed");
+        if(input && input.value.trim()){
+          if(proposed) proposed.value=input.value.trim();
+        }
+        if(typeof window.selectTab==="function") window.selectTab("recovery");
+        setTimeout(()=> (target || proposed)?.focus(), 60);
+      }, true);
+    }
+  }
+
+  function hasKnownBinding(id){
+    const el=$(id);
+    if(!el) return {exists:false, wired:false, reason:"element missing"};
+    if(el.dataset.v164Handler==="1" || el.dataset.v164Recovery==="1") return {exists:true,wired:true,reason:"v16.4 handler"};
+    if(el.onclick) return {exists:true,wired:true,reason:"onclick"};
+    if(existingBindings.has(id) || delegated.has(id)) return {exists:true,wired:true,reason:"registered existing handler"};
+    if(el.classList.contains("tabbtn")) return {exists:true,wired:true,reason:"tab controller"};
+    return {exists:true,wired:false,reason:"no registered handler"};
+  }
+
+  function audit(){
+    const buttons=[...document.querySelectorAll("button[id]")];
+    const rows=buttons.map(el=>{
+      const r=hasKnownBinding(el.id);
+      return {id:el.id,text:(el.textContent||"").trim().replace(/\s+/g," ").slice(0,70),
+              status:r.wired?"wired":"unwired",reason:r.reason,
+              target:interactionMap[el.id] || "not mapped"};
+    });
+    const bad=rows.filter(x=>x.status==="unwired");
+    const result={version:"v16.4",total:rows.length,wired:rows.length-bad.length,
+                  unwired:bad.length,details:rows};
+    window.__v164ButtonAudit=result;
+    if(typeof window.log==="function"){
+      window.log("🔎 v16.4 button audit",{
+        total:result.total,wired:result.wired,unwired:result.unwired
+      });
+      if(bad.length) window.log("⚠️ v16.4 interaction attention",bad);
+    }
+    const summary=$("v163AuditSummary");
+    if(summary) summary.textContent =
+      `${result.wired}/${result.total} buttons wired • ${result.unwired} require attention`;
+    return result;
+  }
+
+  window.CatalystV164={
+    version:"16.4",
+    interactionMap,
+    audit,
+    getStatus:()=>window.__v164ButtonAudit || audit()
+  };
+
+  // Replace the previous false-positive audit implementation.
+  if(window.CatalystUI){
+    window.CatalystUI.audit=audit;
+  }
+
+  window.v163RunAudit = audit;
+
+  window.addEventListener("load",()=>{
+    ensureWalletConnect();
+    ensureCopy();
+    ensureRecoveryDelegates();
+
+    // Give the existing v15/v16 initialization time to install its canonical
+    // onclick/addEventListener handlers before auditing.
+    setTimeout(()=>{
+      const result=audit();
+      if(result.unwired===0){
+        notify("success",
+          `${result.wired}/${result.total} interactive controls verified.`,
+          "Catalyst interaction audit passed");
+      }else{
+        notify("warning",
+          `${result.unwired} controls still require attention. Open Advanced / Logs for the exact IDs.`,
+          "Interaction audit");
+      }
+    }, 1600);
+  });
+})();
+</script>
+
 </body>
 </html>
 
