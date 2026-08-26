@@ -5694,7 +5694,7 @@ function hideLoading() {
 
 
 <script id="v16.4-universal-native-wallet">
-/* Catalyst Protocol v16.4 — Universal Native Wallet
+/* Catalyst Protocol v16.4.1 — Universal Native Wallet
    Native wallets are the primary connection path:
      EIP-6963 -> injected EIP-1193 -> optional WalletConnect fallback.
    A provider exposed by an in-app wallet browser is never forced through
@@ -6138,11 +6138,19 @@ function hideLoading() {
   }, true);
 
   document.addEventListener("DOMContentLoaded",()=>{
-    document.getElementById("v16WalletClose")?.addEventListener("click",()=>{
-      const m=modal();
-      m?.classList.remove("open");
-      m?.setAttribute("aria-hidden","true");
-    });
+    const closeBtn=document.getElementById("v16WalletClose");
+    if(closeBtn){
+      // Explicit interaction registry marker: this is a real UI handler,
+      // not an ignored/assumed control. Prevents the v16.4 audit from
+      // reporting the wallet modal close button as unwired.
+      closeBtn.dataset.v164Handler="1";
+      closeBtn.dataset.v164Target="wallet.close";
+      closeBtn.addEventListener("click",()=>{
+        const m=modal();
+        m?.classList.remove("open");
+        m?.setAttribute("aria-hidden","true");
+      });
+    }
 
     modal()?.addEventListener("click",e=>{
       if(e.target === modal()){
@@ -6449,6 +6457,7 @@ window.addEventListener('load',()=>{
   // audited against the intended architecture rather than only onclick=.
   const interactionMap = {
     copyAddrBtn:"wallet.copyAddress",
+    v16WalletClose:"wallet.close",
     connectBtn:"wallet.universalConnect",
     disconnectBtn:"wallet.disconnect",
     refreshTransparencyBtn:"fetchTransparency",
@@ -6530,6 +6539,7 @@ window.addEventListener('load',()=>{
   // Controls that are intentionally delegated to an already-existing canonical
   // handler. No second transaction handler is installed.
   const delegated = new Set([
+    "v16WalletClose",
     "connectBtn",
     "copyAddrBtn",
     "disconnectBtn",
@@ -6682,7 +6692,7 @@ window.addEventListener('load',()=>{
               target:interactionMap[el.id] || "not mapped"};
     });
     const bad=rows.filter(x=>x.status==="unwired");
-    const result={version:"v16.4",total:rows.length,wired:rows.length-bad.length,
+    const result={version:"v16.4.1",total:rows.length,wired:rows.length-bad.length,
                   unwired:bad.length,details:rows};
     window.__v164ButtonAudit=result;
     if(typeof window.log==="function"){
@@ -6698,7 +6708,7 @@ window.addEventListener('load',()=>{
   }
 
   window.CatalystV164={
-    version:"16.4",
+    version:"16.4.1",
     interactionMap,
     audit,
     getStatus:()=>window.__v164ButtonAudit || audit()
